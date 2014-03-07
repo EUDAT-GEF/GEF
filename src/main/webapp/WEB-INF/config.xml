@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<config>
+	<realm>Erdo, Universitaet Tuebingen</realm>
+	
+	<irods>
+		<server>iron.sfs.uni-tuebingen.de</server>
+		<!--<server>localhost</server>-->
+		<port>1247</port>
+		<username>rods</username>
+		<password>...</password>
+		<path>/ironZone/GEF</path>
+		<resource>demoResc</resource>
+	</irods>
+
+	<pid>
+		<user>1002-01</user>
+		<pass>aePhoiw2</pass>
+	</pid>
+</config>

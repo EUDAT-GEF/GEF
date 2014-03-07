@@ -1,0 +1,39 @@
+<div class="container">
+	<h2 class="title" style="margin-bottom:0">Datasets</h2>
+
+	<div class="row-fluid">
+		<div class="span10" style="margin-top:30px">
+			<a href="#/newdataset">Add new dataset</a>
+		</div>
+		<div class="dropdown sort">
+			<label class="span1 textline" for="selectOrderProp">Sort by: </label>
+			<select id="selectOrderProp" name="selectOrderProp" class="span1" data-ng-model="orderProp">
+				<option value="-date">Date</option>
+				<option value="name">Name</option>
+				<option value="size">Size</option>
+			</select>
+		</div>
+	</div>
+
+	<div class="row-fluid table-header">
+		<ul class="unstyled">
+			<li class="span2 textline">Identifier</li>
+			<li class="span6 textline">Title</li>
+			<li class="span2 textline">Size</li>
+			<li class="span2 textline">Date</li>
+		</ul>
+	</div>
+
+	<div class="row-fluid wkfl-item" data-ng-repeat="ds in datasets | orderBy:orderProp"
+             style="border-left:2px solid blue">
+		<ul class="unstyled" style="margin-left:5px">
+			<li class="span2 textline">{{ds.id}}</li>
+			<li class="span6 textline">{{ds.name}}</li>
+			<li class="span2 textline">{{ds.size}}</li>
+			<li class="span2 textline">{{ds.date}}</li>
+		</ul>
+		<ul class="unstyled" style="margin-left:50px">
+		</ul>
+	</div>
+</div>
+
