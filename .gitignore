@@ -1,1 +1,4 @@
 target/
+ErdoIrods.log
+nb-configuration.xml
+.vagrant

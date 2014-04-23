@@ -64,7 +64,7 @@ public class Workflows {
 		return Response.created(collUri).entity(json).build();
 	}
 
-	public String uploadFile(InputStream inputStream, FormDataContentDisposition fileDetail,
+ public String uploadFile(InputStream inputStream, FormDataContentDisposition fileDetail,
 			IrodsConnection conn, IrodsCollection collWfl) throws Exception {
 		println("upload: " + fileDetail.getType() + "; " + fileDetail.getName() + "; " + fileDetail.getFileName());
 

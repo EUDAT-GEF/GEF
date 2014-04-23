@@ -46,18 +46,22 @@ public class Jobs {
     @Produces(MediaType.APPLICATION_JSON)
     public Response post(FormDataMultiPart multiPart) throws Exception {
         System.out.println("--------- " + request.getPathInfo());
-        Map<String, String> params = new LinkedHashMap<String, String>();
+
+		Map<String, String> params = new LinkedHashMap<String, String>();
         for (Map.Entry<String, List<FormDataBodyPart>> e : multiPart.getFields().entrySet()) {
             for (FormDataBodyPart fdbp : e.getValue()) {
                 params.put(fdbp.getName(), fdbp.getValue());
             }
         }
-        String workflowPid = params.get("workflowPid");
+
+		String workflowPid = params.get("workflowPid");
         if (workflowPid == null || workflowPid.isEmpty()) {
             return Response.status(Response.Status.BAD_REQUEST).entity("dataset PID needed!").build();
         }
 
         IrodsConnection conn = Services.get(IrodsConnection.class);
+		
+		// translate from pids to irods paths
         Map<String, String> newparams = new LinkedHashMap<String, String>();
         try {
             for (String key : params.keySet()) {
@@ -78,6 +82,7 @@ public class Jobs {
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(xc.getMessage()).build();
         }
 
+		// create parameter file
         File f = File.createTempFile("wkf", SUFFIX);
         StringBuilder content = new StringBuilder();
         for (Map.Entry<String, String> e : params.entrySet()) {
@@ -85,6 +90,8 @@ public class Jobs {
         }
         Files.write(content, f, Charsets.UTF_8);
 
+		// make collection and put parameter file
+		// this will start the job via irods rules
         String jobId = f.getName().substring(0, f.getName().length() - SUFFIX.length());
         String jobCollPath = conn.getInitialPath() + "/" + JOBS_DIR + "/" + jobId;
         IrodsCollection jobColl = conn.getObject(jobCollPath).asCollection();

@@ -4,6 +4,7 @@
 ## acPostProcForPut {
 ##        ON($objPath like "\*.gefcommand") {msiExecCmd("gefcommand.py", $objPath, "null", "null", "null", *out);}
 ## }
+
 processGefWorkflowFile(*cmdPath) {
 	logDebug("processGefWorkflowFile(*cmdPath)");
 	processTavernaWorkflow();
