@@ -34,7 +34,7 @@ if [ ! -e /home/vagrant/.irodsprovisioned ]; then
     ln -s /usr/lib/jvm/java-8-oracle /usr/lib/jvm/default-java
     export JAVA_OPTS="-Djava.awt.headless=true -Xmx1g"
     apt-get install tomcat7 tomcat7-admin -y
-    
+
     # done
     touch /home/vagrant/.irodsprovisioned
 fi
