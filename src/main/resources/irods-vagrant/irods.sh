@@ -1,39 +1,36 @@
 #!/bin/bash -x
 
+IRODS_FTP=ftp://ftp.renci.org/pub/irods/releases/4.0.0
+
 if [ ! -e /home/vagrant/.irodsprovisioned ]; then
     apt-get update
     apt-get upgrade -y
-    apt-get install -q -y curl build-essential python-pip git python-dev postgresql odbc-postgresql unixodbc-dev
+    apt-get install -q -y curl build-essential python-pip git python-dev postgresql odbc-postgresql unixodbc-dev libssl0.9.8 super
  
-	wget ftp://ftp.renci.org/pub/irods/releases/4.0.0/irods-icat-4.0.0-64bit.deb
-	wget ftp://ftp.renci.org/pub/irods/releases/4.0.0/irods-database-plugin-postgres-1.0.deb
-#	wget ftp://ftp.renci.org/pub/irods/releases/4.0.0/irods-resource-4.0.0-64bit.deb
-#	wget ftp://ftp.renci.org/pub/irods/releases/4.0.0/irods-dev-4.0.0-64bit.deb
-#	wget ftp://ftp.renci.org/pub/irods/releases/4.0.0/irods-runtime-4.0.0-64bit.deb
-#	wget ftp://ftp.renci.org/pub/irods/releases/4.0.0/irods-icommands-4.0.0-64bit.deb
+	wget -nv $IRODS_FTP/irods-icat-4.0.0-64bit.deb
+	wget -nv $IRODS_FTP/irods-database-plugin-postgres-1.0.deb
+	# wget -nv $IRODS_FTP/irods-resource-4.0.0-64bit.deb
+	# wget -nv $IRODS_FTP/irods-dev-4.0.0-64bit.deb
+	# wget -nv $IRODS_FTP/irods-runtime-4.0.0-64bit.deb
+	# wget -nv $IRODS_FTP/irods-icommands-4.0.0-64bit.deb
 
 	dpkg -i *.deb
 	apt-get -f install -y
 
-#    cp /vagrant/irods.config $IRODS_DIR/config/
+    sudo adduser irods sudo
 
-#    chown -R vagrant:vagrant $IRODS_DIR
-#    chmod -R a+rx $IRODS_DIR
+    # Use system-wide postgresql for iRODS
+    echo "CREATE ROLE irods PASSWORD 'irodsgef' superuser createdb createrole inherit login;" | sudo su - postgres -c psql -
+    cp /vagrant/pg_hba.conf /etc/postgresql/9.3/main/pg_hba.conf
+    ln -sf /usr/lib/x86_64-linux-gnu/odbc/psqlodbca.so /usr/lib/postgresql/9.3/lib/libodbcpsql.so
+    service postgresql restart
 
-#     Use system-wide postgresql for iRODS
-#    echo "CREATE ROLE vagrant PASSWORD 'md5ce5f2d27bc6276a03b0328878c1dc0e2' SUPERUSER CREATEDB CREATEROLE INHERIT LOGIN;" | su - postgres -c psql -
-#    psql createuser does not allow password via cmdline
-#    su postgres -c "createuser vagrant -s -w"
-
-#    cp /vagrant/pg_hba.conf /etc/postgresql/9.1/main/pg_hba.conf
-#    ln -sf /usr/lib/x86_64-linux-gnu/odbc/psqlodbca.so /usr/lib/postgresql/9.1/lib/libodbcpsql.so
-#    service postgresql restart
-
-#    su vagrant -c "cd $IRODS_DIR && export USE_LOCALHOST=1 && ./scripts/configure && make && ./scripts/finishSetup --noask"
-
-#    su vagrant -c "mkdir -p /home/vagrant/.irods"
-
-#    echo "export PATH=\$PATH:$IRODS_DIR:$IRODS_DIR/clients/icommands/bin" >> /home/vagrant/.bashrc
-
+    cp /vagrant/irods.config /etc/irods/
+    
     touch /home/vagrant/.irodsprovisioned
 fi
+
+# RUN THE NEXT COMMAND TO FINISH THE PROVISIONING
+# IT IS INTERACTIVE
+# -- When prompted for hostname or IP, use 127.0.0.1 NOT localhost
+# sudo su - irods -c /var/lib/irods/packaging/setup_database.sh 
