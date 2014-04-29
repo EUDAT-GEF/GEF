@@ -9,15 +9,12 @@ if [ ! -e /home/vagrant/.irodsprovisioned ]; then
  
 	wget -nv $IRODS_FTP/irods-icat-4.0.0-64bit.deb
 	wget -nv $IRODS_FTP/irods-database-plugin-postgres-1.0.deb
-	# wget -nv $IRODS_FTP/irods-resource-4.0.0-64bit.deb
-	# wget -nv $IRODS_FTP/irods-dev-4.0.0-64bit.deb
-	# wget -nv $IRODS_FTP/irods-runtime-4.0.0-64bit.deb
-	# wget -nv $IRODS_FTP/irods-icommands-4.0.0-64bit.deb
 
 	dpkg -i *.deb
 	apt-get -f install -y
 
     sudo adduser irods sudo
+    cp /vagrant/irods.config /etc/irods/
 
     # Use system-wide postgresql for iRODS
     echo "CREATE ROLE irods PASSWORD 'irodsgef' superuser createdb createrole inherit login;" | sudo su - postgres -c psql -
@@ -25,12 +22,24 @@ if [ ! -e /home/vagrant/.irodsprovisioned ]; then
     ln -sf /usr/lib/x86_64-linux-gnu/odbc/psqlodbca.so /usr/lib/postgresql/9.3/lib/libodbcpsql.so
     service postgresql restart
 
-    cp /vagrant/irods.config /etc/irods/
+    # java 
+    add-apt-repository ppa:webupd8team/java -y
+    apt-get update
+    # !!! 
+    # this also needs input for license, might not work automatically
+    apt-get install oracle-java8-installer -y 
+
+    # tomcat
+    export JAVA_HOME=/usr/lib/jvm/java-8-oracle
+    ln -s /usr/lib/jvm/java-8-oracle /usr/lib/jvm/default-java
+    export JAVA_OPTS="-Djava.awt.headless=true -Xmx1g"
+    apt-get install tomcat7 tomcat7-admin -y
     
+    # done
     touch /home/vagrant/.irodsprovisioned
 fi
 
-# RUN THE NEXT COMMAND TO FINISH THE PROVISIONING
-# IT IS INTERACTIVE
+# !!!
+# RUN THE NEXT INTERACTIVE COMMAND TO FINISH THE PROVISIONING
 # -- When prompted for hostname or IP, use 127.0.0.1 NOT localhost
 # sudo su - irods -c /var/lib/irods/packaging/setup_database.sh 
