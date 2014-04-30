@@ -1,13 +1,12 @@
 package eu.eudat.gef.rest;
 
-import com.google.common.io.ByteStreams;
 import com.google.gson.Gson;
 import com.sun.jersey.core.header.FormDataContentDisposition;
 import com.sun.jersey.multipart.FormDataBodyPart;
 import com.sun.jersey.multipart.FormDataParam;
 import de.tuebingen.uni.sfs.epicpid.Pid;
 import de.tuebingen.uni.sfs.epicpid.PidServer;
-import eu.eudat.gef.Services;
+import eu.eudat.gef.service.Services;
 import eu.eudat.gef.irodslink.IrodsCollection;
 import eu.eudat.gef.irodslink.IrodsConnection;
 import eu.eudat.gef.irodslink.IrodsFile;
@@ -20,10 +19,9 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.net.URI;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -79,12 +77,7 @@ public class DataSets {
 		}
 
 		File f = File.createTempFile(name, ext);
-		final OutputStream out = new FileOutputStream(f);
-		try {
-			ByteStreams.copy(inputStream, out);
-		} finally {
-			out.close();
-		}
+		Files.copy(inputStream, f.toPath());
 
 		IrodsFile ifile = conn.getObject(collWfl.getFullPath() + "/" + name + ext).asFile();
 		System.out.println("upload from " + f.getPath() + " to " + ifile.getFullPath());

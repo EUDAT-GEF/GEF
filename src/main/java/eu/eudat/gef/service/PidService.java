@@ -1,4 +1,4 @@
-package eu.eudat.gef;
+package eu.eudat.gef.service;
 
 import de.tuebingen.uni.sfs.epicpid.PidServerConfig;
 import de.tuebingen.uni.sfs.epicpid.impl.PidServerImpl;
@@ -13,6 +13,8 @@ public class PidService {
 
 	static {
 		PidServerConfig pidConfig = new PidServerConfig();
+		pidConfig.epicServerUrl = WebAppConfig.get("/config/pid/epicServerUrl");
+		pidConfig.localPrefix = WebAppConfig.get("/config/pid/localPrefix");
 		pidConfig.username = WebAppConfig.get("/config/pid/user");
 		pidConfig.password = WebAppConfig.get("/config/pid/pass");
 		Services.register(pidConfig);

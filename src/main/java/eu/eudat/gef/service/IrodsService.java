@@ -1,15 +1,11 @@
-package eu.eudat.gef;
+package eu.eudat.gef.service;
 
-import de.tuebingen.uni.sfs.epicpid.PidServerConfig;
-import de.tuebingen.uni.sfs.epicpid.impl.PidServerImpl;
 import eu.eudat.gef.irodslink.IrodsAccessConfig;
 import eu.eudat.gef.irodslink.IrodsConnection;
 import eu.eudat.gef.irodslink.impl.jargon.JargonConnection;
 import eu.eudat.gef.rest.DataSets;
 import eu.eudat.gef.rest.Jobs;
 import eu.eudat.gef.rest.Workflows;
-import org.picocontainer.DefaultPicoContainer;
-import org.picocontainer.MutablePicoContainer;
 import org.slf4j.LoggerFactory;
 
 /**
@@ -42,7 +38,7 @@ public class IrodsService {
 			ic.getObject(ic.getInitialPath() + "/" + Workflows.WORKFLOW_DIR).asCollection().create();
 			ic.getObject(ic.getInitialPath() + "/" + Jobs.JOBS_DIR).asCollection().create();
 		} catch (Exception xc) {
+			// ignore this one
 		}
-
 	}
 }

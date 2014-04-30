@@ -1,4 +1,4 @@
-package eu.eudat.gef;
+package eu.eudat.gef.service;
 
 import com.google.common.io.InputSupplier;
 import java.io.IOException;

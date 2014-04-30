@@ -1,7 +1,7 @@
 package eu.eudat.gef.interop;
 
 import de.tuebingen.uni.sfs.epicpid.impl.Strings;
-import eu.eudat.gef.PidService;
+import eu.eudat.gef.service.PidService;
 import eu.eudat.gef.interop.impl.B2ShareDatastreamReaderFactory;
 import java.io.File;
 import java.net.URL;

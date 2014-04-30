@@ -1,6 +1,6 @@
 package eu.eudat.gef.interop.impl;
 
-import eu.eudat.gef.PidService;
+import eu.eudat.gef.service.PidService;
 import eu.eudat.gef.interop.DatastreamReader;
 import java.net.URL;
 import static org.junit.Assert.*;

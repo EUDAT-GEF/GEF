@@ -1,4 +1,4 @@
-package eu.eudat.gef;
+package eu.eudat.gef.service;
 
 import java.io.File;
 import javax.servlet.ServletContextEvent;

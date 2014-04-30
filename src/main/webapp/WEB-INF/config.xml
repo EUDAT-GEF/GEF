@@ -3,17 +3,18 @@
 	<realm>Erdo, Universitaet Tuebingen</realm>
 	
 	<irods>
-		<server>iron.sfs.uni-tuebingen.de</server>
-		<!--<server>localhost</server>-->
+		<server>10.0.2.15</server>
 		<port>1247</port>
 		<username>rods</username>
-		<password>...</password>
-		<path>/ironZone/GEF</path>
+		<password>rodsgef</password>
+		<path>/tempZone/GEF</path>
 		<resource>demoResc</resource>
 	</irods>
 
 	<pid>
-		<user>1002-01</user>
-		<pass>aePhoiw2</pass>
+		<epicServerUrl>http://pid.gwdg.de/handles/</epicServerUrl>
+		<localPrefix>11022</localPrefix>
+		<user>1001-22</user>
+		<pass>hPo2aeiw</pass>
 	</pid>
 </config>
