@@ -22,6 +22,10 @@ if [ ! -e /home/vagrant/.irodsprovisioned ]; then
     ln -sf /usr/lib/x86_64-linux-gnu/odbc/psqlodbca.so /usr/lib/postgresql/9.3/lib/libodbcpsql.so
     service postgresql restart
 
+    # docker
+    apt-get install docker.io
+    ln -sf /usr/bin/docker.io /usr/local/bin/docker
+
     # java 
     add-apt-repository ppa:webupd8team/java -y
     apt-get update
@@ -29,17 +33,17 @@ if [ ! -e /home/vagrant/.irodsprovisioned ]; then
     # this also needs input for license, might not work automatically
     apt-get install oracle-java8-installer -y 
 
-    # tomcat
-    export JAVA_HOME=/usr/lib/jvm/java-8-oracle
-    ln -s /usr/lib/jvm/java-8-oracle /usr/lib/jvm/default-java
-    export JAVA_OPTS="-Djava.awt.headless=true -Xmx1g"
-    apt-get install tomcat7 tomcat7-admin -y
+    # tomcat (not used, use local tomcat instead)
+    # export JAVA_OPTS="-Djava.awt.headless=true -Xmx1g"
+    # export JAVA_HOME=/usr/lib/jvm/java-8-oracle
+    # ln -s /usr/lib/jvm/java-8-oracle /usr/lib/jvm/default-java
+    # apt-get install tomcat7 tomcat7-admin -y
 
     # done
     touch /home/vagrant/.irodsprovisioned
 fi
 
 # !!!
-# RUN THE NEXT INTERACTIVE COMMAND TO FINISH THE PROVISIONING
+# RUN THE NEXT INTERACTIVE COMMAND TO REALLY FINISH THE PROVISIONING
 # -- When prompted for hostname or IP, use 127.0.0.1 NOT localhost
 # sudo su - irods -c /var/lib/irods/packaging/setup_database.sh 
