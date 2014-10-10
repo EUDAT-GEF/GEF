@@ -22,6 +22,10 @@ if [ ! -e /home/vagrant/.irodsprovisioned ]; then
     ln -sf /usr/lib/x86_64-linux-gnu/odbc/psqlodbca.so /usr/lib/postgresql/9.3/lib/libodbcpsql.so
     service postgresql restart
 
+    # docker
+    apt-get install docker.io
+    ln -sf /usr/bin/docker.io /usr/local/bin/docker
+
     # java 
     add-apt-repository ppa:webupd8team/java -y
     apt-get update
@@ -40,6 +44,6 @@ if [ ! -e /home/vagrant/.irodsprovisioned ]; then
 fi
 
 # !!!
-# RUN THE NEXT INTERACTIVE COMMAND TO FINISH THE PROVISIONING
+# RUN THE NEXT INTERACTIVE COMMAND TO REALLY FINISH THE PROVISIONING
 # -- When prompted for hostname or IP, use 127.0.0.1 NOT localhost
 # sudo su - irods -c /var/lib/irods/packaging/setup_database.sh 
