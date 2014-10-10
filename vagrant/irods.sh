@@ -25,15 +25,15 @@ if [ ! -e /home/vagrant/.irodsprovisioned ]; then
     # java 
     add-apt-repository ppa:webupd8team/java -y
     apt-get update
-    # !!! 
-    # this also needs input for license, might not work automatically
+	echo oracle-java8-installer shared/accepted-oracle-license-v1-1 select true | /usr/bin/debconf-set-selections
     apt-get install oracle-java8-installer -y 
 
-    # tomcat
+    export JAVA_OPTS="-Djava.awt.headless=true -Xmx1g"
     export JAVA_HOME=/usr/lib/jvm/java-8-oracle
     ln -s /usr/lib/jvm/java-8-oracle /usr/lib/jvm/default-java
-    export JAVA_OPTS="-Djava.awt.headless=true -Xmx1g"
-    apt-get install tomcat7 tomcat7-admin -y
+
+    # tomcat (not used, use local tomcat instead)
+    # apt-get install tomcat7 tomcat7-admin -y
 
     # done
     touch /home/vagrant/.irodsprovisioned

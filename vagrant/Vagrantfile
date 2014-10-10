@@ -2,9 +2,16 @@ Vagrant.configure("2") do |config|
   config.vm.box = "ubuntutrusty"
   config.vm.box_url = "https://cloud-images.ubuntu.com/vagrant/trusty/current/trusty-server-cloudimg-amd64-vagrant-disk1.box"
 
-  config.vm.network :forwarded_port, guest: 8080, host: 6080
-  config.vm.network :forwarded_port, guest: 8443, host: 6443
+  # # Tomcat ports not in use, use local Tomcat for that
+  # config.vm.network :forwarded_port, guest: 8080, host: 6080
+  # config.vm.network :forwarded_port, guest: 8443, host: 6443
+
   config.vm.network :forwarded_port, guest: 1247, host: 1247
+
+  # # Irods?
+  # for i in 20000..20099
+  #   config.vm.network :forwarded_port, guest: i, host: i
+  # end
 
   config.vm.provision :shell, :path => "irods.sh"
 
