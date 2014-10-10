@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <config>
-	<realm>Erdo, Universitaet Tuebingen</realm>
+	<realm>GEF</realm>
 	
 	<irods>
 		<server>10.0.2.15</server>
@@ -15,6 +15,6 @@
 		<epicServerUrl>http://pid.gwdg.de/handles/</epicServerUrl>
 		<localPrefix>11022</localPrefix>
 		<user>1001-22</user>
-		<pass>hPo2aeiw</pass>
+		<pass></pass>
 	</pid>
 </config>

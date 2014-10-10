@@ -65,7 +65,7 @@ public class B2ShareDatastreamReaderFactory implements DatastreamReaderFactory {
 			public InputStream streamDatastream(String datastream) throws DatastreamReaderException, IOException {
 				URL url = fileMap.get(datastream);
 				if (url == null) {
-					throw new DatastreamReaderException("inexistend datastream name: " + datastream);
+					throw new DatastreamReaderException("inexistent datastream name: " + datastream);
 				}
 				return Resources.asByteSource(url).openStream();
 			}
