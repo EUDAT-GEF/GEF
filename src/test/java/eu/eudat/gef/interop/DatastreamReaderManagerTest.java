@@ -1,8 +1,7 @@
 package eu.eudat.gef.interop;
 
-import de.tuebingen.uni.sfs.epicpid.impl.Strings;
-import eu.eudat.gef.service.PidService;
 import eu.eudat.gef.interop.impl.B2ShareDatastreamReaderFactory;
+import eu.eudat.gef.service.Services;
 import java.io.File;
 import java.net.URL;
 import java.util.HashSet;
@@ -17,10 +16,11 @@ import static org.junit.Assert.assertTrue;
 public class DatastreamReaderManagerTest {
 
 	String pid = "http://hdl.handle.net/11304/30f24e76-b988-11e3-8cd7-14feb57d12b9";
-	PidService ps;
 
 	public DatastreamReaderManagerTest() {
+		Services.initPidService();
 	}
+
 
 	@org.junit.Test
 	public void testListDatastream() throws Exception {

@@ -20,6 +20,7 @@ public class WebAppConfig implements ServletContextListener {
 	static Document xdoc = null;
 	static XPathFactory xpf = null;
 
+	@Override
 	public void contextInitialized(ServletContextEvent sce) {
 		try {
 			String configFilePath = sce.getServletContext().getRealPath(CONFIG_FILE_LOCATION);
@@ -35,6 +36,10 @@ public class WebAppConfig implements ServletContextListener {
 			log.error("exception while initializing GEF servlet: " + ex.getMessage(), ex);
 			throw new RuntimeException(ex);
 		}
+	}
+
+	@Override
+	public void contextDestroyed(ServletContextEvent sce) {
 	}
 
 	public static String get(String xpath) {
@@ -54,8 +59,5 @@ public class WebAppConfig implements ServletContextListener {
 			log.error("number expected: " + ex.getMessage(), ex);
 			throw ex;
 		}
-	}
-
-	public void contextDestroyed(ServletContextEvent sce) {
 	}
 }

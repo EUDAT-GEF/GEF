@@ -1,7 +1,7 @@
 package eu.eudat.gef.interop.impl;
 
-import eu.eudat.gef.service.PidService;
 import eu.eudat.gef.interop.DatastreamReader;
+import eu.eudat.gef.service.Services;
 import java.net.URL;
 import static org.junit.Assert.*;
 
@@ -11,17 +11,10 @@ import static org.junit.Assert.*;
  */
 public class B2ShareDatastreamReaderFactoryTest {
 
-	// make sure we have access to pid services
-	PidService ps;
+	public B2ShareDatastreamReaderFactoryTest() {
+		Services.initPidService();
+	}
 
-//	{
-//		PidServerConfig pidConfig = new PidServerConfig();
-//		pidConfig.localPrefix = "";
-//		pidConfig.username = "";
-//		pidConfig.password = "";
-//		Services.register(pidConfig);
-//		Services.register(PidServerImpl.class);
-//	}
 	/**
 	 * Test of make method, of class B2ShareDatastreamReaderFactory.
 	 */
