@@ -7,12 +7,13 @@ import java.net.URL;
 import java.util.HashSet;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import org.junit.Ignore;
 
 /**
  *
  * @author edima
  */
-//@Ignore
+@Ignore
 public class DatastreamReaderManagerTest {
 
 	String pid = "http://hdl.handle.net/11304/30f24e76-b988-11e3-8cd7-14feb57d12b9";

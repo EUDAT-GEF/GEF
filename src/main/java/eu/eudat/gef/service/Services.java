@@ -1,7 +1,7 @@
 package eu.eudat.gef.service;
 
 import de.tuebingen.uni.sfs.epicpid.PidServerConfig;
-import de.tuebingen.uni.sfs.epicpid.impl.PidServerImpl;
+import de.tuebingen.uni.sfs.epicpid.mockimpl.PidMockImpl;
 import eu.eudat.gef.irodslink.IrodsAccessConfig;
 import eu.eudat.gef.irodslink.IrodsConnection;
 import eu.eudat.gef.irodslink.impl.jargon.JargonConnection;
@@ -29,7 +29,6 @@ public class Services implements ServletContextListener {
 
 	@Override
 	public void contextDestroyed(ServletContextEvent sce) {
-		throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
 	}
 
 	public static void init() {
@@ -47,7 +46,8 @@ public class Services implements ServletContextListener {
 		pidConfig.username = WebAppConfig.get("/config/pid/user");
 		pidConfig.password = WebAppConfig.get("/config/pid/pass");
 		Services.register(pidConfig);
-		Services.register(PidServerImpl.class);
+		Services.register(PidMockImpl.class);
+//		Services.register(PidServerImpl.class);
 	}
 
 	public static void initIrodsService() {

@@ -3,7 +3,7 @@
 	<realm>GEF</realm>
 	
 	<irods>
-		<server>10.0.2.15</server>
+		<server>127.0.0.1</server>
 		<port>1247</port>
 		<username>rods</username>
 		<password>rodsgef</password>

@@ -25,6 +25,7 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author edima
@@ -32,6 +33,8 @@ import java.util.List;
 @Path("datasets")
 @Produces(MediaType.APPLICATION_JSON)
 public class DataSets {
+	static org.slf4j.Logger log = LoggerFactory.getLogger(DataSets.class);
+
 	public static final String DATA_DIR = "datasets";
 	@Context
 	HttpServletRequest request;
@@ -77,6 +80,7 @@ public class DataSets {
 		}
 
 		File f = File.createTempFile(name, ext);
+		f.delete();
 		Files.copy(inputStream, f.toPath());
 
 		IrodsFile ifile = conn.getObject(collWfl.getFullPath() + "/" + name + ext).asFile();
@@ -95,7 +99,7 @@ public class DataSets {
 			coll.create();
 		}
 
-		List<DatasetJson> list = new ArrayList<DatasetJson>();
+		List<DatasetJson> list = new ArrayList<>();
 		for (IrodsCollection c : coll.listCollections()) {
 			for (IrodsCollection c2 : c.listCollections()) {
 				int size = 0;

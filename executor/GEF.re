@@ -1,8 +1,9 @@
 # GEF rules
 
-### triggered by a rule in server/config/reConfigs/core.re, like this:
+#### triggered by a rule in server/config/reConfigs/core.re, like this:
+#### uses gefcommand binary (the go executor module) from 
 ## acPostProcForPut {
-##        ON($objPath like "\*.gefcommand") {msiExecCmd("gefcommand.py", $objPath, "null", "null", "null", *out);}
+##        ON($objPath like "\*.gefcommand") {msiExecCmd("gefcommand", $objPath, "null", "null", "null", *out);}
 ## }
 
 processGefWorkflowFile(*cmdPath) {

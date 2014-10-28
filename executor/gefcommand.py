@@ -11,6 +11,7 @@ STAGEIN_SUFFIX = "IrodsPath"
 STAGED_SUFFIX = "FilePath"
 WORKFLOW_KEY = "workflowFilePath"
 TAVERNA_EXECUTOR = "/opt/taverna-commandline-2.4.0/executeworkflow.sh"
+TAVERNA_EXECUTOR = "/opt/taverna-commandline-2.4.0/executeworkflow.sh"
 
 stagedir = "."
 stdoutFile = ".out"
@@ -102,6 +103,8 @@ def execute(args):
         del args[WORKFLOW_KEY]
         if value.endswith("t2flow"):
             return runTavernaWorkflow(value, args)
+        if value.endswith("t2flow"):
+            return runTavernaWorkflow(value, args)
         raiseError("unknown workflow type: " + value)
     raiseError("function unspecified, missing workflow argument")
 
@@ -120,7 +123,6 @@ def stageOutFiles(irodsGefCommandFilePath, args):
     stageOut(stdoutFile, irodsTarget)
     sys.stderr.flush();
     stageOut(stderrFile, irodsTarget)
-
 
 def main(argv):
     if len(argv) != 2:
