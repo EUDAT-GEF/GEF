@@ -1,7 +1,8 @@
 package eu.eudat.gef.interop;
 
+import eu.eudat.gef.app.GEFConfig;
 import eu.eudat.gef.interop.impl.B2ShareDatastreamReaderFactory;
-import eu.eudat.gef.service.Services;
+import eu.eudat.gef.app.Services;
 import java.io.File;
 import java.net.URL;
 import java.util.HashSet;
@@ -19,7 +20,8 @@ public class DatastreamReaderManagerTest {
 	String pid = "http://hdl.handle.net/11304/30f24e76-b988-11e3-8cd7-14feb57d12b9";
 
 	public DatastreamReaderManagerTest() {
-		Services.initPidService();
+		GEFConfig.Pid pid = GEFConfig.makePid("", "", "", "");
+		Services.initPidService(pid);
 	}
 
 

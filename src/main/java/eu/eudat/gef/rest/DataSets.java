@@ -6,7 +6,7 @@ import com.sun.jersey.multipart.FormDataBodyPart;
 import com.sun.jersey.multipart.FormDataParam;
 import de.tuebingen.uni.sfs.epicpid.Pid;
 import de.tuebingen.uni.sfs.epicpid.PidServer;
-import eu.eudat.gef.service.Services;
+import eu.eudat.gef.app.Services;
 import eu.eudat.gef.irodslink.IrodsCollection;
 import eu.eudat.gef.irodslink.IrodsConnection;
 import eu.eudat.gef.irodslink.IrodsFile;

@@ -1,7 +1,8 @@
 package eu.eudat.gef.interop.impl;
 
+import eu.eudat.gef.app.GEFConfig;
 import eu.eudat.gef.interop.DatastreamReader;
-import eu.eudat.gef.service.Services;
+import eu.eudat.gef.app.Services;
 import java.net.URL;
 import static org.junit.Assert.*;
 
@@ -12,7 +13,8 @@ import static org.junit.Assert.*;
 public class B2ShareDatastreamReaderFactoryTest {
 
 	public B2ShareDatastreamReaderFactoryTest() {
-		Services.initPidService();
+		GEFConfig.Pid pid = GEFConfig.makePid("", "", "", "");
+		Services.initPidService(pid);
 	}
 
 	/**

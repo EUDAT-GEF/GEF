@@ -13,7 +13,7 @@ Vagrant.configure("2") do |config|
   #   config.vm.network :forwarded_port, guest: i, host: i
   # end
 
-  config.vm.provision :shell, :path => "irods.sh"
+  config.vm.provision :shell, :path => "master.sh"
 
   config.vm.provider :virtualbox do |vb|
     vb.customize ["modifyvm", :id, "--memory", "2048"]

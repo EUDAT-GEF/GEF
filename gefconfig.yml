@@ -1,0 +1,32 @@
+gefParams:
+  irods:
+    server: 127.0.0.1
+    port: 1247
+    username: rods
+    password: rodsgef
+    path: /tempZone/GEF
+    resource: demoResc
+  pid:
+    epicServerUrl: http://pid.gwdg.de/handles/
+    localPrefix: 11022
+    user: 1001-22
+    pass:
+
+# use the simple server factory, run on a single port
+server:
+  applicationContextPath: /gef/
+  type: simple
+  connector:
+    type: http
+    port: 4042
+
+# Logging settings.
+logging:
+  # The default level of all loggers. Can be OFF, ERROR, WARN, INFO, DEBUG, TRACE, or ALL.
+  level: WARN
+  # Logger-specific levels.
+  loggers:
+    eu.eudat.gef: INFO
+
+  appenders:
+    - type: console

@@ -1,11 +1,10 @@
 package eu.eudat.gef.irods;
 
 import com.google.common.base.Charsets;
-import com.google.common.base.Joiner;
 import com.google.common.io.CharStreams;
 import com.google.common.io.Files;
-import eu.eudat.gef.service.ResourceSupplier;
-import eu.eudat.gef.service.Services;
+import com.google.common.io.Resources;
+import eu.eudat.gef.app.Services;
 import eu.eudat.gef.irodslink.IrodsConnection;
 import eu.eudat.gef.irodslink.IrodsException;
 import eu.eudat.gef.irodslink.IrodsFile;
@@ -15,6 +14,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.math.BigInteger;
 import java.net.URI;
+import java.net.URL;
 import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.concurrent.Callable;
@@ -49,8 +49,8 @@ public class IrodsWso implements Callable<String> {
 	}
 
 	public String call() throws Exception {
-		String text = CharStreams.toString(CharStreams.newReaderSupplier(
-				new ResourceSupplier("/wso-template.mpf"), Charsets.UTF_8));
+		URL url = Resources.getResource("/wso-template.mpf");
+		String text = Resources.toString(url, Charsets.UTF_8);
 
 		stageDir = new File("/tmp/wsostage" + randomId());
 

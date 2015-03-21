@@ -1,4 +1,4 @@
-package eu.eudat.gef.service;
+package eu.eudat.gef.app;
 
 import de.tuebingen.uni.sfs.epicpid.PidServerConfig;
 import de.tuebingen.uni.sfs.epicpid.mockimpl.PidMockImpl;
@@ -8,8 +8,6 @@ import eu.eudat.gef.irodslink.impl.jargon.JargonConnection;
 import eu.eudat.gef.rest.DataSets;
 import eu.eudat.gef.rest.Jobs;
 import eu.eudat.gef.rest.Workflows;
-import javax.servlet.ServletContextEvent;
-import javax.servlet.ServletContextListener;
 import org.picocontainer.DefaultPicoContainer;
 import org.picocontainer.MutablePicoContainer;
 import org.slf4j.LoggerFactory;
@@ -17,50 +15,41 @@ import org.slf4j.LoggerFactory;
 /**
  * @author edima
  */
-public class Services implements ServletContextListener {
+public class Services {
 
 	static org.slf4j.Logger log = LoggerFactory.getLogger(Services.class);
 	private static MutablePicoContainer pico = new DefaultPicoContainer();
 
-	@Override
-	public void contextInitialized(ServletContextEvent sce) {
-		init();
+	public static void init(GEFConfig cfg) {
+		initPidService(cfg.gefParams.pid);
+		initIrodsService(cfg.gefParams.irods);
 	}
 
-	@Override
-	public void contextDestroyed(ServletContextEvent sce) {
-	}
-
-	public static void init() {
-		initPidService();
-		initIrodsService();
-	}
-
-	public static void initPidService() {
-		if (get(PidServerConfig.class) != null) {
+	public static void initPidService(GEFConfig.Pid cfg) {
+		if (getSilent(PidServerConfig.class) != null) {
 			return;
 		}
 		PidServerConfig pidConfig = new PidServerConfig();
-		pidConfig.epicServerUrl = WebAppConfig.get("/config/pid/epicServerUrl");
-		pidConfig.localPrefix = WebAppConfig.get("/config/pid/localPrefix");
-		pidConfig.username = WebAppConfig.get("/config/pid/user");
-		pidConfig.password = WebAppConfig.get("/config/pid/pass");
+		pidConfig.epicServerUrl = cfg.epicServerUrl;
+		pidConfig.localPrefix = cfg.localPrefix;
+		pidConfig.username = cfg.user;
+		pidConfig.password = cfg.pass;
 		Services.register(pidConfig);
 		Services.register(PidMockImpl.class);
 //		Services.register(PidServerImpl.class);
 	}
 
-	public static void initIrodsService() {
-		if (get(IrodsAccessConfig.class) != null) {
+	public static void initIrodsService(GEFConfig.Irods cfg) {
+		if (getSilent(IrodsAccessConfig.class) != null) {
 			return;
 		}
 		IrodsAccessConfig irodsConfig = new IrodsAccessConfig();
-		irodsConfig.server = WebAppConfig.get("/config/irods/server");
-		irodsConfig.port = WebAppConfig.getInt("/config/irods/port");
-		irodsConfig.username = WebAppConfig.get("/config/irods/username");
-		irodsConfig.password = WebAppConfig.get("/config/irods/password");
-		irodsConfig.path = WebAppConfig.get("/config/irods/path");
-		irodsConfig.resource = WebAppConfig.get("/config/irods/resource");
+		irodsConfig.server = cfg.server;
+		irodsConfig.port = cfg.port;
+		irodsConfig.username = cfg.username;
+		irodsConfig.password = cfg.password;
+		irodsConfig.path = cfg.path;
+		irodsConfig.resource = cfg.resource;
 
 		Services.register(irodsConfig);
 		Services.register(JargonConnection.class);
@@ -87,5 +76,9 @@ public class Services implements ServletContextListener {
 			log.error("null reference when retrieving object of class: " + klass);
 		}
 		return ret;
+	}
+
+	public static <T> T getSilent(Class<T> klass) {
+		return pico.getComponent(klass);
 	}
 }
