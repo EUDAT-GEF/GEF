@@ -44,7 +44,7 @@ public class DataSets {
 	@POST
 	@Consumes(MediaType.MULTIPART_FORM_DATA)
 	public Response uploadMultiple(@FormDataParam("file") List<FormDataBodyPart> fdbpList) throws Exception {
-		println("upload multiple: " + fdbpList.size());
+		log.info("upload multiple: " + fdbpList.size());
 
 		Pid pid = Services.get(PidServer.class).makePid("", null, null);
 		IrodsConnection conn = Services.get(IrodsConnection.class);
@@ -57,16 +57,18 @@ public class DataSets {
 		for (FormDataBodyPart fdbp : fdbpList) {
 			InputStream is = fdbp.getEntityAs(InputStream.class);
 			FormDataContentDisposition cd = fdbp.getFormDataContentDisposition();
+			log.info("upload: " + cd.getFileName());
 			uploadFile(is, cd, conn, collWfl);
 		}
 
 		String json = new Gson().toJson(collUri);
 		return Response.created(collUri).entity(json).build();
+//		return Response.ok().build();
 	}
 
 	public String uploadFile(InputStream inputStream, FormDataContentDisposition fileDetail,
 			IrodsConnection conn, IrodsCollection collWfl) throws Exception {
-		println("upload: " + fileDetail.getType() + "; " + fileDetail.getName() + "; " + fileDetail.getFileName());
+		log.info("upload: " + fileDetail.getType() + "; " + fileDetail.getName() + "; " + fileDetail.getFileName());
 
 		String name = fileDetail.getFileName();
 		if (name == null || name.isEmpty()) {
@@ -78,7 +80,9 @@ public class DataSets {
 			ext = name.substring(idx);
 			name = name.substring(0, name.length() - ext.length());
 		}
-
+		while (name.length() < 3) {
+			name += "_";
+		}
 		File f = File.createTempFile(name, ext);
 		f.delete();
 		Files.copy(inputStream, f.toPath());

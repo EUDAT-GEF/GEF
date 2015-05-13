@@ -5,6 +5,39 @@ LIBDIR=$ASSETDIR/lib
 FONTDIR=$ASSETDIR/fonts
 JSDIR=$ASSETDIR/js
 
+BUILD_JSX=1
+BUILD_JAR=
+BUILD_GO=
+RUN_JAR=
+
+while [[ $# > 0 ]]
+do
+key="$1"
+# echo $# " :" $key
+case $key in
+    --jsx)
+    BUILD_JSX=1
+    ;;
+    --jar)
+    BUILD_JAR=1
+    ;;
+    --go)
+    BUILD_GO=1
+    ;;
+    --run)
+    RUN_JAR=1
+    ;;
+    --run-production)
+    RUN_JAR_PRODUCTION=1
+    ;;
+    *)
+    echo "Unknown option:" $1
+    exit 1
+    ;;
+esac
+shift
+done
+
 if [ ! -e bower_components ]
 then
 	echo; echo "---- npm & bower"
@@ -29,21 +62,39 @@ then
 	cp bower_components/font-awesome/fonts/* $FONTDIR/
 fi
 
-echo; echo "---- jsx"
-for f in $JSDIR/*.jsx; do 
-	cp -v $f $JSDIR/`basename $f .jsx`.js; 
-done
-node_modules/react-tools/bin/jsx --no-cache-dir $JSDIR $JSDIR
+if [ $BUILD_JSX ]
+then
+	echo; echo "---- jsx"
+	for f in $JSDIR/*.jsx; do
+		cp -v $f $JSDIR/`basename $f .jsx`.js;
+	done
+	node_modules/react-tools/bin/jsx --no-cache-dir $JSDIR $JSDIR
+fi
 
-echo; echo "---- go build"
-go build src/executor/gefcommand.go
+if [ $BUILD_JAR ]
+then
+	echo; echo "---- mvn clean package"
+	mvn -q clean package
+fi
 
-echo; echo "---- mvn clean package"
-mvn -q clean package
+if [ $BUILD_GO ]
+then
+	echo; echo "---- go build"
+	go build src/executor/gefcommand.go
+fi
 
-# Run in production:
-# java -jar target/Aggregator2-2.0.0-beta-x.jar server aggregator.yml
+if [ $RUN_JAR ]
+then
+	echo; echo "---- run devel"
+	JAR=`find target -iname 'GEF-*.jar'`
+	echo java -cp src/main/resources:$JAR eu.eudat.gef.app.GEF server gefconfig.yml
+	java -cp src/main/resources:$JAR eu.eudat.gef.app.GEF server gefconfig.yml
+fi
 
-# Run for development:
-# java -cp src/main/resources:target/Aggregator2-2.0.0-alpha-10.jar eu.clarin.sru.fcs.aggregator.app.Aggregator server aggregator_development.yml
-
+if [ $RUN_JAR_PRODUCTION ]
+then
+	echo; echo "---- run production"
+	JAR=`find target -iname 'GEF-*.jar'`
+	echo java -jar $JAR server gefconfig.yml
+	java -jar $JAR server gefconfig.yml
+fi

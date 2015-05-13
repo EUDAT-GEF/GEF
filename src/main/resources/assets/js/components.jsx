@@ -8,6 +8,9 @@ var ReactTransitionGroup = React.addons.TransitionGroup;
 
 window.MyReact = {};
 
+///////////////////////////////////////////////////////////////////////////////
+// Slides
+
 var JQuerySlide = React.createClass({
 	componentWillEnter: function(callback){
 		var el = jQuery(this.getDOMNode());
@@ -28,7 +31,7 @@ var JQuerySlide = React.createClass({
 	}
 });
 window.MyReact.JQuerySlide = JQuerySlide;
- 
+
 var JQueryFade = React.createClass({
 	componentWillEnter: function(callback){
 		var el = jQuery(this.getDOMNode());
@@ -44,13 +47,16 @@ var JQueryFade = React.createClass({
 });
 window.MyReact.JQueryFade = JQueryFade;
 
+///////////////////////////////////////////////////////////////////////////////
+// Error Pane
+
 window.MyReact.ErrorPane = React.createClass({
 	propTypes: {
 		errorMessages: PT.array.isRequired,
 	},
 
 	renderErrorMessage: function(errorMessage, index) {
-		return errorMessage ? 
+		return errorMessage ?
 			<JQueryFade key={index}>
 				<div key={index} className="errorMessage">{errorMessage}</div>
 			</JQueryFade> :
@@ -67,6 +73,9 @@ window.MyReact.ErrorPane = React.createClass({
 				</div>;
 	}
 });
+
+///////////////////////////////////////////////////////////////////////////////
+// Modal
 
 
 window.MyReact.Modal = React.createClass({
@@ -107,125 +116,101 @@ window.MyReact.Modal = React.createClass({
 	}
 });
 
+///////////////////////////////////////////////////////////////////////////////
+// Files
 
-var PopoverMixin = window.MyReact.PopoverMixin = {
-	getDefaultProps: function(){
-		return {hasPopover: true};
-	},
- 
-	componentDidMount: function() {
-		this.refresh();
-	},
-	componentDidUpdate: function() {
-		this.refresh();
-	},
-
-	refresh: function() {
-		$(this.getDOMNode()).popover('destroy');
-
-		var content;
-		if (Array.isArray(this.props.children))
-			content = this.props.children.map(React.renderToString).join(" ");
-		else 
-			content = React.renderToString(this.props.children);
-		// console.log("children: ", this.props.children);
-		// console.log("content: ", content);
-		$(this.getDOMNode()).popover({
-			content: content,
-			animation: this.props.animation,
-			placement: this.props.placement,
-			title: this.props.title,
-			trigger: 'click',
-			html: true,
-		});
-	},
-
-	componentWillUnmount: function() {
-		$(this.getDOMNode()).popover('destroy');
-	},	
-};
-
-window.MyReact.Popover = React.createClass({
+window.MyReact.Files = React.createClass({
 	propTypes: {
-		placement: PT.string,
-		title: PT.string,
-		triggerButtonClass: PT.string,
-		triggerButtonContent: PT.element.isRequired
-	},
-	mixins: [PopoverMixin],
-
-	handleClick: function(e) {
-		e.stopPropagation();
-	},
-
-	render: function() {
-		return	<button className={this.props.triggerButtonClass} onClick={this.handleClick}>
-					{this.props.triggerButtonContent}
-				</button>;
-	}
-});
-
-window.MyReact.InfoPopover = React.createClass({
-	propTypes: {
-		title: PT.string.isRequired,
-	},
-	mixins: [PopoverMixin],
-
-	handleClick: function(e) {
-		e.stopPropagation();
-	},
-
-	render: function() {
-		var inline = {display:"inline-block"};
-		return	<button style={inline} className="btn btn-default btn-xs" onClick={this.handleClick}>
-					<span className="glyphicon glyphicon-info-sign"/>
-				</button>;
-	}
-});
-
-
-window.MyReact.Panel = React.createClass({
-	propTypes: {
-		title:PT.object.isRequired,
-		info:PT.object.isRequired,
+		apiURL: PT.string.isRequired,
 	},
 
 	getInitialState: function() {
 		return {
-			open: true,
-		};
+			uploading: false,
+			progress: 0,
+			files: [],
+		}
 	},
 
-	toggleState: function(e) {
-		this.setState({open: !this.state.open});
+	handleBrowse: function(event) {
+		this.refs.fileinput.getDOMNode().click();
+	},
+
+	handleAdd: function(event) {
+		var files = this.state.files;
+		var fs = event.target.files;
+		for (var i = 0, length = fs.length; i < length; ++i) {
+			files.push(fs[i]);
+			console.log("added", fs[i]);
+		}
+		this.setState({files:files});
+
+	},
+
+	handleSubmit: function(e) {
+		e.preventDefault();
+
+		var fs = this.state.files;
+		if (!fs || !fs.length) {
+			return;
+		}
+
+		var fd = new FormData();
+		for (var i = 0, length = fs.length; i < length; ++i) {
+			fd.append("file", fs[i]);
+		}
+		var xhr = new XMLHttpRequest();
+		xhr.upload.addEventListener("progress", this.uploadProgress, false);
+		xhr.addEventListener("load", this.uploadComplete, false);
+		xhr.addEventListener("error", this.uploadFailed, false);
+		xhr.addEventListener("abort", this.uploadCanceled, false);
+		this.setState({uploading:true});
+		xhr.open("POST", this.props.apiURL);
+		xhr.send(fd);
+	},
+
+	uploadProgress: function(){},
+	uploadComplete: function(){},
+	uploadFailed: function(){},
+	uploadCanceled: function(){},
+
+	renderFile: function(f){
+		return (
+			<div key={f.name} style={{margin:"5px 0"}}>
+				<input type="text" className="input-large" readOnly="readonly"
+					 style={{width:'100%'}} value={f.name}/>
+			</div>
+		);
 	},
 
 	render: function() {
-		var chevron = "glyphicon glyphicon-chevron-" + (this.state.open ? "down":"right");
-		var chevronStyle = {fontSize:12};
-		var right = {float:"right"};
-		return 	<div className="bs-callout bs-callout-info"> 
-					<div className="panel">
-						<div className="panel-heading unselectable row" onClick={this.toggleState}>
-							<div className="panel-title unselectable col-sm-11">
-								<span className={chevron} style={chevronStyle} />&nbsp;
-								{this.props.title}
-							</div>
-							<div style={right}>
-								{this.props.info}
-							</div>
-						</div>
-						{ this.state.open ? 
-							<div className="panel-body">{this.props.children}</div> : 
-							false}
+		var display = this.state.uploading ? 'block' : 'none';
+		return (
+			<div style={{width:300}}>
+				<form className="form-horizontal" style={{margin:0}}
+						encType="multipart/form-data" onSubmit={this.handleSubmit}>
+					<div>
+						<input ref='fileinput' name="file" type="file" multiple onChange={this.handleAdd}
+							style={{width:0, height:0, margin:0}} />
+						<button type="button" className="btn" onClick={this.handleBrowse}>
+							<i className="glyphicon glyphicon-folder-open"/> Browse
+						</button>
 					</div>
-				</div>;
-	}
-});
-
-window.MyReact.PanelGroup = React.createClass({
-	render: function() {
-		return	<div className="panel-group"> {this.props.children} </div>;
+					{ this.state.files.map(this.renderFile) }
+					{ this.state.files.length ?
+					<div style={{width:'100%'}}>
+						<div style={{width:'50%', float:'left', display: display}}>
+							<div className="bar" style={{width: this.state.progress+'%'}} />
+							<div className="percent">{this.state.progress}%</div>
+						</div>
+						<button type="submit" className="btn btn-primary" style={{width:'50%', float:'right'}}>
+							<i className="glyphicon glyphicon-upload"/> Upload
+						</button>
+					</div> : false
+					}
+				</form>
+			</div>
+		);
 	},
 });
 

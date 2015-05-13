@@ -14,11 +14,6 @@ import org.slf4j.LoggerFactory;
 /**
  * @author edima
  *
- * TODO: UI: good basic UI for execution and inspection of results
- *
- * TODO: PID dataset inspection: visualization, deep inspection of a data set as
- * a special case of execution via GEF
- *
  */
 public class GEF extends Application<GEFConfig> {
 
@@ -37,7 +32,7 @@ public class GEF extends Application<GEFConfig> {
 
 	@Override
 	public void initialize(Bootstrap<GEFConfig> bootstrap) {
-		bootstrap.addBundle(new AssetsBundle("/assets", "/", "index.html"));
+		bootstrap.addBundle(new AssetsBundle("/assets", "/", "index.html", "static"));
 	}
 
 	@Override
@@ -53,7 +48,10 @@ public class GEF extends Application<GEFConfig> {
 		}
 
 		try {
-			environment.jersey().setUrlPattern("/rest/*");
+//			environment.getApplicationContext().setSessionHandler(new SessionHandler());
+			environment.getApplicationContext().setErrorHandler(new ErrorHandler());
+
+			environment.jersey().setUrlPattern("/api/*");
 			environment.jersey().register(DataSets.class);
 			environment.jersey().register(Jobs.class);
 			environment.jersey().register(Workflows.class);

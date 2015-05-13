@@ -9,12 +9,12 @@ gefParams:
   pid:
     epicServerUrl: http://pid.gwdg.de/handles/
     localPrefix: 11022
-    user: 1001-22
+    user: 10+22
     pass:
 
 # use the simple server factory, run on a single port
 server:
-  applicationContextPath: /gef/
+  applicationContextPath: /gef
   type: simple
   connector:
     type: http

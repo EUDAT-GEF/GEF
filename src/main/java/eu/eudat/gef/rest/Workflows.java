@@ -11,7 +11,6 @@ import eu.eudat.gef.app.Services;
 import eu.eudat.gef.irodslink.IrodsCollection;
 import eu.eudat.gef.irodslink.IrodsConnection;
 import eu.eudat.gef.irodslink.IrodsFile;
-import eu.eudat.gef.rest.json.DatasetJson;
 import eu.eudat.gef.rest.json.WorkflowJson;
 
 import javax.servlet.http.HttpServletRequest;

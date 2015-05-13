@@ -3,6 +3,7 @@ package eu.eudat.gef.app;
 import de.tuebingen.uni.sfs.epicpid.PidServerConfig;
 import de.tuebingen.uni.sfs.epicpid.mockimpl.PidMockImpl;
 import eu.eudat.gef.irodslink.IrodsAccessConfig;
+import eu.eudat.gef.irodslink.IrodsCollection;
 import eu.eudat.gef.irodslink.IrodsConnection;
 import eu.eudat.gef.irodslink.impl.jargon.JargonConnection;
 import eu.eudat.gef.rest.DataSets;
@@ -56,10 +57,22 @@ public class Services {
 
 		try {
 			IrodsConnection ic = Services.get(IrodsConnection.class);
-			ic.getObject(ic.getInitialPath()).asCollection().create();
-			ic.getObject(ic.getInitialPath() + "/" + DataSets.DATA_DIR).asCollection().create();
-			ic.getObject(ic.getInitialPath() + "/" + Workflows.WORKFLOW_DIR).asCollection().create();
-			ic.getObject(ic.getInitialPath() + "/" + Jobs.JOBS_DIR).asCollection().create();
+			IrodsCollection coll = ic.getObject(ic.getInitialPath()).asCollection();
+			if (!coll.exists()) {
+				coll.create();
+			}
+			IrodsCollection ds = ic.getObject(ic.getInitialPath() + "/" + DataSets.DATA_DIR).asCollection();
+			if (!ds.exists()) {
+				ds.create();
+			}
+			IrodsCollection wf = ic.getObject(ic.getInitialPath() + "/" + Workflows.WORKFLOW_DIR).asCollection();
+			if (!wf.exists()) {
+				wf.create();
+			}
+			IrodsCollection jb = ic.getObject(ic.getInitialPath() + "/" + Jobs.JOBS_DIR).asCollection();
+			if (!jb.exists()) {
+				jb.create();
+			}
 		} catch (Exception xc) {
 			log.error(xc.getMessage(), xc);
 			// ignore this one
