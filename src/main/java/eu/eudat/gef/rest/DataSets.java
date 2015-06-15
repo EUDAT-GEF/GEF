@@ -10,8 +10,6 @@ import eu.eudat.gef.app.Services;
 import eu.eudat.gef.irodslink.IrodsCollection;
 import eu.eudat.gef.irodslink.IrodsConnection;
 import eu.eudat.gef.irodslink.IrodsFile;
-import eu.eudat.gef.rest.json.DatasetJson;
-
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.*;
@@ -24,7 +22,9 @@ import java.net.URI;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import org.slf4j.LoggerFactory;
 
 /**
@@ -33,9 +33,11 @@ import org.slf4j.LoggerFactory;
 @Path("datasets")
 @Produces(MediaType.APPLICATION_JSON)
 public class DataSets {
+
 	static org.slf4j.Logger log = LoggerFactory.getLogger(DataSets.class);
 
 	public static final String DATA_DIR = "datasets";
+
 	@Context
 	HttpServletRequest request;
 	@Context
@@ -57,17 +59,15 @@ public class DataSets {
 		for (FormDataBodyPart fdbp : fdbpList) {
 			InputStream is = fdbp.getEntityAs(InputStream.class);
 			FormDataContentDisposition cd = fdbp.getFormDataContentDisposition();
-			log.info("upload: " + cd.getFileName());
 			uploadFile(is, cd, conn, collWfl);
 		}
 
 		String json = new Gson().toJson(collUri);
 		return Response.created(collUri).entity(json).build();
-//		return Response.ok().build();
 	}
 
 	public String uploadFile(InputStream inputStream, FormDataContentDisposition fileDetail,
-			IrodsConnection conn, IrodsCollection collWfl) throws Exception {
+			IrodsConnection conn, IrodsCollection coll) throws Exception {
 		log.info("upload: " + fileDetail.getType() + "; " + fileDetail.getName() + "; " + fileDetail.getFileName());
 
 		String name = fileDetail.getFileName();
@@ -87,11 +87,25 @@ public class DataSets {
 		f.delete();
 		Files.copy(inputStream, f.toPath());
 
-		IrodsFile ifile = conn.getObject(collWfl.getFullPath() + "/" + name + ext).asFile();
-		System.out.println("upload from " + f.getPath() + " to " + ifile.getFullPath());
+		IrodsFile ifile = conn.getObject(coll.getFullPath() + "/" + name + ext).asFile();
+		log.info("upload from " + f.getPath() + " to " + ifile.getFullPath());
 		ifile.uploadFromLocalFile(f);
 		f.delete();
-		return collWfl + "/" + ifile.getName();
+		return coll + "/" + ifile.getName();
+	}
+
+	public static class DatasetJson {
+
+		public DatasetJson(String id, String name, int size, long date) {
+			this.id = id;
+			this.name = name;
+			this.size = size;
+			this.date = date;
+		}
+		public String id;
+		public String name;
+		public long date;
+		public int size;
 	}
 
 	@GET
@@ -113,11 +127,14 @@ public class DataSets {
 				}
 				String id = c.getName() + "/" + c2.getName();
 				String name = files.isEmpty() ? "" : files.iterator().next().getName();
-				list.add(new DatasetJson(id, name, size, c2.getDate()));
+				list.add(new DatasetJson(id, name, size, c2.getDate().getTime()));
 			}
 		}
 
-		String json = new Gson().toJson(list);
+		Map<String, Object> map = new HashMap<String, Object>();
+		map.put("datasets", list);
+		String json = new Gson().toJson(map);
+
 		return Response.ok().entity(json).build();
 	}
 

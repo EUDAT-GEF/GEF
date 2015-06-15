@@ -25,18 +25,21 @@ import org.jsoup.select.Elements;
 public class B2ShareDatastreamReaderFactory implements DatastreamReaderFactory {
 
 	public static final String SELECTOR_FOR_FILES = "#files #collapseTwo table tbody td a";
+	public static final String B2SHARE_URL_ROOT = "https://b2share.eudat.eu";
 	public static final int TIMEOUT = 10 * 1000;
 
 	Map<String, URL> fileMap = new HashMap<String, URL>();
 
 	public DatastreamReader make(URL pidUrl) throws IOException {
+		URL b2shareRoot = new URL(B2SHARE_URL_ROOT);
+
 		Document doc = Jsoup.connect(pidUrl.toExternalForm())
 				.timeout(TIMEOUT).get();
 		Elements files = doc.select(SELECTOR_FOR_FILES);
 		for (Element e : files) {
 			try {
 				String href = e.attr("href");
-				URL u = new URL(href);
+				URL u = new URL(b2shareRoot, href);
 				String[] segments = u.getPath().split("/");
 				if (segments.length == 0) {
 					continue;
@@ -44,6 +47,7 @@ public class B2ShareDatastreamReaderFactory implements DatastreamReaderFactory {
 				String name = segments[segments.length - 1];
 				fileMap.put(name, u);
 			} catch (MalformedURLException xc) {
+				xc.printStackTrace();
 				// if it's not a valid URL, no good
 			}
 		}

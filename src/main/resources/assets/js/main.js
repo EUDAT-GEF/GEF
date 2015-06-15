@@ -2,18 +2,24 @@
 (function() {
 "use strict";
 
-var VERSION = "0.3-beta-5";
+var VERSION = "0.3.6";
 var PT = React.PropTypes;
 var ErrorPane = window.MyReact.ErrorPane;
 var Files = window.MyReact.Files;
 
 window.MyGEF = window.MyGEF || {};
 
+function setState(state) {
+	if (this && this != window) {
+		console.log(this, state);
+		this.setState(state);
+	}
+}
+
 var Main = React.createClass({displayName: "Main",
 	getInitialState: function () {
 		return {
-			navbarCollapse: false,
-			navbarPageFn: this.renderMain,
+			page: this.datasets,
 			errorMessages: [],
 		};
 	},
@@ -59,44 +65,29 @@ var Main = React.createClass({displayName: "Main",
 		jQuery.ajax(ajaxObject);
 	},
 
-	toggleCollapse: function() {
-		this.setState({navbarCollapse: !this.state.navbarCollapse});
-	},
-
-	setNavbarPageFn: function(pageFn) {
-		this.setState({navbarPageFn:pageFn});
-	},
-
-	renderCollapsible: function() {
-		var classname = "navbar-collapse collapse " + (this.state.navbarCollapse?"in":"");
+	datasets: function() {
 		return (
-			React.createElement("div", {className: classname}, 
-				React.createElement("ul", {className: "nav navbar-nav"}, 
-					React.createElement("li", {className: this.state.navbarPageFn === this.renderMain ? "active":""}, 
-						React.createElement("a", {className: "link", tabIndex: "-1", 
-							onClick: this.setNavbarPageFn.bind(this, this.renderMain)}, "Main")
-					)
-				), 
-				React.createElement("ul", {className: "nav navbar-nav navbar-right"}, 
-					React.createElement("li", null, 
-						React.createElement("a", {href: "login", tabIndex: "-1"}, 
-							React.createElement("span", {className: "glyphicon glyphicon-user"})
-						)
-					)
-				)
-			)
+			React.createElement(Datasets, {error: this.error, ajax: this.ajax})
 		);
 	},
 
-	renderMain: function() {
-		var progress=0;
+	workflows: function() {
 		return (
-			React.createElement("div", null, 
-				React.createElement("div", {className: "row"}, 
-					React.createElement("h3", null, "Add new dataset"), 
-					React.createElement("p", null, "Please select and upload all the files in your dataset"), 
-					React.createElement(Files, {apiURL: "api/datasets", error: this.error})
-				)
+			React.createElement(Workflows, {error: this.error, ajax: this.ajax})
+		);
+	},
+
+	jobs: function() {
+		return (
+			React.createElement(Jobs, {error: this.error, ajax: this.ajax})
+		);
+	},
+
+	renderToolListItem: function(pageFn, title) {
+		var klass = "list-group-item " + (pageFn === this.state.page ? "active":"");
+		return (
+			React.createElement("a", {href: "#", className: klass, onClick: setState.bind(this, {page:pageFn})}, 
+				title
 			)
 		);
 	},
@@ -104,33 +95,145 @@ var Main = React.createClass({displayName: "Main",
 	render: function() {
 		return	(
 			React.createElement("div", null, 
-				React.createElement("div", {className: "navbar navbar-default navbar-static-top", role: "navigation"}, 
-					React.createElement("div", {className: "container"}, 
-						React.createElement("div", {className: "navbar-header"}, 
-							React.createElement("button", {type: "button", className: "navbar-toggle", onClick: this.toggleCollapse}, 
-								React.createElement("span", {className: "sr-only"}, "Toggle navigation"), 
-								React.createElement("span", {className: "icon-bar"}), 
-								React.createElement("span", {className: "icon-bar"}), 
-								React.createElement("span", {className: "icon-bar"})
-							), 
-							React.createElement("a", {className: "navbar-brand", href: "#", tabIndex: "-1"}, React.createElement("header", null, "GEF"))
-						), 
-						this.renderCollapsible()
-					)
-				), 
-
 				React.createElement(ErrorPane, {errorMessages: this.state.errorMessages}), 
-
-				React.createElement("div", {id: "push"}, 
-					React.createElement("div", {className: "container"}, 
-						this.state.navbarPageFn()
-					), 
-					React.createElement("div", {className: "top-gap"})
+				React.createElement("div", {className: "container"}, 
+					React.createElement("div", {className: "row"}, 
+						React.createElement("div", {className: "col-xs-12 col-sm-2 col-md-2"}, 
+							React.createElement("div", {className: "list-group"}, 
+								this.renderToolListItem(this.datasets, "Datasets"), 
+								this.renderToolListItem(this.workflows, "Workflows"), 
+								this.renderToolListItem(this.jobs, "Jobs")
+							)
+						), 
+						React.createElement("div", {className: "col-xs-12 col-sm-10 col-md-10"}, 
+							 this.state.page ? this.state.page() : false
+						)
+					)
 				)
 			)
 		);
 	}
 });
+
+var Datasets = React.createClass({displayName: "Datasets",
+	props: {
+		error: PT.func.isRequired,
+		ajax: PT.func.isRequired,
+	},
+
+	getInitialState: function() {
+		return {
+			addNewPaneOpen: false,
+			datasets: [],
+		};
+	},
+
+	componentDidMount: function() {
+		this.props.ajax({
+			url: 'api/datasets',
+			success: function(json, textStatus, jqXHR) {
+				if (!this.isMounted()) {
+					return;
+				}
+				if (!json.datasets) {
+					this.props.error("Didn't get json datasets from server");
+					return;
+				}
+				this.setState({datasets: json.datasets});
+			}.bind(this),
+		});
+	},
+
+	renderAddNew: function() {
+		return (
+			React.createElement("div", {className: "well"}, 
+				React.createElement("h4", null, " Add new dataset "), 
+				React.createElement("p", null, "Please select and upload all the files in your dataset"), 
+				React.createElement(Files, {apiURL: "api/datasets", error: this.props.error, 
+					cancel: setState.bind(this, {addNewPaneOpen:false})})
+			)
+		);
+	},
+
+	humanSize: function(sz) {
+		if (sz < 1024) {
+			return [sz,"B"];
+		} else if (sz < 1024 * 1024) {
+			return [(sz/1024).toFixed(1), "KiB"];
+		} else if (sz < 1024 * 1024 * 1024) {
+			return [(sz/(1024*1024)).toFixed(1), "MiB"];
+		} else if (sz < 1024 * 1024 * 1024 * 1024) {
+			return [(sz/(1024*1024*1024)).toFixed(1), "GiB"];
+		} else {
+			return [(sz/(1024*1024*1024*1024)).toFixed(1), "TiB"];
+		}
+	},
+
+	renderDataset: function(dataset) {
+		var sz = this.humanSize(dataset.size);
+		return (
+			React.createElement("tr", {key: dataset.id}, 
+				React.createElement("td", null, dataset.id), 
+				React.createElement("td", null, dataset.name), 
+				React.createElement("td", {style: {textAlign:'right'}}, sz[0]), 
+				React.createElement("td", {style: {textAlign:'left'}}, sz[1]), 
+				React.createElement("td", {style: {textAlign:'right'}}, new Date(dataset.date).toLocaleString())
+			)
+		);
+	},
+
+	render: function() {
+		return (
+			React.createElement("div", {className: "dataset-page"}, 
+				React.createElement("h3", null, " Datasets "), 
+				 this.state.addNewPaneOpen ?
+					this.renderAddNew() :
+					React.createElement("div", {className: "row"}, 
+						React.createElement("div", {className: "col-md-2 col-md-offset-10"}, 
+							React.createElement("button", {type: "button", className: "btn btn-default", 
+								onClick: setState.bind(this, {addNewPaneOpen:true})}, " Add new dataset ")
+						)
+					), 
+				
+				React.createElement("table", {className: "table table-condensed table-hover"}, 
+					React.createElement("thead", null, 
+						React.createElement("tr", null, 
+							React.createElement("th", null, "Id"), 
+							React.createElement("th", null, "Name"), 
+							React.createElement("th", {style: {textAlign:'right'}}, "Size"), 
+							React.createElement("th", {style: {textAlign:'left'}}), 
+							React.createElement("th", {style: {textAlign:'right'}}, "Date")
+						)
+					), 
+					React.createElement("tbody", null, 
+						 this.state.datasets.map(this.renderDataset) 
+					)
+				)
+			)
+		);
+	}
+});
+
+var Workflows = React.createClass({displayName: "Workflows",
+	render: function() {
+		return (
+			React.createElement("div", null, 
+				React.createElement("h3", null, " Workflows ")
+			)
+		);
+	},
+});
+
+var Jobs = React.createClass({displayName: "Jobs",
+	render: function() {
+		return (
+			React.createElement("div", null, 
+				React.createElement("h3", null, " Jobs ")
+			)
+		);
+	},
+});
+
 
 var Footer = React.createClass({displayName: "Footer",
 	about: function(e) {
@@ -141,12 +244,23 @@ var Footer = React.createClass({displayName: "Footer",
 
 	render: function() {
 		return	(
-			React.createElement("div", {className: "container", style: {borderTop:"1px solid #ddd", paddingTop:5}}, 
+			React.createElement("div", {className: "container"}, 
 				React.createElement("div", {className: "row"}, 
-					React.createElement("div", {className: "col-md-2 col-md-offset-10"}, 
-						React.createElement("a", {title: "about", href: "#", onClick: this.about}, 
-							React.createElement("span", {className: "glyphicon glyphicon-info-sign"}), 
-							React.createElement("span", null, " v.", VERSION)
+					React.createElement("div", {className: "col-xs-12 col-sm-6 col-md-6"}, 
+						React.createElement("p", null, " ", React.createElement("img", {width: "45", height: "31", src: "images/flag-ce.jpg", style: {float:'left', marginRight:10}}), 
+							"EUDAT receives funding from the European Union’s Horizon 2020 research" + ' ' +
+							"and innovation programme under grant agreement No. 654065. ", 
+							React.createElement("a", {href: "#"}, "Legal Notice"), "."
+						)
+					), 
+					React.createElement("div", {className: "col-xs-12 col-sm-6 col-md-6 text-right"}, 
+						React.createElement("ul", {className: "list-inline pull-right", style: {marginLeft:20}}, 
+							React.createElement("li", null, React.createElement("span", {style: {color:'#173b93', fontWeight:'500'}}, " GEF v.", VERSION))
+						), 
+						React.createElement("ul", {className: "list-inline pull-right"}, 
+							React.createElement("li", null, React.createElement("a", {target: "_blank", href: "http://eudat.eu/what-eudat"}, "About EUDAT")), 
+							React.createElement("li", null, React.createElement("a", {href: "https://github.com/GEFx"}, "Go to GitHub")), 
+							React.createElement("li", null, React.createElement("a", {href: "mailto:emanuel.dima@uni-tuebingen.de"}, "Contact"))
 						)
 					)
 				)
@@ -155,8 +269,7 @@ var Footer = React.createClass({displayName: "Footer",
 	}
 });
 
-var main = React.render(React.createElement(Main, null),  document.getElementById('body'));
-React.render(React.createElement(Footer, null), document.getElementById('footer') );
-window.MyGEF.main = main;
+window.MyGEF.main = React.render(React.createElement(Main, null),  document.getElementById('page'));
+window.MyGEF.footer = React.render(React.createElement(Footer, null), document.getElementById('footer') );
 
 })();

@@ -121,13 +121,15 @@ window.MyReact.Modal = React.createClass({displayName: "Modal",
 
 window.MyReact.Files = React.createClass({displayName: "Files",
 	propTypes: {
+		error: PT.func.isRequired,
+		cancel: PT.func.isRequired,
 		apiURL: PT.string.isRequired,
 	},
 
 	getInitialState: function() {
 		return {
-			uploading: false,
-			progress: 0,
+
+			uploadPercent: -1, // -1 (not started), 0-100, 101 (done)
 			files: [],
 		}
 	},
@@ -137,14 +139,14 @@ window.MyReact.Files = React.createClass({displayName: "Files",
 	},
 
 	handleAdd: function(event) {
+		console.log("adding", event.target.files);
 		var files = this.state.files;
 		var fs = event.target.files;
 		for (var i = 0, length = fs.length; i < length; ++i) {
 			files.push(fs[i]);
-			console.log("added", fs[i]);
+			// console.log("added", fs[i]);
 		}
 		this.setState({files:files});
-
 	},
 
 	handleSubmit: function(e) {
@@ -164,50 +166,118 @@ window.MyReact.Files = React.createClass({displayName: "Files",
 		xhr.addEventListener("load", this.uploadComplete, false);
 		xhr.addEventListener("error", this.uploadFailed, false);
 		xhr.addEventListener("abort", this.uploadCanceled, false);
-		this.setState({uploading:true});
+		this.setState({uploadPercent:0});
 		xhr.open("POST", this.props.apiURL);
 		xhr.send(fd);
 	},
 
-	uploadProgress: function(){},
-	uploadComplete: function(){},
-	uploadFailed: function(){},
-	uploadCanceled: function(){},
+	handleRemove: function(f) {
+		var files = this.state.files.filter(function(x){return x !== f;});
+		this.setState({files:files});
+	},
+
+	uploadProgress: function(e){
+		console.log('progress', e);
+		this.setState({uploadPercent:0});
+	},
+	uploadComplete: function(e){
+		console.log('complete', e);
+		this.setState({uploadPercent:101});
+	},
+	uploadFailed: function(e){
+		console.log('failed', e);
+		this.setState({uploadPercent:-1});
+	},
+	uploadCanceled: function(e){
+		console.log('canceled', e);
+		this.setState({uploadPercent:-1});
+	},
+
+	renderTopRow: function() {
+		return (
+			React.createElement("div", {className: "row", style: {margin:'5px 0px'}}, 
+				React.createElement("div", {className: "col-md-3"}, 
+					React.createElement("input", {ref: "fileinput", name: "file", type: "file", multiple: true, onChange: this.handleAdd, 
+						style: {width:0, height:0, margin:0, border:'none'}}), 
+					React.createElement("button", {type: "button", className: "btn btn-default", onClick: this.handleBrowse, 
+						style: {width:'100%'}}, 
+							"Browse"
+					)
+				), 
+				 this.state.files.length ? false :
+					React.createElement("div", {className: "col-md-3"}, 
+						React.createElement("button", {type: "button", className: "btn btn-default", onClick: this.props.cancel, 
+							style: {width:'100%'}}, 
+								"Close"
+						)
+					)
+			)
+		);
+	},
 
 	renderFile: function(f){
 		return (
-			React.createElement("div", {key: f.name, style: {margin:"5px 0"}}, 
-				React.createElement("input", {type: "text", className: "input-large", readOnly: "readonly", 
-					 style: {width:'100%'}, value: f.name})
+			React.createElement("div", {key: f.name, className: "row", style: {margin:'5px 0px'}}, 
+				React.createElement("div", {className: "col-md-12"}, 
+					React.createElement("div", {className: "input-group"}, 
+						React.createElement("input", {type: "text", className: "input-large", readOnly: "readonly", 
+						 	style: {width:'100%', lineHeight:'26px', paddingLeft:10}, value: f.name}), 
+						React.createElement("span", {className: "input-group-btn"}, 
+							React.createElement("button", {type: "button", className: "btn btn-warning btn-sm", onClick: this.handleRemove.bind(this, f)}, 
+								React.createElement("i", {className: "glyphicon glyphicon-remove"})
+							)
+						)
+					)
+				)
+			)
+		);
+	},
+
+	renderProgress: function() {
+		if (this.state.uploadPercent < 0) {
+			return false;
+		}
+		return (
+			React.createElement("div", {className: "row", style: {margin:'5px 0px'}}, 
+				React.createElement("div", {className: "col-md-3 col-md-offset-9"}, 
+					React.createElement("div", {style: {width:'50%', float:'left'}}, 
+						React.createElement("div", {className: "bar", style: {width: this.state.progress+'%'}}), 
+						React.createElement("div", {className: "percent"}, this.state.progress, "%")
+					)
+				)
+			)
+		);
+	},
+
+	renderBottomRow: function() {
+		if (!this.state.files.length) {
+			return false;
+		}
+		return (
+			React.createElement("div", {className: "row", style: {margin:'5px 0px'}}, 
+				React.createElement("div", {className: "col-md-3 col-md-offset-6"}, 
+					React.createElement("button", {className: "btn btn-default", style: {width:'100%'}, onClick: this.props.cancel}, 
+						"Cancel"
+					)
+				), 
+				React.createElement("div", {className: "col-md-3"}, 
+					React.createElement("button", {type: "submit", className: "btn btn-primary", style: {width:'100%'}}, 
+						React.createElement("i", {className: "glyphicon glyphicon-upload"}), " Upload"
+					)
+				)
 			)
 		);
 	},
 
 	render: function() {
-		var display = this.state.uploading ? 'block' : 'none';
 		return (
-			React.createElement("div", {style: {width:300}}, 
+			React.createElement("div", {className: "file-upload-form"}, 
 				React.createElement("form", {className: "form-horizontal", style: {margin:0}, 
 						encType: "multipart/form-data", onSubmit: this.handleSubmit}, 
-					React.createElement("div", null, 
-						React.createElement("input", {ref: "fileinput", name: "file", type: "file", multiple: true, onChange: this.handleAdd, 
-							style: {width:0, height:0, margin:0}}), 
-						React.createElement("button", {type: "button", className: "btn", onClick: this.handleBrowse}, 
-							React.createElement("i", {className: "glyphicon glyphicon-folder-open"}), " Browse"
-						)
-					), 
-					 this.state.files.map(this.renderFile), 
-					 this.state.files.length ?
-					React.createElement("div", {style: {width:'100%'}}, 
-						React.createElement("div", {style: {width:'50%', float:'left', display: display}}, 
-							React.createElement("div", {className: "bar", style: {width: this.state.progress+'%'}}), 
-							React.createElement("div", {className: "percent"}, this.state.progress, "%")
-						), 
-						React.createElement("button", {type: "submit", className: "btn btn-primary", style: {width:'50%', float:'right'}}, 
-							React.createElement("i", {className: "glyphicon glyphicon-upload"}), " Upload"
-						)
-					) : false
-					
+					 this.renderTopRow(), 
+					 this.state.files.length ? this.state.files.map(this.renderFile) : false, 
+					 this.state.files.length ? this.renderProgress() : false, 
+					 this.state.files.length ? this.renderBottomRow() : false
 				)
 			)
 		);

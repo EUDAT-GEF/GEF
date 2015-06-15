@@ -9,13 +9,13 @@ import java.util.List;
  *
  * @author edima
  */
-public class DatastreamReaderManager {
+public class DatastreamReaderBuilder {
 	List<DatastreamReaderFactory > l = new ArrayList<DatastreamReaderFactory>();
-	
+
 	public void registerDatastreamReaderFactory(DatastreamReaderFactory f) {
 		l.add(f);
 	}
-	
+
 	public DatastreamReader getDatastreamReader(URL pid) throws IOException {
 		for (DatastreamReaderFactory f :l)
 			try {

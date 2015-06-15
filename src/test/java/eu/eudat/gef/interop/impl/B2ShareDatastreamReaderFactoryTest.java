@@ -29,7 +29,7 @@ public class B2ShareDatastreamReaderFactoryTest {
 		URL pidURL = new URL(pid);
 
 		DatastreamReader dr = new B2ShareDatastreamReaderFactory().make(pidURL);
-		assert (dr.listDatastreams().size() > 0);
+		assert (dr.listDatastreams().size() == 1);
 		String first = dr.listDatastreams().iterator().next();
 		assertEquals(first, "dfe036b2-8294-11e3-9c41-005056943408.zip");
 	}

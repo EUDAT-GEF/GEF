@@ -16,13 +16,21 @@ public class ErrorHandler extends org.eclipse.jetty.server.handler.ErrorHandler 
 
 	private static final org.slf4j.Logger log = LoggerFactory.getLogger(ErrorHandler.class);
 
+	public static final String[] staticPrefixes = new String[]{"/api/", "/css/", "/fonts/", "/images/", "/lib/", "/js/"};
 	public static final String redirectRoute = "/index.html";
-
 
 	@Override
 	public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException {
 		// On 404 page we need to show index.html and let JS router do the work, otherwise show error page
 		if (response.getStatus() == HttpServletResponse.SC_NOT_FOUND) {
+			String path = request.getPathInfo();
+			for (String prefix : staticPrefixes) {
+				if (path.startsWith(prefix)) {
+					super.handle(target, baseRequest, request, response);
+					return;
+				}
+			}
+			log.info("redirecting request from " + request.getPathInfo() + " to /");
 			forward(redirectRoute, baseRequest, response);
 		} else {
 			super.handle(target, baseRequest, request, response);

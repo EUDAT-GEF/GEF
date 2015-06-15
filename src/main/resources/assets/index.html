@@ -1,13 +1,16 @@
 <!DOCTYPE html>
 <html>
 <head>
-	<title>GEF</title>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
 	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>GEF</title>
 
-	<link href="lib/bootstrap-cerulean.min.css" rel="stylesheet">
+	<link href="css/bootstrap.min.css" rel="stylesheet">
+	<!-- <link href="css/bootstrap-theme.min.css" rel="stylesheet"> -->
 	<link href="lib/font-awesome.min.css" rel="stylesheet">
-	<link href="base.css" rel="stylesheet">
+	<link href="css/base.css" rel="stylesheet">
 
 	<!--[if lt IE 9]>
 		<script src="http://cdnjs.cloudflare.com/ajax/libs/es5-shim/3.4.0/es5-shim.js"></script>
@@ -26,13 +29,13 @@
 			position:relative;
 		}
 		#body {
-			padding-bottom:30px;   /* Height of the footer */
+			padding-bottom:70px;   /* Height of the footer */
 		}
 		#footer {
 			position:absolute;
 			bottom:0;
 			width:100%;
-			height:30px;   /* Height of the footer */
+			height:70px;   /* Height of the footer */
 		}
 	</style>
 </head>
@@ -43,8 +46,43 @@
 	</noscript>
 
 	<div id="main-container">
-		<div id="body"></div>
-		<div id="footer"></div>
+		<div id="body">
+			<div id="header">
+				<div class="container">
+					<div class="row">
+						<div class="col-xs-12 col-sm-3 col-md-3">
+							<div>
+								<a href="/gef"><img width="116" height="64" src="images/logo.png" alt=""/></a>
+							</div>
+						</div>
+						<div class="col-xs-12 col-sm-9 col-md-9">
+
+							<nav class="navbar navbar-default">
+								<div class="container-fluid">
+
+									<div class="navbar-header">
+								      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#gb_menu">
+								        <span class="sr-only">Toggle navigation</span>
+								      </button>
+								    </div>
+
+									<div class="collapse navbar-collapse" id="gb_menu">
+										<ul id="menu" class="nav navbar-nav">
+											<!-- <li><a href="mailto:emanuel.dima@uni-tuebingen.de">Contact</a></li> -->
+										</ul>
+									</div>
+								</div>
+							</nav>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<div id="page"> </div>
+		</div>
+
+
+		<footer id="footer"> </footer>
 	</div>
 
 	<script src="lib/jquery.min.js"></script>

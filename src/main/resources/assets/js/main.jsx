@@ -2,18 +2,24 @@
 (function() {
 "use strict";
 
-var VERSION = "0.3-beta-5";
+var VERSION = "0.3.6";
 var PT = React.PropTypes;
 var ErrorPane = window.MyReact.ErrorPane;
 var Files = window.MyReact.Files;
 
 window.MyGEF = window.MyGEF || {};
 
+function setState(state) {
+	if (this && this != window) {
+		console.log(this, state);
+		this.setState(state);
+	}
+}
+
 var Main = React.createClass({
 	getInitialState: function () {
 		return {
-			navbarCollapse: false,
-			navbarPageFn: this.renderMain,
+			page: this.datasets,
 			errorMessages: [],
 		};
 	},
@@ -59,78 +65,175 @@ var Main = React.createClass({
 		jQuery.ajax(ajaxObject);
 	},
 
-	toggleCollapse: function() {
-		this.setState({navbarCollapse: !this.state.navbarCollapse});
-	},
-
-	setNavbarPageFn: function(pageFn) {
-		this.setState({navbarPageFn:pageFn});
-	},
-
-	renderCollapsible: function() {
-		var classname = "navbar-collapse collapse " + (this.state.navbarCollapse?"in":"");
+	datasets: function() {
 		return (
-			<div className={classname}>
-				<ul className="nav navbar-nav">
-					<li className={this.state.navbarPageFn === this.renderMain ? "active":""}>
-						<a className="link" tabIndex="-1"
-							onClick={this.setNavbarPageFn.bind(this, this.renderMain)}>Main</a>
-					</li>
-				</ul>
-				<ul className="nav navbar-nav navbar-right">
-					<li>
-						<a href="login" tabIndex="-1">
-							<span className="glyphicon glyphicon-user"/>
-						</a>
-					</li>
-				</ul>
-			</div>
+			<Datasets error={this.error} ajax={this.ajax} />
 		);
 	},
 
-	renderMain: function() {
-		var progress=0;
+	workflows: function() {
 		return (
-			<div>
-				<div className="row">
-					<h3>Add new dataset</h3>
-					<p>Please select and upload all the files in your dataset</p>
-					<Files apiURL="api/datasets" error={this.error}/>
-				</div>
-			</div>
+			<Workflows error={this.error} ajax={this.ajax} />
+		);
+	},
+
+	jobs: function() {
+		return (
+			<Jobs error={this.error} ajax={this.ajax} />
+		);
+	},
+
+	renderToolListItem: function(pageFn, title) {
+		var klass = "list-group-item " + (pageFn === this.state.page ? "active":"");
+		return (
+			<a href="#" className={klass} onClick={setState.bind(this, {page:pageFn})}>
+				{title}
+			</a>
 		);
 	},
 
 	render: function() {
 		return	(
 			<div>
-				<div className="navbar navbar-default navbar-static-top" role="navigation">
-					<div className="container">
-						<div className="navbar-header">
-							<button type="button" className="navbar-toggle" onClick={this.toggleCollapse}>
-								<span className="sr-only">Toggle navigation</span>
-								<span className="icon-bar"></span>
-								<span className="icon-bar"></span>
-								<span className="icon-bar"></span>
-							</button>
-							<a className="navbar-brand" href="#" tabIndex="-1"><header>GEF</header></a>
-						</div>
-						{this.renderCollapsible()}
-					</div>
-				</div>
-
 				<ErrorPane errorMessages={this.state.errorMessages} />
-
-				<div id="push">
-					<div className="container">
-						{this.state.navbarPageFn()}
+				<div className="container">
+					<div className="row">
+						<div className="col-xs-12 col-sm-2 col-md-2">
+							<div className="list-group">
+								{this.renderToolListItem(this.datasets, "Datasets")}
+								{this.renderToolListItem(this.workflows, "Workflows")}
+								{this.renderToolListItem(this.jobs, "Jobs")}
+							</div>
+						</div>
+						<div className="col-xs-12 col-sm-10 col-md-10">
+							{ this.state.page ? this.state.page() : false }
+						</div>
 					</div>
-					<div className="top-gap" />
 				</div>
 			</div>
 		);
 	}
 });
+
+var Datasets = React.createClass({
+	props: {
+		error: PT.func.isRequired,
+		ajax: PT.func.isRequired,
+	},
+
+	getInitialState: function() {
+		return {
+			addNewPaneOpen: false,
+			datasets: [],
+		};
+	},
+
+	componentDidMount: function() {
+		this.props.ajax({
+			url: 'api/datasets',
+			success: function(json, textStatus, jqXHR) {
+				if (!this.isMounted()) {
+					return;
+				}
+				if (!json.datasets) {
+					this.props.error("Didn't get json datasets from server");
+					return;
+				}
+				this.setState({datasets: json.datasets});
+			}.bind(this),
+		});
+	},
+
+	renderAddNew: function() {
+		return (
+			<div className="well">
+				<h4> Add new dataset </h4>
+				<p>Please select and upload all the files in your dataset</p>
+				<Files apiURL="api/datasets" error={this.props.error}
+					cancel={setState.bind(this, {addNewPaneOpen:false})} />
+			</div>
+		);
+	},
+
+	humanSize: function(sz) {
+		if (sz < 1024) {
+			return [sz,"B"];
+		} else if (sz < 1024 * 1024) {
+			return [(sz/1024).toFixed(1), "KiB"];
+		} else if (sz < 1024 * 1024 * 1024) {
+			return [(sz/(1024*1024)).toFixed(1), "MiB"];
+		} else if (sz < 1024 * 1024 * 1024 * 1024) {
+			return [(sz/(1024*1024*1024)).toFixed(1), "GiB"];
+		} else {
+			return [(sz/(1024*1024*1024*1024)).toFixed(1), "TiB"];
+		}
+	},
+
+	renderDataset: function(dataset) {
+		var sz = this.humanSize(dataset.size);
+		return (
+			<tr key={dataset.id}>
+				<td>{dataset.id}</td>
+				<td>{dataset.name}</td>
+				<td style={{textAlign:'right'}}>{sz[0]}</td>
+				<td style={{textAlign:'left'}}>{sz[1]}</td>
+				<td style={{textAlign:'right'}}>{new Date(dataset.date).toLocaleString()}</td>
+			</tr>
+		);
+	},
+
+	render: function() {
+		return (
+			<div className="dataset-page">
+				<h3> Datasets </h3>
+				{ this.state.addNewPaneOpen ?
+					this.renderAddNew() :
+					<div className="row">
+						<div className="col-md-2 col-md-offset-10">
+							<button type="button" className="btn btn-default"
+								onClick={setState.bind(this, {addNewPaneOpen:true})}> Add new dataset </button>
+						</div>
+					</div>
+				}
+				<table className="table table-condensed table-hover">
+					<thead>
+						<tr>
+							<th>Id</th>
+							<th>Name</th>
+							<th style={{textAlign:'right'}}>Size</th>
+							<th style={{textAlign:'left'}}></th>
+							<th style={{textAlign:'right'}}>Date</th>
+						</tr>
+					</thead>
+					<tbody>
+						{ this.state.datasets.map(this.renderDataset) }
+					</tbody>
+				</table>
+			</div>
+		);
+	}
+});
+
+var Workflows = React.createClass({
+	render: function() {
+		return (
+			<div>
+				<h3> Workflows </h3>
+			</div>
+		);
+	},
+});
+
+var Jobs = React.createClass({
+	render: function() {
+		return (
+			<div>
+				<h3> Jobs </h3>
+			</div>
+		);
+	},
+});
+
 
 var Footer = React.createClass({
 	about: function(e) {
@@ -141,13 +244,24 @@ var Footer = React.createClass({
 
 	render: function() {
 		return	(
-			<div className="container" style={{borderTop:"1px solid #ddd", paddingTop:5}}>
+			<div className="container">
 				<div className="row">
-					<div className="col-md-2 col-md-offset-10">
-						<a title="about" href="#" onClick={this.about}>
-							<span className="glyphicon glyphicon-info-sign"></span>
-							<span> v.{VERSION}</span>
-						</a>
+					<div className="col-xs-12 col-sm-6 col-md-6">
+						<p>	<img width="45" height="31" src="images/flag-ce.jpg" style={{float:'left', marginRight:10}}/>
+							EUDAT receives funding from the European Union’s Horizon 2020 research
+							and innovation programme under grant agreement No. 654065.&nbsp;
+							<a href="#">Legal Notice</a>.
+						</p>
+					</div>
+					<div className="col-xs-12 col-sm-6 col-md-6 text-right">
+						<ul className="list-inline pull-right" style={{marginLeft:20}}>
+							<li><span style={{color:'#173b93', fontWeight:'500'}}> GEF v.{VERSION}</span></li>
+						</ul>
+						<ul className="list-inline pull-right">
+							<li><a target="_blank" href="http://eudat.eu/what-eudat">About EUDAT</a></li>
+							<li><a href="https://github.com/GEFx">Go to GitHub</a></li>
+							<li><a href="mailto:emanuel.dima@uni-tuebingen.de">Contact</a></li>
+						</ul>
 					</div>
 				</div>
 			</div>
@@ -155,8 +269,7 @@ var Footer = React.createClass({
 	}
 });
 
-var main = React.render(<Main />,  document.getElementById('body'));
-React.render(<Footer />, document.getElementById('footer') );
-window.MyGEF.main = main;
+window.MyGEF.main = React.render(<Main />,  document.getElementById('page'));
+window.MyGEF.footer = React.render(<Footer />, document.getElementById('footer') );
 
 })();

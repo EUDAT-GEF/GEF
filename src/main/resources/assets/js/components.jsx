@@ -121,13 +121,15 @@ window.MyReact.Modal = React.createClass({
 
 window.MyReact.Files = React.createClass({
 	propTypes: {
+		error: PT.func.isRequired,
+		cancel: PT.func.isRequired,
 		apiURL: PT.string.isRequired,
 	},
 
 	getInitialState: function() {
 		return {
-			uploading: false,
-			progress: 0,
+
+			uploadPercent: -1, // -1 (not started), 0-100, 101 (done)
 			files: [],
 		}
 	},
@@ -137,14 +139,14 @@ window.MyReact.Files = React.createClass({
 	},
 
 	handleAdd: function(event) {
+		console.log("adding", event.target.files);
 		var files = this.state.files;
 		var fs = event.target.files;
 		for (var i = 0, length = fs.length; i < length; ++i) {
 			files.push(fs[i]);
-			console.log("added", fs[i]);
+			// console.log("added", fs[i]);
 		}
 		this.setState({files:files});
-
 	},
 
 	handleSubmit: function(e) {
@@ -164,50 +166,118 @@ window.MyReact.Files = React.createClass({
 		xhr.addEventListener("load", this.uploadComplete, false);
 		xhr.addEventListener("error", this.uploadFailed, false);
 		xhr.addEventListener("abort", this.uploadCanceled, false);
-		this.setState({uploading:true});
+		this.setState({uploadPercent:0});
 		xhr.open("POST", this.props.apiURL);
 		xhr.send(fd);
 	},
 
-	uploadProgress: function(){},
-	uploadComplete: function(){},
-	uploadFailed: function(){},
-	uploadCanceled: function(){},
+	handleRemove: function(f) {
+		var files = this.state.files.filter(function(x){return x !== f;});
+		this.setState({files:files});
+	},
+
+	uploadProgress: function(e){
+		console.log('progress', e);
+		this.setState({uploadPercent:0});
+	},
+	uploadComplete: function(e){
+		console.log('complete', e);
+		this.setState({uploadPercent:101});
+	},
+	uploadFailed: function(e){
+		console.log('failed', e);
+		this.setState({uploadPercent:-1});
+	},
+	uploadCanceled: function(e){
+		console.log('canceled', e);
+		this.setState({uploadPercent:-1});
+	},
+
+	renderTopRow: function() {
+		return (
+			<div className="row" style={{margin:'5px 0px'}}>
+				<div className="col-md-3">
+					<input ref='fileinput' name="file" type="file" multiple onChange={this.handleAdd}
+						style={{width:0, height:0, margin:0, border:'none'}} />
+					<button type="button" className="btn btn-default" onClick={this.handleBrowse}
+						style={{width:'100%'}}>
+							Browse
+					</button>
+				</div>
+				{ this.state.files.length ? false :
+					<div className="col-md-3">
+						<button type="button" className="btn btn-default" onClick={this.props.cancel}
+							style={{width:'100%'}}>
+								Close
+						</button>
+					</div> }
+			</div>
+		);
+	},
 
 	renderFile: function(f){
 		return (
-			<div key={f.name} style={{margin:"5px 0"}}>
-				<input type="text" className="input-large" readOnly="readonly"
-					 style={{width:'100%'}} value={f.name}/>
+			<div key={f.name} className="row" style={{margin:'5px 0px'}}>
+				<div className="col-md-12">
+					<div className="input-group">
+						<input type="text" className="input-large" readOnly="readonly"
+						 	style={{width:'100%', lineHeight:'26px', paddingLeft:10}} value={f.name}/>
+						<span className="input-group-btn">
+							<button type="button" className="btn btn-warning btn-sm" onClick={this.handleRemove.bind(this, f)}>
+								<i className="glyphicon glyphicon-remove"/>
+							</button>
+						</span>
+					</div>
+				</div>
+			</div>
+		);
+	},
+
+	renderProgress: function() {
+		if (this.state.uploadPercent < 0) {
+			return false;
+		}
+		return (
+			<div className="row" style={{margin:'5px 0px'}}>
+				<div className="col-md-3 col-md-offset-9">
+					<div style={{width:'50%', float:'left'}}>
+						<div className="bar" style={{width: this.state.progress+'%'}} />
+						<div className="percent">{this.state.progress}%</div>
+					</div>
+				</div>
+			</div>
+		);
+	},
+
+	renderBottomRow: function() {
+		if (!this.state.files.length) {
+			return false;
+		}
+		return (
+			<div className="row" style={{margin:'5px 0px'}}>
+				<div className="col-md-3 col-md-offset-6">
+					<button className="btn btn-default" style={{width:'100%'}} onClick={this.props.cancel}>
+						Cancel
+					</button>
+				</div>
+				<div className="col-md-3">
+					<button type="submit" className="btn btn-primary" style={{width:'100%'}}>
+						<i className="glyphicon glyphicon-upload"/> Upload
+					</button>
+				</div>
 			</div>
 		);
 	},
 
 	render: function() {
-		var display = this.state.uploading ? 'block' : 'none';
 		return (
-			<div style={{width:300}}>
+			<div className="file-upload-form">
 				<form className="form-horizontal" style={{margin:0}}
 						encType="multipart/form-data" onSubmit={this.handleSubmit}>
-					<div>
-						<input ref='fileinput' name="file" type="file" multiple onChange={this.handleAdd}
-							style={{width:0, height:0, margin:0}} />
-						<button type="button" className="btn" onClick={this.handleBrowse}>
-							<i className="glyphicon glyphicon-folder-open"/> Browse
-						</button>
-					</div>
-					{ this.state.files.map(this.renderFile) }
-					{ this.state.files.length ?
-					<div style={{width:'100%'}}>
-						<div style={{width:'50%', float:'left', display: display}}>
-							<div className="bar" style={{width: this.state.progress+'%'}} />
-							<div className="percent">{this.state.progress}%</div>
-						</div>
-						<button type="submit" className="btn btn-primary" style={{width:'50%', float:'right'}}>
-							<i className="glyphicon glyphicon-upload"/> Upload
-						</button>
-					</div> : false
-					}
+					{ this.renderTopRow() }
+					{ this.state.files.length ? this.state.files.map(this.renderFile) : false }
+					{ this.state.files.length ? this.renderProgress() : false }
+					{ this.state.files.length ? this.renderBottomRow() : false }
 				</form>
 			</div>
 		);
