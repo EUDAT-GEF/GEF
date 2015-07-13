@@ -5,12 +5,10 @@ build: gef-docker
 gef-docker: $(SOURCES)
 	golint ./...
 	go vet ./...
+	# go test ./...
 	go build
-
-run:
-	# ---- run devel
-	# (cd vagrant && vagrant up)
-	./gef-docker
+	cp ./gef-docker ./vagrant/
 
 clean:
 	go clean
+	rm ./vagrant/gef-docker
