@@ -1,0 +1,4 @@
+irodsHost 172.17.42.1
+irodsPort 1247
+irodsUserName rods
+irodsZone tempZone
