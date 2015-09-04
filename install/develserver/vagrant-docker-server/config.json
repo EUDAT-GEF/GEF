@@ -1,0 +1,16 @@
+{
+	"Docker": [
+		{
+			"Endpoint" : "unix:///var/run/docker.sock"
+		},
+		{
+			"UseBoot2Docker": true,
+			"Description": "Using Boot2Docker with its environment variables: $DOCKER_HOST and $DOCKER_CERT_PATH"
+		}
+	],
+	"Server": {
+		"Address": ":4142",
+		"ReadTimeoutSecs": 10,
+		"WriteTimeoutSecs": 10
+	}
+}

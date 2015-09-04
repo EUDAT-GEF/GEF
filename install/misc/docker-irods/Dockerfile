@@ -10,4 +10,4 @@ RUN wget -nv ftp://ftp.renci.org/pub/irods/releases/4.0.0/irods-icommands-4.0.0-
 	dpkg -i *.deb && \
 	apt-get -f install -y && \
 	rm irods-icommands-4.0.0-64bit.deb
-COPY .irods/  /.irods
+COPY root.irods/  /.irods
