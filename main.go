@@ -11,13 +11,12 @@ import (
 )
 
 var configFilePath = "config.json"
+var config configuration
 
 type configuration struct {
 	Docker []dckr.Config
 	Server server.Config
 }
-
-var config configuration
 
 func main() {
 	flag.StringVar(&configFilePath, "config", configFilePath, "configuration file")
