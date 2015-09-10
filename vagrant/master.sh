@@ -4,7 +4,7 @@ IRODS_FTP=ftp://ftp.renci.org/pub/irods/releases/4.0.0
 
 if [ ! -e /home/vagrant/.irodsprovisioned ]; then
     apt-get update
-    apt-get upgrade -y
+    # apt-get upgrade -y
     apt-get install -q -y curl build-essential python-pip git python-dev postgresql odbc-postgresql unixodbc-dev libssl0.9.8 super
 
 	wget -nv $IRODS_FTP/irods-icat-4.0.0-64bit.deb
