@@ -38,8 +38,16 @@ func TestClient(t *testing.T) {
 		t.Fail()
 	}
 
-	container := executeImage(c, img.ID, t)
-	log.Println("started container: ", container.ID)
+	containerID := executeImage(c, img.ID, t)
+	log.Println("started container: ", containerID)
+
+	containers := listContainers(c, t)
+	if len(containers) == 0 {
+		t.Error("cannot find any containers")
+		t.Fail()
+	}
+
+	inspectContainer(c, containers[0].ID, t)
 }
 
 func newClient(t *testing.T) Client {
@@ -75,12 +83,32 @@ func buildImage(client Client, t *testing.T) Image {
 	return img
 }
 
-func executeImage(client Client, imgid ImageID, t *testing.T) Container {
-	container, err := client.ExecuteImage(imgid)
+func executeImage(client Client, imgid ImageID, t *testing.T) ContainerID {
+	containerID, err := client.ExecuteImage(imgid)
 	if err != nil {
 		t.Error("starting image failed: ", err)
 		t.Fail()
 	}
 	log.Println("starting image success: ", imgid)
-	return container
+	return containerID
+}
+
+func listContainers(client Client, t *testing.T) []Container {
+	containers, err := client.ListContainers()
+	if err != nil {
+		t.Error("list containers failed: ", err)
+		t.Fail()
+	}
+	log.Println("list containers success: ", containers)
+	return containers
+}
+
+func inspectContainer(client Client, contID ContainerID, t *testing.T) Container {
+	cont, err := client.InspectContainer(contID)
+	if err != nil {
+		t.Error("inspect container failed: ", err)
+		t.Fail()
+	}
+	log.Println("inspect container success: ", cont)
+	return cont
 }

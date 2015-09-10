@@ -8,7 +8,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/fsouza/go-dockerclient"
+	docker "github.com/fsouza/go-dockerclient"
 )
 
 // Config configuration for building docker clients
@@ -47,7 +47,9 @@ type Image struct {
 
 // Container is a struct for Docker containers
 type Container struct {
-	ID ContainerID
+	ID    ContainerID
+	Image Image
+	State docker.State
 }
 
 // NewClientFirstOf returns a new docker client or an error
@@ -165,7 +167,7 @@ func (c *Client) BuildImage(dirpath string) (Image, error) {
 }
 
 // ExecuteImage takes a docker image, creates a container and executes it
-func (c Client) ExecuteImage(id ImageID) (Container, error) {
+func (c Client) ExecuteImage(id ImageID) (ContainerID, error) {
 	cfg := docker.Config{
 		Image: string(id),
 	}
@@ -177,9 +179,47 @@ func (c Client) ExecuteImage(id ImageID) (Container, error) {
 	}
 	cont, err := c.c.CreateContainer(cco)
 	if err != nil {
-		return Container{}, err
+		return ContainerID(""), err
 	}
 
 	err = c.c.StartContainer(cont.ID, &hc)
-	return Container{ID: ContainerID(cont.ID)}, err
+	return ContainerID(cont.ID), err
+}
+
+// ListContainers lists the docker images
+func (c Client) ListContainers() ([]Container, error) {
+	conts, err := c.c.ListContainers(
+		docker.ListContainersOptions{All: true})
+	if err != nil {
+		return nil, err
+	}
+	ret := make([]Container, 0, 0)
+	for _, cont := range conts {
+		ret = append(ret, Container{
+			ID: ContainerID(cont.ID),
+			Image: Image{
+				ID:     ImageID(cont.Image),
+				Labels: cont.Labels,
+			},
+			State: docker.State{},
+		})
+	}
+	return ret, nil
+}
+
+// InspectContainer returns the container details
+func (c Client) InspectContainer(id ContainerID) (Container, error) {
+	cont, err := c.c.InspectContainer(string(id))
+	ret := Container{
+		ID: ContainerID(cont.ID),
+		Image: Image{
+			ID:     ImageID(cont.Image),
+			Labels: cont.Config.Labels,
+		},
+		State: cont.State,
+	}
+	if err != nil {
+		return ret, err
+	}
+	return ret, err
 }
