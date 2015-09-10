@@ -29,7 +29,7 @@ public class DatastreamReaderManagerTest {
 	public void testListDatastream() throws Exception {
 		System.out.println("listDatastream");
 
-		DatastreamReaderManager instance = new DatastreamReaderManager();
+		DatastreamReaderBuilder instance = new DatastreamReaderBuilder();
 		instance.registerDatastreamReaderFactory(new B2ShareDatastreamReaderFactory());
 
 		URL pidURL = new URL(pid);
@@ -55,7 +55,7 @@ public class DatastreamReaderManagerTest {
 	public void getDatastream() throws Exception {
 		System.out.println("getDatastream");
 
-		DatastreamReaderManager instance = new DatastreamReaderManager();
+		DatastreamReaderBuilder instance = new DatastreamReaderBuilder();
 		instance.registerDatastreamReaderFactory(new B2ShareDatastreamReaderFactory());
 
 		URL pidURL = new URL(pid);

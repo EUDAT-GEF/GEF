@@ -15,6 +15,10 @@ public class GEFConfig extends Configuration {
 		@NotEmpty
 		@JsonProperty
 		Pid pid;
+
+		@NotEmpty
+		@JsonProperty
+		GefDocker gefDocker;
 	}
 
 	public static class Irods {
@@ -46,6 +50,7 @@ public class GEFConfig extends Configuration {
 	}
 
 	public static class Pid {
+
 		@NotEmpty
 		@JsonProperty
 		String epicServerUrl;
@@ -61,6 +66,18 @@ public class GEFConfig extends Configuration {
 		@NotEmpty
 		@JsonProperty
 		String pass;
+	}
+
+	public static class GefDocker {
+
+		@NotEmpty
+		@JsonProperty
+		String server;
+
+		@NotEmpty
+		@JsonProperty
+		int port;
+
 	}
 	public Params gefParams = new Params();
 
@@ -82,6 +99,13 @@ public class GEFConfig extends Configuration {
 		irods.path = path;
 		irods.resource = resource;
 		return irods;
+	}
+
+	public static GefDocker makeIrods(String server, int port) {
+		GefDocker gefDocker = new GefDocker();
+		gefDocker.server = server;
+		gefDocker.port = port;
+		return gefDocker;
 	}
 
 }

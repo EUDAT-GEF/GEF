@@ -1,16 +1,19 @@
 gefParams:
   irods:
-    server: 127.0.0.1
+    server: 192.168.97.41
     port: 1247
     username: rods
     password: rodsgef
-    path: /tempZone/GEF
+    path: /tempZone/home/rods/GEF
     resource: demoResc
   pid:
     epicServerUrl: http://pid.gwdg.de/handles/
     localPrefix: 11022
     user: 10+22
     pass:
+  gefDocker:
+    server: 192.168.97.42
+    port: 4142
 
 # use the simple server factory, run on a single port
 server:

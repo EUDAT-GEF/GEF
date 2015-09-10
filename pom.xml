@@ -19,11 +19,11 @@
 			<version>1.1.0</version>
 			<type>jar</type>
 			<exclusions>
-				<!--				<exclusion>
+				<!--<exclusion>
 					<groupId>org.slf4j</groupId>
 					<artifactId>slf4j-api</artifactId>
 				</exclusion>-->
-				<!--				<exclusion>
+				<!--<exclusion>
 					<groupId>log4j</groupId>
 					<artifactId>log4j</artifactId>
 				</exclusion>-->

@@ -9,7 +9,9 @@ import de.tuebingen.uni.sfs.epicpid.PidServer;
 import eu.eudat.gef.app.Services;
 import eu.eudat.gef.irodslink.IrodsCollection;
 import eu.eudat.gef.irodslink.IrodsConnection;
+import eu.eudat.gef.irodslink.IrodsException;
 import eu.eudat.gef.irodslink.IrodsFile;
+import eu.eudat.gef.irodslink.IrodsObject;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.*;
@@ -96,16 +98,12 @@ public class DataSets {
 
 	public static class DatasetJson {
 
-		public DatasetJson(String id, String name, int size, long date) {
+		public DatasetJson(String id, Object entry) {
 			this.id = id;
-			this.name = name;
-			this.size = size;
-			this.date = date;
+			this.entry = entry;
 		}
 		public String id;
-		public String name;
-		public long date;
-		public int size;
+		public Object entry;
 	}
 
 	@GET
@@ -120,14 +118,8 @@ public class DataSets {
 		List<DatasetJson> list = new ArrayList<>();
 		for (IrodsCollection c : coll.listCollections()) {
 			for (IrodsCollection c2 : c.listCollections()) {
-				int size = 0;
-				Collection<IrodsFile> files = c2.listFiles();
-				for (IrodsFile f : files) {
-					size += f.getSize();
-				}
 				String id = c.getName() + "/" + c2.getName();
-				String name = files.isEmpty() ? "" : files.iterator().next().getName();
-				list.add(new DatasetJson(id, name, size, c2.getDate().getTime()));
+				list.add(new DatasetJson(id, makeJson(c2)));
 			}
 		}
 
@@ -136,6 +128,40 @@ public class DataSets {
 		String json = new Gson().toJson(map);
 
 		return Response.ok().entity(json).build();
+	}
+
+	public static class CollJson {
+		public String name;
+		public long date;
+		public long size;
+		public List<CollJson> colls = new ArrayList<CollJson>();
+		public List<FileJson> files = new ArrayList<FileJson>();
+	}
+
+	public static class FileJson {
+		public String name;
+		public long date;
+		public long size;
+	}
+
+	public CollJson makeJson(IrodsCollection c) throws IrodsException {
+		CollJson ret = new CollJson();
+		ret.name = c.getName();
+		ret.date = c.getDate().getTime();
+		for (IrodsFile f : c.listFiles()) {
+			FileJson fj = new FileJson();
+			fj.name = f.getName();
+			fj.date = f.getDate().getTime();
+			fj.size = f.getSize();
+			ret.files.add(fj);
+			ret.size += fj.size;
+		}
+		for (IrodsCollection c2 : c.listCollections()) {
+			CollJson cj = makeJson(c2);
+			ret.colls.add(cj);
+			ret.size += cj.size;
+		}
+		return ret;
 	}
 
 	private void println(String string) {
