@@ -9,9 +9,13 @@ var Files = window.MyReact.Files;
 
 window.MyGEF = window.MyGEF || {};
 
+var apiRootName = "/gef/api";
+var apiNames = {
+	datasets: apiRootName+"/datasets",
+};
+
 function setState(state) {
-	if (this && this != window) {
-		console.log(this, state);
+	if (this && this != window && this.setState) {
 		this.setState(state);
 	}
 }
@@ -19,7 +23,7 @@ function setState(state) {
 var Main = React.createClass({displayName: "Main",
 	getInitialState: function () {
 		return {
-			page: this.datasets,
+			page: this.browseDatasets,
 			errorMessages: [],
 		};
 	},
@@ -65,21 +69,33 @@ var Main = React.createClass({displayName: "Main",
 		jQuery.ajax(ajaxObject);
 	},
 
-	datasets: function() {
+	browseDatasets: function() {
 		return (
-			React.createElement(Datasets, {error: this.error, ajax: this.ajax})
+			React.createElement(BrowseDatasets, {error: this.error, ajax: this.ajax})
 		);
 	},
 
-	workflows: function() {
+	executeService: function() {
 		return (
-			React.createElement(Workflows, {error: this.error, ajax: this.ajax})
+			React.createElement(ExecuteService, {error: this.error, ajax: this.ajax})
 		);
 	},
 
-	jobs: function() {
+	runningJobs: function() {
 		return (
-			React.createElement(Jobs, {error: this.error, ajax: this.ajax})
+			React.createElement(RunningJobs, {error: this.error, ajax: this.ajax})
+		);
+	},
+
+	createDataset: function() {
+		return (
+			React.createElement(CreateDataset, {error: this.error, ajax: this.ajax})
+		);
+	},
+
+	createService: function() {
+		return (
+			React.createElement(CreateService, {error: this.error, ajax: this.ajax})
 		);
 	},
 
@@ -100,9 +116,12 @@ var Main = React.createClass({displayName: "Main",
 					React.createElement("div", {className: "row"}, 
 						React.createElement("div", {className: "col-xs-12 col-sm-2 col-md-2"}, 
 							React.createElement("div", {className: "list-group"}, 
-								this.renderToolListItem(this.datasets, "Datasets"), 
-								this.renderToolListItem(this.workflows, "Workflows"), 
-								this.renderToolListItem(this.jobs, "Jobs")
+								this.renderToolListItem(this.createService, "Create Service"), 
+								this.renderToolListItem(this.executeService, "Execute Service"), 
+								this.renderToolListItem(this.runningJobs, "Browse Jobs")
+							), 
+							React.createElement("div", {className: "list-group"}, 
+								this.renderToolListItem(this.browseDatasets, "Browse Datasets")
 							)
 						), 
 						React.createElement("div", {className: "col-xs-12 col-sm-10 col-md-10"}, 
@@ -115,7 +134,45 @@ var Main = React.createClass({displayName: "Main",
 	}
 });
 
-var Datasets = React.createClass({displayName: "Datasets",
+///////////////////////////////////////////////////////////////////////////////
+
+function humanSize(sz) {
+	if (sz < 1024) {
+		return [sz,"B  "];
+	} else if (sz < 1024 * 1024) {
+		return [(sz/1024).toFixed(1), "KiB"];
+	} else if (sz < 1024 * 1024 * 1024) {
+		return [(sz/(1024*1024)).toFixed(1), "MiB"];
+	} else if (sz < 1024 * 1024 * 1024 * 1024) {
+		return [(sz/(1024*1024*1024)).toFixed(1), "GiB"];
+	} else {
+		return [(sz/(1024*1024*1024*1024)).toFixed(1), "TiB"];
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+var CreateService = React.createClass({displayName: "CreateService",
+	render: function() {
+		return (
+			React.createElement("div", null, 
+				React.createElement("h3", null, " Create Service "), 
+				React.createElement("ul", null, 
+					React.createElement("li", null, "Select base image"), 
+					React.createElement("li", null, "Upload files"), 
+					React.createElement("li", null, "Define inputs and outputs"), 
+					React.createElement("li", null, "Execute command"), 
+					React.createElement("li", null, "Test data"), 
+					React.createElement("li", null, "Create")
+				)
+			)
+		);
+	},
+});
+
+///////////////////////////////////////////////////////////////////////////////
+
+var ExecuteService = React.createClass({displayName: "ExecuteService",
 	props: {
 		error: PT.func.isRequired,
 		ajax: PT.func.isRequired,
@@ -123,14 +180,67 @@ var Datasets = React.createClass({displayName: "Datasets",
 
 	getInitialState: function() {
 		return {
-			addNewPaneOpen: false,
+		};
+	},
+
+	render: function() {
+		return (
+			React.createElement("div", {className: "execute-service-page"}, 
+				React.createElement("h3", null, " Execute Service ")
+			)
+		);
+	}
+});
+
+///////////////////////////////////////////////////////////////////////////////
+
+var RunningJobs = React.createClass({displayName: "RunningJobs",
+	render: function() {
+		return (
+			React.createElement("div", null, 
+				React.createElement("h3", null, " RunningJobs ")
+			)
+		);
+	},
+});
+
+///////////////////////////////////////////////////////////////////////////////
+
+var CreateDataset = React.createClass({displayName: "CreateDataset",
+	props: {
+		error: PT.func.isRequired,
+		ajax: PT.func.isRequired,
+	},
+
+	render: function() {
+		return (
+			React.createElement("div", null, 
+				React.createElement("h3", null, " Create Dataset "), 
+				React.createElement("p", null, "Please select and upload all the files in your dataset"), 
+				React.createElement(Files, {apiURL: apiNames.datasets, error: this.props.error, 
+						cancel: function(){}})
+			)
+		);
+	},
+});
+
+///////////////////////////////////////////////////////////////////////////////
+
+var BrowseDatasets = React.createClass({displayName: "BrowseDatasets",
+	props: {
+		error: PT.func.isRequired,
+ 		ajax: PT.func.isRequired,
+	},
+
+	getInitialState: function() {
+		return {
 			datasets: [],
 		};
 	},
 
 	componentDidMount: function() {
 		this.props.ajax({
-			url: 'api/datasets',
+			url: apiNames.datasets,
 			success: function(json, textStatus, jqXHR) {
 				if (!this.isMounted()) {
 					return;
@@ -144,40 +254,25 @@ var Datasets = React.createClass({displayName: "Datasets",
 		});
 	},
 
-	renderAddNew: function() {
+	renderHeads: function(dataset) {
 		return (
-			React.createElement("div", {className: "well"}, 
-				React.createElement("h4", null, " Add new dataset "), 
-				React.createElement("p", null, "Please select and upload all the files in your dataset"), 
-				React.createElement(Files, {apiURL: "api/datasets", error: this.props.error, 
-					cancel: setState.bind(this, {addNewPaneOpen:false})})
+			React.createElement("div", {className: "row table-head"}, 
+				React.createElement("div", {className: "col-xs-12 col-sm-5 col-md-5"}, "ID"), 
+				React.createElement("div", {className: "col-xs-12 col-sm-2 col-md-2", style: {textAlign:'right'}}, "Size"), 
+				React.createElement("div", {className: "col-xs-12 col-sm-5 col-md-5", style: {textAlign:'right'}}, "Date")
 			)
 		);
 	},
 
-	humanSize: function(sz) {
-		if (sz < 1024) {
-			return [sz,"B"];
-		} else if (sz < 1024 * 1024) {
-			return [(sz/1024).toFixed(1), "KiB"];
-		} else if (sz < 1024 * 1024 * 1024) {
-			return [(sz/(1024*1024)).toFixed(1), "MiB"];
-		} else if (sz < 1024 * 1024 * 1024 * 1024) {
-			return [(sz/(1024*1024*1024)).toFixed(1), "GiB"];
-		} else {
-			return [(sz/(1024*1024*1024*1024)).toFixed(1), "TiB"];
-		}
-	},
-
 	renderDataset: function(dataset) {
-		var sz = this.humanSize(dataset.size);
+		var sz = humanSize(dataset.entry.size);
 		return (
-			React.createElement("tr", {key: dataset.id}, 
-				React.createElement("td", null, dataset.id), 
-				React.createElement("td", null, dataset.name), 
-				React.createElement("td", {style: {textAlign:'right'}}, sz[0]), 
-				React.createElement("td", {style: {textAlign:'left'}}, sz[1]), 
-				React.createElement("td", {style: {textAlign:'right'}}, new Date(dataset.date).toLocaleString())
+			React.createElement("div", {className: "row"}, 
+				React.createElement("div", {key: dataset.id}, 
+					React.createElement("div", {className: "col-xs-12 col-sm-5 col-md-5"}, dataset.id), 
+					React.createElement("div", {className: "col-xs-12 col-sm-2 col-md-2", style: {textAlign:'right'}}, sz[0], " ", sz[1]), 
+					React.createElement("div", {className: "col-xs-12 col-sm-5 col-md-5", style: {textAlign:'right'}}, new Date(dataset.entry.date).toLocaleString())
+				)
 			)
 		);
 	},
@@ -185,55 +280,17 @@ var Datasets = React.createClass({displayName: "Datasets",
 	render: function() {
 		return (
 			React.createElement("div", {className: "dataset-page"}, 
-				React.createElement("h3", null, " Datasets "), 
-				 this.state.addNewPaneOpen ?
-					this.renderAddNew() :
-					React.createElement("div", {className: "row"}, 
-						React.createElement("div", {className: "col-md-2 col-md-offset-10"}, 
-							React.createElement("button", {type: "button", className: "btn btn-default", 
-								onClick: setState.bind(this, {addNewPaneOpen:true})}, " Add new dataset ")
-						)
-					), 
-				
-				React.createElement("table", {className: "table table-condensed table-hover"}, 
-					React.createElement("thead", null, 
-						React.createElement("tr", null, 
-							React.createElement("th", null, "Id"), 
-							React.createElement("th", null, "Name"), 
-							React.createElement("th", {style: {textAlign:'right'}}, "Size"), 
-							React.createElement("th", {style: {textAlign:'left'}}), 
-							React.createElement("th", {style: {textAlign:'right'}}, "Date")
-						)
-					), 
-					React.createElement("tbody", null, 
-						 this.state.datasets.map(this.renderDataset) 
-					)
+				React.createElement("h3", null, " Browse Datasets "), 
+				 this.renderHeads(), 
+				React.createElement("div", {className: "dataset-table"}, 
+					 this.state.datasets.map(this.renderDataset) 
 				)
 			)
 		);
 	}
 });
 
-var Workflows = React.createClass({displayName: "Workflows",
-	render: function() {
-		return (
-			React.createElement("div", null, 
-				React.createElement("h3", null, " Workflows ")
-			)
-		);
-	},
-});
-
-var Jobs = React.createClass({displayName: "Jobs",
-	render: function() {
-		return (
-			React.createElement("div", null, 
-				React.createElement("h3", null, " Jobs ")
-			)
-		);
-	},
-});
-
+///////////////////////////////////////////////////////////////////////////////
 
 var Footer = React.createClass({displayName: "Footer",
 	about: function(e) {

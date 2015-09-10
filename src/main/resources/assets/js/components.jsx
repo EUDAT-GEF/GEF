@@ -128,7 +128,6 @@ window.MyReact.Files = React.createClass({
 
 	getInitialState: function() {
 		return {
-
 			uploadPercent: -1, // -1 (not started), 0-100, 101 (done)
 			files: [],
 		}
@@ -150,6 +149,7 @@ window.MyReact.Files = React.createClass({
 	},
 
 	handleSubmit: function(e) {
+		console.log("submitting", e);
 		e.preventDefault();
 
 		var fs = this.state.files;
@@ -167,8 +167,18 @@ window.MyReact.Files = React.createClass({
 		xhr.addEventListener("error", this.uploadFailed, false);
 		xhr.addEventListener("abort", this.uploadCanceled, false);
 		this.setState({uploadPercent:0});
+
 		xhr.open("POST", this.props.apiURL);
 		xhr.send(fd);
+	},
+
+	handleCancel: function(e) {
+		console.log("cancel", e);
+		e.preventDefault();
+		this.setState(this.getInitialState());
+		if (this.props.cancel) {
+			this.props.cancel();
+		}
 	},
 
 	handleRemove: function(f) {
@@ -193,28 +203,6 @@ window.MyReact.Files = React.createClass({
 		this.setState({uploadPercent:-1});
 	},
 
-	renderTopRow: function() {
-		return (
-			<div className="row" style={{margin:'5px 0px'}}>
-				<div className="col-md-3">
-					<input ref='fileinput' name="file" type="file" multiple onChange={this.handleAdd}
-						style={{width:0, height:0, margin:0, border:'none'}} />
-					<button type="button" className="btn btn-default" onClick={this.handleBrowse}
-						style={{width:'100%'}}>
-							Browse
-					</button>
-				</div>
-				{ this.state.files.length ? false :
-					<div className="col-md-3">
-						<button type="button" className="btn btn-default" onClick={this.props.cancel}
-							style={{width:'100%'}}>
-								Close
-						</button>
-					</div> }
-			</div>
-		);
-	},
-
 	renderFile: function(f){
 		return (
 			<div key={f.name} className="row" style={{margin:'5px 0px'}}>
@@ -237,12 +225,15 @@ window.MyReact.Files = React.createClass({
 		if (this.state.uploadPercent < 0) {
 			return false;
 		}
+		var percent = this.state.uploadPercent;
+		var widthPercent = {width: percent+'%'};
 		return (
 			<div className="row" style={{margin:'5px 0px'}}>
-				<div className="col-md-3 col-md-offset-9">
-					<div style={{width:'50%', float:'left'}}>
-						<div className="bar" style={{width: this.state.progress+'%'}} />
-						<div className="percent">{this.state.progress}%</div>
+				<div className="col-md-12">
+					<div className="progress" style={{margin:'10px 0'}}>
+  						<div className="progress-bar progress-bar-info progress-bar-striped"
+  								role="progressbar" aria-valuenow={percent}
+  								aria-valuemin="0" aria-valuemax="100" style={widthPercent} />
 					</div>
 				</div>
 			</div>
@@ -250,21 +241,28 @@ window.MyReact.Files = React.createClass({
 	},
 
 	renderBottomRow: function() {
-		if (!this.state.files.length) {
-			return false;
-		}
 		return (
 			<div className="row" style={{margin:'5px 0px'}}>
-				<div className="col-md-3 col-md-offset-6">
-					<button className="btn btn-default" style={{width:'100%'}} onClick={this.props.cancel}>
-						Cancel
-					</button>
-				</div>
 				<div className="col-md-3">
-					<button type="submit" className="btn btn-primary" style={{width:'100%'}}>
-						<i className="glyphicon glyphicon-upload"/> Upload
+					<input ref='fileinput' name="file" type="file" multiple onChange={this.handleAdd}
+						style={{width:0, height:0, margin:0, border:'none'}} />
+					<button type="button" className="btn btn-default" onClick={this.handleBrowse}
+						style={{width:'100%'}}>
+							Add files
 					</button>
 				</div>
+				{ this.state.files.length ?
+					<div className="col-md-3 col-md-offset-3">
+						<button className="btn btn-default" style={{width:'100%'}} onClick={this.handleCancel}>
+							Cancel
+						</button>
+					</div> : false }
+				{ this.state.files.length ?
+					<div className="col-md-3">
+						<button type="submit" className="btn btn-primary" style={{width:'100%'}}>
+							<i className="glyphicon glyphicon-upload"/> Upload
+						</button>
+					</div> : false }
 			</div>
 		);
 	},
@@ -274,10 +272,9 @@ window.MyReact.Files = React.createClass({
 			<div className="file-upload-form">
 				<form className="form-horizontal" style={{margin:0}}
 						encType="multipart/form-data" onSubmit={this.handleSubmit}>
-					{ this.renderTopRow() }
 					{ this.state.files.length ? this.state.files.map(this.renderFile) : false }
 					{ this.state.files.length ? this.renderProgress() : false }
-					{ this.state.files.length ? this.renderBottomRow() : false }
+					{ this.renderBottomRow() }
 				</form>
 			</div>
 		);

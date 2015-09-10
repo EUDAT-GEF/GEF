@@ -104,11 +104,25 @@ input:focus, select:focus, textarea:focus, button:focus, a:focus {
 
 /*** Pages: Datasets, Workflows, Jobs; ***/
 
-.dataset-page table tbody {
+.dataset-page .table-head{
+  line-height: 30px;
+  border-bottom: 1px solid #ddd;
+  font-weight: bold;
+}
+
+.dataset-page .dataset-table {
   font-family: Monaco, "Lucida Console", monospace;
   font-size: 13px;
 }
 
+.dataset-page .dataset-table .row {
+  line-height: 30px;
+  border-bottom: 1px solid #ddd;
+}
+
+.dataset-page .dataset-table .row:hover {
+  background-color: #ececec;
+}
 
 /*** error ***/
 

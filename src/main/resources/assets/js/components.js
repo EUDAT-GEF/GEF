@@ -128,7 +128,6 @@ window.MyReact.Files = React.createClass({displayName: "Files",
 
 	getInitialState: function() {
 		return {
-
 			uploadPercent: -1, // -1 (not started), 0-100, 101 (done)
 			files: [],
 		}
@@ -150,6 +149,7 @@ window.MyReact.Files = React.createClass({displayName: "Files",
 	},
 
 	handleSubmit: function(e) {
+		console.log("submitting", e);
 		e.preventDefault();
 
 		var fs = this.state.files;
@@ -167,8 +167,18 @@ window.MyReact.Files = React.createClass({displayName: "Files",
 		xhr.addEventListener("error", this.uploadFailed, false);
 		xhr.addEventListener("abort", this.uploadCanceled, false);
 		this.setState({uploadPercent:0});
+
 		xhr.open("POST", this.props.apiURL);
 		xhr.send(fd);
+	},
+
+	handleCancel: function(e) {
+		console.log("cancel", e);
+		e.preventDefault();
+		this.setState(this.getInitialState());
+		if (this.props.cancel) {
+			this.props.cancel();
+		}
 	},
 
 	handleRemove: function(f) {
@@ -193,28 +203,6 @@ window.MyReact.Files = React.createClass({displayName: "Files",
 		this.setState({uploadPercent:-1});
 	},
 
-	renderTopRow: function() {
-		return (
-			React.createElement("div", {className: "row", style: {margin:'5px 0px'}}, 
-				React.createElement("div", {className: "col-md-3"}, 
-					React.createElement("input", {ref: "fileinput", name: "file", type: "file", multiple: true, onChange: this.handleAdd, 
-						style: {width:0, height:0, margin:0, border:'none'}}), 
-					React.createElement("button", {type: "button", className: "btn btn-default", onClick: this.handleBrowse, 
-						style: {width:'100%'}}, 
-							"Browse"
-					)
-				), 
-				 this.state.files.length ? false :
-					React.createElement("div", {className: "col-md-3"}, 
-						React.createElement("button", {type: "button", className: "btn btn-default", onClick: this.props.cancel, 
-							style: {width:'100%'}}, 
-								"Close"
-						)
-					)
-			)
-		);
-	},
-
 	renderFile: function(f){
 		return (
 			React.createElement("div", {key: f.name, className: "row", style: {margin:'5px 0px'}}, 
@@ -237,12 +225,15 @@ window.MyReact.Files = React.createClass({displayName: "Files",
 		if (this.state.uploadPercent < 0) {
 			return false;
 		}
+		var percent = this.state.uploadPercent;
+		var widthPercent = {width: percent+'%'};
 		return (
 			React.createElement("div", {className: "row", style: {margin:'5px 0px'}}, 
-				React.createElement("div", {className: "col-md-3 col-md-offset-9"}, 
-					React.createElement("div", {style: {width:'50%', float:'left'}}, 
-						React.createElement("div", {className: "bar", style: {width: this.state.progress+'%'}}), 
-						React.createElement("div", {className: "percent"}, this.state.progress, "%")
+				React.createElement("div", {className: "col-md-12"}, 
+					React.createElement("div", {className: "progress", style: {margin:'10px 0'}}, 
+  						React.createElement("div", {className: "progress-bar progress-bar-info progress-bar-striped", 
+  								role: "progressbar", "aria-valuenow": percent, 
+  								"aria-valuemin": "0", "aria-valuemax": "100", style: widthPercent})
 					)
 				)
 			)
@@ -250,21 +241,28 @@ window.MyReact.Files = React.createClass({displayName: "Files",
 	},
 
 	renderBottomRow: function() {
-		if (!this.state.files.length) {
-			return false;
-		}
 		return (
 			React.createElement("div", {className: "row", style: {margin:'5px 0px'}}, 
-				React.createElement("div", {className: "col-md-3 col-md-offset-6"}, 
-					React.createElement("button", {className: "btn btn-default", style: {width:'100%'}, onClick: this.props.cancel}, 
-						"Cancel"
+				React.createElement("div", {className: "col-md-3"}, 
+					React.createElement("input", {ref: "fileinput", name: "file", type: "file", multiple: true, onChange: this.handleAdd, 
+						style: {width:0, height:0, margin:0, border:'none'}}), 
+					React.createElement("button", {type: "button", className: "btn btn-default", onClick: this.handleBrowse, 
+						style: {width:'100%'}}, 
+							"Add files"
 					)
 				), 
-				React.createElement("div", {className: "col-md-3"}, 
-					React.createElement("button", {type: "submit", className: "btn btn-primary", style: {width:'100%'}}, 
-						React.createElement("i", {className: "glyphicon glyphicon-upload"}), " Upload"
-					)
-				)
+				 this.state.files.length ?
+					React.createElement("div", {className: "col-md-3 col-md-offset-3"}, 
+						React.createElement("button", {className: "btn btn-default", style: {width:'100%'}, onClick: this.handleCancel}, 
+							"Cancel"
+						)
+					) : false, 
+				 this.state.files.length ?
+					React.createElement("div", {className: "col-md-3"}, 
+						React.createElement("button", {type: "submit", className: "btn btn-primary", style: {width:'100%'}}, 
+							React.createElement("i", {className: "glyphicon glyphicon-upload"}), " Upload"
+						)
+					) : false
 			)
 		);
 	},
@@ -274,10 +272,9 @@ window.MyReact.Files = React.createClass({displayName: "Files",
 			React.createElement("div", {className: "file-upload-form"}, 
 				React.createElement("form", {className: "form-horizontal", style: {margin:0}, 
 						encType: "multipart/form-data", onSubmit: this.handleSubmit}, 
-					 this.renderTopRow(), 
 					 this.state.files.length ? this.state.files.map(this.renderFile) : false, 
 					 this.state.files.length ? this.renderProgress() : false, 
-					 this.state.files.length ? this.renderBottomRow() : false
+					 this.renderBottomRow() 
 				)
 			)
 		);

@@ -9,9 +9,14 @@ var Files = window.MyReact.Files;
 
 window.MyGEF = window.MyGEF || {};
 
+var apiRootName = "/gef/api";
+var apiNames = {
+	datasets: apiRootName+"/datasets",
+	createService: apiRootName+"/services",
+};
+
 function setState(state) {
-	if (this && this != window) {
-		console.log(this, state);
+	if (this && this != window && this.setState) {
 		this.setState(state);
 	}
 }
@@ -19,7 +24,7 @@ function setState(state) {
 var Main = React.createClass({
 	getInitialState: function () {
 		return {
-			page: this.datasets,
+			page: this.browseDatasets,
 			errorMessages: [],
 		};
 	},
@@ -65,21 +70,33 @@ var Main = React.createClass({
 		jQuery.ajax(ajaxObject);
 	},
 
-	datasets: function() {
+	browseDatasets: function() {
 		return (
-			<Datasets error={this.error} ajax={this.ajax} />
+			<BrowseDatasets error={this.error} ajax={this.ajax} />
 		);
 	},
 
-	workflows: function() {
+	executeService: function() {
 		return (
-			<Workflows error={this.error} ajax={this.ajax} />
+			<ExecuteService error={this.error} ajax={this.ajax} />
 		);
 	},
 
-	jobs: function() {
+	runningJobs: function() {
 		return (
-			<Jobs error={this.error} ajax={this.ajax} />
+			<RunningJobs error={this.error} ajax={this.ajax} />
+		);
+	},
+
+	createDataset: function() {
+		return (
+			<CreateDataset error={this.error} ajax={this.ajax} />
+		);
+	},
+
+	createService: function() {
+		return (
+			<CreateService error={this.error} ajax={this.ajax} />
 		);
 	},
 
@@ -100,9 +117,12 @@ var Main = React.createClass({
 					<div className="row">
 						<div className="col-xs-12 col-sm-2 col-md-2">
 							<div className="list-group">
-								{this.renderToolListItem(this.datasets, "Datasets")}
-								{this.renderToolListItem(this.workflows, "Workflows")}
-								{this.renderToolListItem(this.jobs, "Jobs")}
+								{this.renderToolListItem(this.createService, "Create Service")}
+								{this.renderToolListItem(this.executeService, "Execute Service")}
+								{this.renderToolListItem(this.runningJobs, "Browse Jobs")}
+							</div>
+							<div className="list-group">
+								{this.renderToolListItem(this.browseDatasets, "Browse Datasets")}
 							</div>
 						</div>
 						<div className="col-xs-12 col-sm-10 col-md-10">
@@ -115,7 +135,49 @@ var Main = React.createClass({
 	}
 });
 
-var Datasets = React.createClass({
+///////////////////////////////////////////////////////////////////////////////
+
+function humanSize(sz) {
+	if (sz < 1024) {
+		return [sz,"B  "];
+	} else if (sz < 1024 * 1024) {
+		return [(sz/1024).toFixed(1), "KiB"];
+	} else if (sz < 1024 * 1024 * 1024) {
+		return [(sz/(1024*1024)).toFixed(1), "MiB"];
+	} else if (sz < 1024 * 1024 * 1024 * 1024) {
+		return [(sz/(1024*1024*1024)).toFixed(1), "GiB"];
+	} else {
+		return [(sz/(1024*1024*1024*1024)).toFixed(1), "TiB"];
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+var CreateService = React.createClass({
+	var todo = (
+		<ul>
+			<li>Select base image</li>
+			<li>Upload files</li>
+			<li>Define inputs and outputs</li>
+			<li>Execute command</li>
+			<li>Test data</li>
+			<li>Create</li>
+		</ul>
+	);
+	render: function() {
+		return (
+			<div>
+				<h3> Create Service </h3>
+				<Files apiURL={apiNames.createService} error={this.props.error}
+						cancel={function(){}} />
+			</div>
+		);
+	},
+});
+
+///////////////////////////////////////////////////////////////////////////////
+
+var ExecuteService = React.createClass({
 	props: {
 		error: PT.func.isRequired,
 		ajax: PT.func.isRequired,
@@ -123,14 +185,67 @@ var Datasets = React.createClass({
 
 	getInitialState: function() {
 		return {
-			addNewPaneOpen: false,
+		};
+	},
+
+	render: function() {
+		return (
+			<div className="execute-service-page">
+				<h3> Execute Service </h3>
+			</div>
+		);
+	}
+});
+
+///////////////////////////////////////////////////////////////////////////////
+
+var RunningJobs = React.createClass({
+	render: function() {
+		return (
+			<div>
+				<h3> RunningJobs </h3>
+			</div>
+		);
+	},
+});
+
+///////////////////////////////////////////////////////////////////////////////
+
+var CreateDataset = React.createClass({
+	props: {
+		error: PT.func.isRequired,
+		ajax: PT.func.isRequired,
+	},
+
+	render: function() {
+		return (
+			<div>
+				<h3> Create Dataset </h3>
+				<p>Please select and upload all the files in your dataset</p>
+				<Files apiURL={apiNames.datasets} error={this.props.error}
+						cancel={function(){}} />
+			</div>
+		);
+	},
+});
+
+///////////////////////////////////////////////////////////////////////////////
+
+var BrowseDatasets = React.createClass({
+	props: {
+		error: PT.func.isRequired,
+ 		ajax: PT.func.isRequired,
+	},
+
+	getInitialState: function() {
+		return {
 			datasets: [],
 		};
 	},
 
 	componentDidMount: function() {
 		this.props.ajax({
-			url: 'api/datasets',
+			url: apiNames.datasets,
 			success: function(json, textStatus, jqXHR) {
 				if (!this.isMounted()) {
 					return;
@@ -144,96 +259,43 @@ var Datasets = React.createClass({
 		});
 	},
 
-	renderAddNew: function() {
+	renderHeads: function(dataset) {
 		return (
-			<div className="well">
-				<h4> Add new dataset </h4>
-				<p>Please select and upload all the files in your dataset</p>
-				<Files apiURL="api/datasets" error={this.props.error}
-					cancel={setState.bind(this, {addNewPaneOpen:false})} />
+			<div className="row table-head">
+				<div className="col-xs-12 col-sm-5 col-md-5" >ID</div>
+				<div className="col-xs-12 col-sm-2 col-md-2" style={{textAlign:'right'}}>Size</div>
+				<div className="col-xs-12 col-sm-5 col-md-5" style={{textAlign:'right'}}>Date</div>
 			</div>
 		);
 	},
 
-	humanSize: function(sz) {
-		if (sz < 1024) {
-			return [sz,"B"];
-		} else if (sz < 1024 * 1024) {
-			return [(sz/1024).toFixed(1), "KiB"];
-		} else if (sz < 1024 * 1024 * 1024) {
-			return [(sz/(1024*1024)).toFixed(1), "MiB"];
-		} else if (sz < 1024 * 1024 * 1024 * 1024) {
-			return [(sz/(1024*1024*1024)).toFixed(1), "GiB"];
-		} else {
-			return [(sz/(1024*1024*1024*1024)).toFixed(1), "TiB"];
-		}
-	},
-
 	renderDataset: function(dataset) {
-		var sz = this.humanSize(dataset.size);
+		var sz = humanSize(dataset.entry.size);
 		return (
-			<tr key={dataset.id}>
-				<td>{dataset.id}</td>
-				<td>{dataset.name}</td>
-				<td style={{textAlign:'right'}}>{sz[0]}</td>
-				<td style={{textAlign:'left'}}>{sz[1]}</td>
-				<td style={{textAlign:'right'}}>{new Date(dataset.date).toLocaleString()}</td>
-			</tr>
+			<div className="row">
+				<div key={dataset.id}>
+					<div className="col-xs-12 col-sm-5 col-md-5" >{dataset.id}</div>
+					<div className="col-xs-12 col-sm-2 col-md-2" style={{textAlign:'right'}}>{sz[0]} {sz[1]}</div>
+					<div className="col-xs-12 col-sm-5 col-md-5" style={{textAlign:'right'}}>{new Date(dataset.entry.date).toLocaleString()}</div>
+				</div>
+			</div>
 		);
 	},
 
 	render: function() {
 		return (
 			<div className="dataset-page">
-				<h3> Datasets </h3>
-				{ this.state.addNewPaneOpen ?
-					this.renderAddNew() :
-					<div className="row">
-						<div className="col-md-2 col-md-offset-10">
-							<button type="button" className="btn btn-default"
-								onClick={setState.bind(this, {addNewPaneOpen:true})}> Add new dataset </button>
-						</div>
-					</div>
-				}
-				<table className="table table-condensed table-hover">
-					<thead>
-						<tr>
-							<th>Id</th>
-							<th>Name</th>
-							<th style={{textAlign:'right'}}>Size</th>
-							<th style={{textAlign:'left'}}></th>
-							<th style={{textAlign:'right'}}>Date</th>
-						</tr>
-					</thead>
-					<tbody>
-						{ this.state.datasets.map(this.renderDataset) }
-					</tbody>
-				</table>
+				<h3> Browse Datasets </h3>
+				{ this.renderHeads() }
+				<div className="dataset-table">
+					{ this.state.datasets.map(this.renderDataset) }
+				</div>
 			</div>
 		);
 	}
 });
 
-var Workflows = React.createClass({
-	render: function() {
-		return (
-			<div>
-				<h3> Workflows </h3>
-			</div>
-		);
-	},
-});
-
-var Jobs = React.createClass({
-	render: function() {
-		return (
-			<div>
-				<h3> Jobs </h3>
-			</div>
-		);
-	},
-});
-
+///////////////////////////////////////////////////////////////////////////////
 
 var Footer = React.createClass({
 	about: function(e) {
