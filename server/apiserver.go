@@ -1,49 +1,86 @@
 package server
 
 import (
-	"encoding/json"
-	"errors"
-	"fmt"
+	"io"
 	"log"
 	"net/http"
+	"os"
+	"path/filepath"
 
 	"github.com/gefx/gef-docker/dckr"
 
+	"code.google.com/p/go-uuid/uuid"
 	"github.com/gorilla/mux"
 )
 
-// ErrPreMarshal reports a coding error before marshalling json
-var ErrPreMarshal = errors.New("pre-marshalling json error")
+const (
+	Version       = "0.1.0"
+	apiRootPath   = "/api"
+	imagesAPIPath = "/images"
+	jobsAPIPath   = "/jobs"
+	buildsAPIPath = "/builds"
+	buildsTmpDir  = "builds"
+	tmpDirDefault = "gefdocker"
+	tmpDirPerm    = 0700
+)
 
 // Config keeps the configuration options needed to make a Server
 type Config struct {
 	Address          string
 	ReadTimeoutSecs  int
 	WriteTimeoutSecs int
+
+	// TmpDir is the directory to keep session files in
+	// If the path is relative, it will be used as a subfolder of the system temporary directory
+	TmpDir string
 }
 
 // Server is a master struct for serving HTTP API requests
 type Server struct {
 	server http.Server
+	tmpDir string
 	docker *dckr.Client
 }
 
 // NewServer creates a new Server
 func NewServer(cfg Config, docker dckr.Client) *Server {
+	tmpDir := cfg.TmpDir
+	if tmpDir == "" {
+		tmpDir = tmpDirDefault
+	}
+	if !filepath.IsAbs(tmpDir) {
+		tmpDir = filepath.Join(os.TempDir(), tmpDir)
+	}
+	if err := os.MkdirAll(tmpDir, os.FileMode(tmpDirPerm)); err != nil {
+		log.Println("ERROR: cannot create temporary directory: ", err)
+		return nil
+	}
+
 	server := &Server{
-		http.Server{
+		server: http.Server{
 			Addr: cfg.Address,
 			// timeouts seem to trigger even after a correct read
 			// ReadTimeout: 	cfg.ReadTimeoutSecs * time.Second,
 			// WriteTimeout: 	cfg.WriteTimeoutSecs * time.Second,
-
-		}, &docker,
+		},
+		tmpDir: tmpDir,
+		docker: &docker,
 	}
 	router := mux.NewRouter()
-	apirouter := router.PathPrefix("/api").Subrouter()
-	apirouter.HandleFunc("/", server.listServicesHandler).Methods("GET")
-	apirouter.HandleFunc("/", server.buildServiceImageHandler).Methods("POST")
-	apirouter.HandleFunc("/{imageID}", server.inspectServiceHandler).Methods("GET")
+	apirouter := router.PathPrefix(apiRootPath).Subrouter()
+
+	apirouter.HandleFunc("/", server.infoHandler).Methods("GET")
+	apirouter.HandleFunc("/info", server.infoHandler).Methods("GET")
+
+	apirouter.HandleFunc(buildsAPIPath, server.newBuildHandler).Methods("POST")
+	apirouter.HandleFunc(buildsAPIPath+"/{buildID}", server.buildHandler).Methods("POST")
+
+	apirouter.HandleFunc(imagesAPIPath, server.listServicesHandler).Methods("GET")
+	apirouter.HandleFunc(imagesAPIPath+"/{imageID}", server.inspectServiceHandler).Methods("GET")
+
+	apirouter.HandleFunc(jobsAPIPath, server.listJobsHandler).Methods("GET")
+	apirouter.HandleFunc(jobsAPIPath, server.executeServiceHandler).Methods("POST")
+	apirouter.HandleFunc(jobsAPIPath+"/{jobID}/", server.inspectJobHandler).Methods("GET")
 
 	server.server.Handler = router
 	return server
@@ -54,14 +91,67 @@ func (s *Server) Start() error {
 	return s.server.ListenAndServe()
 }
 
+func (s Server) infoHandler(w http.ResponseWriter, r *http.Request) {
+	Response{w}.Ok(jmap("version", version))
+}
+
+func (s Server) newBuildHandler(w http.ResponseWriter, r *http.Request) {
+	buildID := string(uuid.NewRandom())
+	Response{w}.Location(buildID).Ok(jmap("Location", buildID))
+}
+
+func (s Server) buildHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	buildID := vars["buildID"]
+	buildDir := filepath.Join(s.tmpDir, buildsTmpDir, buildID)
+
+	mr, err := r.MultipartReader()
+	if err != nil {
+		Response{w}.ServerError("while getting multipart reader ", err)
+		return
+	}
+
+	for {
+		part, err := mr.NextPart()
+		if err == io.EOF {
+			break
+		}
+		if part.FileName() == "" {
+			continue
+		}
+		dst, err := os.Create(filepath.Join(buildDir, part.FileName()))
+		if err != nil {
+			Response{w}.ServerError("while creating file to save file part ", err)
+			return
+		}
+		defer dst.Close()
+
+		if _, err := io.Copy(dst, part); err != nil {
+			Response{w}.ServerError("while dumping file part ", err)
+			return
+		}
+	}
+
+	if _, err := os.Stat(filepath.Join(buildDir, "Dockerfile")); os.IsNotExist(err) {
+		Response{w}.ServerError("no Dockerfile to build new image ", err)
+		return
+	}
+
+	image, err := s.docker.BuildImage(buildDir)
+	if err != nil {
+		Response{w}.ServerError("build docker image: ", err)
+		return
+	}
+	Response{w}.Ok(jmap("Image", image))
+}
+
 func (s Server) listServicesHandler(w http.ResponseWriter, r *http.Request) {
 	imgIDs, err := s.docker.ListImages()
 	if err != nil {
-		log.Println("ERROR: list of docker images: ", err)
-		s.serverError(w, err)
+		Response{w}.ServerError("list of docker images: ", err)
 		return
 	}
-	s.okJMap(w, "ImageIDs", imgIDs)
+	Response{w}.Ok(jmap("ImageIDs", imgIDs))
 }
 
 func (s Server) inspectServiceHandler(w http.ResponseWriter, r *http.Request) {
@@ -69,80 +159,40 @@ func (s Server) inspectServiceHandler(w http.ResponseWriter, r *http.Request) {
 	imageID := dckr.ImageID(vars["imageID"])
 	image, err := s.docker.InspectImage(imageID)
 	if err != nil {
-		log.Println("ERROR: inspect docker image: ", err)
-		s.serverError(w, err)
+		Response{w}.ServerError("inspect docker image: ", err)
 		return
 	}
 	srv := extractServiceInfo(image.Labels)
-	s.okJMap(w, "Image", image, "Service", srv)
+	Response{w}.Ok(jmap("Image", image, "Service", srv))
 }
 
-func (s Server) buildServiceImageHandler(w http.ResponseWriter, r *http.Request) {
-	image, err := s.docker.BuildImage("../gef-service-example")
+func (s Server) listJobsHandler(w http.ResponseWriter, r *http.Request) {
+	containers, err := s.docker.ListContainers()
 	if err != nil {
-		log.Println("ERROR: build docker image: ", err)
-		s.serverError(w, err)
+		Response{w}.ServerError("list all containers: ", err)
 		return
 	}
-	s.okJMap(w, "Image", image)
+	Response{w}.Ok(jmap("Containers", containers))
 }
 
 func (s Server) executeServiceHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	imageID := dckr.ImageID(vars["imageID"])
-	container, err := s.docker.ExecuteImage(imageID)
+	containerID, err := s.docker.ExecuteImage(imageID)
 	if err != nil {
-		log.Println("ERROR: execute docker image: ", err)
-		s.serverError(w, err)
+		Response{w}.ServerError("execute docker image: ", err)
 		return
 	}
-	s.okJMap(w, "ContainerID", container.ID)
+	Response{w}.Ok(jmap("ContainerID", containerID))
 }
 
-func (s Server) okJMap(w http.ResponseWriter, kv ...interface{}) {
-	if len(kv) == 0 {
-		log.Println("ERROR: jsonmap: empty call")
-		s.serverError(w, ErrPreMarshal)
-		return
-	} else if len(kv)%2 == 1 {
-		log.Println("ERROR: jsonmap: unbalanced call")
-		s.serverError(w, ErrPreMarshal)
-		return
-	}
-	m := make(map[string]interface{})
-	k := ""
-	for _, kv := range kv {
-		if k == "" {
-			if skv, ok := kv.(string); !ok {
-				log.Println("ERROR: jsonmap: expected string key")
-				s.serverError(w, ErrPreMarshal)
-				return
-			} else if skv == "" {
-				log.Println("ERROR: jsonmap: string key is empty")
-				s.serverError(w, ErrPreMarshal)
-				return
-			} else {
-				k = skv
-			}
-		} else {
-			m[k] = kv
-			k = ""
-		}
-	}
-	s.okJSON(w, m)
-}
-
-func (s Server) okJSON(w http.ResponseWriter, data interface{}) {
-	json, err := json.Marshal(data)
+func (s Server) inspectJobHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	contID := dckr.ContainerID(vars["jobID"])
+	cont, err := s.docker.InspectContainer(contID)
 	if err != nil {
-		log.Println("ERROR: json marshal: ", err)
-		s.serverError(w, err)
+		Response{w}.ServerError("inspect container: ", err)
 		return
 	}
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.Write(json)
-}
-
-func (s Server) serverError(w http.ResponseWriter, err error) {
-	http.Error(w, fmt.Sprintln("Server Error: ", err), 500)
+	Response{w}.Ok(jmap("Container", cont))
 }
