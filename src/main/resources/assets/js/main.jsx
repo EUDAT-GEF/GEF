@@ -2,6 +2,28 @@
 (function() {
 "use strict";
 
+// 1. create gefservice: first screen
+//	- make possible the upload of a Dockerfile with some files
+//	- 	the Docker file must contain all the labels
+// 	- 	the server reads the labels and displays them in UI
+//	- user must accept to create the image
+//	- the frontend server delegates gef-docker to build the image
+//	- 	and the final image becomes a gef service
+//	-	the user is informed, gets the id of the new service
+// 2. list all the gefservices with their metadata
+// 	- make possible to execute one of them -> switch to the run wizard
+// 3. execute gefservice
+//	- input a pid of a dataset
+//	- select one of the gefservices from a list
+//	- run -> switch to the job monitoring page
+// 4. job monitoring
+//	- select running/finished job
+//	- the UI displays the status, stdout and stderr
+//	- the server exports the results automatically to b2drop
+// 5. gc for jobs older than...
+//
+
+
 var VERSION = "0.3.6";
 var PT = React.PropTypes;
 var ErrorPane = window.MyReact.ErrorPane;
@@ -16,8 +38,9 @@ var apiNames = {
 };
 
 function setState(state) {
-	if (this && this != window && this.setState) {
-		this.setState(state);
+	var t = this;
+	if (t && t != window && t.setState) {
+		t.setState(state);
 	}
 }
 
@@ -154,17 +177,17 @@ function humanSize(sz) {
 ///////////////////////////////////////////////////////////////////////////////
 
 var CreateService = React.createClass({
-	var todo = (
-		<ul>
-			<li>Select base image</li>
-			<li>Upload files</li>
-			<li>Define inputs and outputs</li>
-			<li>Execute command</li>
-			<li>Test data</li>
-			<li>Create</li>
-		</ul>
-	);
 	render: function() {
+		var todo = (
+			<ul>
+				<li>Select base image</li>
+				<li>Upload files</li>
+				<li>Define inputs and outputs</li>
+				<li>Execute command</li>
+				<li>Test data</li>
+				<li>Create</li>
+			</ul>
+		);
 		return (
 			<div>
 				<h3> Create Service </h3>
@@ -203,7 +226,7 @@ var RunningJobs = React.createClass({
 	render: function() {
 		return (
 			<div>
-				<h3> RunningJobs </h3>
+				<h3> Running Jobs </h3>
 			</div>
 		);
 	},
@@ -255,6 +278,7 @@ var BrowseDatasets = React.createClass({
 					return;
 				}
 				this.setState({datasets: json.datasets});
+				console.log(json.datasets);
 			}.bind(this),
 		});
 	},
@@ -269,15 +293,59 @@ var BrowseDatasets = React.createClass({
 		);
 	},
 
-	renderDataset: function(dataset) {
-		var sz = humanSize(dataset.entry.size);
+	toggleExpand: function(coll) {
+		coll.expand = !coll.expand;
+		this.setState({datasets:this.state.datasets});
+	},
+
+	renderRow: function(indent, state, name, size, date, fn) {
+		var indentStyle = {marginLeft: 20 * indent};
+		var sz = humanSize(size);
+		var icon = "glyphicon " + (state === 'close' ? "glyphicon-folder-close" :
+			state === 'open' ? "glyphicon-folder-open" : "glyphicon-file");
 		return (
-			<div className="row">
-				<div key={dataset.id}>
-					<div className="col-xs-12 col-sm-5 col-md-5" >{dataset.id}</div>
-					<div className="col-xs-12 col-sm-2 col-md-2" style={{textAlign:'right'}}>{sz[0]} {sz[1]}</div>
-					<div className="col-xs-12 col-sm-5 col-md-5" style={{textAlign:'right'}}>{new Date(dataset.entry.date).toLocaleString()}</div>
+			<div className="row" key={name+indent} onClick={fn}>
+				<div className="col-xs-12 col-sm-5 col-md-5">
+					<div style={indentStyle}>
+						<i className={icon}/> {name}
+					</div>
 				</div>
+				<div className="col-xs-12 col-sm-2 col-md-2" style={{textAlign:'right'}}>{sz[0]} {sz[1]}</div>
+				<div className="col-xs-12 col-sm-5 col-md-5" style={{textAlign:'right'}}>{new Date(date).toLocaleString()}</div>
+			</div>
+		);
+	},
+
+	renderColl: function(indent, coll) {
+		return (
+			<div>
+				{ this.renderRow(indent, coll.expand ? "open":"close",
+					coll.name, coll.size, coll.date, this.toggleExpand.bind(this, coll)) }
+				{coll.expand ?
+					<div>
+						{ dataset.entry.colls.map(this.renderColl.bind(this, indent+1)) }
+						{ dataset.entry.files.map(this.renderFile.bind(this, indent+1)) }
+					</div>
+				: false}
+			</div>
+		);
+	},
+
+	renderFile: function(indent, file) {
+		return this.renderRow(indent, "file", file.name, file.size, file.date, function(){});
+	},
+
+	renderDataset: function(dataset) {
+		return (
+			<div>
+				{ this.renderRow(0, dataset.expand ? "open":"close",
+					dataset.id, dataset.entry.size, dataset.entry.date, this.toggleExpand.bind(this, dataset)) }
+				{dataset.expand ?
+					<div>
+						{ dataset.entry.colls.map(this.renderColl.bind(this, 1)) }
+						{ dataset.entry.files.map(this.renderFile.bind(this, 1)) }
+					</div>
+				: false}
 			</div>
 		);
 	},

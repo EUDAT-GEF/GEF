@@ -2,6 +2,28 @@
 (function() {
 "use strict";
 
+// 1. create gefservice: first screen
+//	- make possible the upload of a Dockerfile with some files
+//	- 	the Docker file must contain all the labels
+// 	- 	the server reads the labels and displays them in UI
+//	- user must accept to create the image
+//	- the frontend server delegates gef-docker to build the image
+//	- 	and the final image becomes a gef service
+//	-	the user is informed, gets the id of the new service
+// 2. list all the gefservices with their metadata
+// 	- make possible to execute one of them -> switch to the run wizard
+// 3. execute gefservice
+//	- input a pid of a dataset
+//	- select one of the gefservices from a list
+//	- run -> switch to the job monitoring page
+// 4. job monitoring
+//	- select running/finished job
+//	- the UI displays the status, stdout and stderr
+//	- the server exports the results automatically to b2drop
+// 5. gc for jobs older than...
+//
+
+
 var VERSION = "0.3.6";
 var PT = React.PropTypes;
 var ErrorPane = window.MyReact.ErrorPane;
@@ -12,11 +34,13 @@ window.MyGEF = window.MyGEF || {};
 var apiRootName = "/gef/api";
 var apiNames = {
 	datasets: apiRootName+"/datasets",
+	createService: apiRootName+"/services",
 };
 
 function setState(state) {
-	if (this && this != window && this.setState) {
-		this.setState(state);
+	var t = this;
+	if (t && t != window && t.setState) {
+		t.setState(state);
 	}
 }
 
@@ -154,17 +178,21 @@ function humanSize(sz) {
 
 var CreateService = React.createClass({displayName: "CreateService",
 	render: function() {
+		var todo = (
+			React.createElement("ul", null, 
+				React.createElement("li", null, "Select base image"), 
+				React.createElement("li", null, "Upload files"), 
+				React.createElement("li", null, "Define inputs and outputs"), 
+				React.createElement("li", null, "Execute command"), 
+				React.createElement("li", null, "Test data"), 
+				React.createElement("li", null, "Create")
+			)
+		);
 		return (
 			React.createElement("div", null, 
 				React.createElement("h3", null, " Create Service "), 
-				React.createElement("ul", null, 
-					React.createElement("li", null, "Select base image"), 
-					React.createElement("li", null, "Upload files"), 
-					React.createElement("li", null, "Define inputs and outputs"), 
-					React.createElement("li", null, "Execute command"), 
-					React.createElement("li", null, "Test data"), 
-					React.createElement("li", null, "Create")
-				)
+				React.createElement(Files, {apiURL: apiNames.createService, error: this.props.error, 
+						cancel: function(){}})
 			)
 		);
 	},
@@ -198,7 +226,7 @@ var RunningJobs = React.createClass({displayName: "RunningJobs",
 	render: function() {
 		return (
 			React.createElement("div", null, 
-				React.createElement("h3", null, " RunningJobs ")
+				React.createElement("h3", null, " Running Jobs ")
 			)
 		);
 	},
@@ -250,6 +278,7 @@ var BrowseDatasets = React.createClass({displayName: "BrowseDatasets",
 					return;
 				}
 				this.setState({datasets: json.datasets});
+				console.log(json.datasets);
 			}.bind(this),
 		});
 	},
@@ -264,15 +293,59 @@ var BrowseDatasets = React.createClass({displayName: "BrowseDatasets",
 		);
 	},
 
-	renderDataset: function(dataset) {
-		var sz = humanSize(dataset.entry.size);
+	toggleExpand: function(coll) {
+		coll.expand = !coll.expand;
+		this.setState({datasets:this.state.datasets});
+	},
+
+	renderRow: function(indent, state, name, size, date, fn) {
+		var indentStyle = {marginLeft: 20 * indent};
+		var sz = humanSize(size);
+		var icon = "glyphicon " + (state === 'close' ? "glyphicon-folder-close" :
+			state === 'open' ? "glyphicon-folder-open" : "glyphicon-file");
 		return (
-			React.createElement("div", {className: "row"}, 
-				React.createElement("div", {key: dataset.id}, 
-					React.createElement("div", {className: "col-xs-12 col-sm-5 col-md-5"}, dataset.id), 
-					React.createElement("div", {className: "col-xs-12 col-sm-2 col-md-2", style: {textAlign:'right'}}, sz[0], " ", sz[1]), 
-					React.createElement("div", {className: "col-xs-12 col-sm-5 col-md-5", style: {textAlign:'right'}}, new Date(dataset.entry.date).toLocaleString())
-				)
+			React.createElement("div", {className: "row", key: name+indent, onClick: fn}, 
+				React.createElement("div", {className: "col-xs-12 col-sm-5 col-md-5"}, 
+					React.createElement("div", {style: indentStyle}, 
+						React.createElement("i", {className: icon}), " ", name
+					)
+				), 
+				React.createElement("div", {className: "col-xs-12 col-sm-2 col-md-2", style: {textAlign:'right'}}, sz[0], " ", sz[1]), 
+				React.createElement("div", {className: "col-xs-12 col-sm-5 col-md-5", style: {textAlign:'right'}}, new Date(date).toLocaleString())
+			)
+		);
+	},
+
+	renderColl: function(indent, coll) {
+		return (
+			React.createElement("div", null, 
+				 this.renderRow(indent, coll.expand ? "open":"close",
+					coll.name, coll.size, coll.date, this.toggleExpand.bind(this, coll)), 
+				coll.expand ?
+					React.createElement("div", null, 
+						 dataset.entry.colls.map(this.renderColl.bind(this, indent+1)), 
+						 dataset.entry.files.map(this.renderFile.bind(this, indent+1)) 
+					)
+				: false
+			)
+		);
+	},
+
+	renderFile: function(indent, file) {
+		return this.renderRow(indent, "file", file.name, file.size, file.date, function(){});
+	},
+
+	renderDataset: function(dataset) {
+		return (
+			React.createElement("div", null, 
+				 this.renderRow(0, dataset.expand ? "open":"close",
+					dataset.id, dataset.entry.size, dataset.entry.date, this.toggleExpand.bind(this, dataset)), 
+				dataset.expand ?
+					React.createElement("div", null, 
+						 dataset.entry.colls.map(this.renderColl.bind(this, 1)), 
+						 dataset.entry.files.map(this.renderFile.bind(this, 1)) 
+					)
+				: false
 			)
 		);
 	},
