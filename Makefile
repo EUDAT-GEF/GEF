@@ -33,14 +33,13 @@ target:
 	mvn -q package
 
 run:
-	# (cd vagrant && vagrant up)
-	# ./gef-docker
-	$(eval JAR = $(shell find target -iname 'GEF-*.jar'))
-	java -cp src/main/resources:$(JAR) eu.eudat.gef.app.GEF server gefconfig.yml
+	@echo "The GEF front end depends on an iRODS server + an gef-docker server!"
+	@$(eval JAR = $(shell find target -iname 'GEF-*.jar'))
+	@java -cp src/main/resources:$(JAR) eu.eudat.gef.app.GEF server gefconfig.yml
 
 run_production:
-	$(eval JAR = $(shell find target -iname 'GEF-*.jar'))
-	java -jar $(JAR) server gefconfig.yml
+	@$(eval JAR = $(shell find target -iname 'GEF-*.jar'))
+	@java -jar $(JAR) server gefconfig.yml
 
 clean:
 	go clean
