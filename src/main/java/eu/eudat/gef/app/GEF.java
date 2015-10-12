@@ -40,9 +40,9 @@ public class GEF extends Application<GEFConfig> {
 		log.info("GEF initialization started.");
 		instance = this;
 
-		System.out.println("Using parameters: ");
+		log.info("Using parameters: ");
 		try {
-			System.out.println(new ObjectMapper().writerWithDefaultPrettyPrinter().
+			log.info(new ObjectMapper().writerWithDefaultPrettyPrinter().
 					writeValueAsString(config.gefParams));
 		} catch (IOException xc) {
 		}
