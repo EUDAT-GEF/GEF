@@ -24,9 +24,10 @@
 //
 
 
-var VERSION = "0.3.6";
+var VERSION = "0.3.7";
 var PT = React.PropTypes;
 var ErrorPane = window.MyReact.ErrorPane;
+var FileAddButton = window.MyReact.FileAddButton;
 var Files = window.MyReact.Files;
 
 window.MyGEF = window.MyGEF || {};
@@ -47,7 +48,7 @@ function setState(state) {
 var Main = React.createClass({
 	getInitialState: function () {
 		return {
-			page: this.browseDatasets,
+			page: this.createService,
 			errorMessages: [],
 		};
 	},
@@ -176,21 +177,27 @@ function humanSize(sz) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+
 var CreateService = React.createClass({
+	dockerfileAdd: function(files) {
+		if (files.length === 1) {
+			console.log("dockerfile add", files);
+			this.setState({dockerfile: files[0]});
+		}
+	},
+
 	render: function() {
-		var todo = (
-			<ul>
-				<li>Select base image</li>
-				<li>Upload files</li>
-				<li>Define inputs and outputs</li>
-				<li>Execute command</li>
-				<li>Test data</li>
-				<li>Create</li>
-			</ul>
-		);
 		return (
 			<div>
 				<h3> Create Service </h3>
+				<p>Please select and upload the Docker file</p>
+				<div className="row" style={{margin:'5px 0px'}}>
+					<div className="col-md-3">
+						<FileAddButton caption="Select Dockerfile" fileAddHandler={this.dockerfileAdd} />
+					</div>
+				</div>
+				{}
+				<hr/>
 				<Files apiURL={apiNames.createService} error={this.props.error}
 						cancel={function(){}} />
 			</div>

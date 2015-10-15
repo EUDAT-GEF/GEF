@@ -4,7 +4,7 @@
 
 	<groupId>eu.eudat.gef</groupId>
 	<artifactId>GEF</artifactId>
-	<version>0.3-beta-5</version>
+	<version>0.3-beta-7</version>
 	<name>GEF</name>
 
 	<properties>

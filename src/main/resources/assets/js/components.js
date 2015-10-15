@@ -6,12 +6,12 @@ var PT = React.PropTypes;
 var ReactCSSTransitionGroup = React.addons.ReactCSSTransitionGroup;
 var ReactTransitionGroup = React.addons.TransitionGroup;
 
-window.MyReact = {};
+window.MyReact = window.MyReact || {};
 
 ///////////////////////////////////////////////////////////////////////////////
 // Slides
 
-var JQuerySlide = React.createClass({displayName: "JQuerySlide",
+var JQuerySlide = window.MyReact.JQuerySlide = React.createClass({displayName: "JQuerySlide",
 	componentWillEnter: function(callback){
 		var el = jQuery(this.getDOMNode());
 		el.css("display", "none");
@@ -30,9 +30,8 @@ var JQuerySlide = React.createClass({displayName: "JQuerySlide",
 		return this.transferPropsTo(this.props.component({style: {display: 'none'}}));
 	}
 });
-window.MyReact.JQuerySlide = JQuerySlide;
 
-var JQueryFade = React.createClass({displayName: "JQueryFade",
+var JQueryFade = window.MyReact.JQueryFade = React.createClass({displayName: "JQueryFade",
 	componentWillEnter: function(callback){
 		var el = jQuery(this.getDOMNode());
 		el.css("display", "none");
@@ -45,7 +44,7 @@ var JQueryFade = React.createClass({displayName: "JQueryFade",
 		return this.props.children;
 	}
 });
-window.MyReact.JQueryFade = JQueryFade;
+
 
 ///////////////////////////////////////////////////////////////////////////////
 // Error Pane
@@ -119,6 +118,40 @@ window.MyReact.Modal = React.createClass({displayName: "Modal",
 ///////////////////////////////////////////////////////////////////////////////
 // Files
 
+var FileAddButton = window.MyReact.FileAddButton = React.createClass({displayName: "FileAddButton",
+	props: {
+		caption: PT.string.isRequired,
+		fileAddHandler: PT.func.isRequired,
+		multiple: PT.bool,
+	},
+
+	doBrowse: function(event) {
+		this.refs.__fileinput.getDOMNode().click();
+	},
+
+	doAddFiles: function(event) {
+		this.props.fileAddHandler(event.target.files);
+	},
+
+	render: function() {
+		var noshow = {width:0, height:0, margin:0, border:'none'};
+		var input =	React.createElement("input", {ref: "__fileinput", name: "file", type: "file", style: noshow, 
+						onChange: this.doAddFiles});
+		if (this.props.multiple) {
+			input =	React.createElement("input", {ref: "__fileinput", name: "file", type: "file", style: noshow, 
+						onChange: this.doAddFiles, multiple: true});
+		}
+		return (
+			React.createElement("div", null, 
+				input, 
+				React.createElement("button", {type: "button", className: "btn btn-default", style: {width:"100%"}, onClick: this.doBrowse}, 
+					this.props.caption || "Browse", " ")
+			)
+		);
+	},
+});
+
+
 window.MyReact.Files = React.createClass({displayName: "Files",
 	propTypes: {
 		error: PT.func.isRequired,
@@ -133,14 +166,9 @@ window.MyReact.Files = React.createClass({displayName: "Files",
 		}
 	},
 
-	handleBrowse: function(event) {
-		this.refs.fileinput.getDOMNode().click();
-	},
-
-	handleAdd: function(event) {
-		console.log("adding", event.target.files);
+	handleAdd: function(fs) {
+		console.log("adding files", fs);
 		var files = this.state.files;
-		var fs = event.target.files;
 		for (var i = 0, length = fs.length; i < length; ++i) {
 			files.push(fs[i]);
 			// console.log("added", fs[i]);
@@ -244,13 +272,9 @@ window.MyReact.Files = React.createClass({displayName: "Files",
 		return (
 			React.createElement("div", {className: "row", style: {margin:'5px 0px'}}, 
 				React.createElement("div", {className: "col-md-3"}, 
-					React.createElement("input", {ref: "fileinput", name: "file", type: "file", multiple: true, onChange: this.handleAdd, 
-						style: {width:0, height:0, margin:0, border:'none'}}), 
-					React.createElement("button", {type: "button", className: "btn btn-default", onClick: this.handleBrowse, 
-						style: {width:'100%'}}, 
-							"Add files"
-					)
+					React.createElement(FileAddButton, {caption: "Add files", fileAddHandler: this.handleAdd})
 				), 
+
 				 this.state.files.length ?
 					React.createElement("div", {className: "col-md-3 col-md-offset-3"}, 
 						React.createElement("button", {className: "btn btn-default", style: {width:'100%'}, onClick: this.handleCancel}, 

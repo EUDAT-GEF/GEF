@@ -6,12 +6,12 @@ var PT = React.PropTypes;
 var ReactCSSTransitionGroup = React.addons.ReactCSSTransitionGroup;
 var ReactTransitionGroup = React.addons.TransitionGroup;
 
-window.MyReact = {};
+window.MyReact = window.MyReact || {};
 
 ///////////////////////////////////////////////////////////////////////////////
 // Slides
 
-var JQuerySlide = React.createClass({
+var JQuerySlide = window.MyReact.JQuerySlide = React.createClass({
 	componentWillEnter: function(callback){
 		var el = jQuery(this.getDOMNode());
 		el.css("display", "none");
@@ -30,9 +30,8 @@ var JQuerySlide = React.createClass({
 		return this.transferPropsTo(this.props.component({style: {display: 'none'}}));
 	}
 });
-window.MyReact.JQuerySlide = JQuerySlide;
 
-var JQueryFade = React.createClass({
+var JQueryFade = window.MyReact.JQueryFade = React.createClass({
 	componentWillEnter: function(callback){
 		var el = jQuery(this.getDOMNode());
 		el.css("display", "none");
@@ -45,7 +44,7 @@ var JQueryFade = React.createClass({
 		return this.props.children;
 	}
 });
-window.MyReact.JQueryFade = JQueryFade;
+
 
 ///////////////////////////////////////////////////////////////////////////////
 // Error Pane
@@ -119,6 +118,40 @@ window.MyReact.Modal = React.createClass({
 ///////////////////////////////////////////////////////////////////////////////
 // Files
 
+var FileAddButton = window.MyReact.FileAddButton = React.createClass({
+	props: {
+		caption: PT.string.isRequired,
+		fileAddHandler: PT.func.isRequired,
+		multiple: PT.bool,
+	},
+
+	doBrowse: function(event) {
+		this.refs.__fileinput.getDOMNode().click();
+	},
+
+	doAddFiles: function(event) {
+		this.props.fileAddHandler(event.target.files);
+	},
+
+	render: function() {
+		var noshow = {width:0, height:0, margin:0, border:'none'};
+		var input =	<input ref='__fileinput' name="file" type="file" style={noshow}
+						onChange={this.doAddFiles} />;
+		if (this.props.multiple) {
+			input =	<input ref='__fileinput' name="file" type="file" style={noshow}
+						onChange={this.doAddFiles} multiple />;
+		}
+		return (
+			<div>
+				{input}
+				<button type="button" className="btn btn-default" style={{width:"100%"}} onClick={this.doBrowse}>
+					{this.props.caption || "Browse"} </button>
+			</div>
+		);
+	},
+});
+
+
 window.MyReact.Files = React.createClass({
 	propTypes: {
 		error: PT.func.isRequired,
@@ -133,14 +166,9 @@ window.MyReact.Files = React.createClass({
 		}
 	},
 
-	handleBrowse: function(event) {
-		this.refs.fileinput.getDOMNode().click();
-	},
-
-	handleAdd: function(event) {
-		console.log("adding", event.target.files);
+	handleAdd: function(fs) {
+		console.log("adding files", fs);
 		var files = this.state.files;
-		var fs = event.target.files;
 		for (var i = 0, length = fs.length; i < length; ++i) {
 			files.push(fs[i]);
 			// console.log("added", fs[i]);
@@ -244,13 +272,9 @@ window.MyReact.Files = React.createClass({
 		return (
 			<div className="row" style={{margin:'5px 0px'}}>
 				<div className="col-md-3">
-					<input ref='fileinput' name="file" type="file" multiple onChange={this.handleAdd}
-						style={{width:0, height:0, margin:0, border:'none'}} />
-					<button type="button" className="btn btn-default" onClick={this.handleBrowse}
-						style={{width:'100%'}}>
-							Add files
-					</button>
+					<FileAddButton caption="Add files" fileAddHandler={this.handleAdd} />
 				</div>
+
 				{ this.state.files.length ?
 					<div className="col-md-3 col-md-offset-3">
 						<button className="btn btn-default" style={{width:'100%'}} onClick={this.handleCancel}>

@@ -24,9 +24,10 @@
 //
 
 
-var VERSION = "0.3.6";
+var VERSION = "0.3.7";
 var PT = React.PropTypes;
 var ErrorPane = window.MyReact.ErrorPane;
+var FileAddButton = window.MyReact.FileAddButton;
 var Files = window.MyReact.Files;
 
 window.MyGEF = window.MyGEF || {};
@@ -47,7 +48,7 @@ function setState(state) {
 var Main = React.createClass({displayName: "Main",
 	getInitialState: function () {
 		return {
-			page: this.browseDatasets,
+			page: this.createService,
 			errorMessages: [],
 		};
 	},
@@ -176,21 +177,27 @@ function humanSize(sz) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+
 var CreateService = React.createClass({displayName: "CreateService",
+	dockerfileAdd: function(files) {
+		if (files.length === 1) {
+			console.log("dockerfile add", files);
+			this.setState({dockerfile: files[0]});
+		}
+	},
+
 	render: function() {
-		var todo = (
-			React.createElement("ul", null, 
-				React.createElement("li", null, "Select base image"), 
-				React.createElement("li", null, "Upload files"), 
-				React.createElement("li", null, "Define inputs and outputs"), 
-				React.createElement("li", null, "Execute command"), 
-				React.createElement("li", null, "Test data"), 
-				React.createElement("li", null, "Create")
-			)
-		);
 		return (
 			React.createElement("div", null, 
 				React.createElement("h3", null, " Create Service "), 
+				React.createElement("p", null, "Please select and upload the Docker file"), 
+				React.createElement("div", {className: "row", style: {margin:'5px 0px'}}, 
+					React.createElement("div", {className: "col-md-3"}, 
+						React.createElement(FileAddButton, {caption: "Select Dockerfile", fileAddHandler: this.dockerfileAdd})
+					)
+				), 
+				
+				React.createElement("hr", null), 
 				React.createElement(Files, {apiURL: apiNames.createService, error: this.props.error, 
 						cancel: function(){}})
 			)
