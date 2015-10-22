@@ -39,7 +39,10 @@ func main() {
 
 	server := server.NewServer(config.Server, client)
 	log.Println("Starting GEF server at: ", config.Server.Address)
-	server.Start()
+	err = server.Start()
+	if err != nil {
+		log.Println("GEF server failed: ", err)
+	}
 }
 
 func readConfigFile(configfilepath string) (configuration, error) {

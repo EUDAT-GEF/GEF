@@ -14,7 +14,11 @@ import (
 )
 
 const (
-	Version       = "0.1.0"
+	// Version defines the api version
+	Version = "0.1.1"
+)
+
+const (
 	apiRootPath   = "/api"
 	imagesAPIPath = "/images"
 	jobsAPIPath   = "/jobs"
@@ -92,12 +96,12 @@ func (s *Server) Start() error {
 }
 
 func (s Server) infoHandler(w http.ResponseWriter, r *http.Request) {
-	Response{w}.Ok(jmap("version", version))
+	Response{w}.Ok(jmap("version", Version))
 }
 
 func (s Server) newBuildHandler(w http.ResponseWriter, r *http.Request) {
-	buildID := string(uuid.NewRandom())
-	Response{w}.Location(buildID).Ok(jmap("Location", buildID))
+	buildID := uuid.NewRandom().String()
+	Response{w}.Location(buildID).Created(jmap("Location", buildID))
 }
 
 func (s Server) buildHandler(w http.ResponseWriter, r *http.Request) {

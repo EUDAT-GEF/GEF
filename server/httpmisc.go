@@ -25,8 +25,18 @@ func (w Response) ServerError(message string, err error) {
 	http.Error(w, str, 500)
 }
 
-// Ok sets the body for a ok response
+// Ok sets the body for an ok response
 func (w Response) Ok(body interface{}) {
+	return w.Set(200, body)
+}
+
+// Ok sets the body for a created response
+func (w Response) Created(body interface{}) {
+	return w.Set(201, body)
+}
+
+// Set sets the body and the return code
+func (w Response) Set(code int, body interface{}) {
 	if jsonMap, ok := body.(jsonMap); ok {
 		json, err := json.Marshal(jsonMap.m)
 		if err != nil {
