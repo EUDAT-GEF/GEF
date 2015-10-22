@@ -35,7 +35,8 @@ window.MyGEF = window.MyGEF || {};
 
 var apiNames = {
 	datasets: "/gef/api/datasets",
-	builds: "/gef/api/builds",
+	builds:   "/gef/api/builds",
+	images:   "/gef/api/images",
 };
 
 function setState(state) {
@@ -48,7 +49,7 @@ function setState(state) {
 var Main = React.createClass({
 	getInitialState: function () {
 		return {
-			page: this.createService,
+			page: this.executeService,
 			errorMessages: [],
 		};
 	},
@@ -184,9 +185,16 @@ var CreateService = React.createClass({
 		ajax: PT.func.isRequired,
 	},
 
-	url: null,
+	getInitialState: function() {
+		return {
+			buildURL: null,
+			error: null,
+			created: null,
+		};
+	},
+
 	getURL: function() {
-		return this.url;
+		return this.state.buildURL;
 	},
 
 	componentDidMount: function() {
@@ -201,8 +209,9 @@ var CreateService = React.createClass({
 					this.props.error("Didn't get json location from server");
 					return;
 				}
-				this.url = apiNames.builds + "/" + json.Location;
-				console.log("create new service url :", this.url);
+				var buildURL = apiNames.builds + "/" + json.Location;
+				this.setState({buildURL: buildURL});
+				console.log("create new service url :", buildURL);
 			}.bind(this),
 		});
 	},
@@ -214,14 +223,43 @@ var CreateService = React.createClass({
 		}
 	},
 
+	error: function(err) {
+		this.setState({error:err});
+	},
+
+	created: function(responseText) {
+		var json = JSON.parse(responseText);
+		console.log("created", json.Image);
+		this.setState({created:json.Image});
+	},
+
+	renderCreated: function() {
+		var image = this.state.created;
+		return (
+			<div>
+				<p>Created gef service</p>
+				<p>{image.ID}</p>
+				<p>{image.Labels}</p>
+			</div>
+		);
+	},
+
+	renderFiles: function() {
+		return (
+			<div>
+				<p>Please select and upload the Dockerfile, together
+				with other files which are part of the container</p>
+				<Files getApiURL={this.getURL} cancel={function(){}} error={this.error} done={this.created} />
+				{this.state.error ? <p style={{color:'red'}}>{this.state.error}</p> : false}
+			</div>
+		);
+	},
+
 	render: function() {
 		return (
 			<div>
 				<h3> Create Service </h3>
-				<p>Please select and upload the Dockerfile, together
-				with other files which are part of the container</p>
-				<Files getApiURL={this.getURL} error={this.props.error}
-						cancel={function(){}} />
+				{this.state.created ? this.renderCreated() : this.renderFiles() }
  			</div>
 		);
 	},
@@ -237,13 +275,39 @@ var ExecuteService = React.createClass({
 
 	getInitialState: function() {
 		return {
+			imageIds: [],
 		};
+	},
+
+	componentDidMount: function() {
+		console.log("url: ", apiNames.images);
+		this.props.ajax({
+			url: apiNames.images,
+			success: function(json, textStatus, jqXHR) {
+				if (!this.isMounted()) {
+					return;
+				}
+				if (!json.ImageIDs) {
+					this.props.error("Didn't get ImageIDs from server");
+					return;
+				}
+				this.setState({imageIds: json.ImageIDs});
+				console.log("got image ids :", json.ImageIDs);
+			}.bind(this),
+		});
+	},
+
+	renderImageId: function(imageId) {
+		return (
+			<div>{imageId}</div>
+		);
 	},
 
 	render: function() {
 		return (
 			<div className="execute-service-page">
 				<h3> Execute Service </h3>
+				{ this.state.imageIds.map(this.renderImageId) }
 			</div>
 		);
 	}

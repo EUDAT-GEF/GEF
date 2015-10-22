@@ -154,9 +154,10 @@ var FileAddButton = window.MyReact.FileAddButton = React.createClass({
 
 window.MyReact.Files = React.createClass({
 	propTypes: {
-		error: PT.func.isRequired,
-		cancel: PT.func.isRequired,
 		getApiURL: PT.func.isRequired,
+		cancel: PT.func.isRequired,
+		error: PT.func.isRequired,
+		done: PT.func.isRequired,
 	},
 
 	getInitialState: function() {
@@ -177,7 +178,7 @@ window.MyReact.Files = React.createClass({
 	},
 
 	handleSubmit: function(e) {
-		console.log("submitting", e);
+		// console.log("submitting", e);
 		e.preventDefault();
 
 		var fs = this.state.files;
@@ -191,17 +192,25 @@ window.MyReact.Files = React.createClass({
 		}
 		var xhr = new XMLHttpRequest();
 		xhr.upload.addEventListener("progress", this.uploadProgress, false);
-		xhr.addEventListener("load", this.uploadComplete, false);
-		xhr.addEventListener("error", this.uploadFailed, false);
-		xhr.addEventListener("abort", this.uploadCanceled, false);
 		this.setState({uploadPercent:0});
 
 		xhr.open("POST", this.props.getApiURL());
+		xhr.onreadystatechange = function () {
+			if (XMLHttpRequest.DONE != xhr.readyState) {
+				return;
+			}
+			var codeh = xhr.status/100;
+			if (codeh === 2) {
+				this.uploadComplete(xhr);
+			} else if (codeh === 4 || codeh === 5) {
+				this.uploadFailed(xhr);
+			}
+		}.bind(this);
 		xhr.send(fd);
 	},
 
 	handleCancel: function(e) {
-		console.log("cancel", e);
+		// console.log("cancel", e);
 		e.preventDefault();
 		this.setState(this.getInitialState());
 		if (this.props.cancel) {
@@ -215,20 +224,23 @@ window.MyReact.Files = React.createClass({
 	},
 
 	uploadProgress: function(e){
-		console.log('progress', e);
-		this.setState({uploadPercent:0});
-	},
-	uploadComplete: function(e){
-		console.log('complete', e);
-		this.setState({uploadPercent:101});
-	},
-	uploadFailed: function(e){
-		console.log('failed', e);
-		this.setState({uploadPercent:-1});
+		// console.log('progress', e);
+		var p = e.loaded / e.total * 100;
+		this.setState({uploadPercent:p});
 	},
 	uploadCanceled: function(e){
-		console.log('canceled', e);
+		// console.log('canceled', e);
 		this.setState({uploadPercent:-1});
+	},
+	uploadFailed: function(xhr){
+		// console.log('failed', xhr);
+		this.setState({uploadPercent:101});
+		this.props.error(xhr.responseText);
+	},
+	uploadComplete: function(xhr){
+		// console.log('complete', xhr);
+		this.setState({uploadPercent:101});
+		this.props.done(xhr.responseText);
 	},
 
 	renderFile: function(f){
@@ -237,7 +249,7 @@ window.MyReact.Files = React.createClass({
 				<div className="col-md-12">
 					<div className="input-group">
 						<input type="text" className="input-large" readOnly="readonly"
-						 	style={{width:'100%', lineHeight:'26px', paddingLeft:10}} value={f.name}/>
+							style={{width:'100%', lineHeight:'26px', paddingLeft:10}} value={f.name}/>
 						<span className="input-group-btn">
 							<button type="button" className="btn btn-warning btn-sm" onClick={this.handleRemove.bind(this, f)}>
 								<i className="glyphicon glyphicon-remove"/>
@@ -259,9 +271,9 @@ window.MyReact.Files = React.createClass({
 			<div className="row" style={{margin:'5px 0px'}}>
 				<div className="col-md-12">
 					<div className="progress" style={{margin:'10px 0'}}>
-  						<div className="progress-bar progress-bar-info progress-bar-striped"
-  								role="progressbar" aria-valuenow={percent}
-  								aria-valuemin="0" aria-valuemax="100" style={widthPercent} />
+						<div className="progress-bar progress-bar-info progress-bar-striped"
+								role="progressbar" aria-valuenow={percent}
+								aria-valuemin="0" aria-valuemax="100" style={widthPercent} />
 					</div>
 				</div>
 			</div>
