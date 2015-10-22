@@ -77,7 +77,7 @@ public class GEFConfig extends Configuration {
 
 		@NotEmpty
 		@JsonProperty
-		public int timeout = 2000; // 2 secs
+		public int timeout = 60 * 1000; // millisecs
 	}
 
 	public Params gefParams = new Params();

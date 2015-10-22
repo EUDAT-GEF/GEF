@@ -1,6 +1,7 @@
 package eu.eudat.gef.rest;
 
 import eu.eudat.gef.app.GEF;
+import java.io.InputStream;
 import java.net.MalformedURLException;
 
 import javax.servlet.http.HttpServletRequest;
@@ -15,10 +16,10 @@ import org.slf4j.LoggerFactory;
  * @author edima
  */
 @Path("builds")
-public class CreateService {
+public class GefBuilds {
 	private static final String gefDockerBuildApi = "builds";
 
-	private static final org.slf4j.Logger log = LoggerFactory.getLogger(CreateService.class);
+	private static final org.slf4j.Logger log = LoggerFactory.getLogger(GefBuilds.class);
 	final static DateFormat dateFormatter = DateFormat.getDateTimeInstance(DateFormat.DEFAULT, DateFormat.SHORT);
 
 	ReverseProxy rp;
@@ -27,23 +28,19 @@ public class CreateService {
 	@Context
 	HttpServletResponse response;
 
-	public CreateService() throws MalformedURLException {
+	public GefBuilds() throws MalformedURLException {
 		rp = new ReverseProxy(GEF.getInstance().config.gefParams.gefDocker);
 	}
 
 	@POST
-	public void newBuild() throws Exception {
-		rp.forward(gefDockerBuildApi, request, response);
+	public InputStream newBuild() throws Exception {
+		return rp.forward(gefDockerBuildApi, request, response);
 	}
 
 	@POST
 	@Path("{buildID}")
 	@Consumes(MediaType.MULTIPART_FORM_DATA)
-	public void doBuild(@PathParam("buildID") String buildID) throws Exception {
-		rp.forward(gefDockerBuildApi + "/" + buildID, request, response);
-	}
-
-	private void println(String string) {
-		System.out.println(string);
+	public InputStream doBuild(@PathParam("buildID") String buildID) throws Exception {
+		return rp.forward(gefDockerBuildApi + "/" + buildID, request, response);
 	}
 }
