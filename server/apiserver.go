@@ -23,9 +23,10 @@ const (
 	imagesAPIPath = "/images"
 	jobsAPIPath   = "/jobs"
 	buildsAPIPath = "/builds"
-	buildsTmpDir  = "builds"
+
 	tmpDirDefault = "gefdocker"
 	tmpDirPerm    = 0700
+	buildsTmpDir  = "builds"
 )
 
 // Config keeps the configuration options needed to make a Server
@@ -101,6 +102,11 @@ func (s Server) infoHandler(w http.ResponseWriter, r *http.Request) {
 
 func (s Server) newBuildHandler(w http.ResponseWriter, r *http.Request) {
 	buildID := uuid.NewRandom().String()
+	buildDir := filepath.Join(s.tmpDir, buildsTmpDir, buildID)
+	if err := os.MkdirAll(buildDir, os.FileMode(tmpDirPerm)); err != nil {
+		Response{w}.ServerError("cannot create temporary directory", err)
+		return
+	}
 	Response{w}.Location(buildID).Created(jmap("Location", buildID))
 }
 

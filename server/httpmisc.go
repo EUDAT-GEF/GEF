@@ -13,60 +13,64 @@ type Response struct {
 	http.ResponseWriter
 }
 
+// ServerError sets a 500/server error
+func (w Response) ServerError(message string, err error) {
+	str := fmt.Sprintf("API Server ERROR: %s :: %s", message, err.Error())
+	log.Println(str)
+	http.Error(w, str, 500)
+}
+
 // Location sets location header
 func (w Response) Location(loc string) Response {
 	w.Header().Set("Location", loc)
 	return w
 }
 
-// ServerError returns a server error
-func (w Response) ServerError(message string, err error) {
-	str := fmt.Sprintf("API Server ERROR: %s %s", message, err.Error())
-	http.Error(w, str, 500)
-}
-
-// Ok sets the body for an ok response
+// Ok sets 200/ok response code and body
 func (w Response) Ok(body interface{}) {
-	return w.Set(200, body)
+	setCodeAndBody(w, 200, body)
 }
 
-// Ok sets the body for a created response
+// Created sets 201/created response code and body
 func (w Response) Created(body interface{}) {
-	return w.Set(201, body)
+	setCodeAndBody(w, 201, body)
 }
 
-// Set sets the body and the return code
-func (w Response) Set(code int, body interface{}) {
-	if jsonMap, ok := body.(jsonMap); ok {
-		json, err := json.Marshal(jsonMap.m)
+func setCodeAndBody(w Response, code int, body interface{}) {
+	var contentType string
+	var data []byte
+	var err error
+
+	if jsonMap, ok := body.(map[string]interface{}); ok {
+		data, err = json.Marshal(jsonMap)
 		if err != nil {
 			w.ServerError("json marshal: ", err)
+			http.Error(w, fmt.Sprintln("Server Error: unexpected Ok body type"), 500)
 			return
 		}
-		w.Header().Set("Content-Type", "application/json; charset=utf-8")
-		w.Write(json)
-		// log.Println("ok json:", string(json))
+		contentType = "application/json; charset=utf-8"
 	} else if str, ok := body.(string); ok {
-		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-		w.Write([]byte(str))
-		// log.Println("ok string:", str)
+		contentType = "text/plain; charset=utf-8"
+		data = []byte(str)
 	} else {
 		log.Printf("ERROR: unexpected Ok body type: %T\n", body)
 		http.Error(w, fmt.Sprintln("Server Error: unexpected Ok body type"), 500)
+		return
 	}
+
+	w.Header().Set("Content-Type", contentType)
+	w.WriteHeader(code)
+	w.Write(data)
+	// log.Println("setCodeAndBody:", code, contentType, body)
 }
 
-type jsonMap struct {
-	m map[string]interface{}
-}
-
-func jmap(kv ...interface{}) jsonMap {
+func jmap(kv ...interface{}) map[string]interface{} {
 	if len(kv) == 0 {
 		log.Println("ERROR: jsonmap: empty call")
-		return jsonMap{}
+		return nil
 	} else if len(kv)%2 == 1 {
 		log.Println("ERROR: jsonmap: unbalanced call")
-		return jsonMap{}
+		return nil
 	}
 	m := make(map[string]interface{})
 	k := ""
@@ -74,10 +78,10 @@ func jmap(kv ...interface{}) jsonMap {
 		if k == "" {
 			if skv, ok := kv.(string); !ok {
 				log.Println("ERROR: jsonmap: expected string key")
-				return jsonMap{m}
+				return m
 			} else if skv == "" {
 				log.Println("ERROR: jsonmap: string key is empty")
-				return jsonMap{m}
+				return m
 			} else {
 				k = skv
 			}
@@ -86,5 +90,5 @@ func jmap(kv ...interface{}) jsonMap {
 			k = ""
 		}
 	}
-	return jsonMap{m}
+	return m
 }
