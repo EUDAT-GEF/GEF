@@ -156,7 +156,7 @@ window.MyReact.Files = React.createClass({displayName: "Files",
 	propTypes: {
 		error: PT.func.isRequired,
 		cancel: PT.func.isRequired,
-		apiURL: PT.string.isRequired,
+		getApiURL: PT.func.isRequired,
 	},
 
 	getInitialState: function() {
@@ -196,7 +196,7 @@ window.MyReact.Files = React.createClass({displayName: "Files",
 		xhr.addEventListener("abort", this.uploadCanceled, false);
 		this.setState({uploadPercent:0});
 
-		xhr.open("POST", this.props.apiURL);
+		xhr.open("POST", this.props.getApiURL());
 		xhr.send(fd);
 	},
 

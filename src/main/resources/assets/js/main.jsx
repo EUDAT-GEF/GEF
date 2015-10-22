@@ -179,6 +179,34 @@ function humanSize(sz) {
 
 
 var CreateService = React.createClass({
+	props: {
+		error: PT.func.isRequired,
+		ajax: PT.func.isRequired,
+	},
+
+	url: null,
+	getURL: function() {
+		return this.url;
+	},
+
+	componentDidMount: function() {
+		this.props.ajax({
+			type: "POST",
+			url: apiNames.builds,
+			success: function(json, textStatus, jqXHR) {
+				if (!this.isMounted()) {
+					return;
+				}
+				if (!json.Location) {
+					this.props.error("Didn't get json location from server");
+					return;
+				}
+				this.url = apiNames.builds + "/" + json.Location;
+				console.log("create new service url :", this.url);
+			}.bind(this),
+		});
+	},
+
 	dockerfileAdd: function(files) {
 		if (files.length === 1) {
 			console.log("dockerfile add", files);
@@ -192,7 +220,7 @@ var CreateService = React.createClass({
 				<h3> Create Service </h3>
 				<p>Please select and upload the Dockerfile, together
 				with other files which are part of the container</p>
-				<Files apiURL={apiNames.builds} error={this.props.error}
+				<Files getApiURL={this.getURL} error={this.props.error}
 						cancel={function(){}} />
  			</div>
 		);

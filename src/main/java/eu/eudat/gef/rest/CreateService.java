@@ -16,25 +16,31 @@ import org.slf4j.LoggerFactory;
  */
 @Path("builds")
 public class CreateService {
+	private static final String gefDockerBuildApi = "builds";
 
 	private static final org.slf4j.Logger log = LoggerFactory.getLogger(CreateService.class);
 	final static DateFormat dateFormatter = DateFormat.getDateTimeInstance(DateFormat.DEFAULT, DateFormat.SHORT);
 
+	ReverseProxy rp;
 	@Context
 	HttpServletRequest request;
 	@Context
 	HttpServletResponse response;
-	ReverseProxy rp;
 
 	public CreateService() throws MalformedURLException {
 		rp = new ReverseProxy(GEF.getInstance().config.gefParams.gefDocker);
 	}
 
 	@POST
+	public void newBuild() throws Exception {
+		rp.forward(gefDockerBuildApi, request, response);
+	}
+
+	@POST
+	@Path("{buildID}")
 	@Consumes(MediaType.MULTIPART_FORM_DATA)
-	public void posts() throws Exception {
-		println("create service");
-		rp.forward("builds", request, response);
+	public void doBuild(@PathParam("buildID") String buildID) throws Exception {
+		rp.forward(gefDockerBuildApi + "/" + buildID, request, response);
 	}
 
 	private void println(String string) {

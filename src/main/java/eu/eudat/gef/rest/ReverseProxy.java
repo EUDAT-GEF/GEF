@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
 import java.net.ProtocolException;
 import java.net.URL;
 import java.util.ArrayList;
@@ -15,21 +16,26 @@ import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author edima
  */
 public class ReverseProxy {
+
+	private static final org.slf4j.Logger log = LoggerFactory.getLogger(ReverseProxy.class);
 	GEFConfig.GefDocker cfg;
 
 	public ReverseProxy(GEFConfig.GefDocker cfg) {
 		this.cfg = cfg;
 	}
 
-	public void forward(String path, HttpServletRequest request, HttpServletResponse response) throws ProtocolException, IOException {
+	public void forward(String path, HttpServletRequest request, HttpServletResponse response) throws MalformedURLException, ProtocolException, IOException {
 		URL url = new URL(cfg.url, path);
 		String query = request.getQueryString();
 		if (query != null && !query.isEmpty()) {
@@ -38,7 +44,13 @@ public class ReverseProxy {
 			debug("New url: " + url);
 		}
 
-		HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+		HttpURLConnection conn;
+		try {
+			conn = (HttpURLConnection) url.openConnection();
+		} catch (IOException ex) {
+			log.error("exception while opening remote url", ex);
+			throw ex;
+		}
 
 		conn.setReadTimeout(cfg.timeout);
 		conn.setConnectTimeout(cfg.timeout);
@@ -51,9 +63,22 @@ public class ReverseProxy {
 			conn.setRequestProperty(header, join(values, ","));
 		}
 
-		copyAndClose(request.getInputStream(), conn.getOutputStream());
+		try {
+			copyAndClose(request.getInputStream(), conn.getOutputStream());
+		} catch (IOException ex) {
+			log.error("exception while forwarding body", ex);
+			throw ex;
+		}
 
-		response.setStatus(conn.getResponseCode());
+		int responseCode;
+		try {
+			responseCode = conn.getResponseCode();
+		} catch (IOException ex) {
+			log.error("exception while setting status", ex);
+			throw ex;
+		}
+
+		response.setStatus(responseCode);
 		for (Map.Entry<String, List<String>> header : conn.getHeaderFields().entrySet()) {
 			if (header.getKey() != null) {
 				String values = join(header.getValue(), ",");
@@ -61,9 +86,24 @@ public class ReverseProxy {
 				response.setHeader(header.getKey(), values);
 			}
 		}
-		copyAndClose(conn.getInputStream(), response.getOutputStream());
-		conn.disconnect();
-		response.flushBuffer();
+
+		try {
+			if (200 <= responseCode && responseCode < 400) {
+				copyAndClose(conn.getInputStream(), response.getOutputStream());
+			} else {
+				copyAndClose(conn.getErrorStream(), response.getOutputStream());
+			}
+		} catch (IOException ex) {
+			log.error("exception while writing response body", ex);
+			throw ex;
+		}
+		try {
+			conn.disconnect();
+			response.flushBuffer();
+		} catch (IOException ex) {
+			log.error("exception while flushing body", ex);
+			throw ex;
+		}
 	}
 
 	private static void copyAndClose(InputStream inputStream, OutputStream outputStream) throws IOException {
