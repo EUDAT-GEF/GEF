@@ -9,7 +9,8 @@
 //	- user must accept to create the image
 //	- the frontend server delegates gef-docker to build the image
 //	- 	and the final image becomes a gef service
-//	-	the user is informed, gets the id of the new service
+//	- 	the gefservice is assigned a PID
+//	-	the user is informed, gets the PID of the new service
 // 2. list all the gefservices with their metadata
 // 	- make possible to execute one of them -> switch to the run wizard
 // 3. execute gefservice
@@ -32,10 +33,9 @@ var Files = window.MyReact.Files;
 
 window.MyGEF = window.MyGEF || {};
 
-var apiRootName = "/gef/api";
 var apiNames = {
-	datasets: apiRootName+"/datasets",
-	createService: apiRootName+"/services",
+	datasets: "/gef/api/datasets",
+	builds: "/gef/api/builds",
 };
 
 function setState(state) {
@@ -190,17 +190,11 @@ var CreateService = React.createClass({
 		return (
 			<div>
 				<h3> Create Service </h3>
-				<p>Please select and upload the Docker file</p>
-				<div className="row" style={{margin:'5px 0px'}}>
-					<div className="col-md-3">
-						<FileAddButton caption="Select Dockerfile" fileAddHandler={this.dockerfileAdd} />
-					</div>
-				</div>
-				{}
-				<hr/>
-				<Files apiURL={apiNames.createService} error={this.props.error}
+				<p>Please select and upload the Dockerfile, together
+				with other files which are part of the container</p>
+				<Files apiURL={apiNames.builds} error={this.props.error}
 						cancel={function(){}} />
-			</div>
+ 			</div>
 		);
 	},
 });

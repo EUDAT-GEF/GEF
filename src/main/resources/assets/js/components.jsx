@@ -272,7 +272,7 @@ window.MyReact.Files = React.createClass({
 		return (
 			<div className="row" style={{margin:'5px 0px'}}>
 				<div className="col-md-3">
-					<FileAddButton caption="Add files" fileAddHandler={this.handleAdd} />
+					<FileAddButton multiple={true} caption="Add files" fileAddHandler={this.handleAdd} />
 				</div>
 
 				{ this.state.files.length ?

@@ -11,7 +11,6 @@ import eu.eudat.gef.app.Services;
 import eu.eudat.gef.irodslink.IrodsCollection;
 import eu.eudat.gef.irodslink.IrodsConnection;
 import eu.eudat.gef.irodslink.IrodsFile;
-import eu.eudat.gef.rest.json.WorkflowJson;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -24,8 +23,10 @@ import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URI;
+import java.text.DateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -34,6 +35,7 @@ import java.util.List;
 @Path("workflows")
 @Produces(MediaType.APPLICATION_JSON)
 public class Workflows {
+	final static DateFormat dateFormatter = DateFormat.getDateTimeInstance(DateFormat.DEFAULT, DateFormat.SHORT);
 	public static final String WORKFLOW_DIR = "workflows";
 	@Context
 	HttpServletRequest request;
@@ -63,7 +65,7 @@ public class Workflows {
 		return Response.created(collUri).entity(json).build();
 	}
 
- public String uploadFile(InputStream inputStream, FormDataContentDisposition fileDetail,
+	public String uploadFile(InputStream inputStream, FormDataContentDisposition fileDetail,
 			IrodsConnection conn, IrodsCollection collWfl) throws Exception {
 		println("upload: " + fileDetail.getType() + "; " + fileDetail.getName() + "; " + fileDetail.getFileName());
 
@@ -91,6 +93,18 @@ public class Workflows {
 		ifile.uploadFromLocalFile(f);
 		f.delete();
 		return collWfl + "/" + ifile.getName();
+	}
+
+	public static class WorkflowJson {
+
+		public WorkflowJson(String id, String name, Date date) {
+			this.id = id;
+			this.name = name;
+			this.date = dateFormatter.format(date);
+		}
+		public String id;
+		public String name;
+		public String date;
 	}
 
 	@GET

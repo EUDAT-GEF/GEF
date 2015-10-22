@@ -11,12 +11,13 @@ import eu.eudat.gef.irodslink.IrodsCollection;
 import eu.eudat.gef.irodslink.IrodsConnection;
 import eu.eudat.gef.irodslink.IrodsFile;
 import eu.eudat.gef.irodslink.IrodsObject;
-import eu.eudat.gef.rest.json.JobJson;
 import java.io.File;
 import java.io.FileInputStream;
 import java.net.URI;
 import java.net.URLConnection;
+import java.text.DateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 
@@ -33,6 +34,7 @@ import java.util.Map;
  */
 @Path("jobs")
 public class Jobs {
+	final static DateFormat dateFormatter = DateFormat.getDateTimeInstance(DateFormat.DEFAULT, DateFormat.SHORT);
 
     public static final String JOBS_DIR = "jobs";
     public static final String SUFFIX = ".gefcommand";
@@ -147,6 +149,15 @@ public class Jobs {
     public Response get2() throws Exception {
         return getAny();
     }
+
+	public static class JobJson {
+		public JobJson(String id, Date date) {
+			this.id = id;
+			this.date = dateFormatter.format(date);
+		}
+		public String id;
+		public String date;
+	}
 
     public Response getAny() throws Exception {
         String JOBS = "/jobs";

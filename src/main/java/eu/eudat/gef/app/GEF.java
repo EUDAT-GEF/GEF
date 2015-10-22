@@ -1,6 +1,7 @@
 package eu.eudat.gef.app;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import eu.eudat.gef.rest.CreateService;
 import eu.eudat.gef.rest.DataSets;
 import eu.eudat.gef.rest.Jobs;
 import eu.eudat.gef.rest.Workflows;
@@ -16,10 +17,11 @@ import org.slf4j.LoggerFactory;
  *
  */
 public class GEF extends Application<GEFConfig> {
-
+	public static final String API_ROOT = "/api";
 	private static final org.slf4j.Logger log = LoggerFactory.getLogger(GEF.class);
 
 	private static GEF instance;
+	public GEFConfig config;
 
 	public static void main(String[] args) throws Exception {
 		new GEF().run(args);
@@ -38,6 +40,8 @@ public class GEF extends Application<GEFConfig> {
 	@Override
 	public void run(GEFConfig config, Environment environment) throws Exception {
 		log.info("GEF initialization started.");
+
+		this.config = config;
 		instance = this;
 
 		log.info("Using parameters: ");
@@ -51,10 +55,11 @@ public class GEF extends Application<GEFConfig> {
 //			environment.getApplicationContext().setSessionHandler(new SessionHandler());
 			environment.getApplicationContext().setErrorHandler(new ErrorHandler());
 
-			environment.jersey().setUrlPattern("/api/*");
+			environment.jersey().setUrlPattern(API_ROOT + "/*");
 			environment.jersey().register(DataSets.class);
 			environment.jersey().register(Jobs.class);
 			environment.jersey().register(Workflows.class);
+			environment.jersey().register(CreateService.class);
 
 			Services.init(config);
 		} catch (Exception ex) {

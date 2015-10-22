@@ -2,6 +2,8 @@ package eu.eudat.gef.app;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.dropwizard.Configuration;
+import java.net.MalformedURLException;
+import java.net.URL;
 import org.hibernate.validator.constraints.NotEmpty;
 
 public class GEFConfig extends Configuration {
@@ -18,7 +20,7 @@ public class GEFConfig extends Configuration {
 
 		@NotEmpty
 		@JsonProperty
-		GefDocker gefDocker;
+		public GefDocker gefDocker;
 	}
 
 	public static class Irods {
@@ -69,16 +71,15 @@ public class GEFConfig extends Configuration {
 	}
 
 	public static class GefDocker {
+		@NotEmpty
+		@JsonProperty
+		public URL url;
 
 		@NotEmpty
 		@JsonProperty
-		String server;
-
-		@NotEmpty
-		@JsonProperty
-		int port;
-
+		public int timeout = 2000; // 2 secs
 	}
+
 	public Params gefParams = new Params();
 
 	public static Pid makePid(String epicServerUrl, String localPrefix, String user, String pass) {
@@ -101,11 +102,9 @@ public class GEFConfig extends Configuration {
 		return irods;
 	}
 
-	public static GefDocker makeIrods(String server, int port) {
+	public static GefDocker makeDocker(String url) throws MalformedURLException {
 		GefDocker gefDocker = new GefDocker();
-		gefDocker.server = server;
-		gefDocker.port = port;
+		gefDocker.url = new URL(url);
 		return gefDocker;
 	}
-
 }

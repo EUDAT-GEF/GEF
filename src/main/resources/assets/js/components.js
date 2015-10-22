@@ -272,7 +272,7 @@ window.MyReact.Files = React.createClass({displayName: "Files",
 		return (
 			React.createElement("div", {className: "row", style: {margin:'5px 0px'}}, 
 				React.createElement("div", {className: "col-md-3"}, 
-					React.createElement(FileAddButton, {caption: "Add files", fileAddHandler: this.handleAdd})
+					React.createElement(FileAddButton, {multiple: true, caption: "Add files", fileAddHandler: this.handleAdd})
 				), 
 
 				 this.state.files.length ?

@@ -12,8 +12,8 @@ gefParams:
     user: 10+22
     pass:
   gefDocker:
-    server: 192.168.97.42
-    port: 4142
+    url: http://192.168.97.42:4142/api/
+    timeout: 2000
 
 # use the simple server factory, run on a single port
 server:
