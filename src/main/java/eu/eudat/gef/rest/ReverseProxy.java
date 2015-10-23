@@ -68,7 +68,7 @@ public class ReverseProxy {
 			conn.setRequestProperty(header, join(values, ","));
 		}
 
-		if (method != "GET") { // if we try this on GET we get a 404 (?!)
+		if (!method.equals("GET")) { // if we try this on GET we get a 404 (?!)
 			try {
 				copyAndClose(request.getInputStream(), conn.getOutputStream());
 			} catch (IOException ex) {

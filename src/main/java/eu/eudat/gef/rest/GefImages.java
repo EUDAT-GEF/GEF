@@ -9,6 +9,7 @@ import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
 import java.text.DateFormat;
+import javax.ws.rs.core.MediaType;
 import org.slf4j.LoggerFactory;
 
 /**
@@ -34,5 +35,11 @@ public class GefImages {
 	@GET
 	public InputStream listImages() throws Exception {
 		return rp.forward(gefDockerImagesApi, request, response);
+	}
+
+	@GET
+	@Path("{imageID}")
+	public InputStream inspectImage(@PathParam("imageID") String imageID) throws Exception {
+		return rp.forward(gefDockerImagesApi + "/" + imageID, request, response);
 	}
 }
