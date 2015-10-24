@@ -5,12 +5,16 @@ PROVISIONED=/home/vagrant/.provisioned
 
 if [ ! -e  $PROVISIONED ]; then
     apt-get update
-    apt-get install -q -y curl build-essential python-pip git python-dev postgresql odbc-postgresql unixodbc-dev libssl0.9.8 super
+    apt-get install -q -y curl build-essential python-pip git python-dev libssl0.9.8 super
 
-    # install docker
-    apt-get install -q -y docker.io
+    # install newer docker (need labels and volume plugins)
+    apt-key adv --keyserver hkp://pgp.mit.edu:80 --recv-keys 58118E89F3A912897C070ADBF76221572C52609D
+    echo "deb https://apt.dockerproject.org/repo ubuntu-trusty main" | tee /etc/apt/sources.list.d/docker.list
+    apt-get update
+    apt-get purge -y lxc-docker* docker*
+    apt-get install -q -y docker-engine
+
     usermod -a -G docker vagrant
-    ln -sf /usr/bin/docker.io /usr/local/bin/docker
 
     # install irods client
     # this irods package contains the 'irodsFs' utility
@@ -31,16 +35,14 @@ if [ ! -e  $PROVISIONED ]; then
     # test
     docker run -v /data:/data_1:ro busybox ls -al /data_1
 
-    # Install the gef-docker server
-    mkdir /home/vagrant/bin
-    cp /vagrant/gef-docker /vagrant/config.json /home/vagrant/bin/
-
     # done
     chown -R vagrant:vagrant /home/vagrant
     touch $PROVISIONED
 
-    # Start the gef-docker server
-    /home/vagrant/bin/gef-docker
+    # Start the gef-docker server, if it exists
+    cp /vagrant/gef-docker /vagrant/config.json /home/vagrant/
+    chown -R vagrant:vagrant /home/vagrant
+    /home/vagrant/gef-docker
 fi
 
 # # install java
