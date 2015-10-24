@@ -4,6 +4,8 @@ import (
 	"log"
 	"strconv"
 	"strings"
+
+	"github.com/gefx/gef-docker/dckr"
 )
 
 // GefSrvLabelPrefix is the prefix identifying GEF related labels
@@ -11,6 +13,7 @@ const GefSrvLabelPrefix = "eudat.gef.service."
 
 // Service describes metadata for a GEF service
 type Service struct {
+	ID          dckr.ImageID
 	Name        string
 	Description string
 	Version     string

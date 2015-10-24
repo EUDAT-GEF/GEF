@@ -152,7 +152,9 @@ func (s Server) buildHandler(w http.ResponseWriter, r *http.Request) {
 		Response{w}.ServerError("build docker image: ", err)
 		return
 	}
-	Response{w}.Ok(jmap("Image", image))
+	srv := extractServiceInfo(image.Labels)
+	srv.ID = image.ID
+	Response{w}.Ok(jmap("Image", image, "Service", srv))
 }
 
 func (s Server) listServicesHandler(w http.ResponseWriter, r *http.Request) {
@@ -173,6 +175,7 @@ func (s Server) inspectServiceHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	srv := extractServiceInfo(image.Labels)
+	srv.ID = image.ID
 	Response{w}.Ok(jmap("Image", image, "Service", srv))
 }
 
