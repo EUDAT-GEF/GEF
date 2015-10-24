@@ -104,7 +104,7 @@ input:focus, select:focus, textarea:focus, button:focus, a:focus {
 
 /*** Pages: Datasets, Workflows, Jobs; ***/
 
-.dataset-page .table-head{
+.table-head{
   line-height: 30px;
   border-bottom: 1px solid #ddd;
   font-weight: bold;
@@ -123,6 +123,21 @@ input:focus, select:focus, textarea:focus, button:focus, a:focus {
 .dataset-page .dataset-table .row:hover {
   background-color: #ececec;
 }
+
+
+.images-table {
+  font-family: Monaco, "Lucida Console", monospace;
+  font-size: 13px;
+}
+.images-table .row {
+  line-height: 30px;
+  border-bottom: 1px solid #ddd;
+}
+
+.images-table .row:hover {
+  background-color: #ececec;
+}
+
 
 /*** error ***/
 

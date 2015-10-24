@@ -297,9 +297,54 @@ var ExecuteService = React.createClass({displayName: "ExecuteService",
 		});
 	},
 
+	showImage: function(imageId) {
+		this.props.ajax({
+			url: apiNames.images+"/"+imageId,
+			success: function(json, textStatus, jqXHR) {
+				if (!this.isMounted()) {
+					return;
+				}
+				if (!json.Image) {
+					this.props.error("Didn't get Image from server");
+					return;
+				}
+				// this.setState({imageIds: json.ImageIDs});
+				console.log("got image data:", json);
+			}.bind(this),
+		});
+	},
+
+	renderImageDetails: function(image) {
+		var indentStyle = {marginLeft: 20 * indent};
+		var sz = humanSize(size);
+		var icon = "glyphicon " + (state === 'close' ? "glyphicon-folder-close" :
+			state === 'open' ? "glyphicon-folder-open" : "glyphicon-file");
+		return (
+			React.createElement("div", {className: "row", key: name+indent, onClick: fn}, 
+				React.createElement("div", {className: "col-xs-12 col-sm-5 col-md-5"}, 
+					React.createElement("div", {style: indentStyle}, 
+						React.createElement("i", {className: icon}), " ", name
+					)
+				), 
+				React.createElement("div", {className: "col-xs-12 col-sm-2 col-md-2", style: {textAlign:'right'}}, sz[0], " ", sz[1]), 
+				React.createElement("div", {className: "col-xs-12 col-sm-5 col-md-5", style: {textAlign:'right'}}, new Date(date).toLocaleString())
+			)
+		);
+	},
+
+	renderHeads: function(dataset) {
+		return (
+			React.createElement("div", {className: "row table-head"}, 
+				React.createElement("div", {className: "col-xs-12 col-sm-12 col-md-12"}, "Image ID")
+			)
+		);
+	},
+
 	renderImageId: function(imageId) {
 		return (
-			React.createElement("div", null, imageId)
+			React.createElement("div", {className: "row", key: imageId, onClick: this.showImage.bind(this, imageId)}, 
+				React.createElement("div", {className: "col-xs-12 col-sm-12 col-md-12"}, React.createElement("i", {className: "glyphicon glyphicon-transfer"}), " ", imageId)
+			)
 		);
 	},
 
@@ -307,7 +352,10 @@ var ExecuteService = React.createClass({displayName: "ExecuteService",
 		return (
 			React.createElement("div", {className: "execute-service-page"}, 
 				React.createElement("h3", null, " Execute Service "), 
-				 this.state.imageIds.map(this.renderImageId) 
+				 this.renderHeads(), 
+				React.createElement("div", {className: "images-table"}, 
+					 this.state.imageIds.map(this.renderImageId) 
+				)
 			)
 		);
 	}

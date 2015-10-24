@@ -297,9 +297,54 @@ var ExecuteService = React.createClass({
 		});
 	},
 
+	showImage: function(imageId) {
+		this.props.ajax({
+			url: apiNames.images+"/"+imageId,
+			success: function(json, textStatus, jqXHR) {
+				if (!this.isMounted()) {
+					return;
+				}
+				if (!json.Image) {
+					this.props.error("Didn't get Image from server");
+					return;
+				}
+				// this.setState({imageIds: json.ImageIDs});
+				console.log("got image data:", json);
+			}.bind(this),
+		});
+	},
+
+	renderImageDetails: function(image) {
+		var indentStyle = {marginLeft: 20 * indent};
+		var sz = humanSize(size);
+		var icon = "glyphicon " + (state === 'close' ? "glyphicon-folder-close" :
+			state === 'open' ? "glyphicon-folder-open" : "glyphicon-file");
+		return (
+			<div className="row" key={name+indent} onClick={fn}>
+				<div className="col-xs-12 col-sm-5 col-md-5">
+					<div style={indentStyle}>
+						<i className={icon}/> {name}
+					</div>
+				</div>
+				<div className="col-xs-12 col-sm-2 col-md-2" style={{textAlign:'right'}}>{sz[0]} {sz[1]}</div>
+				<div className="col-xs-12 col-sm-5 col-md-5" style={{textAlign:'right'}}>{new Date(date).toLocaleString()}</div>
+			</div>
+		);
+	},
+
+	renderHeads: function(dataset) {
+		return (
+			<div className="row table-head">
+				<div className="col-xs-12 col-sm-12 col-md-12">Image ID</div>
+			</div>
+		);
+	},
+
 	renderImageId: function(imageId) {
 		return (
-			<div>{imageId}</div>
+			<div className="row" key={imageId} onClick={this.showImage.bind(this, imageId)}>
+				<div className="col-xs-12 col-sm-12 col-md-12"><i className="glyphicon glyphicon-transfer"/> {imageId}</div>
+			</div>
 		);
 	},
 
@@ -307,7 +352,10 @@ var ExecuteService = React.createClass({
 		return (
 			<div className="execute-service-page">
 				<h3> Execute Service </h3>
-				{ this.state.imageIds.map(this.renderImageId) }
+				{ this.renderHeads() }
+				<div className="images-table">
+					{ this.state.imageIds.map(this.renderImageId) }
+				</div>
 			</div>
 		);
 	}
