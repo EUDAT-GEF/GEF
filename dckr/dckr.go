@@ -6,9 +6,14 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strconv"
 	"strings"
 
 	docker "github.com/fsouza/go-dockerclient"
+)
+
+const (
+	minimalDockerVersion = 1006 // major * 1000 + minor
 )
 
 // Config configuration for building docker clients
@@ -63,8 +68,17 @@ func NewClientFirstOf(cfg []Config) (Client, error) {
 				"Failed to make new docker client using configuration",
 				dcfg, err))
 		} else if client.c != nil {
-			log.Println("Successfully created Docker client using config: ", dcfg)
-			return client, nil
+			version, err := checkForMinimalDockerVersion(client.c)
+			if err != nil {
+				buf.WriteString(fmt.Sprintf(
+					"%s:\n\t%s\nReason:%s\n",
+					"Docker server version check has failed",
+					dcfg, err))
+			} else {
+				log.Println("Successfully created Docker client using config:", dcfg)
+				log.Println("Docker server version:", version)
+				return client, nil
+			}
 		}
 	}
 	return Client{}, errors.New(buf.String())
@@ -93,6 +107,31 @@ func NewClient(dcfg Config) (Client, error) {
 	}
 
 	return Client{dcfg, client}, client.Ping()
+}
+
+func checkForMinimalDockerVersion(c *docker.Client) (string, error) {
+	env, err := c.Version()
+	if err != nil {
+		return "", err
+	}
+	m := env.Map()
+	version := m["Version"]
+	arr := strings.Split(version, ".")
+	if len(arr) < 2 {
+		return "", fmt.Errorf("unparsable version string: %s", version)
+	}
+	major, err := strconv.Atoi(arr[0])
+	if err != nil {
+		return "", fmt.Errorf("unparsable major version: %s", version)
+	}
+	minor, err := strconv.Atoi(arr[1])
+	if err != nil {
+		return "", fmt.Errorf("unparsable minor version: %s", version)
+	}
+	if major*1000+minor < minimalDockerVersion {
+		return "", fmt.Errorf("unusably old Docker version: %s", version)
+	}
+	return version, nil
 }
 
 // IsValid returns true if the client is connected
