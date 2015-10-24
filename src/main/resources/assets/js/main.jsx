@@ -218,7 +218,7 @@ var CreateService = React.createClass({
 
 	dockerfileAdd: function(files) {
 		if (files.length === 1) {
-			console.log("dockerfile add", files);
+			// console.log("dockerfile add", files);
 			this.setState({dockerfile: files[0]});
 		}
 	},
@@ -227,19 +227,16 @@ var CreateService = React.createClass({
 		this.setState({error:err});
 	},
 
-	created: function(responseText) {
+	onCreated: function(responseText) {
 		var json = JSON.parse(responseText);
-		console.log("created", json.Image);
-		this.setState({created:json.Image});
+		this.setState({created:json.Service});
 	},
 
 	renderCreated: function() {
-		var image = this.state.created;
 		return (
 			<div>
 				<p>Created gef service</p>
-				<p>{image.ID}</p>
-				<p>{image.Labels}</p>
+				<InspectService service={this.state.created}/>
 			</div>
 		);
 	},
@@ -249,7 +246,7 @@ var CreateService = React.createClass({
 			<div>
 				<p>Please select and upload the Dockerfile, together
 				with other files which are part of the container</p>
-				<Files getApiURL={this.getURL} cancel={function(){}} error={this.error} done={this.created} />
+				<Files getApiURL={this.getURL} cancel={function(){}} error={this.error} done={this.onCreated} />
 				{this.state.error ? <p style={{color:'red'}}>{this.state.error}</p> : false}
 			</div>
 		);
@@ -276,11 +273,11 @@ var ExecuteService = React.createClass({
 	getInitialState: function() {
 		return {
 			imageIds: [],
+			selected: null,
 		};
 	},
 
 	componentDidMount: function() {
-		console.log("url: ", apiNames.images);
 		this.props.ajax({
 			url: apiNames.images,
 			success: function(json, textStatus, jqXHR) {
@@ -292,7 +289,6 @@ var ExecuteService = React.createClass({
 					return;
 				}
 				this.setState({imageIds: json.ImageIDs});
-				console.log("got image ids :", json.ImageIDs);
 			}.bind(this),
 		});
 	},
@@ -304,12 +300,11 @@ var ExecuteService = React.createClass({
 				if (!this.isMounted()) {
 					return;
 				}
-				if (!json.Image) {
-					this.props.error("Didn't get Image from server");
+				if (!json.Service) {
+					this.props.error("Didn't get Service json from server");
 					return;
 				}
-				// this.setState({imageIds: json.ImageIDs});
-				console.log("got image data:", json);
+				this.setState({selected: json});
 			}.bind(this),
 		});
 	},
@@ -352,6 +347,7 @@ var ExecuteService = React.createClass({
 		return (
 			<div className="execute-service-page">
 				<h3> Execute Service </h3>
+				{ this.state.selected ? <InspectService service={this.state.selected.Service}/> : false}
 				{ this.renderHeads() }
 				<div className="images-table">
 					{ this.state.imageIds.map(this.renderImageId) }
@@ -419,7 +415,7 @@ var BrowseDatasets = React.createClass({
 					return;
 				}
 				this.setState({datasets: json.datasets});
-				console.log(json.datasets);
+				// console.log(json.datasets);
 			}.bind(this),
 		});
 	},
@@ -502,6 +498,30 @@ var BrowseDatasets = React.createClass({
 			</div>
 		);
 	}
+});
+
+///////////////////////////////////////////////////////////////////////////////
+
+var InspectService = React.createClass({
+	props: {
+		service: PT.object.isRequired,
+	},
+
+	render: function() {
+		var service = this.props.service;
+		return (
+			<div>
+				<dl>
+				  <dt>ID</dt> <dd>{service.ID}</dd>
+				  <dt>Name</dt> <dd>{service.Name}</dd>
+				  <dt>Description</dt> <dd>{service.Description}</dd>
+				  <dt>Version</dt> <dd>{service.Version}</dd>
+				  <dt>Input</dt> <dd>{service.Input}</dd>
+				  <dt>Output</dt> <dd>{service.Output}</dd>
+				</dl>
+			</div>
+		);
+	},
 });
 
 ///////////////////////////////////////////////////////////////////////////////

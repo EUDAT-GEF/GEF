@@ -218,7 +218,7 @@ var CreateService = React.createClass({displayName: "CreateService",
 
 	dockerfileAdd: function(files) {
 		if (files.length === 1) {
-			console.log("dockerfile add", files);
+			// console.log("dockerfile add", files);
 			this.setState({dockerfile: files[0]});
 		}
 	},
@@ -227,19 +227,16 @@ var CreateService = React.createClass({displayName: "CreateService",
 		this.setState({error:err});
 	},
 
-	created: function(responseText) {
+	onCreated: function(responseText) {
 		var json = JSON.parse(responseText);
-		console.log("created", json.Image);
-		this.setState({created:json.Image});
+		this.setState({created:json.Service});
 	},
 
 	renderCreated: function() {
-		var image = this.state.created;
 		return (
 			React.createElement("div", null, 
 				React.createElement("p", null, "Created gef service"), 
-				React.createElement("p", null, image.ID), 
-				React.createElement("p", null, image.Labels)
+				React.createElement(InspectService, {service: this.state.created})
 			)
 		);
 	},
@@ -249,7 +246,7 @@ var CreateService = React.createClass({displayName: "CreateService",
 			React.createElement("div", null, 
 				React.createElement("p", null, "Please select and upload the Dockerfile, together" + ' ' +
 				"with other files which are part of the container"), 
-				React.createElement(Files, {getApiURL: this.getURL, cancel: function(){}, error: this.error, done: this.created}), 
+				React.createElement(Files, {getApiURL: this.getURL, cancel: function(){}, error: this.error, done: this.onCreated}), 
 				this.state.error ? React.createElement("p", {style: {color:'red'}}, this.state.error) : false
 			)
 		);
@@ -276,11 +273,11 @@ var ExecuteService = React.createClass({displayName: "ExecuteService",
 	getInitialState: function() {
 		return {
 			imageIds: [],
+			selected: null,
 		};
 	},
 
 	componentDidMount: function() {
-		console.log("url: ", apiNames.images);
 		this.props.ajax({
 			url: apiNames.images,
 			success: function(json, textStatus, jqXHR) {
@@ -292,7 +289,6 @@ var ExecuteService = React.createClass({displayName: "ExecuteService",
 					return;
 				}
 				this.setState({imageIds: json.ImageIDs});
-				console.log("got image ids :", json.ImageIDs);
 			}.bind(this),
 		});
 	},
@@ -304,12 +300,11 @@ var ExecuteService = React.createClass({displayName: "ExecuteService",
 				if (!this.isMounted()) {
 					return;
 				}
-				if (!json.Image) {
-					this.props.error("Didn't get Image from server");
+				if (!json.Service) {
+					this.props.error("Didn't get Service json from server");
 					return;
 				}
-				// this.setState({imageIds: json.ImageIDs});
-				console.log("got image data:", json);
+				this.setState({selected: json});
 			}.bind(this),
 		});
 	},
@@ -352,6 +347,7 @@ var ExecuteService = React.createClass({displayName: "ExecuteService",
 		return (
 			React.createElement("div", {className: "execute-service-page"}, 
 				React.createElement("h3", null, " Execute Service "), 
+				 this.state.selected ? React.createElement(InspectService, {service: this.state.selected.Service}) : false, 
 				 this.renderHeads(), 
 				React.createElement("div", {className: "images-table"}, 
 					 this.state.imageIds.map(this.renderImageId) 
@@ -419,7 +415,7 @@ var BrowseDatasets = React.createClass({displayName: "BrowseDatasets",
 					return;
 				}
 				this.setState({datasets: json.datasets});
-				console.log(json.datasets);
+				// console.log(json.datasets);
 			}.bind(this),
 		});
 	},
@@ -502,6 +498,30 @@ var BrowseDatasets = React.createClass({displayName: "BrowseDatasets",
 			)
 		);
 	}
+});
+
+///////////////////////////////////////////////////////////////////////////////
+
+var InspectService = React.createClass({displayName: "InspectService",
+	props: {
+		service: PT.object.isRequired,
+	},
+
+	render: function() {
+		var service = this.props.service;
+		return (
+			React.createElement("div", null, 
+				React.createElement("dl", null, 
+				  React.createElement("dt", null, "ID"), " ", React.createElement("dd", null, service.ID), 
+				  React.createElement("dt", null, "Name"), " ", React.createElement("dd", null, service.Name), 
+				  React.createElement("dt", null, "Description"), " ", React.createElement("dd", null, service.Description), 
+				  React.createElement("dt", null, "Version"), " ", React.createElement("dd", null, service.Version), 
+				  React.createElement("dt", null, "Input"), " ", React.createElement("dd", null, service.Input), 
+				  React.createElement("dt", null, "Output"), " ", React.createElement("dd", null, service.Output)
+				)
+			)
+		);
+	},
 });
 
 ///////////////////////////////////////////////////////////////////////////////
