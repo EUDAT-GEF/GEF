@@ -158,12 +158,19 @@ func (s Server) buildHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s Server) listServicesHandler(w http.ResponseWriter, r *http.Request) {
-	imgIDs, err := s.docker.ListImages()
+	images, err := s.docker.ListImages()
 	if err != nil {
 		Response{w}.ServerError("list of docker images: ", err)
 		return
 	}
-	Response{w}.Ok(jmap("ImageIDs", imgIDs))
+	services := make([]Service, len(images), len(images))
+	for i, img := range images {
+		// fmt.Println("list serv handler: ", img)
+		srv := extractServiceInfo(img.Labels)
+		srv.ID = img.ID
+		services[i] = srv
+	}
+	Response{w}.Ok(jmap("Images", images, "Services", services))
 }
 
 func (s Server) inspectServiceHandler(w http.ResponseWriter, r *http.Request) {

@@ -153,14 +153,15 @@ func (c Client) InspectImage(id ImageID) (Image, error) {
 }
 
 // ListImages lists the docker images
-func (c Client) ListImages() ([]ImageID, error) {
+func (c Client) ListImages() ([]Image, error) {
 	imgs, err := c.c.ListImages(docker.ListImagesOptions{All: false})
 	if err != nil {
 		return nil, err
 	}
-	ret := make([]ImageID, 0, 0)
+	ret := make([]Image, 0, 0)
 	for _, img := range imgs {
-		ret = append(ret, ImageID(img.ID))
+		rimg := Image{ID: ImageID(img.ID), Labels: img.Labels}
+		ret = append(ret, rimg)
 	}
 	return ret, nil
 }

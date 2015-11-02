@@ -23,6 +23,7 @@ type Service struct {
 
 // IOPort is an i/o specification for a service
 type IOPort struct {
+	Name string
 	Path string
 }
 
@@ -79,12 +80,8 @@ func extractServiceInfo(labels map[string]string) Service {
 }
 
 func addVecValue(vec *[]IOPort, ks []string, value string) {
-	if len(ks) == 0 {
-		log.Println("ERROR: GEF service label I/O key empty")
-		return
-	}
-	if len(ks) > 1 {
-		log.Println("ERROR: GEF service label I/O key has too many parts: ", ks)
+	if len(ks) < 2 {
+		log.Println("ERROR: GEF service label I/O key error (need 'port number . key name')", ks)
 		return
 	}
 	id, err := strconv.ParseUint(ks[0], 10, 8)
@@ -94,5 +91,10 @@ func addVecValue(vec *[]IOPort, ks []string, value string) {
 	for len(*vec) < int(id)+1 {
 		*vec = append(*vec, IOPort{})
 	}
-	(*vec)[id].Path = value
+	switch ks[1] {
+	case "name":
+		(*vec)[id].Name = value
+	case "path":
+		(*vec)[id].Path = value
+	}
 }
