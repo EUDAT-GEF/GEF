@@ -6,8 +6,8 @@
 //	- make possible the upload of a Dockerfile with some files
 //	- 	the Docker file must contain all the labels
 // 	- 	the server reads the labels and displays them in UI
-//	- user must accept to create the image
-//	- the frontend server delegates gef-docker to build the image
+//	- user must accept to create the service
+//	- the frontend server delegates gef-docker to build the service(docker image)
 //	- 	and the final image becomes a gef service
 //	- 	the gefservice is assigned a PID
 //	-	the user is informed, gets the PID of the new service
@@ -36,7 +36,7 @@ window.MyGEF = window.MyGEF || {};
 var apiNames = {
 	datasets: "/gef/api/datasets",
 	builds:   "/gef/api/builds",
-	images:   "/gef/api/images",
+	services: "/gef/api/images",
 };
 
 function setState(state) {
@@ -95,9 +95,9 @@ var Main = React.createClass({
 		jQuery.ajax(ajaxObject);
 	},
 
-	browseDatasets: function() {
+	buildService: function() {
 		return (
-			<BrowseDatasets error={this.error} ajax={this.ajax} />
+			<BuildService error={this.error} ajax={this.ajax} />
 		);
 	},
 
@@ -107,23 +107,18 @@ var Main = React.createClass({
 		);
 	},
 
-	runningJobs: function() {
+	browseJobs: function() {
 		return (
-			<RunningJobs error={this.error} ajax={this.ajax} />
+			<BrowseJobs error={this.error} ajax={this.ajax} />
 		);
 	},
 
-	createDataset: function() {
+	browseDatasets: function() {
 		return (
-			<CreateDataset error={this.error} ajax={this.ajax} />
+			<BrowseDatasets error={this.error} ajax={this.ajax} />
 		);
 	},
 
-	createService: function() {
-		return (
-			<CreateService error={this.error} ajax={this.ajax} />
-		);
-	},
 
 	renderToolListItem: function(pageFn, title) {
 		var klass = "list-group-item " + (pageFn === this.state.page ? "active":"");
@@ -142,9 +137,9 @@ var Main = React.createClass({
 					<div className="row">
 						<div className="col-xs-12 col-sm-2 col-md-2">
 							<div className="list-group">
-								{this.renderToolListItem(this.createService, "Create Service")}
+								{this.renderToolListItem(this.buildService, "Build Service")}
 								{this.renderToolListItem(this.executeService, "Execute Service")}
-								{this.renderToolListItem(this.runningJobs, "Browse Jobs")}
+								{this.renderToolListItem(this.browseJobs, "Browse Jobs")}
 							</div>
 							<div className="list-group">
 								{this.renderToolListItem(this.browseDatasets, "Browse Datasets")}
@@ -179,7 +174,7 @@ function humanSize(sz) {
 ///////////////////////////////////////////////////////////////////////////////
 
 
-var CreateService = React.createClass({
+var BuildService = React.createClass({
 	props: {
 		error: PT.func.isRequired,
 		ajax: PT.func.isRequired,
@@ -255,7 +250,7 @@ var CreateService = React.createClass({
 	render: function() {
 		return (
 			<div>
-				<h3> Create Service </h3>
+				<h3> Build Service </h3>
 				{this.state.created ? this.renderCreated() : this.renderFiles() }
  			</div>
 		);
@@ -272,30 +267,30 @@ var ExecuteService = React.createClass({
 
 	getInitialState: function() {
 		return {
-			imageIds: [],
+			services: [],
 			selected: null,
 		};
 	},
 
 	componentDidMount: function() {
 		this.props.ajax({
-			url: apiNames.images,
+			url: apiNames.services,
 			success: function(json, textStatus, jqXHR) {
 				if (!this.isMounted()) {
 					return;
 				}
-				if (!json.ImageIDs) {
-					this.props.error("Didn't get ImageIDs from server");
+				if (!json.Services) {
+					this.props.error("Didn't get Services from server");
 					return;
 				}
-				this.setState({imageIds: json.ImageIDs});
+				this.setState({services: json.Services});
 			}.bind(this),
 		});
 	},
 
-	showImage: function(imageId) {
+	showService: function(serviceId) {
 		this.props.ajax({
-			url: apiNames.images+"/"+imageId,
+			url: apiNames.services+"/"+serviceId,
 			success: function(json, textStatus, jqXHR) {
 				if (!this.isMounted()) {
 					return;
@@ -309,48 +304,35 @@ var ExecuteService = React.createClass({
 		});
 	},
 
-	renderImageDetails: function(image) {
-		var indentStyle = {marginLeft: 20 * indent};
-		var sz = humanSize(size);
-		var icon = "glyphicon " + (state === 'close' ? "glyphicon-folder-close" :
-			state === 'open' ? "glyphicon-folder-open" : "glyphicon-file");
-		return (
-			<div className="row" key={name+indent} onClick={fn}>
-				<div className="col-xs-12 col-sm-5 col-md-5">
-					<div style={indentStyle}>
-						<i className={icon}/> {name}
-					</div>
-				</div>
-				<div className="col-xs-12 col-sm-2 col-md-2" style={{textAlign:'right'}}>{sz[0]} {sz[1]}</div>
-				<div className="col-xs-12 col-sm-5 col-md-5" style={{textAlign:'right'}}>{new Date(date).toLocaleString()}</div>
-			</div>
-		);
-	},
-
 	renderHeads: function(dataset) {
 		return (
 			<div className="row table-head">
-				<div className="col-xs-12 col-sm-12 col-md-12">Image ID</div>
+				<div className="col-xs-12 col-sm-4">Name</div>
+				<div className="col-xs-12 col-sm-8">ID</div>
 			</div>
 		);
 	},
 
-	renderImageId: function(imageId) {
+	renderService: function(service) {
 		return (
-			<div className="row" key={imageId} onClick={this.showImage.bind(this, imageId)}>
-				<div className="col-xs-12 col-sm-12 col-md-12"><i className="glyphicon glyphicon-transfer"/> {imageId}</div>
+			<div className="row" key={service.ID} onClick={this.showService.bind(this, service.ID)}>
+				<div className="col-xs-12 col-sm-4"><i className="glyphicon glyphicon-transfer"/> {service.Name}</div>
+				<div className="col-xs-12 col-sm-8">{service.ID}</div>
 			</div>
 		);
 	},
 
 	render: function() {
+
 		return (
 			<div className="execute-service-page">
 				<h3> Execute Service </h3>
 				{ this.state.selected ? <InspectService service={this.state.selected.Service}/> : false}
+				<div style={{height:"1em"}}></div>
+				<h4>All services</h4>
 				{ this.renderHeads() }
-				<div className="images-table">
-					{ this.state.imageIds.map(this.renderImageId) }
+				<div className="services-table">
+					{ this.state.services.map(this.renderService) }
 				</div>
 			</div>
 		);
@@ -359,11 +341,49 @@ var ExecuteService = React.createClass({
 
 ///////////////////////////////////////////////////////////////////////////////
 
-var RunningJobs = React.createClass({
-	render: function() {
+var InspectService = React.createClass({
+	props: {
+		service: PT.object.isRequired,
+	},
+
+	renderIO: function(io) {
+		return <div><dt>{io.Name}</dt><dd>{io.Path}</dd></div>
+	},
+
+	renderValue: function(value) {
+		if (typeof value === 'object') {
+			return (<dl className="dl-horizontal"> { value.map(this.renderIO) } </dl>);
+		}else {
+			return value;
+		}
+	},
+
+	renderRow: function(tag, value) {
 		return (
-			<div>
-				<h3> Running Jobs </h3>
+			<div className="row">
+				<div className="col-xs-12 col-sm-3" style={{fontWeight:700}}>{tag}</div>
+				<div className="col-xs-12 col-sm-9">{this.renderValue(value)}</div>
+			</div>
+		);
+	},
+
+	render: function() {
+		var service = this.props.service;
+		return (
+			<div className="">
+				<div style={{height:"1em"}}></div>
+				<h4>Selected service</h4>
+				{this.renderRow("Name", service.Name)}
+				{this.renderRow("ID", service.ID)}
+				{this.renderRow("Description", service.Description)}
+				{this.renderRow("Version", service.Version)}
+				<div style={{height:"1em"}}></div>
+				{this.renderRow("Input", service.Input)}
+				{this.renderRow("Output", service.Output)}
+				<div className="row">
+					<div className="col-xs-4"/>
+					<button className="btn btn-primary">Execute</button>
+				</div>
 			</div>
 		);
 	},
@@ -371,19 +391,11 @@ var RunningJobs = React.createClass({
 
 ///////////////////////////////////////////////////////////////////////////////
 
-var CreateDataset = React.createClass({
-	props: {
-		error: PT.func.isRequired,
-		ajax: PT.func.isRequired,
-	},
-
+var BrowseJobs = React.createClass({
 	render: function() {
 		return (
 			<div>
-				<h3> Create Dataset </h3>
-				<p>Please select and upload all the files in your dataset</p>
-				<Files apiURL={apiNames.datasets} error={this.props.error}
-						cancel={function(){}} />
+				<h3> Browse Jobs </h3>
 			</div>
 		);
 	},
@@ -490,6 +502,7 @@ var BrowseDatasets = React.createClass({
 	render: function() {
 		return (
 			<div className="dataset-page">
+				<CreateDataset error={this.props.error} ajax={this.props.ajax} />
 				<h3> Browse Datasets </h3>
 				{ this.renderHeads() }
 				<div className="dataset-table">
@@ -502,23 +515,19 @@ var BrowseDatasets = React.createClass({
 
 ///////////////////////////////////////////////////////////////////////////////
 
-var InspectService = React.createClass({
+var CreateDataset = React.createClass({
 	props: {
-		service: PT.object.isRequired,
+		error: PT.func.isRequired,
+		ajax: PT.func.isRequired,
 	},
 
 	render: function() {
-		var service = this.props.service;
 		return (
 			<div>
-				<dl>
-				  <dt>ID</dt> <dd>{service.ID}</dd>
-				  <dt>Name</dt> <dd>{service.Name}</dd>
-				  <dt>Description</dt> <dd>{service.Description}</dd>
-				  <dt>Version</dt> <dd>{service.Version}</dd>
-				  <dt>Input</dt> <dd>{service.Input}</dd>
-				  <dt>Output</dt> <dd>{service.Output}</dd>
-				</dl>
+				<h3> Create Dataset </h3>
+				<p>Please select and upload all the files in your dataset</p>
+				<Files apiURL={apiNames.datasets} error={this.props.error}
+						cancel={function(){}} />
 			</div>
 		);
 	},
@@ -559,6 +568,22 @@ var Footer = React.createClass({
 		);
 	}
 });
+
+
+///////////////////////////////////////////////////////////////////////////////
+
+function pairs(o) {
+	var a = []
+	for (var k in o) {
+		if (o.hasOwnProperty(k)) {
+			a.push([k, o[k]]);
+		}
+	}
+	return a;
+}
+
+
+///////////////////////////////////////////////////////////////////////////////
 
 window.MyGEF.main = React.render(<Main />,  document.getElementById('page'));
 window.MyGEF.footer = React.render(<Footer />, document.getElementById('footer') );

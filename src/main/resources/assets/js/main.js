@@ -6,8 +6,8 @@
 //	- make possible the upload of a Dockerfile with some files
 //	- 	the Docker file must contain all the labels
 // 	- 	the server reads the labels and displays them in UI
-//	- user must accept to create the image
-//	- the frontend server delegates gef-docker to build the image
+//	- user must accept to create the service
+//	- the frontend server delegates gef-docker to build the service(docker image)
 //	- 	and the final image becomes a gef service
 //	- 	the gefservice is assigned a PID
 //	-	the user is informed, gets the PID of the new service
@@ -36,7 +36,7 @@ window.MyGEF = window.MyGEF || {};
 var apiNames = {
 	datasets: "/gef/api/datasets",
 	builds:   "/gef/api/builds",
-	images:   "/gef/api/images",
+	services: "/gef/api/images",
 };
 
 function setState(state) {
@@ -95,9 +95,9 @@ var Main = React.createClass({displayName: "Main",
 		jQuery.ajax(ajaxObject);
 	},
 
-	browseDatasets: function() {
+	buildService: function() {
 		return (
-			React.createElement(BrowseDatasets, {error: this.error, ajax: this.ajax})
+			React.createElement(BuildService, {error: this.error, ajax: this.ajax})
 		);
 	},
 
@@ -107,23 +107,18 @@ var Main = React.createClass({displayName: "Main",
 		);
 	},
 
-	runningJobs: function() {
+	browseJobs: function() {
 		return (
-			React.createElement(RunningJobs, {error: this.error, ajax: this.ajax})
+			React.createElement(BrowseJobs, {error: this.error, ajax: this.ajax})
 		);
 	},
 
-	createDataset: function() {
+	browseDatasets: function() {
 		return (
-			React.createElement(CreateDataset, {error: this.error, ajax: this.ajax})
+			React.createElement(BrowseDatasets, {error: this.error, ajax: this.ajax})
 		);
 	},
 
-	createService: function() {
-		return (
-			React.createElement(CreateService, {error: this.error, ajax: this.ajax})
-		);
-	},
 
 	renderToolListItem: function(pageFn, title) {
 		var klass = "list-group-item " + (pageFn === this.state.page ? "active":"");
@@ -142,9 +137,9 @@ var Main = React.createClass({displayName: "Main",
 					React.createElement("div", {className: "row"}, 
 						React.createElement("div", {className: "col-xs-12 col-sm-2 col-md-2"}, 
 							React.createElement("div", {className: "list-group"}, 
-								this.renderToolListItem(this.createService, "Create Service"), 
+								this.renderToolListItem(this.buildService, "Build Service"), 
 								this.renderToolListItem(this.executeService, "Execute Service"), 
-								this.renderToolListItem(this.runningJobs, "Browse Jobs")
+								this.renderToolListItem(this.browseJobs, "Browse Jobs")
 							), 
 							React.createElement("div", {className: "list-group"}, 
 								this.renderToolListItem(this.browseDatasets, "Browse Datasets")
@@ -179,7 +174,7 @@ function humanSize(sz) {
 ///////////////////////////////////////////////////////////////////////////////
 
 
-var CreateService = React.createClass({displayName: "CreateService",
+var BuildService = React.createClass({displayName: "BuildService",
 	props: {
 		error: PT.func.isRequired,
 		ajax: PT.func.isRequired,
@@ -255,7 +250,7 @@ var CreateService = React.createClass({displayName: "CreateService",
 	render: function() {
 		return (
 			React.createElement("div", null, 
-				React.createElement("h3", null, " Create Service "), 
+				React.createElement("h3", null, " Build Service "), 
 				this.state.created ? this.renderCreated() : this.renderFiles()
  			)
 		);
@@ -272,30 +267,30 @@ var ExecuteService = React.createClass({displayName: "ExecuteService",
 
 	getInitialState: function() {
 		return {
-			imageIds: [],
+			services: [],
 			selected: null,
 		};
 	},
 
 	componentDidMount: function() {
 		this.props.ajax({
-			url: apiNames.images,
+			url: apiNames.services,
 			success: function(json, textStatus, jqXHR) {
 				if (!this.isMounted()) {
 					return;
 				}
-				if (!json.ImageIDs) {
-					this.props.error("Didn't get ImageIDs from server");
+				if (!json.Services) {
+					this.props.error("Didn't get Services from server");
 					return;
 				}
-				this.setState({imageIds: json.ImageIDs});
+				this.setState({services: json.Services});
 			}.bind(this),
 		});
 	},
 
-	showImage: function(imageId) {
+	showService: function(serviceId) {
 		this.props.ajax({
-			url: apiNames.images+"/"+imageId,
+			url: apiNames.services+"/"+serviceId,
 			success: function(json, textStatus, jqXHR) {
 				if (!this.isMounted()) {
 					return;
@@ -309,48 +304,35 @@ var ExecuteService = React.createClass({displayName: "ExecuteService",
 		});
 	},
 
-	renderImageDetails: function(image) {
-		var indentStyle = {marginLeft: 20 * indent};
-		var sz = humanSize(size);
-		var icon = "glyphicon " + (state === 'close' ? "glyphicon-folder-close" :
-			state === 'open' ? "glyphicon-folder-open" : "glyphicon-file");
-		return (
-			React.createElement("div", {className: "row", key: name+indent, onClick: fn}, 
-				React.createElement("div", {className: "col-xs-12 col-sm-5 col-md-5"}, 
-					React.createElement("div", {style: indentStyle}, 
-						React.createElement("i", {className: icon}), " ", name
-					)
-				), 
-				React.createElement("div", {className: "col-xs-12 col-sm-2 col-md-2", style: {textAlign:'right'}}, sz[0], " ", sz[1]), 
-				React.createElement("div", {className: "col-xs-12 col-sm-5 col-md-5", style: {textAlign:'right'}}, new Date(date).toLocaleString())
-			)
-		);
-	},
-
 	renderHeads: function(dataset) {
 		return (
 			React.createElement("div", {className: "row table-head"}, 
-				React.createElement("div", {className: "col-xs-12 col-sm-12 col-md-12"}, "Image ID")
+				React.createElement("div", {className: "col-xs-12 col-sm-4"}, "Name"), 
+				React.createElement("div", {className: "col-xs-12 col-sm-8"}, "ID")
 			)
 		);
 	},
 
-	renderImageId: function(imageId) {
+	renderService: function(service) {
 		return (
-			React.createElement("div", {className: "row", key: imageId, onClick: this.showImage.bind(this, imageId)}, 
-				React.createElement("div", {className: "col-xs-12 col-sm-12 col-md-12"}, React.createElement("i", {className: "glyphicon glyphicon-transfer"}), " ", imageId)
+			React.createElement("div", {className: "row", key: service.ID, onClick: this.showService.bind(this, service.ID)}, 
+				React.createElement("div", {className: "col-xs-12 col-sm-4"}, React.createElement("i", {className: "glyphicon glyphicon-transfer"}), " ", service.Name), 
+				React.createElement("div", {className: "col-xs-12 col-sm-8"}, service.ID)
 			)
 		);
 	},
 
 	render: function() {
+
 		return (
 			React.createElement("div", {className: "execute-service-page"}, 
 				React.createElement("h3", null, " Execute Service "), 
 				 this.state.selected ? React.createElement(InspectService, {service: this.state.selected.Service}) : false, 
+				React.createElement("div", {style: {height:"1em"}}), 
+				React.createElement("h4", null, "All services"), 
 				 this.renderHeads(), 
-				React.createElement("div", {className: "images-table"}, 
-					 this.state.imageIds.map(this.renderImageId) 
+				React.createElement("div", {className: "services-table"}, 
+					 this.state.services.map(this.renderService) 
 				)
 			)
 		);
@@ -359,11 +341,49 @@ var ExecuteService = React.createClass({displayName: "ExecuteService",
 
 ///////////////////////////////////////////////////////////////////////////////
 
-var RunningJobs = React.createClass({displayName: "RunningJobs",
-	render: function() {
+var InspectService = React.createClass({displayName: "InspectService",
+	props: {
+		service: PT.object.isRequired,
+	},
+
+	renderIO: function(io) {
+		return React.createElement("div", null, React.createElement("dt", null, io.Name), React.createElement("dd", null, io.Path))
+	},
+
+	renderValue: function(value) {
+		if (typeof value === 'object') {
+			return (React.createElement("dl", {className: "dl-horizontal"}, " ",  value.map(this.renderIO), " "));
+		}else {
+			return value;
+		}
+	},
+
+	renderRow: function(tag, value) {
 		return (
-			React.createElement("div", null, 
-				React.createElement("h3", null, " Running Jobs ")
+			React.createElement("div", {className: "row"}, 
+				React.createElement("div", {className: "col-xs-12 col-sm-3", style: {fontWeight:700}}, tag), 
+				React.createElement("div", {className: "col-xs-12 col-sm-9"}, this.renderValue(value))
+			)
+		);
+	},
+
+	render: function() {
+		var service = this.props.service;
+		return (
+			React.createElement("div", {className: ""}, 
+				React.createElement("div", {style: {height:"1em"}}), 
+				React.createElement("h4", null, "Selected service"), 
+				this.renderRow("Name", service.Name), 
+				this.renderRow("ID", service.ID), 
+				this.renderRow("Description", service.Description), 
+				this.renderRow("Version", service.Version), 
+				React.createElement("div", {style: {height:"1em"}}), 
+				this.renderRow("Input", service.Input), 
+				this.renderRow("Output", service.Output), 
+				React.createElement("div", {className: "row"}, 
+					React.createElement("div", {className: "col-xs-4"}), 
+					React.createElement("button", {className: "btn btn-primary"}, "Execute")
+				)
 			)
 		);
 	},
@@ -371,19 +391,11 @@ var RunningJobs = React.createClass({displayName: "RunningJobs",
 
 ///////////////////////////////////////////////////////////////////////////////
 
-var CreateDataset = React.createClass({displayName: "CreateDataset",
-	props: {
-		error: PT.func.isRequired,
-		ajax: PT.func.isRequired,
-	},
-
+var BrowseJobs = React.createClass({displayName: "BrowseJobs",
 	render: function() {
 		return (
 			React.createElement("div", null, 
-				React.createElement("h3", null, " Create Dataset "), 
-				React.createElement("p", null, "Please select and upload all the files in your dataset"), 
-				React.createElement(Files, {apiURL: apiNames.datasets, error: this.props.error, 
-						cancel: function(){}})
+				React.createElement("h3", null, " Browse Jobs ")
 			)
 		);
 	},
@@ -490,6 +502,7 @@ var BrowseDatasets = React.createClass({displayName: "BrowseDatasets",
 	render: function() {
 		return (
 			React.createElement("div", {className: "dataset-page"}, 
+				React.createElement(CreateDataset, {error: this.props.error, ajax: this.props.ajax}), 
 				React.createElement("h3", null, " Browse Datasets "), 
 				 this.renderHeads(), 
 				React.createElement("div", {className: "dataset-table"}, 
@@ -502,23 +515,19 @@ var BrowseDatasets = React.createClass({displayName: "BrowseDatasets",
 
 ///////////////////////////////////////////////////////////////////////////////
 
-var InspectService = React.createClass({displayName: "InspectService",
+var CreateDataset = React.createClass({displayName: "CreateDataset",
 	props: {
-		service: PT.object.isRequired,
+		error: PT.func.isRequired,
+		ajax: PT.func.isRequired,
 	},
 
 	render: function() {
-		var service = this.props.service;
 		return (
 			React.createElement("div", null, 
-				React.createElement("dl", null, 
-				  React.createElement("dt", null, "ID"), " ", React.createElement("dd", null, service.ID), 
-				  React.createElement("dt", null, "Name"), " ", React.createElement("dd", null, service.Name), 
-				  React.createElement("dt", null, "Description"), " ", React.createElement("dd", null, service.Description), 
-				  React.createElement("dt", null, "Version"), " ", React.createElement("dd", null, service.Version), 
-				  React.createElement("dt", null, "Input"), " ", React.createElement("dd", null, service.Input), 
-				  React.createElement("dt", null, "Output"), " ", React.createElement("dd", null, service.Output)
-				)
+				React.createElement("h3", null, " Create Dataset "), 
+				React.createElement("p", null, "Please select and upload all the files in your dataset"), 
+				React.createElement(Files, {apiURL: apiNames.datasets, error: this.props.error, 
+						cancel: function(){}})
 			)
 		);
 	},
@@ -559,6 +568,22 @@ var Footer = React.createClass({displayName: "Footer",
 		);
 	}
 });
+
+
+///////////////////////////////////////////////////////////////////////////////
+
+function pairs(o) {
+	var a = []
+	for (var k in o) {
+		if (o.hasOwnProperty(k)) {
+			a.push([k, o[k]]);
+		}
+	}
+	return a;
+}
+
+
+///////////////////////////////////////////////////////////////////////////////
 
 window.MyGEF.main = React.render(React.createElement(Main, null),  document.getElementById('page'));
 window.MyGEF.footer = React.render(React.createElement(Footer, null), document.getElementById('footer') );

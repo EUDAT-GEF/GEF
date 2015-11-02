@@ -125,16 +125,16 @@ input:focus, select:focus, textarea:focus, button:focus, a:focus {
 }
 
 
-.images-table {
+.services-table {
   font-family: Monaco, "Lucida Console", monospace;
   font-size: 13px;
 }
-.images-table .row {
+.services-table .row {
   line-height: 30px;
   border-bottom: 1px solid #ddd;
 }
 
-.images-table .row:hover {
+.services-table .row:hover {
   background-color: #ececec;
 }
 
