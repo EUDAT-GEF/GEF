@@ -26,10 +26,10 @@ The GEF is required to:
 # 2. Architecture Overview
 
 The GEF infrastructure should be based on:
-- a set of GEF endpoints, accessible at various URLs, 
+- a set of GEF endpoints, accessible at various URLs,
 - and a Request dispatcher, to route general requests to the most efficient endpoint
 
-## 2.1. A typical endpoint 
+## 2.1. A typical endpoint
 
 2.1.0. Frontend: browser UI / user HTTP calls
 
@@ -49,7 +49,7 @@ The GEF infrastructure should be based on:
   - 2.1.2.3. using a cluster manager: Kubernetes on Mesos?
     - will solve the scheduling problem by delegating it to the cluster manager
 
-  - 2.1.2.4. streaming data? 
+  - 2.1.2.4. streaming data?
 
 TODO: all the backends must connect to iRODS, as it's expected that most data will be stored in iRODS. How do we do that? Do we stage in/out data? Mounting would be a much better choice, but there are rumors that it's unstable.
 
@@ -68,7 +68,7 @@ See the Lightweight Replication Service / EUDAT HTTP API
 
 ## 3.1. API Protocols
 
-3.1.1. The GEF will support the WPS protocol for discovery and execution of its functions. 
+3.1.1. The GEF will support the WPS protocol for discovery and execution of its functions.
 
 3.1.2. The GEF will also support a simple, RESTful API w/ json, primarily for the use of the web based UI. It will be less stable than WPS, changing rapidly during UI construction.
 
@@ -87,7 +87,7 @@ These functions will be exposed as WPS processes/REST resources:
 
 3.2.1.1. Filter
 
-- input parameters: 
+- input parameters:
   - `dataPID` or `dataURI`
   - `queryType`: depends on endpoint/community
   - `query`: depends on `queryType`
@@ -138,7 +138,24 @@ The container should not rely on external resources (databases, web services) as
 - runs executioner/container
 - returns output data
 
-5.2. backend §2.1.2.1: 
+5.2. backend §2.1.2.1:
 
 - now in development
 
+# Notes
+
+  - GEF Diagram:
+      GEF WebServ <-> GEF Docker <-> Docker Server <-> iRODS client <-> iRODS server
+  - container issues:
+    - multiple, distributed instances
+    - health management
+    - access control
+    - centralized logging
+
+# TODOs, other ideas
+
+  - GEF public test server
+  - make gef service container linked to a github/other repository
+    - make a service starting only from a github repository
+    - the code repository will be part of the service's metadata
+    - gef can offer to rebuild the container whenever the repo has a new version

@@ -1,4 +1,4 @@
-/** @jsx React.DOM */
+ /** @jsx React.DOM */
 (function() {
 "use strict";
 
@@ -21,11 +21,11 @@
 //	- select running/finished job
 //	- the UI displays the status, stdout and stderr
 //	- the server exports the results automatically to b2drop
-// 5. gc for jobs older than...
+// 5. gc for jobs older than a few days
 //
 
 
-var VERSION = "0.3.7";
+var VERSION = "0.4.0";
 var PT = React.PropTypes;
 var ErrorPane = window.MyReact.ErrorPane;
 var FileAddButton = window.MyReact.FileAddButton;
@@ -37,6 +37,7 @@ var apiNames = {
 	datasets: "/gef/api/datasets",
 	builds:   "/gef/api/builds",
 	services: "/gef/api/images",
+	jobs: "/gef/api/jobs",
 };
 
 function setState(state) {
@@ -45,6 +46,7 @@ function setState(state) {
 		t.setState(state);
 	}
 }
+
 
 var Main = React.createClass({
 	getInitialState: function () {
@@ -65,31 +67,29 @@ var Main = React.createClass({
 			return;
 		}
 
-		var that = this;
 		var errs = this.state.errorMessages.slice();
 		errs.push(err);
 		this.setState({errorMessages: errs});
 
 		setTimeout(function() {
-			var errs = that.state.errorMessages.slice();
+			var errs = this.state.errorMessages.slice();
 			errs.shift();
-			that.setState({errorMessages: errs});
-		}, 10000);
+			this.setState({errorMessages: errs});
+		}.bind(this), 10000);
 	},
 
 	ajax: function(ajaxObject) {
-		var that = this;
 		if (!ajaxObject.error) {
 			ajaxObject.error = function(jqXHR, textStatus, error) {
 				if (jqXHR.readyState === 0) {
-					that.error("Network error, please check your internet connection");
+					this.error("Network error, please check your internet connection");
 				} else if (jqXHR.responseText) {
-					that.error(jqXHR.responseText + " ("+error+")");
+					this.error(jqXHR.responseText + " ("+error+")");
 				} else  {
-					that.error(error + " ("+textStatus+")");
+					this.error(error + " ("+textStatus+")");
 				}
 				console.log("ajax error, jqXHR: ", jqXHR);
-			};
+			}.bind(this);
 		}
 		// console.log("ajax", ajaxObject);
 		jQuery.ajax(ajaxObject);
@@ -133,7 +133,7 @@ var Main = React.createClass({
 		return	(
 			<div>
 				<ErrorPane errorMessages={this.state.errorMessages} />
-				<div className="container">
+				<div className="container-fluid">
 					<div className="row">
 						<div className="col-xs-12 col-sm-2 col-md-2">
 							<div className="list-group">
@@ -155,21 +155,6 @@ var Main = React.createClass({
 	}
 });
 
-///////////////////////////////////////////////////////////////////////////////
-
-function humanSize(sz) {
-	if (sz < 1024) {
-		return [sz,"B  "];
-	} else if (sz < 1024 * 1024) {
-		return [(sz/1024).toFixed(1), "KiB"];
-	} else if (sz < 1024 * 1024 * 1024) {
-		return [(sz/(1024*1024)).toFixed(1), "MiB"];
-	} else if (sz < 1024 * 1024 * 1024 * 1024) {
-		return [(sz/(1024*1024*1024)).toFixed(1), "GiB"];
-	} else {
-		return [(sz/(1024*1024*1024*1024)).toFixed(1), "TiB"];
-	}
-}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -231,7 +216,7 @@ var BuildService = React.createClass({
 		return (
 			<div>
 				<p>Created gef service</p>
-				<InspectService service={this.state.created}/>
+				<InspectService service={this.state.created} execute={this.props.ajax}/>
 			</div>
 		);
 	},
@@ -288,6 +273,27 @@ var ExecuteService = React.createClass({
 		});
 	},
 
+	execute: function(service) {
+		this.props.ajax({
+			type: "POST",
+			url: apiNames.jobs,
+			data: service.id,
+			success: function(json, textStatus, jqXHR) {
+				if (!this.isMounted()) {
+					return;
+				}
+				if (!json.Location) {
+					this.props.error("Didn't get json location from server");
+					return;
+				}
+				// window.location.assign(window.location.origin+"/"+ json.Location);
+				// var buildURL = apiNames.builds + "/" + json.Location;
+				// this.setState({buildURL: buildURL});
+				// console.log("create new service url :", buildURL);
+			}.bind(this),
+		});
+	},
+
 	showService: function(serviceId) {
 		this.props.ajax({
 			url: apiNames.services+"/"+serviceId,
@@ -327,7 +333,7 @@ var ExecuteService = React.createClass({
 		return (
 			<div className="execute-service-page">
 				<h3> Execute Service </h3>
-				{ this.state.selected ? <InspectService service={this.state.selected.Service}/> : false}
+				{ this.state.selected ? <InspectService service={this.state.selected.Service} execute={this.execute} /> : false}
 				<div style={{height:"1em"}}></div>
 				<h4>All services</h4>
 				{ this.renderHeads() }
@@ -340,10 +346,10 @@ var ExecuteService = React.createClass({
 });
 
 ///////////////////////////////////////////////////////////////////////////////
-
 var InspectService = React.createClass({
 	props: {
 		service: PT.object.isRequired,
+		execute: PT.func.isRequired,
 	},
 
 	renderIO: function(io) {
@@ -353,7 +359,7 @@ var InspectService = React.createClass({
 	renderValue: function(value) {
 		if (typeof value === 'object') {
 			return (<dl className="dl-horizontal"> { value.map(this.renderIO) } </dl>);
-		}else {
+		} else {
 			return value;
 		}
 	},
@@ -382,7 +388,7 @@ var InspectService = React.createClass({
 				{this.renderRow("Output", service.Output)}
 				<div className="row">
 					<div className="col-xs-4"/>
-					<button className="btn btn-primary">Execute</button>
+					<button className="btn btn-primary" onClick={this.props.execute.bind(this.service)}>Execute</button>
 				</div>
 			</div>
 		);
@@ -572,6 +578,20 @@ var Footer = React.createClass({
 
 ///////////////////////////////////////////////////////////////////////////////
 
+function humanSize(sz) {
+	if (sz < 1024) {
+		return [sz,"B  "];
+	} else if (sz < 1024 * 1024) {
+		return [(sz/1024).toFixed(1), "KiB"];
+	} else if (sz < 1024 * 1024 * 1024) {
+		return [(sz/(1024*1024)).toFixed(1), "MiB"];
+	} else if (sz < 1024 * 1024 * 1024 * 1024) {
+		return [(sz/(1024*1024*1024)).toFixed(1), "GiB"];
+	} else {
+		return [(sz/(1024*1024*1024*1024)).toFixed(1), "TiB"];
+	}
+}
+
 function pairs(o) {
 	var a = []
 	for (var k in o) {
@@ -589,3 +609,4 @@ window.MyGEF.main = React.render(<Main />,  document.getElementById('page'));
 window.MyGEF.footer = React.render(<Footer />, document.getElementById('footer') );
 
 })();
+

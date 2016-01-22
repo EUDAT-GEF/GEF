@@ -2,3 +2,5 @@ target/
 ErdoIrods.log
 nb-configuration.xml
 .vagrant
+.DS_Store
+

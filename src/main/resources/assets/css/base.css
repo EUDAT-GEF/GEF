@@ -154,11 +154,12 @@ input:focus, select:focus, textarea:focus, button:focus, a:focus {
   z-index: 100;
 }
 
-.errorRow div * {
+.errorRow div div * {
 	color: #fff;
 	border-radius: 4px;
 	text-align: center;
 	margin: 0 auto;
+  padding: 10px;
   background-color: hsla(10, 100%, 50%, 0.75);
 }
 

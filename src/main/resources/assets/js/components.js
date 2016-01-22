@@ -65,8 +65,10 @@ window.MyReact.ErrorPane = React.createClass({displayName: "ErrorPane",
 	render: function() {
 		return	React.createElement("div", {className: "container errorDiv"}, 
 					React.createElement("div", {className: "row errorRow"}, 
-						React.createElement(ReactTransitionGroup, {component: "div"}, 
-							this.props.errorMessages.map(this.renderErrorMessage)
+						React.createElement("div", {className: "col-md-offset-2 col-md-10"}, 
+							React.createElement(ReactTransitionGroup, {component: "div"}, 
+								this.props.errorMessages.map(this.renderErrorMessage)
+							)
 						)
 					)
 				);

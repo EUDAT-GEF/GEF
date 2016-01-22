@@ -1,4 +1,4 @@
-/** @jsx React.DOM */
+ /** @jsx React.DOM */
 (function() {
 "use strict";
 
@@ -21,11 +21,11 @@
 //	- select running/finished job
 //	- the UI displays the status, stdout and stderr
 //	- the server exports the results automatically to b2drop
-// 5. gc for jobs older than...
+// 5. gc for jobs older than a few days
 //
 
 
-var VERSION = "0.3.7";
+var VERSION = "0.4.0";
 var PT = React.PropTypes;
 var ErrorPane = window.MyReact.ErrorPane;
 var FileAddButton = window.MyReact.FileAddButton;
@@ -37,6 +37,7 @@ var apiNames = {
 	datasets: "/gef/api/datasets",
 	builds:   "/gef/api/builds",
 	services: "/gef/api/images",
+	jobs: "/gef/api/jobs",
 };
 
 function setState(state) {
@@ -45,6 +46,7 @@ function setState(state) {
 		t.setState(state);
 	}
 }
+
 
 var Main = React.createClass({displayName: "Main",
 	getInitialState: function () {
@@ -65,31 +67,29 @@ var Main = React.createClass({displayName: "Main",
 			return;
 		}
 
-		var that = this;
 		var errs = this.state.errorMessages.slice();
 		errs.push(err);
 		this.setState({errorMessages: errs});
 
 		setTimeout(function() {
-			var errs = that.state.errorMessages.slice();
+			var errs = this.state.errorMessages.slice();
 			errs.shift();
-			that.setState({errorMessages: errs});
-		}, 10000);
+			this.setState({errorMessages: errs});
+		}.bind(this), 10000);
 	},
 
 	ajax: function(ajaxObject) {
-		var that = this;
 		if (!ajaxObject.error) {
 			ajaxObject.error = function(jqXHR, textStatus, error) {
 				if (jqXHR.readyState === 0) {
-					that.error("Network error, please check your internet connection");
+					this.error("Network error, please check your internet connection");
 				} else if (jqXHR.responseText) {
-					that.error(jqXHR.responseText + " ("+error+")");
+					this.error(jqXHR.responseText + " ("+error+")");
 				} else  {
-					that.error(error + " ("+textStatus+")");
+					this.error(error + " ("+textStatus+")");
 				}
 				console.log("ajax error, jqXHR: ", jqXHR);
-			};
+			}.bind(this);
 		}
 		// console.log("ajax", ajaxObject);
 		jQuery.ajax(ajaxObject);
@@ -133,7 +133,7 @@ var Main = React.createClass({displayName: "Main",
 		return	(
 			React.createElement("div", null, 
 				React.createElement(ErrorPane, {errorMessages: this.state.errorMessages}), 
-				React.createElement("div", {className: "container"}, 
+				React.createElement("div", {className: "container-fluid"}, 
 					React.createElement("div", {className: "row"}, 
 						React.createElement("div", {className: "col-xs-12 col-sm-2 col-md-2"}, 
 							React.createElement("div", {className: "list-group"}, 
@@ -155,21 +155,6 @@ var Main = React.createClass({displayName: "Main",
 	}
 });
 
-///////////////////////////////////////////////////////////////////////////////
-
-function humanSize(sz) {
-	if (sz < 1024) {
-		return [sz,"B  "];
-	} else if (sz < 1024 * 1024) {
-		return [(sz/1024).toFixed(1), "KiB"];
-	} else if (sz < 1024 * 1024 * 1024) {
-		return [(sz/(1024*1024)).toFixed(1), "MiB"];
-	} else if (sz < 1024 * 1024 * 1024 * 1024) {
-		return [(sz/(1024*1024*1024)).toFixed(1), "GiB"];
-	} else {
-		return [(sz/(1024*1024*1024*1024)).toFixed(1), "TiB"];
-	}
-}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -231,7 +216,7 @@ var BuildService = React.createClass({displayName: "BuildService",
 		return (
 			React.createElement("div", null, 
 				React.createElement("p", null, "Created gef service"), 
-				React.createElement(InspectService, {service: this.state.created})
+				React.createElement(InspectService, {service: this.state.created, ajax: this.props.ajax})
 			)
 		);
 	},
@@ -327,7 +312,7 @@ var ExecuteService = React.createClass({displayName: "ExecuteService",
 		return (
 			React.createElement("div", {className: "execute-service-page"}, 
 				React.createElement("h3", null, " Execute Service "), 
-				 this.state.selected ? React.createElement(InspectService, {service: this.state.selected.Service}) : false, 
+				 this.state.selected ? React.createElement(InspectService, {service: this.state.selected.Service, ajax: this.props.ajax}) : false, 
 				React.createElement("div", {style: {height:"1em"}}), 
 				React.createElement("h4", null, "All services"), 
 				 this.renderHeads(), 
@@ -344,6 +329,28 @@ var ExecuteService = React.createClass({displayName: "ExecuteService",
 var InspectService = React.createClass({displayName: "InspectService",
 	props: {
 		service: PT.object.isRequired,
+		ajax: PT.func.isRequired,
+	},
+
+	execute: function(service) {
+		this.props.ajax({
+			type: "POST",
+			url: apiNames.jobs,
+			data: service.id,
+			success: function(json, textStatus, jqXHR) {
+				if (!this.isMounted()) {
+					return;
+				}
+				if (!json.Location) {
+					this.props.error("Didn't get json location from server");
+					return;
+				}
+				// window.location.assign(window.location.origin+"/"+ json.Location);
+				// var buildURL = apiNames.builds + "/" + json.Location;
+				// this.setState({buildURL: buildURL});
+				// console.log("create new service url :", buildURL);
+			}.bind(this),
+		});
 	},
 
 	renderIO: function(io) {
@@ -353,7 +360,7 @@ var InspectService = React.createClass({displayName: "InspectService",
 	renderValue: function(value) {
 		if (typeof value === 'object') {
 			return (React.createElement("dl", {className: "dl-horizontal"}, " ",  value.map(this.renderIO), " "));
-		}else {
+		} else {
 			return value;
 		}
 	},
@@ -382,7 +389,7 @@ var InspectService = React.createClass({displayName: "InspectService",
 				this.renderRow("Output", service.Output), 
 				React.createElement("div", {className: "row"}, 
 					React.createElement("div", {className: "col-xs-4"}), 
-					React.createElement("button", {className: "btn btn-primary"}, "Execute")
+					React.createElement("button", {className: "btn btn-primary", onClick: this.execute.bind(this,service)}, "Execute")
 				)
 			)
 		);
@@ -572,6 +579,20 @@ var Footer = React.createClass({displayName: "Footer",
 
 ///////////////////////////////////////////////////////////////////////////////
 
+function humanSize(sz) {
+	if (sz < 1024) {
+		return [sz,"B  "];
+	} else if (sz < 1024 * 1024) {
+		return [(sz/1024).toFixed(1), "KiB"];
+	} else if (sz < 1024 * 1024 * 1024) {
+		return [(sz/(1024*1024)).toFixed(1), "MiB"];
+	} else if (sz < 1024 * 1024 * 1024 * 1024) {
+		return [(sz/(1024*1024*1024)).toFixed(1), "GiB"];
+	} else {
+		return [(sz/(1024*1024*1024*1024)).toFixed(1), "TiB"];
+	}
+}
+
 function pairs(o) {
 	var a = []
 	for (var k in o) {
@@ -589,3 +610,4 @@ window.MyGEF.main = React.render(React.createElement(Main, null),  document.getE
 window.MyGEF.footer = React.render(React.createElement(Footer, null), document.getElementById('footer') );
 
 })();
+
