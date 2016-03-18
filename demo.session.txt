@@ -1,0 +1,80 @@
+---------------- on the irods server, show what files we have
+vagrant@vagrant-ubuntu-trusty-64:~$ echo 'THIS IS THE IRODS MACHINE'
+THIS IS THE IRODS MACHINE
+vagrant@vagrant-ubuntu-trusty-64:~$ ils
+/tempZone/home/rods:
+  test_file.txt
+vagrant@vagrant-ubuntu-trusty-64:~$ iget test_file.txt
+vagrant@vagrant-ubuntu-trusty-64:~$ cat test_file.txt
+This is a test file.
+
+
+
+----------------- on the docker VM: how to mount irods (b2safe)
+root@vagrant-ubuntu-trusty-64:~# irodsFs -o allow_other,ro /data
+root@vagrant-ubuntu-trusty-64:~# cat /data/test_file.txt
+This is a test file.
+root@vagrant-ubuntu-trusty-64:~# docker run -v /data:/data_1:ro busybox cat /data_1/test_file.txt
+This is a test file.
+
+----------------- on the docker VM: how to mount webdav (b2drop):
+root@vagrant-ubuntu-trusty-64:~# apt-get install davfs2
+...
+
+root@vagrant-ubuntu-trusty-64:~# sudo mount.davfs 'https://b2drop.eudat.eu/remote.php/webdav' /webdav
+Please enter the username to authenticate with server
+https://b2drop.eudat.eu/remote.php/webdav or hit enter for none.
+  Username:
+....
+
+root@vagrant-ubuntu-trusty-64:~# ll /webdav/
+...
+
+----------------- on the docker VM,
+-- assuming gef-service-example/Dockerfile and gef-service-example executable are already copied in
+
+vagrant@vagrant-ubuntu-trusty-64:~$ ./gef-service-example
+Copying input to output
+2016/03/18 08:37:29 open /mydata/input: no such file or directory
+
+vagrant@vagrant-ubuntu-trusty-64:~/gef-service-example$ docker build -t gef-example .
+Sending build context to Docker daemon 2.701 MB
+...
+
+vagrant@vagrant-ubuntu-trusty-64:~/gef-service-example$ docker images
+REPOSITORY          TAG                 IMAGE ID            CREATED              VIRTUAL SIZE
+gef-example         latest              1ff7b8c180b0        About a minute ago   190.6 MB
+ubuntu              14.04               001d664e2dd4        2 days ago           187.9 MB
+busybox             latest              b175bcb79023        8 weeks ago          1.114 MB
+
+vagrant@vagrant-ubuntu-trusty-64:~/gef-service-example$ docker run gef-example
+Copying input to output
+2016/03/18 08:42:54 open /mydata/input: no such file or directory
+
+vagrant@vagrant-ubuntu-trusty-64:~/gef-service-example$ docker run -v /data:/mydata/input:ro gef-example
+Copying input to output
+2016/03/18 08:43:28 open /mydata/output/test_file.txt: no such file or directory
+
+vagrant@vagrant-ubuntu-trusty-64:~/output$ docker run -v /data:/mydata/input:ro -v /home/vagrant/output:/mydata/output gef-example
+Copying input to output
+Done
+
+vagrant@vagrant-ubuntu-trusty-64:~$ ll /home/vagrant/output
+total 12
+drwxrwxr-x 2 vagrant vagrant 4096 Mar 18 09:51 ./
+drwxr-xr-x 7 vagrant vagrant 4096 Mar 18 09:50 ../
+-rw-r--r-- 1 root    root      21 Mar 18 09:51 test_file.txt
+
+vagrant@vagrant-ubuntu-trusty-64:~/output$ cat test_file.txt
+This is a test file.
+
+vagrant@vagrant-ubuntu-trusty-64:~$ ll /webdav/
+...
+
+vagrant@vagrant-ubuntu-trusty-64:~$ docker run -v /data:/mydata/input:ro -v /webdav:/mydata/output gef-example
+Copying input to output
+Done
+
+vagrant@vagrant-ubuntu-trusty-64:~$ ll /webdav/
+...
+
