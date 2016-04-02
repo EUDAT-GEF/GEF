@@ -5,7 +5,7 @@ build: gef-service-example
 gef-service-example: $(SOURCES)
 	golint ./...
 	go vet ./...
-	go build
+	GOOS=linux GOARCH=amd64 go build
 
 run:
 	# ---- run devel
