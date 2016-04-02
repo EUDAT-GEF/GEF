@@ -15,6 +15,9 @@ if [ $? -ne 0 ]; then
 	exit 1
 fi
 
-echo " --- Start watching ../gef-docker"
 ./onchanged-gef-docker.sh
-fswatch -0 -o ../gef-docker/gef-docker | xargs -0 -n 1 -I {} ./onchanged-gef-docker.sh
+
+if [ "$1" == "-w" ]; then
+	echo " --- Start watching ../gef-docker"
+	fswatch -0 -o ../gef-docker/gef-docker | xargs -0 -n 1 -I {} ./onchanged-gef-docker.sh
+fi
