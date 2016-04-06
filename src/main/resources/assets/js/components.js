@@ -65,7 +65,7 @@ window.MyReact.ErrorPane = React.createClass({displayName: "ErrorPane",
 	render: function() {
 		return	React.createElement("div", {className: "container errorDiv"}, 
 					React.createElement("div", {className: "row errorRow"}, 
-						React.createElement("div", {className: "col-md-offset-2 col-md-10"}, 
+						React.createElement("div", {className: "col-md-offset-4 col-md-8"}, 
 							React.createElement(ReactTransitionGroup, {component: "div"}, 
 								this.props.errorMessages.map(this.renderErrorMessage)
 							)
@@ -298,7 +298,7 @@ window.MyReact.Files = React.createClass({displayName: "Files",
 				 this.state.files.length ?
 					React.createElement("div", {className: "col-md-3"}, 
 						React.createElement("button", {type: "submit", className: "btn btn-primary", style: {width:'100%'}}, 
-							React.createElement("i", {className: "glyphicon glyphicon-upload"}), " Upload"
+							React.createElement("i", {className: "glyphicon glyphicon-upload"}), " Build Image"
 						)
 					) : false
 			)

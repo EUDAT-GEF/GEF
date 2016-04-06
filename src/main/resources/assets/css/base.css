@@ -138,6 +138,19 @@ input:focus, select:focus, textarea:focus, button:focus, a:focus {
   background-color: #ececec;
 }
 
+.jobs-table {
+  font-family: Monaco, "Lucida Console", monospace;
+  font-size: 13px;
+}
+.jobs-table .row {
+  line-height: 30px;
+  border-bottom: 1px solid #ddd;
+}
+
+.jobs-table .row:hover {
+  background-color: #ececec;
+}
+
 
 /*** error ***/
 

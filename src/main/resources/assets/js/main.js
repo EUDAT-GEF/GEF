@@ -1,4 +1,4 @@
- /** @jsx React.DOM */
+/** @jsx React.DOM */
 (function() {
 "use strict";
 
@@ -216,7 +216,7 @@ var BuildService = React.createClass({displayName: "BuildService",
 		return (
 			React.createElement("div", null, 
 				React.createElement("p", null, "Created gef service"), 
-				React.createElement(InspectService, {service: this.state.created, ajax: this.props.ajax})
+				React.createElement(InspectService, {service: this.state.created, execute: this.props.ajax})
 			)
 		);
 	},
@@ -273,6 +273,27 @@ var ExecuteService = React.createClass({displayName: "ExecuteService",
 		});
 	},
 
+	execute: function(service) {
+		this.props.ajax({
+			type: "POST",
+			url: apiNames.jobs,
+			data: { imageID: service.ID },
+			success: function(json, textStatus, jqXHR) {
+				if (!this.isMounted()) {
+					return;
+				}
+				if (!json.Location) {
+					this.props.error("Didn't get json location from server");
+					return;
+				}
+				// window.location.assign(window.location.origin+"/"+ json.Location);
+				// var buildURL = apiNames.builds + "/" + json.Location;
+				// this.setState({buildURL: buildURL});
+				// console.log("create new service url :", buildURL);
+			}.bind(this),
+		});
+	},
+
 	showService: function(serviceId) {
 		this.props.ajax({
 			url: apiNames.services+"/"+serviceId,
@@ -312,7 +333,7 @@ var ExecuteService = React.createClass({displayName: "ExecuteService",
 		return (
 			React.createElement("div", {className: "execute-service-page"}, 
 				React.createElement("h3", null, " Execute Service "), 
-				 this.state.selected ? React.createElement(InspectService, {service: this.state.selected.Service, ajax: this.props.ajax}) : false, 
+				 this.state.selected ? React.createElement(InspectService, {service: this.state.selected.Service, execute: this.execute}) : false, 
 				React.createElement("div", {style: {height:"1em"}}), 
 				React.createElement("h4", null, "All services"), 
 				 this.renderHeads(), 
@@ -325,41 +346,191 @@ var ExecuteService = React.createClass({displayName: "ExecuteService",
 });
 
 ///////////////////////////////////////////////////////////////////////////////
-
 var InspectService = React.createClass({displayName: "InspectService",
 	props: {
 		service: PT.object.isRequired,
+		execute: PT.func.isRequired,
+	},
+
+	renderRow: function(tag, value) {
+		return (
+			React.createElement("div", {className: "row"}, 
+				React.createElement("div", {className: "col-xs-12 col-sm-3", style: {fontWeight:700}}, tag), 
+				React.createElement("div", {className: "col-xs-12 col-sm-9"}, value)
+			)
+		);
+	},
+
+	renderIO: function(isInput, io) {
+		return (
+			React.createElement("div", {className: "row"}, 
+				React.createElement("div", {className: "col-xs-12 col-sm-3", style: {fontWeight:500}}, io.Name), 
+				React.createElement("div", {className: "col-xs-12 col-sm-5"}, 
+					 isInput
+						? React.createElement("input", {type: "text", style: {width:'100%'}, value: "/tempZone/home/rods/GEF/datasets/set1"})
+						: React.createElement("input", {type: "checkbox", checked: "checked"})
+				), 
+				React.createElement("div", {className: "col-xs-12 col-sm-4"}, io.Path)
+			)
+		);
+	},
+
+	renderInput: function(io) {
+		return (
+			React.createElement("div", null, 
+				React.createElement("div", {className: "row"}, 
+					React.createElement("div", {className: "col-xs-12 col-sm-3", style: {fontWeight:700}}, "Input"), 
+					React.createElement("div", {className: "col-xs-12 col-sm-5", style: {fontWeight:700}}, "Map to B2SAFE PID"), 
+					React.createElement("div", {className: "col-xs-12 col-sm-4", style: {fontWeight:700}}, "Internal location")
+				), 
+				io.map(this.renderIO.bind(this, true))
+			)
+		);
+	},
+	renderOutput: function(io) {
+		return (
+			React.createElement("div", null, 
+				React.createElement("div", {className: "row"}, 
+					React.createElement("div", {className: "col-xs-12 col-sm-3", style: {fontWeight:700}}, "Output"), 
+					React.createElement("div", {className: "col-xs-12 col-sm-5", style: {fontWeight:700}}, "Copy To B2DROP"), 
+					React.createElement("div", {className: "col-xs-12 col-sm-4", style: {fontWeight:700}}, "Internal location")
+				), 
+				io.map(this.renderIO.bind(this, false))
+			)
+		);
+	},
+
+	render: function() {
+		var service = this.props.service;
+		console.log(service);
+		return (
+			React.createElement("div", {className: ""}, 
+				React.createElement("div", {style: {height:"1em"}}), 
+				React.createElement("h4", null, "Selected service"), 
+				this.renderRow("Name", service.Name), 
+				this.renderRow("ID", service.ID), 
+				this.renderRow("Description", service.Description), 
+				this.renderRow("Version", service.Version), 
+				React.createElement("div", {style: {height:"1em"}}), 
+				this.renderInput(service.Input), 
+				React.createElement("div", {style: {height:"1em"}}), 
+				this.renderOutput(service.Output), 
+				React.createElement("div", {style: {height:"1em"}}), 
+				React.createElement("div", {className: "row"}, 
+					React.createElement("div", {className: "col-xs-3"}), 
+					React.createElement("button", {className: "btn btn-primary", style: {width:300}, 
+						onClick: this.props.execute.bind(this.service)}, "Execute")
+				)
+			)
+		);
+	},
+});
+
+///////////////////////////////////////////////////////////////////////////////
+
+var BrowseJobs = React.createClass({displayName: "BrowseJobs",
+	props: {
+		error: PT.func.isRequired,
 		ajax: PT.func.isRequired,
 	},
 
-	execute: function(service) {
+	getInitialState: function() {
+		return {
+			jobs: [],
+			selected: null,
+		};
+	},
+
+	componentDidMount: function() {
 		this.props.ajax({
-			type: "POST",
 			url: apiNames.jobs,
-			data: service.id,
 			success: function(json, textStatus, jqXHR) {
 				if (!this.isMounted()) {
 					return;
 				}
-				if (!json.Location) {
-					this.props.error("Didn't get json location from server");
+				if (!json.Jobs) {
+					this.props.error("Didn't get Jobs from server");
 					return;
 				}
-				// window.location.assign(window.location.origin+"/"+ json.Location);
-				// var buildURL = apiNames.builds + "/" + json.Location;
-				// this.setState({buildURL: buildURL});
-				// console.log("create new service url :", buildURL);
+				this.setState({jobs: json.Jobs});
+				console.log('jobs', json);
 			}.bind(this),
 		});
 	},
 
-	renderIO: function(io) {
-		return React.createElement("div", null, React.createElement("dt", null, io.Name), React.createElement("dd", null, io.Path))
+	showJob: function(jobId) {
+		this.props.ajax({
+			url: apiNames.jobs+"/"+jobId,
+			success: function(json, textStatus, jqXHR) {
+				if (!this.isMounted()) {
+					return;
+				}
+				if (!json.Job) {
+					this.props.error("Didn't get Job json from server");
+					return;
+				}
+				this.setState({selected: json});
+				console.log('job', json);
+			}.bind(this),
+		});
+	},
+
+	renderHeads: function() {
+		return (
+			React.createElement("div", {className: "row table-head"}, 
+				React.createElement("div", {className: "col-xs-12 col-sm-4"}, "Job ID"), 
+				React.createElement("div", {className: "col-xs-12 col-sm-4"}, "Service Name"), 
+				React.createElement("div", {className: "col-xs-12 col-sm-4"}, "Status")
+			)
+		);
+	},
+
+	renderJob: function(job) {
+		var sOver = {overflow:'scroll'};
+		return (
+			React.createElement("div", {className: "row", key: job.ID, onClick: this.showJob.bind(this, job.ID)}, 
+				React.createElement("div", {className: "col-xs-12 col-sm-4", style: sOver}, job.ID), 
+				React.createElement("div", {className: "col-xs-12 col-sm-4", style: sOver}, React.createElement("i", {className: "glyphicon glyphicon-transfer"}), " ", job.ServiceName), 
+				React.createElement("div", {className: "col-xs-12 col-sm-4", style: sOver}, job.Status)
+			)
+		);
+	},
+
+	render: function() {
+
+		return (
+			React.createElement("div", {className: "list-jobs-page"}, 
+				React.createElement("h3", null, " Browse Jobs "), 
+				React.createElement("div", {style: {height:"1em"}}), 
+				React.createElement("h4", null, "All jobs"), 
+				 this.renderHeads(), 
+				React.createElement("div", {className: "jobs-table"}, 
+					 this.state.jobs.map(this.renderJob) 
+				)
+			)
+		);
+	}
+});
+
+///////////////////////////////////////////////////////////////////////////////
+var InspectJob = React.createClass({displayName: "InspectJob",
+	props: {
+		job: PT.object.isRequired,
+	},
+
+	renderKV: function(k,v) {
+		return React.createElement("div", null, React.createElement("dt", null, k), React.createElement("dd", null, v))
 	},
 
 	renderValue: function(value) {
 		if (typeof value === 'object') {
-			return (React.createElement("dl", {className: "dl-horizontal"}, " ",  value.map(this.renderIO), " "));
+			var arr = [];
+			for (var k in value) {
+				if (value.hasOwnProperty(k)) {
+					arr.push(this.renderKV(k, value[k]));
+				}
+			}
+			return (React.createElement("dl", {className: "dl-horizontal"}, " ", arr, " "));
 		} else {
 			return value;
 		}
@@ -375,39 +546,22 @@ var InspectService = React.createClass({displayName: "InspectService",
 	},
 
 	render: function() {
-		var service = this.props.service;
+		var job = this.props.job;
 		return (
 			React.createElement("div", {className: ""}, 
 				React.createElement("div", {style: {height:"1em"}}), 
-				React.createElement("h4", null, "Selected service"), 
-				this.renderRow("Name", service.Name), 
-				this.renderRow("ID", service.ID), 
-				this.renderRow("Description", service.Description), 
-				this.renderRow("Version", service.Version), 
+				React.createElement("h4", null, "Selected job"), 
+				this.renderRow("ID", job.ID), 
+				this.renderRow("Name", job.Service.Name), 
+				this.renderRow("Service ID", job.Service.ID), 
+				this.renderRow("Description", job.Service.Description), 
+				this.renderRow("Version", job.Service.Version), 
 				React.createElement("div", {style: {height:"1em"}}), 
-				this.renderRow("Input", service.Input), 
-				this.renderRow("Output", service.Output), 
-				React.createElement("div", {className: "row"}, 
-					React.createElement("div", {className: "col-xs-4"}), 
-					React.createElement("button", {className: "btn btn-primary", onClick: this.execute.bind(this,service)}, "Execute")
-				)
+				this.renderRow("Status", job.Status)
 			)
 		);
 	},
 });
-
-///////////////////////////////////////////////////////////////////////////////
-
-var BrowseJobs = React.createClass({displayName: "BrowseJobs",
-	render: function() {
-		return (
-			React.createElement("div", null, 
-				React.createElement("h3", null, " Browse Jobs ")
-			)
-		);
-	},
-});
-
 ///////////////////////////////////////////////////////////////////////////////
 
 var BrowseDatasets = React.createClass({displayName: "BrowseDatasets",

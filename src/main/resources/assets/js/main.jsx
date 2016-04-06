@@ -1,4 +1,4 @@
- /** @jsx React.DOM */
+/** @jsx React.DOM */
 (function() {
 "use strict";
 
@@ -277,7 +277,7 @@ var ExecuteService = React.createClass({
 		this.props.ajax({
 			type: "POST",
 			url: apiNames.jobs,
-			data: service.id,
+			data: { imageID: service.ID },
 			success: function(json, textStatus, jqXHR) {
 				if (!this.isMounted()) {
 					return;
@@ -352,13 +352,185 @@ var InspectService = React.createClass({
 		execute: PT.func.isRequired,
 	},
 
-	renderIO: function(io) {
-		return <div><dt>{io.Name}</dt><dd>{io.Path}</dd></div>
+	renderRow: function(tag, value) {
+		return (
+			<div className="row">
+				<div className="col-xs-12 col-sm-3" style={{fontWeight:700}}>{tag}</div>
+				<div className="col-xs-12 col-sm-9">{value}</div>
+			</div>
+		);
+	},
+
+	renderIO: function(isInput, io) {
+		return (
+			<div className="row">
+				<div className="col-xs-12 col-sm-3" style={{fontWeight:500}}>{io.Name}</div>
+				<div className="col-xs-12 col-sm-5">
+					{ isInput
+						? <input type="text" style={{width:'100%'}} value="/tempZone/home/rods/GEF/datasets/set1"/>
+						: <input type="checkbox" checked="checked"/> }
+				</div>
+				<div className="col-xs-12 col-sm-4">{io.Path}</div>
+			</div>
+		);
+	},
+
+	renderInput: function(io) {
+		return (
+			<div>
+				<div className="row">
+					<div className="col-xs-12 col-sm-3" style={{fontWeight:700}}>Input</div>
+					<div className="col-xs-12 col-sm-5" style={{fontWeight:700}}>Map to B2SAFE PID</div>
+					<div className="col-xs-12 col-sm-4" style={{fontWeight:700}}>Internal location</div>
+				</div>
+				{io.map(this.renderIO.bind(this, true))}
+			</div>
+		);
+	},
+	renderOutput: function(io) {
+		return (
+			<div>
+				<div className="row">
+					<div className="col-xs-12 col-sm-3" style={{fontWeight:700}}>Output</div>
+					<div className="col-xs-12 col-sm-5" style={{fontWeight:700}}>Copy To B2DROP</div>
+					<div className="col-xs-12 col-sm-4" style={{fontWeight:700}}>Internal location</div>
+				</div>
+				{io.map(this.renderIO.bind(this, false))}
+			</div>
+		);
+	},
+
+	render: function() {
+		var service = this.props.service;
+		console.log(service);
+		return (
+			<div className="">
+				<div style={{height:"1em"}}></div>
+				<h4>Selected service</h4>
+				{this.renderRow("Name", service.Name)}
+				{this.renderRow("ID", service.ID)}
+				{this.renderRow("Description", service.Description)}
+				{this.renderRow("Version", service.Version)}
+				<div style={{height:"1em"}}></div>
+				{this.renderInput(service.Input)}
+				<div style={{height:"1em"}}></div>
+				{this.renderOutput(service.Output)}
+				<div style={{height:"1em"}}></div>
+				<div className="row">
+					<div className="col-xs-3"/>
+					<button className="btn btn-primary" style={{width:300}}
+						onClick={this.props.execute.bind(this.service)}>Execute</button>
+				</div>
+			</div>
+		);
+	},
+});
+
+///////////////////////////////////////////////////////////////////////////////
+
+var BrowseJobs = React.createClass({
+	props: {
+		error: PT.func.isRequired,
+		ajax: PT.func.isRequired,
+	},
+
+	getInitialState: function() {
+		return {
+			jobs: [],
+			selected: null,
+		};
+	},
+
+	componentDidMount: function() {
+		this.props.ajax({
+			url: apiNames.jobs,
+			success: function(json, textStatus, jqXHR) {
+				if (!this.isMounted()) {
+					return;
+				}
+				if (!json.Jobs) {
+					this.props.error("Didn't get Jobs from server");
+					return;
+				}
+				this.setState({jobs: json.Jobs});
+				console.log('jobs', json);
+			}.bind(this),
+		});
+	},
+
+	showJob: function(jobId) {
+		this.props.ajax({
+			url: apiNames.jobs+"/"+jobId,
+			success: function(json, textStatus, jqXHR) {
+				if (!this.isMounted()) {
+					return;
+				}
+				if (!json.Job) {
+					this.props.error("Didn't get Job json from server");
+					return;
+				}
+				this.setState({selected: json});
+				console.log('job', json);
+			}.bind(this),
+		});
+	},
+
+	renderHeads: function() {
+		return (
+			<div className="row table-head">
+				<div className="col-xs-12 col-sm-4">Job ID</div>
+				<div className="col-xs-12 col-sm-4">Service Name</div>
+				<div className="col-xs-12 col-sm-4">Status</div>
+			</div>
+		);
+	},
+
+	renderJob: function(job) {
+		var sOver = {overflow:'scroll'};
+		return (
+			<div className="row" key={job.ID} onClick={this.showJob.bind(this, job.ID)}>
+				<div className="col-xs-12 col-sm-4" style={sOver}>{job.ID}</div>
+				<div className="col-xs-12 col-sm-4" style={sOver}><i className="glyphicon glyphicon-transfer"/> {job.ServiceName}</div>
+				<div className="col-xs-12 col-sm-4" style={sOver}>{job.Status}</div>
+			</div>
+		);
+	},
+
+	render: function() {
+
+		return (
+			<div className="list-jobs-page">
+				<h3> Browse Jobs </h3>
+				<div style={{height:"1em"}}></div>
+				<h4>All jobs</h4>
+				{ this.renderHeads() }
+				<div className="jobs-table">
+					{ this.state.jobs.map(this.renderJob) }
+				</div>
+			</div>
+		);
+	}
+});
+
+///////////////////////////////////////////////////////////////////////////////
+var InspectJob = React.createClass({
+	props: {
+		job: PT.object.isRequired,
+	},
+
+	renderKV: function(k,v) {
+		return <div><dt>{k}</dt><dd>{v}</dd></div>
 	},
 
 	renderValue: function(value) {
 		if (typeof value === 'object') {
-			return (<dl className="dl-horizontal"> { value.map(this.renderIO) } </dl>);
+			var arr = [];
+			for (var k in value) {
+				if (value.hasOwnProperty(k)) {
+					arr.push(this.renderKV(k, value[k]));
+				}
+			}
+			return (<dl className="dl-horizontal"> { arr } </dl>);
 		} else {
 			return value;
 		}
@@ -374,39 +546,22 @@ var InspectService = React.createClass({
 	},
 
 	render: function() {
-		var service = this.props.service;
+		var job = this.props.job;
 		return (
 			<div className="">
 				<div style={{height:"1em"}}></div>
-				<h4>Selected service</h4>
-				{this.renderRow("Name", service.Name)}
-				{this.renderRow("ID", service.ID)}
-				{this.renderRow("Description", service.Description)}
-				{this.renderRow("Version", service.Version)}
+				<h4>Selected job</h4>
+				{this.renderRow("ID", job.ID)}
+				{this.renderRow("Name", job.Service.Name)}
+				{this.renderRow("Service ID", job.Service.ID)}
+				{this.renderRow("Description", job.Service.Description)}
+				{this.renderRow("Version", job.Service.Version)}
 				<div style={{height:"1em"}}></div>
-				{this.renderRow("Input", service.Input)}
-				{this.renderRow("Output", service.Output)}
-				<div className="row">
-					<div className="col-xs-4"/>
-					<button className="btn btn-primary" onClick={this.props.execute.bind(this.service)}>Execute</button>
-				</div>
+				{this.renderRow("Status", job.Status)}
 			</div>
 		);
 	},
 });
-
-///////////////////////////////////////////////////////////////////////////////
-
-var BrowseJobs = React.createClass({
-	render: function() {
-		return (
-			<div>
-				<h3> Browse Jobs </h3>
-			</div>
-		);
-	},
-});
-
 ///////////////////////////////////////////////////////////////////////////////
 
 var BrowseDatasets = React.createClass({

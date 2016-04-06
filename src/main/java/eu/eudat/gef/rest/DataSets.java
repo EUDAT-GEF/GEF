@@ -115,9 +115,13 @@ public class DataSets {
 
 		List<DatasetJson> list = new ArrayList<>();
 		for (IrodsCollection c : coll.listCollections()) {
+			c.listFiles();
 			for (IrodsCollection c2 : c.listCollections()) {
 				String id = c.getName() + "/" + c2.getName();
 				list.add(new DatasetJson(id, makeJson(c2)));
+			}
+			if (!c.listFiles().isEmpty()) {
+				list.add(new DatasetJson(c.getName(), makeJson(c)));
 			}
 		}
 

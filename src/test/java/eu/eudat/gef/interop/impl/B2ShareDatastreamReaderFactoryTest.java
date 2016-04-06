@@ -5,11 +5,13 @@ import eu.eudat.gef.interop.DatastreamReader;
 import eu.eudat.gef.app.Services;
 import java.net.URL;
 import static org.junit.Assert.*;
+import org.junit.Ignore;
 
 /**
  *
  * @author edima
  */
+@Ignore
 public class B2ShareDatastreamReaderFactoryTest {
 
 	public B2ShareDatastreamReaderFactoryTest() {

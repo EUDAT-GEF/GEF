@@ -298,7 +298,7 @@ window.MyReact.Files = React.createClass({
 				{ this.state.files.length ?
 					<div className="col-md-3">
 						<button type="submit" className="btn btn-primary" style={{width:'100%'}}>
-							<i className="glyphicon glyphicon-upload"/> Upload
+							<i className="glyphicon glyphicon-upload"/> Build Image
 						</button>
 					</div> : false }
 			</div>

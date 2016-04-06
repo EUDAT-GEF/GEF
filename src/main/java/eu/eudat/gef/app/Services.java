@@ -7,7 +7,6 @@ import eu.eudat.gef.irodslink.IrodsCollection;
 import eu.eudat.gef.irodslink.IrodsConnection;
 import eu.eudat.gef.irodslink.impl.jargon.JargonConnection;
 import eu.eudat.gef.rest.DataSets;
-import eu.eudat.gef.rest.Jobs;
 import eu.eudat.gef.rest.Workflows;
 import org.picocontainer.DefaultPicoContainer;
 import org.picocontainer.MutablePicoContainer;
@@ -23,7 +22,7 @@ public class Services {
 
 	public static void init(GEFConfig cfg) {
 		initPidService(cfg.gefParams.pid);
-		// initIrodsService(cfg.gefParams.irods);
+		initIrodsService(cfg.gefParams.irods);
 	}
 
 	public static void initPidService(GEFConfig.Pid cfg) {
@@ -68,10 +67,6 @@ public class Services {
 			IrodsCollection wf = ic.getObject(ic.getInitialPath() + "/" + Workflows.WORKFLOW_DIR).asCollection();
 			if (!wf.exists()) {
 				wf.create();
-			}
-			IrodsCollection jb = ic.getObject(ic.getInitialPath() + "/" + Jobs.JOBS_DIR).asCollection();
-			if (!jb.exists()) {
-				jb.create();
 			}
 		} catch (Exception xc) {
 			log.error(xc.getMessage(), xc);
