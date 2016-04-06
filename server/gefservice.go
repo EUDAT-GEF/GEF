@@ -27,12 +27,19 @@ type IOPort struct {
 	Path string
 }
 
+// Job is an instance of a running service
+type Job struct {
+	ID          dckr.ContainerID
+	ServiceName string
+	Status      string
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
-func extractServiceInfo(labels map[string]string) Service {
+func extractServiceInfo(image dckr.Image) Service {
 	srv := Service{}
 
-	for k, v := range labels {
+	for k, v := range image.Labels {
 		if !strings.HasPrefix(k, GefSrvLabelPrefix) {
 			continue
 		}
@@ -76,6 +83,11 @@ func extractServiceInfo(labels map[string]string) Service {
 		}
 		srv.Output = out
 	}
+
+	if srv.Name == "" {
+		srv.Name = strings.Join(image.Tags, ", ")
+	}
+
 	return srv
 }
 

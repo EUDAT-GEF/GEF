@@ -47,14 +47,16 @@ type ContainerID string
 // Image is a struct for Docker images
 type Image struct {
 	ID     ImageID
+	Tags   []string
 	Labels map[string]string
 }
 
 // Container is a struct for Docker containers
 type Container struct {
-	ID    ContainerID
-	Image Image
-	State docker.State
+	ID        ContainerID
+	ImageName string
+	Status    string
+	State     docker.State
 }
 
 // NewClientFirstOf returns a new docker client or an error
@@ -160,7 +162,11 @@ func (c Client) ListImages() ([]Image, error) {
 	}
 	ret := make([]Image, 0, 0)
 	for _, img := range imgs {
-		rimg := Image{ID: ImageID(img.ID), Labels: img.Labels}
+		rimg := Image{
+			ID:     ImageID(img.ID),
+			Tags:   img.RepoTags,
+			Labels: img.Labels,
+		}
 		ret = append(ret, rimg)
 	}
 	return ret, nil
@@ -207,13 +213,14 @@ func (c *Client) BuildImage(dirpath string) (Image, error) {
 }
 
 // ExecuteImage takes a docker image, creates a container and executes it
-func (c Client) ExecuteImage(id ImageID) (ContainerID, error) {
+func (c Client) ExecuteImage(id ImageID, name string, volumes map[string]struct{}) (ContainerID, error) {
 	cfg := docker.Config{
-		Image: string(id),
+		Image:   string(id),
+		Volumes: volumes,
 	}
 	hc := docker.HostConfig{}
 	cco := docker.CreateContainerOptions{
-		Name:       "",
+		Name:       name,
 		Config:     &cfg,
 		HostConfig: &hc,
 	}
@@ -235,13 +242,11 @@ func (c Client) ListContainers() ([]Container, error) {
 	}
 	ret := make([]Container, 0, 0)
 	for _, cont := range conts {
+		fmt.Println("list container: ", cont)
 		ret = append(ret, Container{
-			ID: ContainerID(cont.ID),
-			Image: Image{
-				ID:     ImageID(cont.Image),
-				Labels: cont.Labels,
-			},
-			State: docker.State{},
+			ID:        ContainerID(cont.ID),
+			ImageName: cont.Image,
+			Status:    cont.Status,
 		})
 	}
 	return ret, nil
@@ -251,11 +256,12 @@ func (c Client) ListContainers() ([]Container, error) {
 func (c Client) InspectContainer(id ContainerID) (Container, error) {
 	cont, err := c.c.InspectContainer(string(id))
 	ret := Container{
-		ID: ContainerID(cont.ID),
-		Image: Image{
-			ID:     ImageID(cont.Image),
-			Labels: cont.Config.Labels,
-		},
+		ID:        ContainerID(cont.ID),
+		ImageName: cont.Image,
+		// Image: Image{
+		// 	ID:     ImageID(cont.Image),
+		// 	Labels: cont.Labels,
+		// },
 		State: cont.State,
 	}
 	if err != nil {

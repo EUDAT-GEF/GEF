@@ -85,7 +85,7 @@ func NewServer(cfg Config, docker dckr.Client) *Server {
 
 	apirouter.HandleFunc(jobsAPIPath, server.listJobsHandler).Methods("GET")
 	apirouter.HandleFunc(jobsAPIPath, server.executeServiceHandler).Methods("POST")
-	apirouter.HandleFunc(jobsAPIPath+"/{jobID}/", server.inspectJobHandler).Methods("GET")
+	apirouter.HandleFunc(jobsAPIPath+"/{jobID}", server.inspectJobHandler).Methods("GET")
 
 	server.server.Handler = router
 	return server
@@ -96,11 +96,11 @@ func (s *Server) Start() error {
 	return s.server.ListenAndServe()
 }
 
-func (s Server) infoHandler(w http.ResponseWriter, r *http.Request) {
+func (s *Server) infoHandler(w http.ResponseWriter, r *http.Request) {
 	Response{w}.Ok(jmap("version", Version))
 }
 
-func (s Server) newBuildHandler(w http.ResponseWriter, r *http.Request) {
+func (s *Server) newBuildHandler(w http.ResponseWriter, r *http.Request) {
 	buildID := uuid.NewRandom().String()
 	buildDir := filepath.Join(s.tmpDir, buildsTmpDir, buildID)
 	if err := os.MkdirAll(buildDir, os.FileMode(tmpDirPerm)); err != nil {
@@ -110,7 +110,7 @@ func (s Server) newBuildHandler(w http.ResponseWriter, r *http.Request) {
 	Response{w}.Location(buildID).Created(jmap("Location", buildID))
 }
 
-func (s Server) buildHandler(w http.ResponseWriter, r *http.Request) {
+func (s *Server) buildHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	buildID := vars["buildID"]
 	buildDir := filepath.Join(s.tmpDir, buildsTmpDir, buildID)
@@ -152,12 +152,12 @@ func (s Server) buildHandler(w http.ResponseWriter, r *http.Request) {
 		Response{w}.ServerError("build docker image: ", err)
 		return
 	}
-	srv := extractServiceInfo(image.Labels)
+	srv := extractServiceInfo(image)
 	srv.ID = image.ID
 	Response{w}.Ok(jmap("Image", image, "Service", srv))
 }
 
-func (s Server) listServicesHandler(w http.ResponseWriter, r *http.Request) {
+func (s *Server) listServicesHandler(w http.ResponseWriter, r *http.Request) {
 	images, err := s.docker.ListImages()
 	if err != nil {
 		Response{w}.ServerError("list of docker images: ", err)
@@ -166,14 +166,14 @@ func (s Server) listServicesHandler(w http.ResponseWriter, r *http.Request) {
 	services := make([]Service, len(images), len(images))
 	for i, img := range images {
 		// fmt.Println("list serv handler: ", img)
-		srv := extractServiceInfo(img.Labels)
+		srv := extractServiceInfo(img)
 		srv.ID = img.ID
 		services[i] = srv
 	}
 	Response{w}.Ok(jmap("Images", images, "Services", services))
 }
 
-func (s Server) inspectServiceHandler(w http.ResponseWriter, r *http.Request) {
+func (s *Server) inspectServiceHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	imageID := dckr.ImageID(vars["imageID"])
 	image, err := s.docker.InspectImage(imageID)
@@ -181,32 +181,50 @@ func (s Server) inspectServiceHandler(w http.ResponseWriter, r *http.Request) {
 		Response{w}.ServerError("inspect docker image: ", err)
 		return
 	}
-	srv := extractServiceInfo(image.Labels)
+	srv := extractServiceInfo(image)
 	srv.ID = image.ID
 	Response{w}.Ok(jmap("Image", image, "Service", srv))
 }
 
-func (s Server) listJobsHandler(w http.ResponseWriter, r *http.Request) {
+func (s *Server) listJobsHandler(w http.ResponseWriter, r *http.Request) {
 	containers, err := s.docker.ListContainers()
 	if err != nil {
 		Response{w}.ServerError("list all containers: ", err)
 		return
 	}
-	Response{w}.Ok(jmap("Containers", containers))
+	jobs := []Job{}
+	for _, c := range containers {
+		jobs = append(jobs, Job{
+			ID:          c.ID,
+			ServiceName: c.ImageName,
+			Status:      c.Status,
+		})
+	}
+	Response{w}.Ok(jmap("Containers", containers, "Jobs", jobs))
 }
 
-func (s Server) executeServiceHandler(w http.ResponseWriter, r *http.Request) {
+func (s *Server) executeServiceHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	imageID := dckr.ImageID(vars["imageID"])
-	containerID, err := s.docker.ExecuteImage(imageID)
+	image, err := s.docker.InspectImage(imageID)
+	if err != nil {
+		Response{w}.ServerError("executeServiceHandler: ", err)
+		return
+	}
+	srv := extractServiceInfo(image)
+	volumes := map[string]struct{}{
+		"/data/GEF/datasets/set1:/mydata/input:ro": struct{}{},
+		"/home/vagrant/test:/mydata/output":        struct{}{},
+	}
+	containerID, err := s.docker.ExecuteImage(imageID, srv.Name, volumes)
 	if err != nil {
 		Response{w}.ServerError("execute docker image: ", err)
 		return
 	}
-	Response{w}.Ok(jmap("ContainerID", containerID))
+	Response{w}.Ok(jmap("ContainerID", containerID, "JobID", containerID))
 }
 
-func (s Server) inspectJobHandler(w http.ResponseWriter, r *http.Request) {
+func (s *Server) inspectJobHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	contID := dckr.ContainerID(vars["jobID"])
 	cont, err := s.docker.InspectContainer(contID)
@@ -214,5 +232,10 @@ func (s Server) inspectJobHandler(w http.ResponseWriter, r *http.Request) {
 		Response{w}.ServerError("inspect container: ", err)
 		return
 	}
-	Response{w}.Ok(jmap("Container", cont))
+	job := Job{
+		ID:          cont.ID,
+		ServiceName: cont.ImageName,
+		Status:      cont.Status,
+	}
+	Response{w}.Ok(jmap("Container", cont, "Job", job))
 }
