@@ -1,7 +1,3 @@
-/** @jsx React.DOM */
-(function() {
-"use strict";
-
 // 1. create gefservice: first screen
 //	- make possible the upload of a Dockerfile with some files
 //	- 	the Docker file must contain all the labels
@@ -25,13 +21,24 @@
 //
 
 
+import React from 'react/lib/ReactWithAddons';
+import ReactDOM from 'react-dom';
+const ReactCSSTransitionGroup = React.addons.CSSTransitionGroup;
+import jQuery from 'jquery';
+import {ErrorPane, FileAddButton, Files} from './components.jsx';
+
 var VERSION = "0.4.0";
 var PT = React.PropTypes;
-var ErrorPane = window.MyReact.ErrorPane;
-var FileAddButton = window.MyReact.FileAddButton;
-var Files = window.MyReact.Files;
 
 window.MyGEF = window.MyGEF || {};
+
+
+if (!window.requestAnimationFrame) {
+    window.requestAnimationFrame = (fn) => {
+        setTimeout(fn, 16);
+    }
+}
+
 
 var apiNames = {
 	datasets: "/gef/api/datasets",
@@ -760,8 +767,5 @@ function pairs(o) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-window.MyGEF.main = React.render(<Main />,  document.getElementById('page'));
-window.MyGEF.footer = React.render(<Footer />, document.getElementById('footer') );
-
-})();
-
+window.MyGEF.main = ReactDOM.render(<Main />,  document.getElementById('page'));
+window.MyGEF.footer = ReactDOM.render(<Footer />, document.getElementById('footer') );
