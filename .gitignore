@@ -3,4 +3,6 @@ ErdoIrods.log
 nb-configuration.xml
 .vagrant
 .DS_Store
-
+gef-bundle.js
+gef-bundle.js.map
+src/main/resources/assets/lib/css

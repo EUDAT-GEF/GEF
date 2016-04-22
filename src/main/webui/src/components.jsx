@@ -1,19 +1,18 @@
-/** @jsx React.DOM */
-(function() {
-"use strict";
+import React from 'react/lib/ReactWithAddons';
+import ReactDOM from 'react-dom';
+import jQuery from 'jquery';
+
 
 var PT = React.PropTypes;
 var ReactCSSTransitionGroup = React.addons.ReactCSSTransitionGroup;
 var ReactTransitionGroup = React.addons.TransitionGroup;
 
-window.MyReact = window.MyReact || {};
-
 ///////////////////////////////////////////////////////////////////////////////
 // Slides
 
-var JQuerySlide = window.MyReact.JQuerySlide = React.createClass({
+export const JQuerySlide = React.createClass({
 	componentWillEnter: function(callback){
-		var el = jQuery(this.getDOMNode());
+		var el = jQuery(this.element);
 		el.css("display", "none");
 		el.slideDown(500, callback);
 		$el.slideDown(function(){
@@ -21,27 +20,35 @@ var JQuerySlide = window.MyReact.JQuerySlide = React.createClass({
 		});
 	},
 	componentWillLeave: function(callback){
-		var $el = jQuery(this.getDOMNode());
+		var $el = jQuery(this.element);
 		$el.slideUp(function(){
 			callback();
 		});
 	},
-	render: function(){
-		return this.transferPropsTo(this.props.component({style: {display: 'none'}}));
+	render: function() {
+		return (
+			<div ref={el => this.element = el}>
+				{this.transferPropsTo(this.props.component({style: {display: 'none'}}))}
+			</div>
+		);
 	}
 });
 
-var JQueryFade = window.MyReact.JQueryFade = React.createClass({
+export const JQueryFade = React.createClass({
 	componentWillEnter: function(callback){
-		var el = jQuery(this.getDOMNode());
+		var el = jQuery(this.element);
 		el.css("display", "none");
 		el.fadeIn(500, callback);
 	},
 	componentWillLeave: function(callback){
-		jQuery(this.getDOMNode()).fadeOut(500, callback);
+		jQuery(this.element).fadeOut(500, callback);
 	},
 	render: function() {
-		return this.props.children;
+		return (
+			<div ref={el => this.element = el}>
+				{ this.props.children }
+			</div>
+		);
 	}
 });
 
@@ -49,7 +56,7 @@ var JQueryFade = window.MyReact.JQueryFade = React.createClass({
 ///////////////////////////////////////////////////////////////////////////////
 // Error Pane
 
-window.MyReact.ErrorPane = React.createClass({
+export const ErrorPane = React.createClass({
 	propTypes: {
 		errorMessages: PT.array.isRequired,
 	},
@@ -79,22 +86,22 @@ window.MyReact.ErrorPane = React.createClass({
 // Modal
 
 
-window.MyReact.Modal = React.createClass({
+export const Modal = React.createClass({
 	propTypes: {
 		title: PT.string.isRequired,
 	},
 	componentDidMount: function() {
-		$(this.getDOMNode()).modal({background: true, keyboard: true, show: false});
+		$(this.element).modal({background: true, keyboard: true, show: false});
 	},
 	componentWillUnmount: function() {
-		$(this.getDOMNode()).off('hidden');
+		$(this.element).off('hidden');
 	},
 	handleClick: function(e) {
 		e.stopPropagation();
 	},
 	render: function() {
 		return (
-			<div onClick={this.handleClick} className="modal fade" role="dialog" aria-hidden="true">
+			<div ref={el=>this.element = el} onClick={this.handleClick} className="modal fade" role="dialog" aria-hidden="true">
 				<div className="modal-dialog">
 					<div className="modal-content">
 						<div className="modal-header">
@@ -120,7 +127,7 @@ window.MyReact.Modal = React.createClass({
 ///////////////////////////////////////////////////////////////////////////////
 // Files
 
-var FileAddButton = window.MyReact.FileAddButton = React.createClass({
+export const FileAddButton = React.createClass({
 	props: {
 		caption: PT.string.isRequired,
 		fileAddHandler: PT.func.isRequired,
@@ -128,7 +135,7 @@ var FileAddButton = window.MyReact.FileAddButton = React.createClass({
 	},
 
 	doBrowse: function(event) {
-		this.refs.__fileinput.getDOMNode().click();
+		this.element.click();
 	},
 
 	doAddFiles: function(event) {
@@ -137,10 +144,10 @@ var FileAddButton = window.MyReact.FileAddButton = React.createClass({
 
 	render: function() {
 		var noshow = {width:0, height:0, margin:0, border:'none'};
-		var input =	<input ref='__fileinput' name="file" type="file" style={noshow}
+		var input =	<input ref={el=>this.element = el} name="file" type="file" style={noshow}
 						onChange={this.doAddFiles} />;
 		if (this.props.multiple) {
-			input =	<input ref='__fileinput' name="file" type="file" style={noshow}
+			input =	<input ref={el=>this.element = el} name="file" type="file" style={noshow}
 						onChange={this.doAddFiles} multiple />;
 		}
 		return (
@@ -154,7 +161,7 @@ var FileAddButton = window.MyReact.FileAddButton = React.createClass({
 });
 
 
-window.MyReact.Files = React.createClass({
+export const Files = React.createClass({
 	propTypes: {
 		getApiURL: PT.func.isRequired,
 		cancel: PT.func.isRequired,
@@ -318,5 +325,3 @@ window.MyReact.Files = React.createClass({
 		);
 	},
 });
-
-})();
