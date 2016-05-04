@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/gefx/gef-docker/dckr"
+	"../dckr"
 )
 
 // GefSrvLabelPrefix is the prefix identifying GEF related labels

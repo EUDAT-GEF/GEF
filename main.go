@@ -6,8 +6,8 @@ import (
 	"log"
 	"os"
 
-	"github.com/gefx/gef-docker/dckr"
-	"github.com/gefx/gef-docker/server"
+	"./dckr"
+	"./server"
 )
 
 var configFilePath = "config.json"
