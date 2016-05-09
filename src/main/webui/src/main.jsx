@@ -282,10 +282,14 @@ var ExecuteService = React.createClass({
 
 	execute: function(service) {
 		console.log("Service to execute", service);
+		var formData = new FormData();
+		formData.append("imageID", service.ID);
 		this.props.ajax({
 			type: "POST",
 			url: apiNames.jobs,
-			data: { imageID: service.ID },
+			data: formData,
+			processData: false,
+			contentType: false,
 			success: function(json, textStatus, jqXHR) {
 				if (!this.isMounted()) {
 					return;
