@@ -1,6 +1,6 @@
 gefParams:
   irods:
-    server: 192.168.97.41
+    server: bloch.sfs.uni-tuebingen.de 
     port: 1247
     username: rods
     password: rodsgef
@@ -12,7 +12,8 @@ gefParams:
     user: 10+22
     pass:
   gefDocker:
-    url: http://192.168.97.42:4142/api/
+    #url: http://bloch.sfs.uni-tuebingen.de:4142/api/
+    url: http://localhost:4142/api/
     timeout: 60000
 
 # use the simple server factory, run on a single port

@@ -11,6 +11,9 @@ install:
 jsx:
 	(cd src/main/webui && node_modules/webpack/bin/webpack.js --config webpack.config.devel.js -d)
 
+jsx_watch:
+	(cd src/main/webui && node_modules/webpack/bin/webpack.js --config webpack.config.devel.js --watch -d)
+
 target:
 	mvn -q package
 

@@ -98,7 +98,7 @@ var Main = React.createClass({
 				console.log("ajax error, jqXHR: ", jqXHR);
 			}.bind(this);
 		}
-		// console.log("ajax", ajaxObject);
+		console.log("ajax", ajaxObject);
 		jQuery.ajax(ajaxObject);
 	},
 
@@ -281,6 +281,7 @@ var ExecuteService = React.createClass({
 	},
 
 	execute: function(service) {
+		console.log("Service to execute", service);
 		this.props.ajax({
 			type: "POST",
 			url: apiNames.jobs,
@@ -409,7 +410,7 @@ var InspectService = React.createClass({
 
 	render: function() {
 		var service = this.props.service;
-		console.log(service);
+		console.log("Service is: ", service);
 		return (
 			<div className="">
 				<div style={{height:"1em"}}></div>
@@ -426,7 +427,7 @@ var InspectService = React.createClass({
 				<div className="row">
 					<div className="col-xs-3"/>
 					<button className="btn btn-primary" style={{width:300}}
-						onClick={this.props.execute.bind(this.service)}>Execute</button>
+						onClick={this.props.execute.bind(this, service)}>Execute</button>
 				</div>
 			</div>
 		);
