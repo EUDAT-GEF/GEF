@@ -103,16 +103,22 @@ var Main = React.createClass({
 		jQuery.ajax(ajaxObject);
 	},
 
+	onJobCreated(jobID) {
+		this.setState({
+			page:this.browseJobs,
+			selectedJobID: jobID
+		});
+	},
+
 	buildService: function() {
 		return (
-			<BuildService error={this.error} ajax={this.ajax} />
+			<BuildService error={this.error} ajax={this.ajax} onJobCreated={this.onJobCreated} />
 		);
 	},
 
 	executeService: function() {
 		return (
-			<ExecuteService error={this.error} ajax={this.ajax}
-				onJobCreated={jobID => this.setState({page:this.browseJobs, selectedJobID: jobID}) } />
+			<ExecuteService error={this.error} ajax={this.ajax} onJobCreated={this.onJobCreated} />
 		);
 	},
 
@@ -172,6 +178,7 @@ var BuildService = React.createClass({
 	props: {
 		error: PT.func.isRequired,
 		ajax: PT.func.isRequired,
+		onJobCreated: PT.func.isRequired,
 	},
 
 	getInitialState: function() {
@@ -225,7 +232,8 @@ var BuildService = React.createClass({
 		return (
 			<div>
 				<p>Created gef service</p>
-				<InspectService service={this.state.created} execute={this.props.ajax}/>
+				<InspectService service={this.state.created} error={this.props.error} ajax={this.props.ajax}
+					onJobCreated={this.props.onJobCreated} />
 			</div>
 		);
 	},
@@ -283,28 +291,6 @@ var ExecuteService = React.createClass({
 		});
 	},
 
-	execute: function(service) {
-		var fd = new FormData();
-		fd.append("imageID", service.ID);
-		this.props.ajax({
-			type: "POST",
-			url: apiNames.jobs,
-			data: fd,
-			processData: false,
-			contentType: false,
-			success: function(json, textStatus, jqXHR) {
-				if (!this.isMounted()) {
-					return;
-				}
-				if (!json.Location) {
-					this.props.error("Didn't get json location from server");
-					return;
-				}
-				this.props.onJobCreated(json.jobID);
-			}.bind(this),
-		});
-	},
-
 	showService: function(serviceId) {
 		this.props.ajax({
 			url: apiNames.services+"/"+serviceId,
@@ -344,11 +330,13 @@ var ExecuteService = React.createClass({
 	},
 
 	render: function() {
-
 		return (
 			<div className="execute-service-page">
 				<h3> Execute Service </h3>
-				{ this.state.selected ? <InspectService service={this.state.selected.Service} execute={this.execute} /> : false}
+				{ this.state.selected ?
+					<InspectService service={this.state.selected.Service}
+						error={this.props.error} ajax={this.props.ajax} onJobCreated={this.props.onJobCreated} />
+					: false}
 				<div style={{height:"1em"}}></div>
 				<h4>All services</h4>
 				{ this.renderHeads() }
@@ -363,15 +351,41 @@ var ExecuteService = React.createClass({
 ///////////////////////////////////////////////////////////////////////////////
 var InspectService = React.createClass({
 	props: {
+		error: PT.func.isRequired,
+		ajax: PT.func.isRequired,
+		onJobCreated: PT.func.isRequired,
 		service: PT.object.isRequired,
-		execute: PT.func.isRequired,
 	},
 
 	getInitialState() {
 		return {
-			inputMapping: [],
-			outputMapping: [true],
+			inputMapping: {},
+			outputMapping: {},
 		}
+	},
+
+	execute: function(service) {
+		var fd = new FormData();
+		fd.append("imageID", service.ID);
+		pairs(this.state.inputMapping).forEach(([k, v]) => fd.append(k, v));
+		pairs(this.state.outputMapping).forEach(([k, v]) => fd.append(k, v));
+		this.props.ajax({
+			type: "POST",
+			url: apiNames.jobs,
+			data: fd,
+			processData: false,
+			contentType: false,
+			success: function(json, textStatus, jqXHR) {
+				if (!this.isMounted()) {
+					return;
+				}
+				if (!json.Location) {
+					this.props.error("Didn't get json location from server");
+					return;
+				}
+				this.props.onJobCreated(json.jobID);
+			}.bind(this),
+		});
 	},
 
 	renderRow: function(tag, value) {
@@ -383,44 +397,33 @@ var InspectService = React.createClass({
 		);
 	},
 
-	setInputMapping(index, e) {
-		this.state.inputMapping[index] = e.target.value;
+	setInputMapping(id, e) {
+		this.state.inputMapping[id] = e.target.value;
 		this.setState(this.state);
 	},
 
-	setOutputMapping(index, e) {
-		this.state.outputMapping[index] = !this.state.outputMapping[index];
+	setOutputMapping(id, e) {
+		this.state.outputMapping[id] = e.target.value;
 		this.setState(this.state);
 	},
 
-	renderInputLine: function(io, index) {
+	renderIOLine: function(isInput, io) {
 		return (
-			<div className="row" key={index}>
+			<div className="row" key={io.ID}>
 				<div className="col-xs-12 col-sm-3" style={{fontWeight:500}}>{io.Name}</div>
 				<div className="col-xs-12 col-sm-5">
-					<input type="text" style={{width:'100%'}}
-						value={this.state.inputMapping[index] || ""}
-						onChange={this.setInputMapping.bind(this, index)}/>
+					{ isInput ?
+						<input type="text" style={{width:'100%'}}
+							value={this.state.inputMapping[io.ID] || ""}
+							onChange={this.setInputMapping.bind(this, io.ID)}/> :
+						<input type="text" style={{width:'100%'}}
+							value={this.state.outputMapping[io.ID] || ""}
+							onChange={this.setOutputMapping.bind(this, io.ID)}/> }
 				</div>
 				<div className="col-xs-12 col-sm-4">{io.Path}</div>
 			</div>
 		);
 	},
-
-	renderOutputLine: function(io, index) {
-		return (
-			<div className="row" key={index}>
-				<div className="col-xs-12 col-sm-3" style={{fontWeight:500}}>{io.Name}</div>
-				<div className="col-xs-12 col-sm-5">
-					<input type="checkbox"
-						checked={this.state.outputMapping[index] || false}
-						onChange={this.setOutputMapping.bind(this, index)}/>
-				</div>
-				<div className="col-xs-12 col-sm-4">{io.Path}</div>
-			</div>
-		);
-	},
-
 
 	renderInput: function(io) {
 		if (!io || !io.length){
@@ -433,7 +436,7 @@ var InspectService = React.createClass({
 					<div className="col-xs-12 col-sm-5" style={{fontWeight:700}}>Map to B2SAFE PID</div>
 					<div className="col-xs-12 col-sm-4" style={{fontWeight:700}}>Internal location</div>
 				</div>
-				{io.map(this.renderInputLine)}
+				{io.map(this.renderIOLine.bind(this, true))}
 			</div>
 		);
 	},
@@ -446,10 +449,10 @@ var InspectService = React.createClass({
 			<div>
 				<div className="row">
 					<div className="col-xs-12 col-sm-3" style={{fontWeight:700}}>Output</div>
-					<div className="col-xs-12 col-sm-5" style={{fontWeight:700}}>Copy To B2DROP</div>
+					<div className="col-xs-12 col-sm-5" style={{fontWeight:700}}>Map to B2DROP location</div>
 					<div className="col-xs-12 col-sm-4" style={{fontWeight:700}}>Internal location</div>
 				</div>
-				{io.map(this.renderOutputLine)}
+				{io.map(this.renderIOLine.bind(this, false))}
 			</div>
 		);
 	},
@@ -471,8 +474,9 @@ var InspectService = React.createClass({
 				<div style={{height:"1em"}}></div>
 				<div className="row">
 					<div className="col-xs-3"/>
-					<button className="btn btn-primary" style={{width:300}}
-						onClick={() => this.props.execute(service)}>Execute</button>
+					<button className="btn btn-primary" style={{width:300}} onClick={this.execute.bind(this, service)}>
+						Execute
+					</button>
 				</div>
 			</div>
 		);

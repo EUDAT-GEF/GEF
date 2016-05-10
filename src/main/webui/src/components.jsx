@@ -280,7 +280,7 @@ export const Files = React.createClass({
 			<div className="row" style={{margin:'5px 0px'}}>
 				<div className="col-md-12">
 					<div className="progress" style={{margin:'10px 0'}}>
-						<div className="progress-bar progress-bar-info progress-bar-striped"
+						<div className="progress-bar progress-bar-info progress-bar-striped active"
 								role="progressbar" aria-valuenow={percent}
 								aria-valuemin="0" aria-valuemax="100" style={widthPercent} />
 					</div>
