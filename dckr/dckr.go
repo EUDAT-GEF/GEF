@@ -231,12 +231,14 @@ func (c *Client) BuildImage(dirpath string) (Image, error) {
 }
 
 // ExecuteImage takes a docker image, creates a container and executes it
-func (c Client) ExecuteImage(id ImageID) (ContainerID, error) {
+func (c Client) ExecuteImage(id ImageID, binds []string) (ContainerID, error) {
 	img, err := c.c.InspectImage(string(id))
 	if err != nil {
 		return ContainerID(""), err
 	}
-	hc := docker.HostConfig{}
+	hc := docker.HostConfig{
+		Binds: binds,
+	}
 	cco := docker.CreateContainerOptions{
 		Name:       "",
 		Config:     img.Config,

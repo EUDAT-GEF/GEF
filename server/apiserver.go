@@ -1,6 +1,7 @@
 package server
 
 import (
+	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -11,6 +12,13 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/pborman/uuid"
+)
+
+const (
+	// HarcodedIrodsMountPoint must be removed
+	HarcodedIrodsMountPoint = "/data/GEF/datasets/"
+	// HarcodedB2DropMountPoint to be removed
+	HarcodedB2DropMountPoint = "/webdav"
 )
 
 const (
@@ -191,13 +199,47 @@ func (s *Server) executeServiceHandler(w http.ResponseWriter, r *http.Request) {
 		Response{w}.ServerNewError("execute docker image: imageID required")
 		return
 	}
-	containerID, err := s.docker.ExecuteImage(dckr.ImageID(imageID))
+
+	image, err := s.docker.InspectImage(dckr.ImageID(imageID))
+	if err != nil {
+		Response{w}.ServerError("execute docker image: inspectImage: ", err)
+	}
+	binds, err := makeBinds(r, image)
+	if err != nil {
+		Response{w}.ServerError("execute docker image: binds: ", err)
+		return
+	}
+
+	containerID, err := s.docker.ExecuteImage(dckr.ImageID(imageID), binds)
 	if err != nil {
 		Response{w}.ServerError("execute docker image: ", err)
 		return
 	}
 	loc := apiRootPath + jobsAPIPath + "/" + string(containerID)
 	Response{w}.Location(loc).Created(jmap("Location", loc, "jobID", containerID))
+}
+
+func makeBinds(r *http.Request, image dckr.Image) ([]string, error) {
+	svc := extractServiceInfo(image)
+	var binds []string
+	for _, in := range svc.Input {
+		hostPartPath := r.FormValue(in.ID)
+		if hostPartPath == "" {
+			return nil, fmt.Errorf("no bind path for input port: %s", in.Name)
+		}
+		hostPath := filepath.Join(HarcodedIrodsMountPoint, hostPartPath)
+		binds = append(binds, fmt.Sprintf("%s:%s:ro", hostPath, in.Path))
+	}
+	for _, out := range svc.Output {
+		hostPartPath := r.FormValue(out.ID)
+		if hostPartPath == "" {
+			return nil, fmt.Errorf("no bind path for output port: %s", out.Name)
+		}
+		hostPath := filepath.Join(HarcodedB2DropMountPoint, hostPartPath)
+		binds = append(binds, fmt.Sprintf("%s:%s", hostPath, out.Path))
+	}
+	fmt.Println("binds: ", binds)
+	return binds, nil
 }
 
 func (s *Server) listJobsHandler(w http.ResponseWriter, r *http.Request) {

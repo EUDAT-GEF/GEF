@@ -1,6 +1,7 @@
 package server
 
 import (
+	"fmt"
 	"log"
 	"strconv"
 	"strings"
@@ -24,6 +25,7 @@ type Service struct {
 
 // IOPort is an i/o specification for a service
 type IOPort struct {
+	ID   string
 	Name string
 	Path string
 }
@@ -77,6 +79,7 @@ func extractServiceInfo(image dckr.Image) Service {
 		in := make([]IOPort, 0, len(srv.Input))
 		for _, p := range srv.Input {
 			if p.Path != "" {
+				p.ID = fmt.Sprintf("input%d", len(in))
 				in = append(in, p)
 			}
 		}
@@ -86,6 +89,7 @@ func extractServiceInfo(image dckr.Image) Service {
 		out := make([]IOPort, 0, len(srv.Output))
 		for _, p := range srv.Output {
 			if p.Path != "" {
+				p.ID = fmt.Sprintf("output%d", len(out))
 				out = append(out, p)
 			}
 		}
