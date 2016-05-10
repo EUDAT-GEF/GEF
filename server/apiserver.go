@@ -7,10 +7,10 @@ import (
 	"os"
 	"path/filepath"
 
-	"../dckr"
+	"github.com/eudat-gef/gef-docker/dckr"
 
-	"github.com/pborman/uuid"
 	"github.com/gorilla/mux"
+	"github.com/pborman/uuid"
 )
 
 const (
@@ -107,7 +107,8 @@ func (s *Server) newBuildHandler(w http.ResponseWriter, r *http.Request) {
 		Response{w}.ServerError("cannot create temporary directory", err)
 		return
 	}
-	Response{w}.Location(buildID).Created(jmap("Location", buildID))
+	loc := apiRootPath + buildsAPIPath + "/" + buildID
+	Response{w}.Location(loc).Created(jmap("Location", loc, "buildID", buildID))
 }
 
 func (s *Server) buildHandler(w http.ResponseWriter, r *http.Request) {
@@ -152,9 +153,7 @@ func (s *Server) buildHandler(w http.ResponseWriter, r *http.Request) {
 		Response{w}.ServerError("build docker image: ", err)
 		return
 	}
-	srv := extractServiceInfo(image)
-	srv.ID = image.ID
-	Response{w}.Ok(jmap("Image", image, "Service", srv))
+	Response{w}.Ok(jmap("Image", image, "Service", extractServiceInfo(image)))
 }
 
 func (s *Server) listServicesHandler(w http.ResponseWriter, r *http.Request) {
@@ -166,9 +165,7 @@ func (s *Server) listServicesHandler(w http.ResponseWriter, r *http.Request) {
 	services := make([]Service, len(images), len(images))
 	for i, img := range images {
 		// fmt.Println("list serv handler: ", img)
-		srv := extractServiceInfo(img)
-		srv.ID = img.ID
-		services[i] = srv
+		services[i] = extractServiceInfo(img)
 	}
 	Response{w}.Ok(jmap("Images", images, "Services", services))
 }
@@ -181,47 +178,39 @@ func (s *Server) inspectServiceHandler(w http.ResponseWriter, r *http.Request) {
 		Response{w}.ServerError("inspect docker image: ", err)
 		return
 	}
-	srv := extractServiceInfo(image)
-	srv.ID = image.ID
-	Response{w}.Ok(jmap("Image", image, "Service", srv))
+	Response{w}.Ok(jmap("Image", image, "Service", extractServiceInfo(image)))
+}
+
+func (s *Server) executeServiceHandler(w http.ResponseWriter, r *http.Request) {
+	imageID := r.FormValue("imageID")
+	if imageID == "" {
+		vars := mux.Vars(r)
+		imageID = vars["imageID"]
+	}
+	if imageID == "" {
+		Response{w}.ServerNewError("execute docker image: imageID required")
+		return
+	}
+	containerID, err := s.docker.ExecuteImage(dckr.ImageID(imageID))
+	if err != nil {
+		Response{w}.ServerError("execute docker image: ", err)
+		return
+	}
+	loc := apiRootPath + jobsAPIPath + "/" + string(containerID)
+	Response{w}.Location(loc).Created(jmap("Location", loc, "jobID", containerID))
 }
 
 func (s *Server) listJobsHandler(w http.ResponseWriter, r *http.Request) {
 	containers, err := s.docker.ListContainers()
 	if err != nil {
-		Response{w}.ServerError("list all containers: ", err)
+		Response{w}.ServerError("list all docker containers: ", err)
 		return
 	}
-	jobs := []Job{}
+	var jobs []Job
 	for _, c := range containers {
-		jobs = append(jobs, Job{
-			ID:          c.ID,
-			ServiceName: c.ImageName,
-			Status:      c.Status,
-		})
+		jobs = append(jobs, makeJob(c))
 	}
-	Response{w}.Ok(jmap("Containers", containers, "Jobs", jobs))
-}
-
-func (s *Server) executeServiceHandler(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	imageID := dckr.ImageID(vars["imageID"])
-	image, err := s.docker.InspectImage(imageID)
-	if err != nil {
-		Response{w}.ServerError("executeServiceHandler: ", err)
-		return
-	}
-	srv := extractServiceInfo(image)
-	volumes := map[string]struct{}{
-		"/data/GEF/datasets/set1:/mydata/input:ro": struct{}{},
-		"/home/vagrant/test:/mydata/output":        struct{}{},
-	}
-	containerID, err := s.docker.ExecuteImage(imageID, srv.Name, volumes)
-	if err != nil {
-		Response{w}.ServerError("execute docker image: ", err)
-		return
-	}
-	Response{w}.Ok(jmap("ContainerID", containerID, "JobID", containerID))
+	Response{w}.Ok(jmap("Jobs", jobs))
 }
 
 func (s *Server) inspectJobHandler(w http.ResponseWriter, r *http.Request) {
@@ -229,13 +218,8 @@ func (s *Server) inspectJobHandler(w http.ResponseWriter, r *http.Request) {
 	contID := dckr.ContainerID(vars["jobID"])
 	cont, err := s.docker.InspectContainer(contID)
 	if err != nil {
-		Response{w}.ServerError("inspect container: ", err)
+		Response{w}.ServerError("inspect docker container: ", err)
 		return
 	}
-	job := Job{
-		ID:          cont.ID,
-		ServiceName: cont.ImageName,
-		Status:      cont.Status,
-	}
-	Response{w}.Ok(jmap("Container", cont, "Job", job))
+	Response{w}.Ok(jmap("Job", makeJob(cont)))
 }

@@ -46,17 +46,16 @@ type ContainerID string
 
 // Image is a struct for Docker images
 type Image struct {
-	ID     ImageID
-	Tags   []string
-	Labels map[string]string
+	ID      ImageID
+	RepoTag string
+	Labels  map[string]string
 }
 
 // Container is a struct for Docker containers
 type Container struct {
-	ID        ContainerID
-	ImageName string
-	Status    string
-	State     docker.State
+	ID    ContainerID
+	Image Image
+	State docker.State
 }
 
 // NewClientFirstOf returns a new docker client or an error
@@ -141,17 +140,41 @@ func (c Client) IsValid() bool {
 	return c.c != nil && c.c.Ping() == nil
 }
 
+func makeImage(img *docker.Image) Image {
+	repoTag := ""
+	if len(img.RepoTags) > 0 {
+		repoTag = img.RepoTags[0]
+	}
+	var labels map[string]string
+	if img.Config != nil {
+		labels = img.Config.Labels
+	}
+	return Image{
+		ID:      ImageID(img.ID),
+		RepoTag: repoTag,
+		Labels:  labels,
+	}
+}
+
+func makeImage2(img docker.APIImages) Image {
+	repoTag := ""
+	if len(img.RepoTags) > 0 {
+		repoTag = img.RepoTags[0]
+	}
+	return Image{
+		ID:      ImageID(img.ID),
+		RepoTag: repoTag,
+		Labels:  img.Labels,
+	}
+}
+
 // InspectImage returns the image stats
 func (c Client) InspectImage(id ImageID) (Image, error) {
 	img, err := c.c.InspectImage(string(id))
-	ret := Image{ID: ImageID(img.ID)}
 	if err != nil {
-		return ret, err
+		return Image{}, err
 	}
-	if img.Config != nil {
-		ret.Labels = img.Config.Labels
-	}
-	return ret, err
+	return makeImage(img), err
 }
 
 // ListImages lists the docker images
@@ -162,12 +185,7 @@ func (c Client) ListImages() ([]Image, error) {
 	}
 	ret := make([]Image, 0, 0)
 	for _, img := range imgs {
-		rimg := Image{
-			ID:     ImageID(img.ID),
-			Tags:   img.RepoTags,
-			Labels: img.Labels,
-		}
-		ret = append(ret, rimg)
+		ret = append(ret, makeImage2(img))
 	}
 	return ret, nil
 }
@@ -213,17 +231,18 @@ func (c *Client) BuildImage(dirpath string) (Image, error) {
 }
 
 // ExecuteImage takes a docker image, creates a container and executes it
-func (c Client) ExecuteImage(id ImageID, name string, volumes map[string]struct{}) (ContainerID, error) {
-	cfg := docker.Config{
-		Image:   string(id),
-		Volumes: volumes,
+func (c Client) ExecuteImage(id ImageID) (ContainerID, error) {
+	img, err := c.c.InspectImage(string(id))
+	if err != nil {
+		return ContainerID(""), err
 	}
 	hc := docker.HostConfig{}
 	cco := docker.CreateContainerOptions{
-		Name:       name,
-		Config:     &cfg,
+		Name:       "",
+		Config:     img.Config,
 		HostConfig: &hc,
 	}
+	// fmt.Println("container options", cco)
 	cont, err := c.c.CreateContainer(cco)
 	if err != nil {
 		return ContainerID(""), err
@@ -242,11 +261,13 @@ func (c Client) ListContainers() ([]Container, error) {
 	}
 	ret := make([]Container, 0, 0)
 	for _, cont := range conts {
-		fmt.Println("list container: ", cont)
+		img, _ := c.InspectImage(ImageID(cont.Image))
 		ret = append(ret, Container{
-			ID:        ContainerID(cont.ID),
-			ImageName: cont.Image,
-			Status:    cont.Status,
+			ID:    ContainerID(cont.ID),
+			Image: img,
+			State: docker.State{
+				Status: cont.Status,
+			},
 		})
 	}
 	return ret, nil
@@ -255,13 +276,10 @@ func (c Client) ListContainers() ([]Container, error) {
 // InspectContainer returns the container details
 func (c Client) InspectContainer(id ContainerID) (Container, error) {
 	cont, err := c.c.InspectContainer(string(id))
+	img, _ := c.InspectImage(ImageID(cont.Image))
 	ret := Container{
-		ID:        ContainerID(cont.ID),
-		ImageName: cont.Image,
-		// Image: Image{
-		// 	ID:     ImageID(cont.Image),
-		// 	Labels: cont.Labels,
-		// },
+		ID:    ContainerID(cont.ID),
+		Image: img,
 		State: cont.State,
 	}
 	if err != nil {

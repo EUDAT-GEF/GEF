@@ -20,6 +20,13 @@ func (w Response) ServerError(message string, err error) {
 	http.Error(w, str, 500)
 }
 
+// ServerNewError sets a 500/server error
+func (w Response) ServerNewError(message string) {
+	str := fmt.Sprintf("API Server ERROR: %s", message)
+	log.Println(str)
+	http.Error(w, str, 500)
+}
+
 // Location sets location header
 func (w Response) Location(loc string) Response {
 	w.Header().Set("Location", loc)
@@ -62,6 +69,7 @@ func setCodeAndBody(w Response, code int, body interface{}) {
 	w.WriteHeader(code)
 	w.Write(data)
 	// log.Println("setCodeAndBody:", code, contentType, body)
+	log.Println("-> ", code, contentType, len(data), "bytes")
 }
 
 func jmap(kv ...interface{}) map[string]interface{} {

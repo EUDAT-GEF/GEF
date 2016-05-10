@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"../dckr"
+	"github.com/eudat-gef/gef-docker/dckr"
 )
 
 // GefSrvLabelPrefix is the prefix identifying GEF related labels
@@ -15,6 +15,7 @@ const GefSrvLabelPrefix = "eudat.gef.service."
 type Service struct {
 	ID          dckr.ImageID
 	Name        string
+	RepoTag     string
 	Description string
 	Version     string
 	Input       []IOPort
@@ -29,15 +30,22 @@ type IOPort struct {
 
 // Job is an instance of a running service
 type Job struct {
-	ID          dckr.ContainerID
-	ServiceName string
-	Status      string
+	dckr.Container
+	Service Service
+}
+
+func makeJob(container dckr.Container) Job {
+	r := Job{Container: container, Service: extractServiceInfo(container.Image)}
+	return r
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 func extractServiceInfo(image dckr.Image) Service {
-	srv := Service{}
+	srv := Service{
+		ID:      image.ID,
+		RepoTag: image.RepoTag,
+	}
 
 	for k, v := range image.Labels {
 		if !strings.HasPrefix(k, GefSrvLabelPrefix) {
@@ -82,10 +90,6 @@ func extractServiceInfo(image dckr.Image) Service {
 			}
 		}
 		srv.Output = out
-	}
-
-	if srv.Name == "" {
-		srv.Name = strings.Join(image.Tags, ", ")
 	}
 
 	return srv
