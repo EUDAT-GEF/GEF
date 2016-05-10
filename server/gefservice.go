@@ -15,6 +15,7 @@ const GefSrvLabelPrefix = "eudat.gef.service."
 type Service struct {
 	ID          dckr.ImageID
 	Name        string
+	RepoTag     string
 	Description string
 	Version     string
 	Input       []IOPort
@@ -37,7 +38,11 @@ type Job struct {
 ///////////////////////////////////////////////////////////////////////////////
 
 func extractServiceInfo(image dckr.Image) Service {
-	srv := Service{}
+	labels := image.Labels
+	srv := Service{
+		ID:      image.ID,
+		RepoTag: image.RepoTag,
+	}
 
 	for k, v := range image.Labels {
 		if !strings.HasPrefix(k, GefSrvLabelPrefix) {
@@ -82,10 +87,6 @@ func extractServiceInfo(image dckr.Image) Service {
 			}
 		}
 		srv.Output = out
-	}
-
-	if srv.Name == "" {
-		srv.Name = strings.Join(image.Tags, ", ")
 	}
 
 	return srv
