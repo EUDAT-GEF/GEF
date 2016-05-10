@@ -7,7 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"../dckr"
+	"github.com/eudat-gef/gef-docker/dckr"
 
 	"github.com/gorilla/mux"
 	"github.com/pborman/uuid"

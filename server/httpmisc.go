@@ -69,6 +69,7 @@ func setCodeAndBody(w Response, code int, body interface{}) {
 	w.WriteHeader(code)
 	w.Write(data)
 	// log.Println("setCodeAndBody:", code, contentType, body)
+	log.Println("-> ", code, contentType, len(data), "bytes")
 }
 
 func jmap(kv ...interface{}) map[string]interface{} {
