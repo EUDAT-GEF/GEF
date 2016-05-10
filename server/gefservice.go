@@ -30,15 +30,18 @@ type IOPort struct {
 
 // Job is an instance of a running service
 type Job struct {
-	ID          dckr.ContainerID
-	ServiceName string
-	Status      string
+	dckr.Container
+	Service Service
+}
+
+func makeJob(container dckr.Container) Job {
+	r := Job{Container: container, Service: extractServiceInfo(container.Image)}
+	return r
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 func extractServiceInfo(image dckr.Image) Service {
-	labels := image.Labels
 	srv := Service{
 		ID:      image.ID,
 		RepoTag: image.RepoTag,

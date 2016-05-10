@@ -200,17 +200,6 @@ func (s *Server) executeServiceHandler(w http.ResponseWriter, r *http.Request) {
 	Response{w}.Location(loc).Created(jmap("Location", loc, "jobID", containerID))
 }
 
-// Job is a gef job
-type Job struct {
-	dckr.Container
-	Service Service
-}
-
-func makeJob(container dckr.Container) Job {
-	r := Job{Container: container, Service: extractServiceInfo(container.Image)}
-	return r
-}
-
 func (s *Server) listJobsHandler(w http.ResponseWriter, r *http.Request) {
 	containers, err := s.docker.ListContainers()
 	if err != nil {

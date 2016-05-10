@@ -53,10 +53,9 @@ type Image struct {
 
 // Container is a struct for Docker containers
 type Container struct {
-	ID        ContainerID
-	ImageName string
-	Status    string
-	State     docker.State
+	ID    ContainerID
+	Image Image
+	State docker.State
 }
 
 // NewClientFirstOf returns a new docker client or an error
