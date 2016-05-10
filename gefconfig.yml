@@ -13,7 +13,7 @@ gefParams:
     pass:
   gefDocker:
     url: http://192.168.97.42:4142/api/
-    timeout: 60000
+    timeout: 120000 # building docker images is slooow
 
 # use the simple server factory, run on a single port
 server:
