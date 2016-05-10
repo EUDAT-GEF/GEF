@@ -60,6 +60,7 @@ var Main = React.createClass({
 		return {
 			page: this.executeService,
 			errorMessages: [],
+			selectedJobID: null,
 		};
 	},
 
@@ -98,7 +99,7 @@ var Main = React.createClass({
 				console.log("ajax error, jqXHR: ", jqXHR);
 			}.bind(this);
 		}
-		console.log("ajax", ajaxObject);
+		// console.log("ajax", ajaxObject);
 		jQuery.ajax(ajaxObject);
 	},
 
@@ -110,13 +111,14 @@ var Main = React.createClass({
 
 	executeService: function() {
 		return (
-			<ExecuteService error={this.error} ajax={this.ajax} />
+			<ExecuteService error={this.error} ajax={this.ajax}
+				onJobCreated={jobID => this.setState({page:this.browseJobs, selectedJobID: jobID}) } />
 		);
 	},
 
 	browseJobs: function() {
 		return (
-			<BrowseJobs error={this.error} ajax={this.ajax} />
+			<BrowseJobs error={this.error} ajax={this.ajax} selectedID={this.state.selectedJobID}/>
 		);
 	},
 
@@ -196,9 +198,9 @@ var BuildService = React.createClass({
 					this.props.error("Didn't get json location from server");
 					return;
 				}
-				var buildURL = apiNames.builds + "/" + json.Location;
+				const buildURL = apiNames.builds + "/" + json.buildID;
 				this.setState({buildURL: buildURL});
-				console.log("create new service url :", buildURL);
+				console.log("create new service url :", json.buildID);
 			}.bind(this),
 		});
 	},
@@ -255,6 +257,7 @@ var ExecuteService = React.createClass({
 	props: {
 		error: PT.func.isRequired,
 		ajax: PT.func.isRequired,
+		onJobCreated: PT.func.isRequired,
 	},
 
 	getInitialState: function() {
@@ -281,13 +284,12 @@ var ExecuteService = React.createClass({
 	},
 
 	execute: function(service) {
-		console.log("Service to execute", service);
-		var formData = new FormData();
-		formData.append("imageID", service.ID);
+		var fd = new FormData();
+		fd.append("imageID", service.ID);
 		this.props.ajax({
 			type: "POST",
 			url: apiNames.jobs,
-			data: formData,
+			data: fd,
 			processData: false,
 			contentType: false,
 			success: function(json, textStatus, jqXHR) {
@@ -298,10 +300,7 @@ var ExecuteService = React.createClass({
 					this.props.error("Didn't get json location from server");
 					return;
 				}
-				// window.location.assign(window.location.origin+"/"+ json.Location);
-				// var buildURL = apiNames.builds + "/" + json.Location;
-				// this.setState({buildURL: buildURL});
-				// console.log("create new service url :", buildURL);
+				this.props.onJobCreated(json.jobID);
 			}.bind(this),
 		});
 	},
@@ -332,9 +331,13 @@ var ExecuteService = React.createClass({
 	},
 
 	renderService: function(service) {
+		let name = service.Name;
+		if (!name){
+			name = <span style={{color:'#888'}}>{service.RepoTag}</span>;
+		}
 		return (
 			<div className="row" key={service.ID} onClick={this.showService.bind(this, service.ID)}>
-				<div className="col-xs-12 col-sm-4"><i className="glyphicon glyphicon-transfer"/> {service.Name}</div>
+				<div className="col-xs-12 col-sm-4"><i className="glyphicon glyphicon-transfer"/> {name}</div>
 				<div className="col-xs-12 col-sm-8">{service.ID}</div>
 			</div>
 		);
@@ -364,6 +367,13 @@ var InspectService = React.createClass({
 		execute: PT.func.isRequired,
 	},
 
+	getInitialState() {
+		return {
+			inputMapping: [],
+			outputMapping: [true],
+		}
+	},
+
 	renderRow: function(tag, value) {
 		return (
 			<div className="row">
@@ -373,21 +383,49 @@ var InspectService = React.createClass({
 		);
 	},
 
-	renderIO: function(isInput, io) {
+	setInputMapping(index, e) {
+		this.state.inputMapping[index] = e.target.value;
+		this.setState(this.state);
+	},
+
+	setOutputMapping(index, e) {
+		this.state.outputMapping[index] = !this.state.outputMapping[index];
+		this.setState(this.state);
+	},
+
+	renderInputLine: function(io, index) {
 		return (
-			<div className="row">
+			<div className="row" key={index}>
 				<div className="col-xs-12 col-sm-3" style={{fontWeight:500}}>{io.Name}</div>
 				<div className="col-xs-12 col-sm-5">
-					{ isInput
-						? <input type="text" style={{width:'100%'}} value="/tempZone/home/rods/GEF/datasets/set1"/>
-						: <input type="checkbox" checked="checked"/> }
+					<input type="text" style={{width:'100%'}}
+						value={this.state.inputMapping[index] || ""}
+						onChange={this.setInputMapping.bind(this, index)}/>
 				</div>
 				<div className="col-xs-12 col-sm-4">{io.Path}</div>
 			</div>
 		);
 	},
 
+	renderOutputLine: function(io, index) {
+		return (
+			<div className="row" key={index}>
+				<div className="col-xs-12 col-sm-3" style={{fontWeight:500}}>{io.Name}</div>
+				<div className="col-xs-12 col-sm-5">
+					<input type="checkbox"
+						checked={this.state.outputMapping[index] || false}
+						onChange={this.setOutputMapping.bind(this, index)}/>
+				</div>
+				<div className="col-xs-12 col-sm-4">{io.Path}</div>
+			</div>
+		);
+	},
+
+
 	renderInput: function(io) {
+		if (!io || !io.length){
+			return false;
+		}
 		return (
 			<div>
 				<div className="row">
@@ -395,11 +433,15 @@ var InspectService = React.createClass({
 					<div className="col-xs-12 col-sm-5" style={{fontWeight:700}}>Map to B2SAFE PID</div>
 					<div className="col-xs-12 col-sm-4" style={{fontWeight:700}}>Internal location</div>
 				</div>
-				{io.map(this.renderIO.bind(this, true))}
+				{io.map(this.renderInputLine)}
 			</div>
 		);
 	},
+
 	renderOutput: function(io) {
+		if (!io || !io.length){
+			return false;
+		}
 		return (
 			<div>
 				<div className="row">
@@ -407,14 +449,13 @@ var InspectService = React.createClass({
 					<div className="col-xs-12 col-sm-5" style={{fontWeight:700}}>Copy To B2DROP</div>
 					<div className="col-xs-12 col-sm-4" style={{fontWeight:700}}>Internal location</div>
 				</div>
-				{io.map(this.renderIO.bind(this, false))}
+				{io.map(this.renderOutputLine)}
 			</div>
 		);
 	},
 
 	render: function() {
 		var service = this.props.service;
-		console.log("Service is: ", service);
 		return (
 			<div className="">
 				<div style={{height:"1em"}}></div>
@@ -431,7 +472,7 @@ var InspectService = React.createClass({
 				<div className="row">
 					<div className="col-xs-3"/>
 					<button className="btn btn-primary" style={{width:300}}
-						onClick={this.props.execute.bind(this, service)}>Execute</button>
+						onClick={() => this.props.execute(service)}>Execute</button>
 				</div>
 			</div>
 		);
@@ -444,16 +485,21 @@ var BrowseJobs = React.createClass({
 	props: {
 		error: PT.func.isRequired,
 		ajax: PT.func.isRequired,
+		selectedID: PT.string,
 	},
 
 	getInitialState: function() {
 		return {
 			jobs: [],
-			selected: null,
+			selectedID: null,
 		};
 	},
 
 	componentDidMount: function() {
+		this.refresh();
+	},
+
+	refresh: function() {
 		this.props.ajax({
 			url: apiNames.jobs,
 			success: function(json, textStatus, jqXHR) {
@@ -465,7 +511,7 @@ var BrowseJobs = React.createClass({
 					return;
 				}
 				this.setState({jobs: json.Jobs});
-				console.log('jobs', json);
+				setTimeout(this.refresh, 2000);
 			}.bind(this),
 		});
 	},
@@ -481,8 +527,7 @@ var BrowseJobs = React.createClass({
 					this.props.error("Didn't get Job json from server");
 					return;
 				}
-				this.setState({selected: json});
-				console.log('job', json);
+				this.setState({selectedID: json.Job.ID});
 			}.bind(this),
 		});
 	},
@@ -498,18 +543,26 @@ var BrowseJobs = React.createClass({
 	},
 
 	renderJob: function(job) {
+		const style = {};
+		if (this.state.selectedID) {
+			if (job.ID === this.state.selectedID) {
+				style.color = 'red';
+			};
+		} else if (job.ID === this.props.selectedID) {
+			style.color = 'red';
+		};
+
 		var sOver = {overflow:'scroll'};
 		return (
-			<div className="row" key={job.ID} onClick={this.showJob.bind(this, job.ID)}>
+			<div className="row" key={job.ID} onClick={this.showJob.bind(this, job.ID)} style={style}>
 				<div className="col-xs-12 col-sm-4" style={sOver}>{job.ID}</div>
-				<div className="col-xs-12 col-sm-4" style={sOver}><i className="glyphicon glyphicon-transfer"/> {job.ServiceName}</div>
-				<div className="col-xs-12 col-sm-4" style={sOver}>{job.Status}</div>
+				<div className="col-xs-12 col-sm-4" style={sOver}><i className="glyphicon glyphicon-transfer"/> {job.Service.Name}</div>
+				<div className="col-xs-12 col-sm-4" style={sOver}>{job.State.Status}</div>
 			</div>
 		);
 	},
 
 	render: function() {
-
 		return (
 			<div className="list-jobs-page">
 				<h3> Browse Jobs </h3>
