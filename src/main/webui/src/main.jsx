@@ -1,26 +1,3 @@
-// 1. create gefservice: first screen
-//	- make possible the upload of a Dockerfile with some files
-//	- 	the Docker file must contain all the labels
-// 	- 	the server reads the labels and displays them in UI
-//	- user must accept to create the service
-//	- the frontend server delegates gef-docker to build the service(docker image)
-//	- 	and the final image becomes a gef service
-//	- 	the gefservice is assigned a PID
-//	-	the user is informed, gets the PID of the new service
-// 2. list all the gefservices with their metadata
-// 	- make possible to execute one of them -> switch to the run wizard
-// 3. execute gefservice
-//	- input a pid of a dataset
-//	- select one of the gefservices from a list
-//	- run -> switch to the job monitoring page
-// 4. job monitoring
-//	- select running/finished job
-//	- the UI displays the status, stdout and stderr
-//	- the server exports the results automatically to b2drop
-// 5. gc for jobs older than a few days
-//
-
-
 import React from 'react/lib/ReactWithAddons';
 import ReactDOM from 'react-dom';
 const ReactCSSTransitionGroup = React.addons.CSSTransitionGroup;
@@ -433,7 +410,7 @@ var InspectService = React.createClass({
 			<div>
 				<div className="row">
 					<div className="col-xs-12 col-sm-3" style={{fontWeight:700}}>Input</div>
-					<div className="col-xs-12 col-sm-5" style={{fontWeight:700}}>Map to B2SAFE PID</div>
+					<div className="col-xs-12 col-sm-5" style={{fontWeight:700}}>Map to B2SAFE PID/location</div>
 					<div className="col-xs-12 col-sm-4" style={{fontWeight:700}}>Internal location</div>
 				</div>
 				{io.map(this.renderIOLine.bind(this, true))}
