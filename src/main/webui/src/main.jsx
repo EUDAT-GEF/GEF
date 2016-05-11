@@ -709,7 +709,6 @@ var BrowseDatasets = React.createClass({
 	render: function() {
 		return (
 			<div className="dataset-page">
-				<CreateDataset error={this.props.error} ajax={this.props.ajax} />
 				<h3> Browse Datasets </h3>
 				{ this.renderHeads() }
 				<div className="dataset-table">
