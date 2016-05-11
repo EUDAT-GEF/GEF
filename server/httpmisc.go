@@ -13,16 +13,24 @@ type Response struct {
 	http.ResponseWriter
 }
 
+func logRequest(r *http.Request) {
+	log.Println(r.Method, r.URL.Path)
+}
+
+func logParam(name, value string) {
+	log.Println("    ", name, "=", value)
+}
+
 // ServerError sets a 500/server error
 func (w Response) ServerError(message string, err error) {
-	str := fmt.Sprintf("API Server ERROR: %s :: %s", message, err.Error())
+	str := fmt.Sprintf("    API Server ERROR: %s :: %s", message, err.Error())
 	log.Println(str)
 	http.Error(w, str, 500)
 }
 
 // ServerNewError sets a 500/server error
 func (w Response) ServerNewError(message string) {
-	str := fmt.Sprintf("API Server ERROR: %s", message)
+	str := fmt.Sprintf("    API Server ERROR: %s", message)
 	log.Println(str)
 	http.Error(w, str, 500)
 }
@@ -69,7 +77,7 @@ func setCodeAndBody(w Response, code int, body interface{}) {
 	w.WriteHeader(code)
 	w.Write(data)
 	// log.Println("setCodeAndBody:", code, contentType, body)
-	log.Println("-> ", code, contentType, len(data), "bytes")
+	log.Println("    HTTP", code, ",", contentType, ",", len(data), "bytes")
 }
 
 func jmap(kv ...interface{}) map[string]interface{} {

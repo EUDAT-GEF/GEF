@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/eudat-gef/gef-docker/dckr"
 
@@ -91,8 +92,8 @@ func NewServer(cfg Config, docker dckr.Client) *Server {
 	apirouter.HandleFunc(imagesAPIPath, server.listServicesHandler).Methods("GET")
 	apirouter.HandleFunc(imagesAPIPath+"/{imageID}", server.inspectServiceHandler).Methods("GET")
 
-	apirouter.HandleFunc(jobsAPIPath, server.listJobsHandler).Methods("GET")
 	apirouter.HandleFunc(jobsAPIPath, server.executeServiceHandler).Methods("POST")
+	apirouter.HandleFunc(jobsAPIPath, server.listJobsHandler).Methods("GET")
 	apirouter.HandleFunc(jobsAPIPath+"/{jobID}", server.inspectJobHandler).Methods("GET")
 
 	server.server.Handler = router
@@ -105,10 +106,12 @@ func (s *Server) Start() error {
 }
 
 func (s *Server) infoHandler(w http.ResponseWriter, r *http.Request) {
+	logRequest(r)
 	Response{w}.Ok(jmap("version", Version))
 }
 
 func (s *Server) newBuildHandler(w http.ResponseWriter, r *http.Request) {
+	logRequest(r)
 	buildID := uuid.NewRandom().String()
 	buildDir := filepath.Join(s.tmpDir, buildsTmpDir, buildID)
 	if err := os.MkdirAll(buildDir, os.FileMode(tmpDirPerm)); err != nil {
@@ -120,6 +123,7 @@ func (s *Server) newBuildHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) buildHandler(w http.ResponseWriter, r *http.Request) {
+	logRequest(r)
 	vars := mux.Vars(r)
 	buildID := vars["buildID"]
 	buildDir := filepath.Join(s.tmpDir, buildsTmpDir, buildID)
@@ -165,6 +169,7 @@ func (s *Server) buildHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) listServicesHandler(w http.ResponseWriter, r *http.Request) {
+	logRequest(r)
 	images, err := s.docker.ListImages()
 	if err != nil {
 		Response{w}.ServerError("list of docker images: ", err)
@@ -179,6 +184,7 @@ func (s *Server) listServicesHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) inspectServiceHandler(w http.ResponseWriter, r *http.Request) {
+	logRequest(r)
 	vars := mux.Vars(r)
 	imageID := dckr.ImageID(vars["imageID"])
 	image, err := s.docker.InspectImage(imageID)
@@ -190,6 +196,7 @@ func (s *Server) inspectServiceHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) executeServiceHandler(w http.ResponseWriter, r *http.Request) {
+	logRequest(r)
 	imageID := r.FormValue("imageID")
 	if imageID == "" {
 		vars := mux.Vars(r)
@@ -199,6 +206,7 @@ func (s *Server) executeServiceHandler(w http.ResponseWriter, r *http.Request) {
 		Response{w}.ServerNewError("execute docker image: imageID required")
 		return
 	}
+	logParam("imageID", imageID)
 
 	image, err := s.docker.InspectImage(dckr.ImageID(imageID))
 	if err != nil {
@@ -209,6 +217,7 @@ func (s *Server) executeServiceHandler(w http.ResponseWriter, r *http.Request) {
 		Response{w}.ServerError("execute docker image: binds: ", err)
 		return
 	}
+	logParam("binds", strings.Join(binds, " : "))
 
 	containerID, err := s.docker.ExecuteImage(dckr.ImageID(imageID), binds)
 	if err != nil {
@@ -238,24 +247,25 @@ func makeBinds(r *http.Request, image dckr.Image) ([]string, error) {
 		hostPath := filepath.Join(HarcodedB2DropMountPoint, hostPartPath)
 		binds = append(binds, fmt.Sprintf("%s:%s", hostPath, out.Path))
 	}
-	fmt.Println("binds: ", binds)
 	return binds, nil
 }
 
 func (s *Server) listJobsHandler(w http.ResponseWriter, r *http.Request) {
+	logRequest(r)
 	containers, err := s.docker.ListContainers()
 	if err != nil {
 		Response{w}.ServerError("list all docker containers: ", err)
 		return
 	}
-	var jobs []Job
-	for _, c := range containers {
-		jobs = append(jobs, makeJob(c))
+	jobs := make([]Job, len(containers), len(containers))
+	for i, c := range containers {
+		jobs[i] = makeJob(c)
 	}
 	Response{w}.Ok(jmap("Jobs", jobs))
 }
 
 func (s *Server) inspectJobHandler(w http.ResponseWriter, r *http.Request) {
+	logRequest(r)
 	vars := mux.Vars(r)
 	contID := dckr.ContainerID(vars["jobID"])
 	cont, err := s.docker.InspectContainer(contID)
