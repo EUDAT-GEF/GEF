@@ -22,7 +22,7 @@ public class Services {
 
 	public static void init(GEFConfig cfg) {
 		initPidService(cfg.gefParams.pid);
-		initIrodsService(cfg.gefParams.irods);
+//		initIrodsService(cfg.gefParams.irods);
 	}
 
 	public static void initPidService(GEFConfig.Pid cfg) {

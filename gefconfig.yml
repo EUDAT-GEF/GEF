@@ -1,11 +1,4 @@
 gefParams:
-  irods:
-    server: 192.168.97.41
-    port: 1247
-    username: rods
-    password: rodsgef
-    path: /tempZone/home/rods/GEF
-    resource: demoResc
   pid:
     epicServerUrl: http://pid.gwdg.de/handles/
     localPrefix: 11022
