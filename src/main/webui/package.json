@@ -20,16 +20,24 @@
   },
   "dependencies": {
     "bootstrap": "^3.3.6",
+    "bows": "^1.6.0",
     "font-awesome": "^4.4.0",
     "immutable": "^3.7.6",
-    "jquery": "^2.2.3",
+    "jquery": "^3.1.0",
     "moment": "^2.13.0",
-    "pluralize": "^1.2.1",
-    "react": "^15.0.1",
-    "react-dom": "^15.0.1",
+    "pluralize": "^3.0.0",
+    "radium": "^0.18.1",
+    "react": "^15.3.0",
+    "react-bootstrap": "^0.30.3",
+    "react-dom": "^15.3.0",
+    "react-redux": "^4.4.5",
     "react-router": "^2.1.1",
     "react-toggle": "^2.1.0",
     "react-widgets": "^3.2.4",
-    "reqwest": "^2.0.5"
+    "redux": "^3.5.2",
+    "redux-logger": "^2.6.1",
+    "redux-thunk": "^2.1.0",
+    "reqwest": "^2.0.5",
+    "seamless-immutable": "^6.1.1"
   }
 }

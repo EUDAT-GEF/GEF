@@ -27,3 +27,4 @@ logging:
 
   appenders:
     - type: console
+
