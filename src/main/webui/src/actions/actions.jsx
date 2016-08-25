@@ -5,10 +5,12 @@
 
 import _ from 'lodash';
 import actionTypes from './actionTypes';
+import {pageNames} from '../containers/Main';
 
 //sync actions
+//these are just plain action creators
 
-function selectPage(pageName) {
+function pageChange(pageName) {
     return {
         type: actionTypes.PAGE_CHANGE,
         page: pageName
@@ -57,4 +59,32 @@ function jobFetchError() {
         type: actionTypes.JOB_FETCH_ERROR
     }
 }
+
 //async actions
+//these do some extra async stuff before the real actions are dispatched
+function fetchJobs() {
+
+}
+
+function showErrorMessageWithTimeout(id, timeout) {
+
+}
+
+function hideErrorMessage(id) {
+
+}
+
+export default {
+    pageChange,
+    errorOccur,
+    taskFetchStart,
+    taskFetchSuccess,
+    taskFetchError,
+    jobFetchStart,
+    jobFetchSuccess,
+    jobFetchError,
+    fetchJobs,
+    showErrorMessageWithTimeout,
+    hideErrorMessage
+}
+

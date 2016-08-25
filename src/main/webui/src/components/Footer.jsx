@@ -9,7 +9,10 @@ const styles = {
     position: 'absolute',
     bottom: 0,
     width: '100%',
-    height: 70   /* Height of the footer */
+    height: 70,   /* Height of the footer */
+    background: '#F7F3E9 url("images/color-line.jpg") repeat-x top left',
+    padding: '20px 10px 0px 10px',
+    fontSize: 12
 };
 
 const Footer = ({version}) => (
@@ -34,7 +37,7 @@ const Footer = ({version}) => (
             </Col>
         </Row>
     </Grid>
-)
+);
 
 Footer.propTypes = {
     version: PropTypes.string.isRequired

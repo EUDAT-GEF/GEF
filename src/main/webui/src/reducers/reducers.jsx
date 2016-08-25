@@ -5,9 +5,10 @@
 import SI from 'seamless-immutable';
 import { combineReducers } from 'redux';
 import actionTypes from '../actions/actionTypes';
+import {pageNames} from '../containers/Main';
 
 const sampleState = {
-    currentPage : 'BrowseFiles',
+    currentPage : pageNames.browseJobs,
     isFetching : true,
     filesToUpload : [],
     services: [],
@@ -15,10 +16,10 @@ const sampleState = {
     tasks: []
 };
 
-function currentPage(state = 'buildService', action){
+function currentPage(state = pageNames.browseJobs, action){
     switch (action.type) {
         case actionTypes.PAGE_CHANGE:
-            return SI(action.data.page);
+            return SI(action.page);
         default:
             return state;
     }
