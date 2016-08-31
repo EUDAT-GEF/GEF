@@ -25,9 +25,20 @@ function currentPage(state = pageNames.browseJobs, action){
     }
 }
 
+function jobs(state = SI([]), action) {
+    switch (action.type) {
+        case actionTypes.JOB_FETCH_SUCCESS:
+            return SI(action.jobs);
+        case actionTypes.JOB_FETCH_ERROR:
+            return SI([]);
+        default:
+            return state;
+    }
+}
 
 const rootReducer = combineReducers({
-    currentPage
+    currentPage,
+    jobs
 });
 
 export default rootReducer;

@@ -5,7 +5,7 @@ import actions from '../actions/actions';
 import {connect} from 'react-redux';
 import {Grid, Row, Col} from 'react-bootstrap';
 import ToolList from '../components/ToolList';
-import BrowseJobs from '../components/BrowseJobs';
+import BrowseJobsContainer from '../containers/BrowseJobsContainer';
 import ExecuteService from '../components/ExecuteService';
 import BuildService from '../components/BuildService';
 
@@ -20,7 +20,7 @@ const Main = ({currentPage, pageChange}) => {
     let page;
     switch (currentPage) {
         case pageNames.browseJobs:
-            page =  <BrowseJobs />;
+            page =  <BrowseJobsContainer />;
             break;
         case pageNames.buildService:
             page = <BuildService />;
@@ -32,12 +32,12 @@ const Main = ({currentPage, pageChange}) => {
             page = <BrowseJobs />;
     };
     return (
-        <Grid>
+        <Grid fluid={true}>
             <Row>
                 <Col xs={12} sm={2} md={2}>
                     <ToolList currentPage={currentPage} onClick={pageChange}/>
                 </Col>
-                <Col xs={12} sm={2} md={2}>
+                <Col xs={12} sm={10} md={10}>
                     {page}
                 </Col>
             </Row>
