@@ -1,66 +1,59 @@
 'use strict';
 
 import React, {PropTypes} from 'react';
+import ReactDOMServer from 'react-dom/server';
 import {Row, InputGroup} from 'react-bootstrap';
 import DropzoneComponent from 'react-dropzone-component';
 
+require('react-dropzone-component/styles/filepicker.css');
+require('dropzone/dist/min/dropzone.min.css');
 
-const FileItemRow = ({file, handleRemove}) => (
-    <Row key={f.name}>
-        <Col md={12}>
-            <div className="input-group">
-                <input type="text" className="input-large" readOnly="readonly"
-                       style={{width:'100%', lineHeight:'26px', paddingLeft:10}} value={f.name}/>
-                <span className="input-group-btn">
-							<button type="button" className="btn btn-warning btn-sm" onClick={handleRemove(file)}>
-								<i className="glyphicon glyphicon-remove"/>
-							</button>
-						</span>
-            </div>
-        </Col>
-    </Row>
-);
 
-FileItemRow.propTypes = {
-    file: PropTypes.object.isRequired,
-    handleRemove: PropTypes.func.isRequired
-};
 
-const BottomRow = ({files, handleAdd}) => (
-    <Row style={{margin: '5px 0px'}}>
-        <Col md={3}>
-            <FileAddButton> </FileAddButton>
-        </Col>
-    </Row>
-);
-
-BottomRow.propTypes = {
-    files: PropTypes.array.isRequired,
-    handleAdd: PropTypes.func.isRequired
-};
-
-const fileAddButtonStyle = {
-    noshow: {width:0, height:0, margin:0, border:'none'}
-};
-
-class FileAddButton extends React.Component {
+class Files extends React.Component {
     constructor(props) {
         super(props);
+
+        this.djsConfig = {
+            addRemoveLinks: true,
+            autoProcessQueue: false,
+            previewTemplate: ReactDOMServer.renderToStaticMarkup(
+                <div className="dz-preview dz-file-preview">
+                    <div className="dz-filename"><span data-dz-name="true"></span></div>
+                    <img data-dz-thumbnail="true" />
+                    {/*<div className="dz-details">*/}
+                    {/*</div>*/}
+                    <div className="dz-progress"><span className="dz-upload" data-dz-uploadprogress="true"></span></div>
+                    <div className="dz-success-mark"><span>✔</span></div>
+                    <div className="dz-error-mark"><span>✘</span></div>
+                    <div className="dz-error-message"><span data-dz-errormessage="true"></span></div>
+                </div>
+            )
+        };
+
+        this.componentConfig = {
+            postUrl: 'no-url'
+        };
     }
 
-    doBrowse(event) {
-        this.element.click();
+    handleFileAdded(file) {
+        console.log(file);
     }
 
-    doAddFiles(event) {
-        this.props.addFile(event.target.files);
+    render() {
+        const config = this.componentConfig;
+        const djsConfig = this.djsConfig;
+
+        const eventHandlers = {
+            addedfile: this.handleFileAdded.bind(this)
+        };
+
+        return <DropzoneComponent config={config} eventHandlers={eventHandlers} djsConfig={djsConfig} />
     }
+
 }
 
-FileAddButton.propTypes = {
-    addFile: PropTypes.func.isRequired
-};
-
+export default Files;
 
 
 
