@@ -18,8 +18,10 @@ class App extends React.Component {
     render() {
         return (
             <div>
-                <Header />
-                <Main />
+                <div style={{'padding-bottom': 70}}>
+                    <Header />
+                    <Main />
+                </div>
                 <Footer version="0.4.0" />
             </div>
         );

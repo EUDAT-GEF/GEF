@@ -78,7 +78,7 @@ function jobFetchError(errorMessage) {
 function fetchJobs() {
     return function (dispatch, getState)  {
         dispatch(jobFetchStart());
-        const resultPromise = axios.get(apiNames.jobs);
+        const resultPromise = axios.get( apiNames.jobs);
         resultPromise.then(response => {
             log('fetched jobs:', response.data.Jobs);
             dispatch(jobFetchSuccess(response.data.Jobs));
@@ -92,7 +92,7 @@ function fetchJobs() {
 function fetchJobById(jobId) {
     return function (dispatch, getState)  {
         dispatch(jobFetchStart());
-        const resultPromise = axios.get(apiNames.jobs + '/' + jobId);
+        const resultPromise = axios.get( api.jobs + '/' + jobId);
         resultPromise.then(response => {
             log('fetched job:', response.data);
             //don't know what to do with it yet

@@ -6,7 +6,7 @@ import {PropTypes} from 'react';
 import {Grid, Row, Col} from 'react-bootstrap';
 
 const styles = {
-    position: 'absolute',
+    position: 'fixed',
     bottom: 0,
     width: '100%',
     height: 70,   /* Height of the footer */
