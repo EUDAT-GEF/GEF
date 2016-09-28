@@ -2,17 +2,52 @@
 
 import React, {PropTypes} from 'react';
 import Files from './Files';
-import {Row, Col, Button, Glyphicon} from 'react-bootstrap'
+import axios from 'axios';
+import apiNames from '../utils/GefAPI';
+import bows from 'bows';
 
-const BuildService = () => (
-    <div>
-        <h3>Build Service</h3>
-        <h4>Please select and upload the Dockerfile, together with other files which are part of the container</h4>
-        <Files/>
-        <Row>
-            <Col md={4} mdOffset={4}> <Button type='submit' bsStyle='primary' style={{width: '100%'}}> <Glyphicon glyph='upload'/> Build Image</Button> </Col>
-        </Row>
-    </div>
-);
+const log = bows('BuildService');
+
+// there is possibility that the child component is rendered before the fetch of new build is finished?
+class BuildService extends React.Component {
+    constructor(props) {
+        super(props);
+        this.fileUploadStart = this.props.fileUploadStart.bind(this);
+        this.fileUploadSuccess = this.props.fileUploadSuccess.bind(this);
+        this.fileUploadError = this.props.fileUploadError.bind(this);
+        this.state = {buildID : null};
+        this.getApiURL = this.getApiURL.bind(this);
+    }
+
+    getApiURL(){
+        log("ApiURL get callded");
+        log("buildID is", this.state.buildID);
+        return apiNames.builds + '/' + this.state.buildID;
+    }
+
+
+    componentWillMount() {
+        const resultPromise = axios.post(apiNames.builds);
+        resultPromise.then(response => {
+            this.setState({buildID : response.data.buildID});
+            log('New service URL:', this.state.buildID);
+        }).catch(err => {
+            log("An error occurred during creating new service URL");
+        });
+    }
+    render () {
+        return <div>
+            <h3>Build Service</h3>
+            <h4>Please select and upload the Dockerfile, together with other files which are part of the container</h4>
+            <Files getApiURL={this.getApiURL} fileUploadStart={this.fileUploadStart} fileUploadSuccess={this.fileUploadSuccess} fileUploadError={this.fileUploadError}/>
+        </div>
+    }
+}
+
+BuildService.propTypes = {
+    fileUploadStart: PropTypes.func.isRequired,
+    fileUploadSuccess: PropTypes.func.isRequired,
+    fileUploadError: PropTypes.func.isRequired,
+};
 
 export default BuildService;

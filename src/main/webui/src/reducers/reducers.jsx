@@ -38,7 +38,7 @@ function jobs(state = SI([]), action) {
 
 const rootReducer = combineReducers({
     currentPage,
-    jobs
+    jobs,
 });
 
 export default rootReducer;

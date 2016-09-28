@@ -1,6 +1,5 @@
 'use strict';
 
-import axios from 'axios';
 
 
 
@@ -11,20 +10,5 @@ const apiNames = {
     jobs: "/gef/api/jobs",
 };
 
-const getJobs = () => {
-    return axios.get(apiNames.jobs);
-};
-
-function getJobById(id) {
-    const url = apiNames.jobs + "/" + id;
-    return axios.get(url);
-}
-
-const getBuilds = () => {
-    return axios.get(apiNames.builds);
-};
-
-const getServices = () => {
-    return axios.get(apiNames.services);
-};
+export default apiNames;
 

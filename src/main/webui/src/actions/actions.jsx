@@ -8,17 +8,12 @@ import actionTypes from './actionTypes';
 import {pageNames} from '../containers/Main';
 import bows from 'bows';
 import axios from 'axios';
+import apiNames from '../utils/GefAPI';
 
 const log = bows('actions');
 //sync actions
 //these are just plain action creators
 
-const apiNames = {
-    datasets: "/gef/api/datasets",
-    builds:   "/gef/api/builds",
-    services: "/gef/api/images",
-    jobs: "/gef/api/jobs",
-};
 
 function pageChange(pageName) {
     return {
@@ -73,6 +68,41 @@ function jobFetchError(errorMessage) {
     }
 }
 
+function fileUploadStart() {
+    return {
+        type: actionTypes.FILE_UPLOAD_START
+    }
+}
+
+function newBuild(buildID) {
+    return {
+        type: actionTypes.NEW_BUILD,
+        buildID: buildID
+    }
+}
+
+function newBuildError(errorMessage) {
+    return {
+        type: actionTypes.NEW_BUILD_ERROR,
+        errorMessage: errorMessage
+    }
+}
+
+function fileUploadSuccess(data) {
+    return {
+        type: actionTypes.FILE_UPLOAD_SUCCESS,
+        data: data
+    }
+}
+
+function fileUploadError(errorMessage) {
+    return {
+        type: actionTypes.FILE_UPLOAD_ERROR,
+        errorMessage: errorMessage
+    }
+}
+
+
 //async actions
 //these do some extra async stuff before the real actions are dispatched
 function fetchJobs() {
@@ -83,10 +113,42 @@ function fetchJobs() {
             log('fetched jobs:', response.data.Jobs);
             dispatch(jobFetchSuccess(response.data.Jobs));
         }).catch(err => {
-            log("An fetch error occurred")
+            log("An fetch error occurred");
             dispatch(jobFetchError(err));
         })
     }
+}
+
+
+function fetchServices() {
+    return function (dispatch, getState)  {
+        dispatch(serviceFetchStart());
+        const resultPromise = axios.get( apiNames.services);
+        resultPromise.then(response => {
+            log('fetched jobs:', response.data.services);
+            dispatch(serviceFetchSuccess(response.data.services));
+        }).catch(err => {
+            log("An fetch error occurred");
+            dispatch(serviceFetchError(err));
+        })
+    }
+}
+
+//this creates a new build endpoint on the server,
+//files are posted to this endpoint to construct a docker image
+function prepareNewBuild() {
+    return function (dispatch, getState) {
+        const resultPromise = axios.get( apiNames.builds);
+        resultPromise.then(response => {
+            const buildID = response.data.buildID;
+            log('Preapred a new buildID', buildID);
+            dispatch(newBuild(buildID))
+        }).catch(err => {
+            log("failed to get a new buildID");
+            dispatch(newBuildError(err));
+        })
+    }
+
 }
 
 function fetchJobById(jobId) {
@@ -121,7 +183,12 @@ export default {
     jobFetchSuccess,
     jobFetchError,
     fetchJobs,
+    fetchServices,
     showErrorMessageWithTimeout,
-    hideErrorMessage
+    hideErrorMessage,
+    fileUploadStart,
+    fileUploadSuccess,
+    fileUploadError,
+    prepareNewBuild
 };
 

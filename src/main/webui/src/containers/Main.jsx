@@ -7,7 +7,7 @@ import {Grid, Row, Col} from 'react-bootstrap';
 import ToolList from '../components/ToolList';
 import BrowseJobsContainer from '../containers/BrowseJobsContainer';
 import ExecuteService from '../components/ExecuteService';
-import BuildService from '../components/BuildService';
+import BuildServiceContainer from '../containers/BuildServiceContainer';
 
 
 const pageNames = {
@@ -23,7 +23,7 @@ const Main = ({currentPage, pageChange}) => {
             page =  <BrowseJobsContainer />;
             break;
         case pageNames.buildService:
-            page = <BuildService />;
+            page = <BuildServiceContainer />;
             break;
         case pageNames.executeService:
             page = <ExecuteService />;

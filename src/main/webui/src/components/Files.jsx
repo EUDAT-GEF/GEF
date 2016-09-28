@@ -2,13 +2,17 @@
 
 import React, {PropTypes} from 'react';
 import ReactDOMServer from 'react-dom/server';
-import {Row, InputGroup} from 'react-bootstrap';
 import DropzoneComponent from 'react-dropzone-component';
+import {Row, Col, Button, Glyphicon} from 'react-bootstrap'
+import axios from 'axios';
+import bows from 'bows';
 
 require('react-dropzone-component/styles/filepicker.css');
 require('dropzone/dist/min/dropzone.min.css');
 
 
+
+const log = bows('Files');
 
 class Files extends React.Component {
     constructor(props) {
@@ -17,6 +21,7 @@ class Files extends React.Component {
         this.djsConfig = {
             addRemoveLinks: true,
             autoProcessQueue: false,
+            uploadMultiple: true,
             previewTemplate: ReactDOMServer.renderToStaticMarkup(
                 <div className="dz-preview dz-file-preview">
                     <div className="dz-filename"><span data-dz-name="true"></span></div>
@@ -31,27 +36,65 @@ class Files extends React.Component {
             )
         };
 
-        this.componentConfig = {
-            postUrl: 'no-url'
-        };
+        this.state = {myDropzone: undefined};
+        this.fileUploadSuccess = this.props.fileUploadSuccess.bind(this);
+        this.fileUploadError = this.props.fileUploadError.bind(this);
     }
 
-    handleFileAdded(file) {
-        console.log(file);
+    componentWillMount() {
     }
 
     render() {
-        const config = this.componentConfig;
+        const getApiURL = this.props.getApiURL;
         const djsConfig = this.djsConfig;
 
         const eventHandlers = {
-            addedfile: this.handleFileAdded.bind(this)
+            init: (passedDropZone) => {
+                this.setState({myDropzone: passedDropZone});
+            },
+
+            successmultiple: (files, response) => {
+                log('successmultiple, response is: ', response)
+                this.fileUploadSuccess(response);
+            },
+
+            error: (files, errorMessage) => {
+                this.fileUploadError(errorMessage);
+            }
         };
 
-        return <DropzoneComponent config={config} eventHandlers={eventHandlers} djsConfig={djsConfig} />
+        const fileUploadStart = this.props.fileUploadStart.bind(this);
+
+        const submitHandler = ()  => {
+            fileUploadStart();
+            this.state.myDropzone.processQueue();
+        };
+
+
+        if(getApiURL() != null) {
+            const config = {
+                postUrl: getApiURL()
+            };
+            return <div>
+                <DropzoneComponent config={config} eventHandlers={eventHandlers} djsConfig={djsConfig} />
+                <Row>
+                    <Col md={4} mdOffset={4}> <Button type='submit' bsStyle='primary' style={{width: '100%'} } onClick={submitHandler}> <Glyphicon glyph='upload'/> Build Image</Button> </Col>
+                </Row>
+            </div>
+        } else {
+            return <div> loading </div>
+        }
     }
 
 }
+
+Files.propTypes = {
+    fileUploadStart: PropTypes.func.isRequired,
+    getApiURL: PropTypes.func.isRequired,
+    fileUploadSuccess: PropTypes.func.isRequired,
+    fileUploadError: PropTypes.func.isRequired
+};
+
 
 export default Files;
 
