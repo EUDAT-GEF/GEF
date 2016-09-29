@@ -49,8 +49,8 @@ class BrowseJobs extends React.Component {
 }
 
 BrowseJobs.propTypes = {
-    jobs: PropTypes.array.isRequired
-
+    jobs: PropTypes.array.isRequired,
+    fetchJobs: PropTypes.func.isRequired
 };
 
 export default BrowseJobs;

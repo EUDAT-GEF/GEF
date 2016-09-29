@@ -4,10 +4,11 @@ import React, {PropTypes} from 'react';
 import actions from '../actions/actions';
 import {connect} from 'react-redux';
 import {Grid, Row, Col} from 'react-bootstrap';
-import ToolList from '../components/ToolList';
 import BrowseJobsContainer from '../containers/BrowseJobsContainer';
-import ExecuteService from '../components/ExecuteService';
 import BuildServiceContainer from '../containers/BuildServiceContainer';
+import {Router, Route, hashHistory, Link } from 'react-router';
+import {ListGroup, ListGroupItem} from 'react-bootstrap'
+import {LinkContainer} from 'react-router-bootstrap'
 
 
 const pageNames = {
@@ -16,34 +17,45 @@ const pageNames = {
     executeService: 'Execute a Service'
 };
 
-const Main = ({currentPage, pageChange}) => {
-    let page;
-    switch (currentPage) {
-        case pageNames.browseJobs:
-            page =  <BrowseJobsContainer />;
-            break;
-        case pageNames.buildService:
-            page = <BuildServiceContainer />;
-            break;
-        case pageNames.executeService:
-            page = <ExecuteService />;
-            break;
-        default:
-            page = <BrowseJobs />;
-    };
-    return (
-        <Grid fluid={true}>
-            <Row>
-                <Col xs={12} sm={2} md={2}>
-                    <ToolList currentPage={currentPage} onClick={pageChange}/>
-                </Col>
-                <Col xs={12} sm={10} md={10}>
-                    {page}
-                </Col>
-            </Row>
-        </Grid>
-    )
-};
+const ToolNav = () => (
+    <div>
+        <ListGroup>
+            <LinkContainer to='/workflows' >
+                <ListGroupItem> Browse Workflows</ListGroupItem>
+            </LinkContainer>
+            <LinkContainer to='/jobs' >
+                <ListGroupItem> Browse Jobs </ListGroupItem>
+            </LinkContainer>
+            <LinkContainer to='/services' >
+                <ListGroupItem> Browse Services </ListGroupItem>
+            </LinkContainer>
+            <LinkContainer to='/volumes' >
+                <ListGroupItem> Browse Volumes</ListGroupItem>
+            </LinkContainer>
+        </ListGroup>
+        <ListGroup>
+            <LinkContainer to='/buildImage' >
+                <ListGroupItem> Build a Service </ListGroupItem>
+            </LinkContainer>
+            <LinkContainer to='/buildVolume' >
+                <ListGroupItem> Build a Volume</ListGroupItem>
+            </LinkContainer>
+        </ListGroup>
+    </div>
+);
+
+const Main = (props) => (
+    <Grid fluid={true}>
+        <Row>
+            <Col xs={12} sm={2} md={2}>
+                <ToolNav></ToolNav>
+            </Col>
+            <Col xs={12} sm={10} md={10}>
+                {props.children}
+            </Col>
+        </Row>
+    </Grid>
+);
 
 const mapStateToProps = (state) => {
     return {
@@ -67,5 +79,5 @@ const MainContainer = connect(mapStateToProps, mapDispatchToProps)(
     Main
 );
 
-export { pageNames };
+export {pageNames};
 export default MainContainer

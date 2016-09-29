@@ -46,6 +46,7 @@ class Files extends React.Component {
 
     render() {
         const getApiURL = this.props.getApiURL;
+        const buttonText = this.props.buttonText;
         const djsConfig = this.djsConfig;
 
         const eventHandlers = {
@@ -78,7 +79,7 @@ class Files extends React.Component {
             return <div>
                 <DropzoneComponent config={config} eventHandlers={eventHandlers} djsConfig={djsConfig} />
                 <Row>
-                    <Col md={4} mdOffset={4}> <Button type='submit' bsStyle='primary' style={{width: '100%'} } onClick={submitHandler}> <Glyphicon glyph='upload'/> Build Image</Button> </Col>
+                    <Col md={4} mdOffset={4}> <Button type='submit' bsStyle='primary' style={{width: '100%'} } onClick={submitHandler}> <Glyphicon glyph='upload'/> {buttonText} </Button> </Col>
                 </Row>
             </div>
         } else {
@@ -89,10 +90,11 @@ class Files extends React.Component {
 }
 
 Files.propTypes = {
+    buttonText: PropTypes.string.isRequired,
     fileUploadStart: PropTypes.func.isRequired,
     getApiURL: PropTypes.func.isRequired,
     fileUploadSuccess: PropTypes.func.isRequired,
-    fileUploadError: PropTypes.func.isRequired
+    fileUploadError: PropTypes.func.isRequired,
 };
 
 

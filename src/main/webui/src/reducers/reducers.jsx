@@ -8,22 +8,11 @@ import actionTypes from '../actions/actionTypes';
 import {pageNames} from '../containers/Main';
 
 const sampleState = {
-    currentPage : pageNames.browseJobs,
     isFetching : true,
-    filesToUpload : [],
     services: [],
     jobs: [],
-    tasks: []
+    workflows: []
 };
-
-function currentPage(state = pageNames.browseJobs, action){
-    switch (action.type) {
-        case actionTypes.PAGE_CHANGE:
-            return SI(action.page);
-        default:
-            return state;
-    }
-}
 
 function jobs(state = SI([]), action) {
     switch (action.type) {
@@ -36,9 +25,20 @@ function jobs(state = SI([]), action) {
     }
 }
 
+function services(state = SI([]), action) {
+    switch (action.type) {
+        case actionTypes.SERVICE_FETCH_SUCCESS:
+            return SI(action.services);
+        case actionTypes.SERVICE_FETCH_ERROR:
+            return SI([]);
+        default:
+            return state;
+    }
+}
+
 const rootReducer = combineReducers({
-    currentPage,
     jobs,
+    services
 });
 
 export default rootReducer;

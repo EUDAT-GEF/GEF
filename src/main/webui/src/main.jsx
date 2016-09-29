@@ -19,7 +19,7 @@ if (!window.requestAnimationFrame) {
 
 var apiNames = {
 	datasets: "/gef/api/datasets",
-	builds:   "/gef/api/builds",
+	buildImages:   "/gef/api/buildImages",
 	services: "/gef/api/images",
 	jobs: "/gef/api/jobs",
 };
@@ -173,7 +173,7 @@ var BuildService = React.createClass({
 	componentDidMount: function() {
 		this.props.ajax({
 			type: "POST",
-			url: apiNames.builds,
+			url: apiNames.buildImages,
 			success: function(json, textStatus, jqXHR) {
 				if (!this.isMounted()) {
 					return;
@@ -182,7 +182,7 @@ var BuildService = React.createClass({
 					this.props.error("Didn't get json location from server");
 					return;
 				}
-				const buildURL = apiNames.builds + "/" + json.buildID;
+				const buildURL = apiNames.buildImages + "/" + json.buildID;
 				this.setState({buildURL: buildURL});
 				console.log("create new service url :", json.buildID);
 			}.bind(this),

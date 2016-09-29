@@ -15,9 +15,9 @@ import org.slf4j.LoggerFactory;
 /**
  * @author edima
  */
-@Path("builds")
+@Path("buildImages")
 public class GefBuilds {
-	private static final String gefDockerBuildApi = "builds";
+	private static final String gefDockerBuildApi = "buildImages";
 
 	private static final org.slf4j.Logger log = LoggerFactory.getLogger(GefBuilds.class);
 	final static DateFormat dateFormatter = DateFormat.getDateTimeInstance(DateFormat.DEFAULT, DateFormat.SHORT);

@@ -35,9 +35,10 @@ function serviceFetchStart() {
     }
 }
 
-function serviceFetchSuccess() {
+function serviceFetchSuccess(services) {
     return {
-        type: actionTypes.SERVICE_FETCH_SUCCESS
+        type: actionTypes.SERVICE_FETCH_SUCCESS,
+        services: services
     }
 }
 
@@ -103,6 +104,7 @@ function fileUploadError(errorMessage) {
 }
 
 
+//TODO: catch seems to swallow all of the exceptions, not only the exceptions occurred in fetch
 //async actions
 //these do some extra async stuff before the real actions are dispatched
 function fetchJobs() {
@@ -125,8 +127,8 @@ function fetchServices() {
         dispatch(serviceFetchStart());
         const resultPromise = axios.get( apiNames.services);
         resultPromise.then(response => {
-            log('fetched jobs:', response.data.services);
-            dispatch(serviceFetchSuccess(response.data.services));
+            log('fetched services:', response.data.Services);
+            dispatch(serviceFetchSuccess(response.data.Services));
         }).catch(err => {
             log("An fetch error occurred");
             dispatch(serviceFetchError(err));
@@ -138,7 +140,7 @@ function fetchServices() {
 //files are posted to this endpoint to construct a docker image
 function prepareNewBuild() {
     return function (dispatch, getState) {
-        const resultPromise = axios.get( apiNames.builds);
+        const resultPromise = axios.get( apiNames.buildImages);
         resultPromise.then(response => {
             const buildID = response.data.buildID;
             log('Preapred a new buildID', buildID);
