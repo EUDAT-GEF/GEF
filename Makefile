@@ -1,5 +1,4 @@
 SOURCES := $(shell find . -iname '*.go')
-VAGRANT := ./install/develserver/vagrant-docker-server
 
 build: gef-docker
 
@@ -7,11 +6,13 @@ gef-docker: $(SOURCES)
 	golint ./...
 	go vet ./...
 	# go test ./...
-	GOOS=linux GOARCH=amd64 go build
+	cd ./src
+# update the packages
+	GOOS=linux GOARCH=amd64 go install github.com/eudat-gef/gef-docker/dckr
+	GOOS=linux GOARCH=amd64 go install github.com/eudat-gef/gef-docker/server
+	GOOS=linux GOARCH=amd64 go install gef-docker
 
-install: gef-docker
-	cp ./gef-docker ./config.json $(VAGRANT)
 
 clean:
 	go clean
-	rm -f $(VAGRANT)/gef-docker $(VAGRANT)/config.json
+
