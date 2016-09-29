@@ -1,6 +1,6 @@
 'use strict';
 
-import BrowseVolumes from '../components/BrowseVolumes';
+import BrowseVolumes from '../components/Volumes';
 import actions from '../actions/actions';
 
 import {connect} from 'react-redux';

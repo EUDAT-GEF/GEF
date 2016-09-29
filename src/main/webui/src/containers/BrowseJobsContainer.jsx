@@ -1,6 +1,6 @@
 'use strict';
 
-import BrowseJobs from '../components/BrowseJobs';
+import BrowseJobs from '../components/Jobs';
 import actions from '../actions/actions';
 
 import {connect} from 'react-redux';

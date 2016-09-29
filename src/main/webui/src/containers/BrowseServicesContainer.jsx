@@ -1,6 +1,6 @@
 'use strict';
 
-import BrowseServices from '../components/BrowseServices';
+import BrowseServices from '../components/Services';
 import actions from '../actions/actions';
 
 import {connect} from 'react-redux';
