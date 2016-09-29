@@ -31,11 +31,12 @@ const (
 	apiRootPath   = "/api"
 	imagesAPIPath = "/images"
 	jobsAPIPath   = "/jobs"
-	buildsAPIPath = "/builds"
+	buildImagesAPIPath = "/buildImages"
+	buildVolumesAPIPath = "/buildVolumes"
 
 	tmpDirDefault = "gefdocker"
 	tmpDirPerm    = 0700
-	buildsTmpDir  = "builds"
+	buildImagesTmpDir  = "builds"
 )
 
 // Config keeps the configuration options needed to make a Server
@@ -86,8 +87,8 @@ func NewServer(cfg Config, docker dckr.Client) *Server {
 	apirouter.HandleFunc("/", server.infoHandler).Methods("GET")
 	apirouter.HandleFunc("/info", server.infoHandler).Methods("GET")
 
-	apirouter.HandleFunc(buildsAPIPath, server.newBuildHandler).Methods("POST")
-	apirouter.HandleFunc(buildsAPIPath+"/{buildID}", server.buildHandler).Methods("POST")
+	apirouter.HandleFunc(buildImagesAPIPath, server.newBuildImageHandler).Methods("POST")
+	apirouter.HandleFunc(buildImagesAPIPath +"/{buildID}", server.buildImageHandler).Methods("POST")
 
 	apirouter.HandleFunc(imagesAPIPath, server.listServicesHandler).Methods("GET")
 	apirouter.HandleFunc(imagesAPIPath+"/{imageID}", server.inspectServiceHandler).Methods("GET")
@@ -110,23 +111,24 @@ func (s *Server) infoHandler(w http.ResponseWriter, r *http.Request) {
 	Response{w}.Ok(jmap("version", Version))
 }
 
-func (s *Server) newBuildHandler(w http.ResponseWriter, r *http.Request) {
+func (s *Server) newBuildImageHandler(w http.ResponseWriter, r *http.Request) {
 	logRequest(r)
 	buildID := uuid.NewRandom().String()
-	buildDir := filepath.Join(s.tmpDir, buildsTmpDir, buildID)
+	buildDir := filepath.Join(s.tmpDir, buildImagesTmpDir, buildID)
 	if err := os.MkdirAll(buildDir, os.FileMode(tmpDirPerm)); err != nil {
 		Response{w}.ServerError("cannot create temporary directory", err)
 		return
 	}
-	loc := apiRootPath + buildsAPIPath + "/" + buildID
+	loc := apiRootPath + buildImagesAPIPath + "/" + buildID
 	Response{w}.Location(loc).Created(jmap("Location", loc, "buildID", buildID))
 }
 
-func (s *Server) buildHandler(w http.ResponseWriter, r *http.Request) {
+
+func (s *Server) buildImageHandler(w http.ResponseWriter, r *http.Request) {
 	logRequest(r)
 	vars := mux.Vars(r)
 	buildID := vars["buildID"]
-	buildDir := filepath.Join(s.tmpDir, buildsTmpDir, buildID)
+	buildDir := filepath.Join(s.tmpDir, buildImagesTmpDir, buildID)
 
 	mr, err := r.MultipartReader()
 	if err != nil {
@@ -166,6 +168,14 @@ func (s *Server) buildHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	Response{w}.Ok(jmap("Image", image, "Service", extractServiceInfo(image)))
+}
+
+func (s *Server) newBuildVolumeHandler(w http.ResponseWriter, r *http.Request) {
+
+}
+
+func (s *Server) buildVolumeHandler(w http.ResponseWriter, r *http.Request) {
+
 }
 
 func (s *Server) listServicesHandler(w http.ResponseWriter, r *http.Request) {

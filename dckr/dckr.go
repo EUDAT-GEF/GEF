@@ -44,6 +44,9 @@ type ImageID string
 // ContainerID is a type for docker image ids
 type ContainerID string
 
+// VolumeID is a type for docker volume ids
+type VolumeID string
+
 // Image is a struct for Docker images
 type Image struct {
 	ID      ImageID
@@ -57,6 +60,12 @@ type Container struct {
 	Image Image
 	State docker.State
 }
+
+type Volume struct{
+	ID VolumeID
+}
+
+
 
 // NewClientFirstOf returns a new docker client or an error
 func NewClientFirstOf(cfg []Config) (Client, error) {
