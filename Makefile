@@ -10,9 +10,8 @@ gef-docker: $(SOURCES)
 # update the packages
 	GOOS=linux GOARCH=amd64 go install github.com/eudat-gef/gef-docker/dckr
 	GOOS=linux GOARCH=amd64 go install github.com/eudat-gef/gef-docker/server
-	GOOS=linux GOARCH=amd64 go install gef-docker
+	GOOS=linux GOARCH=amd64 go install github.com/eudat-gef/gef-docker/gef-docker
 
 
 clean:
 	go clean
-
