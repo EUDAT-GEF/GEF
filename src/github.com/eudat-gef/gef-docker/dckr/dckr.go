@@ -47,6 +47,7 @@ type ContainerID string
 // VolumeID is a type for docker volume ids
 type VolumeID string
 
+//VolumeMountpoint is a type for docker volume mountpoint
 type VolumeMountpoint string
 
 // Image is a struct for Docker images
@@ -303,12 +304,32 @@ func (c Client) InspectContainer(id ContainerID) (Container, error) {
 	return ret, err
 }
 
+// ListVolumes list all named volumes
+func (c Client) ListVolumes() ([]Volume, error) {
+	vols, err := c.c.ListVolumes(docker.ListVolumesOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	ret := make([]Volume, 0, 0)
+
+	for _, vol := range vols{
+		volume, _ := c.InspectVolume(VolumeID(vol.Name))
+		ret = append(ret, Volume{
+			ID:    VolumeID(volume.ID),
+			Mountpoint: VolumeMountpoint(volume.Mountpoint),
+		})
+	}
+	return ret, nil
+
+}
+
 // InspectVolume returns the volume details
 func (c Client) InspectVolume(id VolumeID) (Volume, error) {
-	volume, err := c.c.InspectVolume(id);
+	volume, err := c.c.InspectVolume(string(id));
 	ret := Volume{
-		ID: volume.Name,
-		Mountpoint: volume.Mountpoint,
+		ID: VolumeID(volume.Name),
+		Mountpoint: VolumeMountpoint(volume.Mountpoint),
 	}
 	return ret, err
 }
@@ -321,10 +342,10 @@ func (c Client) ListVolumeContent(id VolumeID) []string {
 
 // BuildVolume creates a volume, copies data from dirpath
 func (c Client) BuildVolume(dirpath string) (Volume, error) {
-	volume, err := c.c.CreateVolume();
+	volume, err := c.c.CreateVolume(docker.CreateVolumeOptions{});
 	ret := Volume{
-		ID: volume.Name,
-		Mountpoint: volume.Mountpoint,
+		ID: VolumeID(volume.Name),
+		Mountpoint: VolumeMountpoint(volume.Mountpoint),
 	}
 	return ret, err
 }
@@ -332,6 +353,6 @@ func (c Client) BuildVolume(dirpath string) (Volume, error) {
 
 //RemoveVolume removes a volume
 func (c Client) RemoveVolume(id VolumeID) error {
-	err := c.c.RemoveVolume(id)
+	err := c.c.RemoveVolume(string(id))
 	return err
 }

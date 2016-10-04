@@ -31,6 +31,7 @@ const (
 	apiRootPath   = "/api"
 	imagesAPIPath = "/images"
 	jobsAPIPath   = "/jobs"
+	volumesAPIPath = "/volumes"
 	buildImagesAPIPath = "/buildImages"
 	buildVolumesAPIPath = "/buildVolumes"
 
@@ -95,6 +96,9 @@ func NewServer(cfg Config, docker dckr.Client) *Server {
 
 	apirouter.HandleFunc(imagesAPIPath, server.listServicesHandler).Methods("GET")
 	apirouter.HandleFunc(imagesAPIPath+"/{imageID}", server.inspectServiceHandler).Methods("GET")
+
+	apirouter.HandleFunc(volumesAPIPath, server.listVolumesHandler).Methods("GET")
+	//apirouter.HandleFunc(volumesAPIPath+"/{volumeID}", server.inspectVolumeHandler).Methods("GET")
 
 	apirouter.HandleFunc(jobsAPIPath, server.executeServiceHandler).Methods("POST")
 	apirouter.HandleFunc(jobsAPIPath, server.listJobsHandler).Methods("GET")
@@ -324,4 +328,14 @@ func (s *Server) inspectJobHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	Response{w}.Ok(jmap("Job", makeJob(cont)))
+}
+
+func (s *Server) listVolumesHandler(w http.ResponseWriter, r *http.Request) {
+	logRequest(r)
+	vols, err := s.docker.ListVolumes()
+	if err != nil {
+		Response{w}.ServerError("list all docker named volumes: ", err)
+		return
+	}
+	Response{w}.Ok(jmap("Volumes", vols))
 }
