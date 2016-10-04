@@ -47,6 +47,8 @@ type ContainerID string
 // VolumeID is a type for docker volume ids
 type VolumeID string
 
+type VolumeMountpoint string
+
 // Image is a struct for Docker images
 type Image struct {
 	ID      ImageID
@@ -63,6 +65,8 @@ type Container struct {
 
 type Volume struct{
 	ID VolumeID
+	Mountpoint VolumeMountpoint
+
 }
 
 
@@ -297,4 +301,37 @@ func (c Client) InspectContainer(id ContainerID) (Container, error) {
 		return ret, err
 	}
 	return ret, err
+}
+
+// InspectVolume returns the volume details
+func (c Client) InspectVolume(id VolumeID) (Volume, error) {
+	volume, err := c.c.InspectVolume(id);
+	ret := Volume{
+		ID: volume.Name,
+		Mountpoint: volume.Mountpoint,
+	}
+	return ret, err
+}
+
+// return file names in a directory
+// TODO
+func (c Client) ListVolumeContent(id VolumeID) []string {
+	return nil
+}
+
+// BuildVolume creates a volume, copies data from dirpath
+func (c Client) BuildVolume(dirpath string) (Volume, error) {
+	volume, err := c.c.CreateVolume();
+	ret := Volume{
+		ID: volume.Name,
+		Mountpoint: volume.Mountpoint,
+	}
+	return ret, err
+}
+
+
+//RemoveVolume removes a volume
+func (c Client) RemoveVolume(id VolumeID) error {
+	err := c.c.RemoveVolume(id)
+	return err
 }

@@ -36,7 +36,7 @@ const (
 
 	tmpDirDefault = "gefdocker"
 	tmpDirPerm    = 0700
-	buildImagesTmpDir  = "builds"
+	buildsTmpDir = "builds"
 )
 
 // Config keeps the configuration options needed to make a Server
@@ -87,8 +87,11 @@ func NewServer(cfg Config, docker dckr.Client) *Server {
 	apirouter.HandleFunc("/", server.infoHandler).Methods("GET")
 	apirouter.HandleFunc("/info", server.infoHandler).Methods("GET")
 
-	apirouter.HandleFunc(buildImagesAPIPath, server.newBuildImageHandler).Methods("POST")
+	apirouter.HandleFunc(buildImagesAPIPath, server.newBuildHandler).Methods("POST")
 	apirouter.HandleFunc(buildImagesAPIPath +"/{buildID}", server.buildImageHandler).Methods("POST")
+
+	apirouter.HandleFunc(buildVolumesAPIPath, server.newBuildHandler).Methods("POST")
+	apirouter.HandleFunc(buildVolumesAPIPath +"/{buildID}", server.buildVolumeHandler).Methods("POST")
 
 	apirouter.HandleFunc(imagesAPIPath, server.listServicesHandler).Methods("GET")
 	apirouter.HandleFunc(imagesAPIPath+"/{imageID}", server.inspectServiceHandler).Methods("GET")
@@ -110,17 +113,20 @@ func (s *Server) infoHandler(w http.ResponseWriter, r *http.Request) {
 	logRequest(r)
 	Response{w}.Ok(jmap("version", Version))
 }
-
-func (s *Server) newBuildImageHandler(w http.ResponseWriter, r *http.Request) {
+// This is used for both building new Images and new volumes.
+// files are uploaded to a tmp dir,
+// for building images, the dir is used as contextPath for images building
+// for build volumes, the files are copied into volumes
+func (s *Server) newBuildHandler(w http.ResponseWriter, r *http.Request) {
 	logRequest(r)
 	buildID := uuid.NewRandom().String()
-	buildDir := filepath.Join(s.tmpDir, buildImagesTmpDir, buildID)
+	buildDir := filepath.Join(s.tmpDir, buildsTmpDir, buildID)
 	if err := os.MkdirAll(buildDir, os.FileMode(tmpDirPerm)); err != nil {
 		Response{w}.ServerError("cannot create temporary directory", err)
 		return
 	}
 	loc := apiRootPath + buildImagesAPIPath + "/" + buildID
-	Response{w}.Location(loc).Created(jmap("Location", loc, "buildID", buildID))
+	Response{w}.Location(loc).Created(jmap("Location", loc, "buildImageID", buildID))
 }
 
 
@@ -128,7 +134,7 @@ func (s *Server) buildImageHandler(w http.ResponseWriter, r *http.Request) {
 	logRequest(r)
 	vars := mux.Vars(r)
 	buildID := vars["buildID"]
-	buildDir := filepath.Join(s.tmpDir, buildImagesTmpDir, buildID)
+	buildDir := filepath.Join(s.tmpDir, buildsTmpDir, buildID)
 
 	mr, err := r.MultipartReader()
 	if err != nil {
@@ -170,13 +176,47 @@ func (s *Server) buildImageHandler(w http.ResponseWriter, r *http.Request) {
 	Response{w}.Ok(jmap("Image", image, "Service", extractServiceInfo(image)))
 }
 
-func (s *Server) newBuildVolumeHandler(w http.ResponseWriter, r *http.Request) {
-
-}
-
 func (s *Server) buildVolumeHandler(w http.ResponseWriter, r *http.Request) {
+	logRequest(r)
+	vars := mux.Vars(r)
+	buildID := vars["buildID"]
+	buildDir := filepath.Join(s.tmpDir, buildsTmpDir, buildID)
 
+	mr, err := r.MultipartReader()
+	if err != nil {
+		Response{w}.ServerError("while getting multipart reader ", err)
+		return
+	}
+
+	for {
+		part, err := mr.NextPart()
+		if err == io.EOF {
+			break
+		}
+		if part.FileName() == "" {
+			continue
+		}
+		dst, err := os.Create(filepath.Join(buildDir, part.FileName()))
+		if err != nil {
+			Response{w}.ServerError("while creating file to save file part ", err)
+			return
+		}
+		defer dst.Close()
+
+		if _, err := io.Copy(dst, part); err != nil {
+			Response{w}.ServerError("while dumping file part ", err)
+			return
+		}
+	}
+
+	volume, err := s.docker.BuildVolume(buildDir)
+	if err != nil {
+		Response{w}.ServerError("build docker volume:", err)
+		return
+	}
+	Response{w}.Ok(jmap("Volume", volume))
 }
+
 
 func (s *Server) listServicesHandler(w http.ResponseWriter, r *http.Request) {
 	logRequest(r)
