@@ -88,10 +88,10 @@ func NewServer(cfg Config, docker dckr.Client) *Server {
 	apirouter.HandleFunc("/", server.infoHandler).Methods("GET")
 	apirouter.HandleFunc("/info", server.infoHandler).Methods("GET")
 
-	apirouter.HandleFunc(buildImagesAPIPath, server.newBuildHandler).Methods("POST")
+	apirouter.HandleFunc(buildImagesAPIPath, server.newBuildImageHandler).Methods("POST")
 	apirouter.HandleFunc(buildImagesAPIPath +"/{buildID}", server.buildImageHandler).Methods("POST")
 
-	apirouter.HandleFunc(buildVolumesAPIPath, server.newBuildHandler).Methods("POST")
+	apirouter.HandleFunc(buildVolumesAPIPath, server.newBuildVolumeHandler).Methods("POST")
 	apirouter.HandleFunc(buildVolumesAPIPath +"/{buildID}", server.buildVolumeHandler).Methods("POST")
 
 	apirouter.HandleFunc(imagesAPIPath, server.listServicesHandler).Methods("GET")
@@ -117,11 +117,7 @@ func (s *Server) infoHandler(w http.ResponseWriter, r *http.Request) {
 	logRequest(r)
 	Response{w}.Ok(jmap("version", Version))
 }
-// This is used for both building new Images and new volumes.
-// files are uploaded to a tmp dir,
-// for building images, the dir is used as contextPath for images building
-// for build volumes, the files are copied into volumes
-func (s *Server) newBuildHandler(w http.ResponseWriter, r *http.Request) {
+func (s *Server) newBuildImageHandler(w http.ResponseWriter, r *http.Request ) {
 	logRequest(r)
 	buildID := uuid.NewRandom().String()
 	buildDir := filepath.Join(s.tmpDir, buildsTmpDir, buildID)
@@ -130,9 +126,20 @@ func (s *Server) newBuildHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	loc := apiRootPath + buildImagesAPIPath + "/" + buildID
-	Response{w}.Location(loc).Created(jmap("Location", loc, "buildImageID", buildID))
+	Response{w}.Location(loc).Created(jmap("Location", loc, "buildID", buildID))
 }
 
+func (s *Server) newBuildVolumeHandler(w http.ResponseWriter, r *http.Request ) {
+	logRequest(r)
+	buildID := uuid.NewRandom().String()
+	buildDir := filepath.Join(s.tmpDir, buildsTmpDir, buildID)
+	if err := os.MkdirAll(buildDir, os.FileMode(tmpDirPerm)); err != nil {
+		Response{w}.ServerError("cannot create temporary directory", err)
+		return
+	}
+	loc := apiRootPath + buildVolumesAPIPath+ "/" + buildID
+	Response{w}.Location(loc).Created(jmap("Location", loc, "buildID", buildID))
+}
 
 func (s *Server) buildImageHandler(w http.ResponseWriter, r *http.Request) {
 	logRequest(r)

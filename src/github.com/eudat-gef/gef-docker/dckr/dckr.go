@@ -347,8 +347,11 @@ func (c Client) BuildVolume(dirpath string) (Volume, error) {
 		ID: VolumeID(volume.Name),
 		Mountpoint: VolumeMountpoint(volume.Mountpoint),
 	}
+	//copy all content to volume
+	CopyTree(dirpath, string(ret.Mountpoint), &CopyTreeOptions{Symlinks:true})
 	return ret, err
 }
+
 
 
 //RemoveVolume removes a volume
