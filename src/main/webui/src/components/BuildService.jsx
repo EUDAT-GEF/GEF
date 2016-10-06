@@ -20,8 +20,8 @@ class BuildService extends React.Component {
     }
 
     getApiURL(){
-        log("ApiURL get called");
-        log("buildID is", this.state.buildID);
+        // log("ApiURL get called");
+        // log("buildID is", this.state.buildID);
         return apiNames.buildImages + '/' + this.state.buildID;
     }
 
@@ -39,7 +39,7 @@ class BuildService extends React.Component {
         return <div>
             <h3>Build a Service</h3>
             <h4>Please select and upload the Dockerfile, together with other files which are part of the container</h4>
-            <Files getApiURL={this.getApiURL} fileUploadStart={this.fileUploadStart} fileUploadSuccess={this.fileUploadSuccess} fileUploadError={this.fileUploadError} buttontText='Build Image'/>
+            <Files getApiURL={this.getApiURL} fileUploadStart={this.fileUploadStart} fileUploadSuccess={this.fileUploadSuccess} fileUploadError={this.fileUploadError} buttonText="Build Image"/>
         </div>
     }
 }

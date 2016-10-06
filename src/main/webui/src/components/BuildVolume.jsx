@@ -20,8 +20,8 @@ class BuildVolume extends React.Component {
     }
 
     getApiURL(){
-        log("ApiURL get called");
-        log("buildID is", this.state.buildID);
+        // log("ApiURL get called");
+        // log("buildID is", this.state.buildID);
         return apiNames.buildVolumes + '/' + this.state.buildID;
     }
 
@@ -39,7 +39,7 @@ class BuildVolume extends React.Component {
         return <div>
             <h3>Build a Volume</h3>
             <h4>Please select and upload files, the files will be put in a named docker volume, you can use the volume as input for services later. </h4>
-            <Files getApiURL={this.getApiURL} fileUploadStart={this.fileUploadStart} fileUploadSuccess={this.fileUploadSuccess} fileUploadError={this.fileUploadError} buttontText='Build Volume'/>
+            <Files getApiURL={this.getApiURL} fileUploadStart={this.fileUploadStart} fileUploadSuccess={this.fileUploadSuccess} fileUploadError={this.fileUploadError} buttonText='Build Volume'/>
         </div>
     }
 }

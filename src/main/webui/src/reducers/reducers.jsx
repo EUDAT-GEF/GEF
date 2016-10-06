@@ -27,8 +27,19 @@ function jobs(state = SI([]), action) {
 
 function services(state = SI([]), action) {
     switch (action.type) {
-        case actionTypes.SERVICE_FETCH_SUCCESS:
+        case actionTypes.SERVICES_FETCH_SUCCESS:
             return SI(action.services);
+        case actionTypes.SERVICES_FETCH_ERROR:
+            return SI([]);
+        default:
+            return state;
+    }
+}
+
+function selectedService(state = SI([]), action) {
+    switch (action.type) {
+        case actionTypes.SERVICE_FETCH_SUCCESS:
+            return SI(action.service);
         case actionTypes.SERVICE_FETCH_ERROR:
             return SI([]);
         default:
@@ -50,7 +61,8 @@ function volumes(state = SI([]), action) {
 const rootReducer = combineReducers({
     jobs,
     services,
-    volumes
+    volumes,
+    currentService,
 });
 
 export default rootReducer;

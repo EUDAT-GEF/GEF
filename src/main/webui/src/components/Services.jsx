@@ -27,6 +27,7 @@ const Header = () => (
 class Services extends React.Component {
     constructor(props) {
         super(props);
+        this.fetchService = this.props.fetchService.bind(this);
     }
 
     componentDidMount() {
@@ -42,7 +43,7 @@ class Services extends React.Component {
                 <Header/>
                 {_.map(this.props.services, (service) => {
                     if(service.ID === this.props.params.id)
-                        return <Service service={service}/>;
+                        return <Service service={service} fetchService={this.fetchService}/>;
                     else
                         return <ServiceRow service={service}/>;
 
@@ -55,6 +56,7 @@ class Services extends React.Component {
 
 Services.propTypes = {
     fetchServices: PropTypes.func.isRequired,
+    fetchService: PropTypes.func.isRequired,
     services: PropTypes.array.isRequired,
 };
 

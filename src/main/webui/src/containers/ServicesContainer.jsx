@@ -17,6 +17,10 @@ const mapDispatchToProps = (dispatch) => {
         fetchServices: () => {
             const action = actions.fetchServices();
             dispatch(action);
+        },
+        fetchService: (serviceID) => {
+            const action = actions.fetchService(serviceID);
+            dispatch(action);
         }
     };
 };

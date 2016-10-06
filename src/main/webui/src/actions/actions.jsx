@@ -29,16 +29,36 @@ function errorOccur(errorMessage) {
     }
 }
 
+function servicesFetchStart() {
+    return {
+        type: actionTypes.SERVICES_FETCH_START
+    }
+}
+
+function servicesFetchSuccess(services) {
+    return {
+        type: actionTypes.SERVICES_FETCH_SUCCESS,
+        services: services
+    }
+}
+
+function servicesFetchError(errorMessage) {
+    return {
+        type: actionTypes.SERVICES_FETCH_ERROR,
+        errorMessage: errorMessage
+    }
+}
+
 function serviceFetchStart() {
     return {
         type: actionTypes.SERVICE_FETCH_START
     }
 }
 
-function serviceFetchSuccess(services) {
+function serviceFetchSuccess(service) {
     return {
         type: actionTypes.SERVICE_FETCH_SUCCESS,
-        services: services
+        service: service
     }
 }
 
@@ -49,40 +69,40 @@ function serviceFetchError(errorMessage) {
     }
 }
 
-function jobFetchStart() {
+function jobsFetchStart() {
     return {
         type: actionTypes.JOB_FETCH_START
     }
 }
 
-function jobFetchSuccess(jobs) {
+function jobsFetchSuccess(jobs) {
     return {
         type: actionTypes.JOB_FETCH_SUCCESS,
         jobs: jobs
     }
 }
 
-function jobFetchError(errorMessage) {
+function jobsFetchError(errorMessage) {
     return {
         type: actionTypes.JOB_FETCH_ERROR,
         errorMessage: errorMessage
     }
 }
 
-function volumeFetchStart() {
+function volumesFetchStart() {
     return {
         type: actionTypes.VOLUME_FETCH_START
     }
 }
 
-function volumeFetchSuccess(volumes) {
+function volumesFetchSuccess(volumes) {
     return {
         type: actionTypes.VOLUME_FETCH_SUCCESS,
         volumes: volumes
     }
 }
 
-function volumeFetchError(errorMessage) {
+function volumesFetchError(errorMessage) {
     return {
         type: actionTypes.VOLUME_FETCH_ERROR,
         errorMessage: errorMessage
@@ -129,14 +149,14 @@ function fileUploadError(errorMessage) {
 //these do some extra async stuff before the real actions are dispatched
 function fetchJobs() {
     return function (dispatch, getState)  {
-        dispatch(jobFetchStart());
+        dispatch(jobsFetchStart());
         const resultPromise = axios.get( apiNames.jobs);
         resultPromise.then(response => {
             log('fetched jobs:', response.data.Jobs);
-            dispatch(jobFetchSuccess(response.data.Jobs));
+            dispatch(jobsFetchSuccess(response.data.Jobs));
         }).catch(err => {
             log("An fetch error occurred");
-            dispatch(jobFetchError(err));
+            dispatch(jobsFetchError(err));
         })
     }
 }
@@ -144,11 +164,25 @@ function fetchJobs() {
 
 function fetchServices() {
     return function (dispatch, getState)  {
-        dispatch(serviceFetchStart());
+        dispatch(servicesFetchStart());
         const resultPromise = axios.get( apiNames.services);
         resultPromise.then(response => {
             log('fetched services:', response.data.Services);
-            dispatch(serviceFetchSuccess(response.data.Services));
+            dispatch(servicesFetchSuccess(response.data.Services));
+        }).catch(err => {
+            log("A fetch error occurred");
+            dispatch(servicesFetchError(err));
+        })
+    }
+}
+
+function fetchService(serviceID) {
+    return function (dispatch, getState) {
+        dispatch(serviceFetchStart());
+        const resultPromise = axios.get( apiNames.services + '/' + serviceID);
+        resultPromise.then(response => {
+            log('fetched service:', response.data);
+            dispatch(serviceFetchSuccess(response.data));
         }).catch(err => {
             log("A fetch error occurred");
             dispatch(serviceFetchError(err));
@@ -158,14 +192,14 @@ function fetchServices() {
 
 function fetchVolumes() {
     return function (dispatch, getState) {
-        dispatch(volumeFetchStart());
+        dispatch(volumesFetchStart());
         const resultPromise = axios.get(apiNames.volumes);
         resultPromise.then(response => {
             log('fetched volumes:', response.data.Volumes);
-            dispatch(volumeFetchSuccess(response.data.Volumes))
+            dispatch(volumesFetchSuccess(response.data.Volumes))
         }).catch(err => {
             log("A fetch error occurred");
-            dispatch(volumeFetchError(err));
+            dispatch(volumesFetchError(err));
         })
     }
 }
@@ -189,14 +223,14 @@ function prepareNewBuild() {
 
 function fetchJobById(jobId) {
     return function (dispatch, getState)  {
-        dispatch(jobFetchStart());
+        dispatch(jobsFetchStart());
         const resultPromise = axios.get( api.jobs + '/' + jobId);
         resultPromise.then(response => {
             log('fetched job:', response.data);
             //don't know what to do with it yet
         }).catch(err => {
             log("An fetch error occurred")
-            dispatch(jobFetchError(err));
+            dispatch(jobsFetchError(err));
         })
     }
 }
@@ -212,17 +246,21 @@ function hideErrorMessage(id) {
 export default {
     pageChange,
     errorOccur,
+    servicesFetchStart,
+    servicesFetchSuccess,
+    servicesFetchError,
     serviceFetchStart,
     serviceFetchSuccess,
     serviceFetchError,
-    jobFetchStart,
-    jobFetchSuccess,
-    jobFetchError,
-    volumeFetchStart,
-    volumeFetchSuccess,
-    volumeFetchError,
+    jobsFetchStart,
+    jobsFetchSuccess,
+    jobsFetchError,
+    volumesFetchStart,
+    volumesFetchSuccess,
+    volumesFetchError,
     fetchJobs,
     fetchServices,
+    fetchService,
     fetchVolumes,
     showErrorMessageWithTimeout,
     hideErrorMessage,

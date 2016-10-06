@@ -55,7 +55,7 @@ class Files extends React.Component {
             },
 
             successmultiple: (files, response) => {
-                log('successmultiple, response is: ', response)
+                log('successmultiple, response is: ', response);
                 this.fileUploadSuccess(response);
             },
 
