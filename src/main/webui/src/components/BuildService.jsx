@@ -20,7 +20,7 @@ class BuildService extends React.Component {
     }
 
     getApiURL(){
-        log("ApiURL get callded");
+        log("ApiURL get called");
         log("buildID is", this.state.buildID);
         return apiNames.buildImages + '/' + this.state.buildID;
     }

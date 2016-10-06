@@ -1,6 +1,6 @@
 'use strict';
 
-import BrowseVolumes from '../components/Volumes';
+import Volumes from '../components/Volumes';
 import actions from '../actions/actions';
 
 import {connect} from 'react-redux';
@@ -22,8 +22,8 @@ const mapDispatchToProps = (dispatch) => {
 };
 
 
-const BrowseVolumesContainer = connect(mapStateToProps, mapDispatchToProps)(
-    BrowseVolumes
+const VolumesContainer = connect(mapStateToProps, mapDispatchToProps)(
+    Volumes
 );
 
-export default BrowseVolumesContainer;
+export default VolumesContainer;

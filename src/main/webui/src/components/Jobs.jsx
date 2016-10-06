@@ -4,15 +4,18 @@ import React, {PropTypes} from 'react';
 import bows from 'bows';
 import _ from 'lodash';
 import {Row, Col} from 'react-bootstrap';
+import {LinkContainer} from 'react-router-bootstrap'
 
-const log = bows('BrowseJobs');
+const log = bows('Jobs');
 
 const JobRow = ({job}) => (
-    <Row>
-        <Col xs={12} sm={4} md={4}>{job.ID}</Col>
-        <Col xs={12} sm={4} md={4}><i className="glyphicon glyphicon-transfer"/>{job.Service.Name}</Col>
-        <Col xs={12} sm={4} md={4}>{job.State.Status}</Col>
-    </Row>
+    <LinkContainer to={`/jobs/${job.ID}`}>
+        <Row>
+            <Col xs={12} sm={4} md={4}>{job.ID}</Col>
+            <Col xs={12} sm={4} md={4}><i className="glyphicon glyphicon-transfer"/>{job.Service.Name}</Col>
+            <Col xs={12} sm={4} md={4}>{job.State.Status}</Col>
+        </Row>
+    </LinkContainer>
 );
 
 const Header = () => (
@@ -23,7 +26,7 @@ const Header = () => (
     </div>
 );
 
-class BrowseJobs extends React.Component {
+class Jobs extends React.Component {
     constructor(props) {
         super(props);
     }
@@ -48,9 +51,10 @@ class BrowseJobs extends React.Component {
 
 }
 
-BrowseJobs.propTypes = {
+Jobs.propTypes = {
     jobs: PropTypes.array.isRequired,
-    fetchJobs: PropTypes.func.isRequired
+    fetchJobs: PropTypes.func.isRequired,
+    jobID: PropTypes.string
 };
 
-export default BrowseJobs;
+export default Jobs;

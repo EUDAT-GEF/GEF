@@ -4,7 +4,7 @@ import React, {PropTypes} from 'react';
 import actions from '../actions/actions';
 import {connect} from 'react-redux';
 import {Grid, Row, Col} from 'react-bootstrap';
-import BrowseJobsContainer from '../containers/BrowseJobsContainer';
+import BrowseJobsContainer from './JobsContainer';
 import BuildServiceContainer from '../containers/BuildServiceContainer';
 import {Router, Route, hashHistory, Link } from 'react-router';
 import {ListGroup, ListGroupItem} from 'react-bootstrap'

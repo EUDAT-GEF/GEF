@@ -6,7 +6,7 @@ import axios from 'axios';
 import apiNames from '../utils/GefAPI';
 import bows from 'bows';
 
-const log = bows('BuildService');
+const log = bows('BuildVolume');
 
 // there is possibility that the child component is rendered before the fetch of new build is finished?
 class BuildVolume extends React.Component {
@@ -20,9 +20,9 @@ class BuildVolume extends React.Component {
     }
 
     getApiURL(){
-        log("ApiURL get callded");
+        log("ApiURL get called");
         log("buildID is", this.state.buildID);
-        return apiNames.buildImages + '/' + this.state.buildID;
+        return apiNames.buildVolumes + '/' + this.state.buildID;
     }
 
 

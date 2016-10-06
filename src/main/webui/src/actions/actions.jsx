@@ -69,6 +69,26 @@ function jobFetchError(errorMessage) {
     }
 }
 
+function volumeFetchStart() {
+    return {
+        type: actionTypes.VOLUME_FETCH_START
+    }
+}
+
+function volumeFetchSuccess(volumes) {
+    return {
+        type: actionTypes.VOLUME_FETCH_SUCCESS,
+        volumes: volumes
+    }
+}
+
+function volumeFetchError(errorMessage) {
+    return {
+        type: actionTypes.VOLUME_FETCH_ERROR,
+        errorMessage: errorMessage
+    }
+}
+
 function fileUploadStart() {
     return {
         type: actionTypes.FILE_UPLOAD_START
@@ -130,8 +150,22 @@ function fetchServices() {
             log('fetched services:', response.data.Services);
             dispatch(serviceFetchSuccess(response.data.Services));
         }).catch(err => {
-            log("An fetch error occurred");
+            log("A fetch error occurred");
             dispatch(serviceFetchError(err));
+        })
+    }
+}
+
+function fetchVolumes() {
+    return function (dispatch, getState) {
+        dispatch(volumeFetchStart());
+        const resultPromise = axios.get(apiNames.volumes);
+        resultPromise.then(response => {
+            log('fetched volumes:', response.data.Volumes);
+            dispatch(volumeFetchSuccess(response.data.Volumes))
+        }).catch(err => {
+            log("A fetch error occurred");
+            dispatch(volumeFetchError(err));
         })
     }
 }
@@ -184,8 +218,12 @@ export default {
     jobFetchStart,
     jobFetchSuccess,
     jobFetchError,
+    volumeFetchStart,
+    volumeFetchSuccess,
+    volumeFetchError,
     fetchJobs,
     fetchServices,
+    fetchVolumes,
     showErrorMessageWithTimeout,
     hideErrorMessage,
     fileUploadStart,

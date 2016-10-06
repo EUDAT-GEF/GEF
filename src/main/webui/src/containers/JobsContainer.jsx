@@ -1,6 +1,6 @@
 'use strict';
 
-import BrowseJobs from '../components/Jobs';
+import Jobs from '../components/Jobs';
 import actions from '../actions/actions';
 
 import {connect} from 'react-redux';
@@ -22,8 +22,8 @@ const mapDispatchToProps = (dispatch) => {
 };
 
 
-const BrowseJobsContainer = connect(mapStateToProps, mapDispatchToProps)(
-   BrowseJobs
+const JobsContainer = connect(mapStateToProps, mapDispatchToProps)(
+   Jobs
 );
 
-export default BrowseJobsContainer;
+export default JobsContainer;

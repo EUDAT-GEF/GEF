@@ -4,11 +4,12 @@ import bows from 'bows';
 import _ from 'lodash';
 import {Row, Col} from 'react-bootstrap';
 import {LinkContainer} from 'react-router-bootstrap'
+import Service from './Service'
 
-const log = bows('BrowseServcies');
+const log = bows('Servcies');
 
 const ServiceRow = ({service}) => (
-    <LinkContainer to="/services(/:id)">
+    <LinkContainer to={`/services/${service.ID}`}>
         <Row>
             <Col xs={12} sm={4} md={4}><i className="glyphicon glyphicon-transfer"/>{service.Name}</Col>
             <Col xs={12} sm={4} md={4}>{service.ID}</Col>
@@ -23,7 +24,7 @@ const Header = () => (
     </div>
 );
 
-class BrowseServices extends React.Component {
+class Services extends React.Component {
     constructor(props) {
         super(props);
     }
@@ -33,25 +34,29 @@ class BrowseServices extends React.Component {
     }
 
     render() {
-        _.map(this.props.services, (service) => {
-            log("service: ", service);
-        });
+        log("The id of selected service is:", this.props.params.id);
         return (
             <div>
                 <h3>Browse Services</h3>
                 <h4>All Services</h4>
                 <Header/>
-                {_.map(this.props.services, (service) => (<ServiceRow service={service}/>))}
+                {_.map(this.props.services, (service) => {
+                    if(service.ID === this.props.params.id)
+                        return <Service service={service}/>;
+                    else
+                        return <ServiceRow service={service}/>;
+
+                })}
             </div>
         );
     }
 
 }
 
-BrowseServices.propTypes = {
+Services.propTypes = {
     fetchServices: PropTypes.func.isRequired,
-    services: PropTypes.array.isRequired
+    services: PropTypes.array.isRequired,
 };
 
-export default BrowseServices;
+export default Services;
 

@@ -16,10 +16,10 @@ import org.slf4j.LoggerFactory;
  * @author edima
  */
 @Path("buildImages")
-public class GefBuilds {
+public class GefBuildImages {
 	private static final String gefDockerBuildApi = "buildImages";
 
-	private static final org.slf4j.Logger log = LoggerFactory.getLogger(GefBuilds.class);
+	private static final org.slf4j.Logger log = LoggerFactory.getLogger(GefBuildImages.class);
 	final static DateFormat dateFormatter = DateFormat.getDateTimeInstance(DateFormat.DEFAULT, DateFormat.SHORT);
 
 	ReverseProxy rp;
@@ -28,7 +28,7 @@ public class GefBuilds {
 	@Context
 	HttpServletResponse response;
 
-	public GefBuilds() throws MalformedURLException {
+	public GefBuildImages() throws MalformedURLException {
 		rp = new ReverseProxy(GEF.getInstance().config.gefParams.gefDocker);
 	}
 

@@ -5,12 +5,12 @@ import Header from '../components/Header'
 import Main from './Main';
 import Footer from '../components/Footer';
 import NotFound from '../components/NotFound';
-import {Router, Route, hashHistory } from 'react-router';
+import {Router, Route, browserHistory, hashHistory } from 'react-router';
 import BrowseWorkflowsContainer from './WorkflowsContainer';
-import BrowseJobsContainer from '../containers/BrowseJobsContainer';
+import BrowseJobsContainer from './JobsContainer';
 import BuildServiceContainer from '../containers/BuildServiceContainer';
-import BrowseServicesContainer from '../containers/BrowseServicesContainer';
-import BrowseVolumesContainer from '../containers/BrowseVolumesContainer';
+import BrowseServicesContainer from './ServicesContainer';
+import BrowseVolumesContainer from './VolumesContainer';
 import BuildVolumeContainer from '../containers/BuildVolumeContainer';
 
 class App extends React.Component {
@@ -31,10 +31,10 @@ class App extends React.Component {
                     <Router history={hashHistory}>
                         <Route path='/' component={Main}>
                             <Route path='workflows' component={BrowseWorkflowsContainer} />
-                            <Route path='jobs' component={BrowseJobsContainer} />
+                            <Route path='jobs(/:id)' component={BrowseJobsContainer} />
                             <Route path='buildImage' component={BuildServiceContainer} />
-                            <Route path='services' component={BrowseServicesContainer} />
-                            <Route path='volumes' component={BrowseVolumesContainer} />
+                            <Route path='services(/:id)' component={BrowseServicesContainer} />
+                            <Route path='volumes(/:id)' component={BrowseVolumesContainer} />
                             <Route path='buildVolume' component={BuildVolumeContainer} />
                             <Route path='*' component={NotFound} />
                         </Route>

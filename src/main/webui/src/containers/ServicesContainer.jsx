@@ -1,6 +1,6 @@
 'use strict';
 
-import BrowseServices from '../components/Services';
+import Services from '../components/Services';
 import actions from '../actions/actions';
 
 import {connect} from 'react-redux';
@@ -22,8 +22,8 @@ const mapDispatchToProps = (dispatch) => {
 };
 
 
-const BrowseServicesContainer = connect(mapStateToProps, mapDispatchToProps)(
-    BrowseServices
+const ServicesContainer = connect(mapStateToProps, mapDispatchToProps)(
+    Services
 );
 
-export default BrowseServicesContainer;
+export default ServicesContainer;

@@ -1,11 +1,7 @@
 package eu.eudat.gef.app;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import eu.eudat.gef.rest.GefBuilds;
-import eu.eudat.gef.rest.DataSets;
-import eu.eudat.gef.rest.GefImages;
-import eu.eudat.gef.rest.GefJobs;
-import eu.eudat.gef.rest.Workflows;
+import eu.eudat.gef.rest.*;
 import io.dropwizard.Application;
 import io.dropwizard.assets.AssetsBundle;
 import io.dropwizard.setup.Bootstrap;
@@ -59,9 +55,11 @@ public class GEF extends Application<GEFConfig> {
 			environment.jersey().setUrlPattern(API_ROOT + "/*");
 			environment.jersey().register(DataSets.class);
 			environment.jersey().register(Workflows.class);
-			environment.jersey().register(GefBuilds.class);
+			environment.jersey().register(GefBuildImages.class);
+			environment.jersey().register(GefBuildVolumes.class);
 			environment.jersey().register(GefImages.class);
 			environment.jersey().register(GefJobs.class);
+			environment.jersey().register(GefVolumes.class);
 
 			Services.init(config);
 		} catch (Exception ex) {
