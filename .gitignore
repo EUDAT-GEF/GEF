@@ -3,6 +3,10 @@ ErdoIrods.log
 nb-configuration.xml
 .vagrant
 .DS_Store
+.idea
 gef-bundle.js
 gef-bundle.js.map
 src/main/resources/assets/lib/css
+src/main/resources/assets/
+node_modules
+*.iml
