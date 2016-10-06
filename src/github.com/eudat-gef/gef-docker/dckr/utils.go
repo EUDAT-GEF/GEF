@@ -211,7 +211,7 @@ type CopyTreeOptions struct {
 
 // Recursively copy a directory tree.
 //
-// The destination directory must already exist.
+// The destination directory must not already exist.
 //
 // If the optional Symlinks flag is true, symbolic links in the
 // source tree result in symbolic links in the destination tree; if
@@ -258,16 +258,16 @@ func CopyTree(src, dst string, options *CopyTreeOptions) error {
 		return &NotADirectoryError{src}
 	}
 
-	dstFileInfo, err := os.Stat(dst)
+	if !os.IsNotExist(err) {
+		return &AlreadyExistsError{dst}
+	}
+
+	entries, err := ioutil.ReadDir(src)
 	if err != nil {
 		return err
 	}
 
-	if !dstFileInfo.IsDir() {
-		return &NotADirectoryError{dst}
-	}
-
-	entries, err := ioutil.ReadDir(src)
+	err = os.MkdirAll(dst, srcFileInfo.Mode())
 	if err != nil {
 		return err
 	}

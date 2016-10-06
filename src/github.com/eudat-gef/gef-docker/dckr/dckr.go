@@ -10,6 +10,8 @@ import (
 	"strings"
 
 	docker "github.com/fsouza/go-dockerclient"
+	"io/ioutil"
+	"path/filepath"
 )
 
 const (
@@ -343,13 +345,53 @@ func (c Client) ListVolumeContent(id VolumeID) []string {
 // BuildVolume creates a volume, copies data from dirpath
 func (c Client) BuildVolume(dirpath string) (Volume, error) {
 	volume, err := c.c.CreateVolume(docker.CreateVolumeOptions{});
+	if err != nil {
+		return Volume{}, err
+	}
 	ret := Volume{
 		ID: VolumeID(volume.Name),
 		Mountpoint: VolumeMountpoint(volume.Mountpoint),
 	}
 	//copy all content to volume
-	CopyTree(dirpath, string(ret.Mountpoint), &CopyTreeOptions{Symlinks:true})
+	err = copyDataToVolume(dirpath, string(ret.Mountpoint))
 	return ret, err
+}
+
+func copyDataToVolume(src string, dst string) error{
+	log.Printf("Copying data from %s to volume %s \n", src, dst)
+	entries, err := ioutil.ReadDir(src)
+	if err != nil {
+		return err
+	}
+	copyTreeOptions := &CopyTreeOptions{Symlinks:true}
+
+
+	for _, entry := range entries {
+		srcPath := filepath.Join(src, entry.Name())
+		dstPath := filepath.Join(dst, entry.Name())
+
+		srcFileInfo, err := os.Stat(srcPath)
+		if err != nil {
+			return err
+		}
+
+		if !srcFileInfo.IsDir() {
+			//no dir
+			err = CopyFile(srcPath, dstPath, false);
+			if err != nil {
+				log.Println("Copy files failed", err)
+				return err
+			}
+		} else {
+			//copy dir
+			err = CopyTree(srcPath, dstPath, copyTreeOptions)
+			if err != nil {
+				log.Println("Copy directories failed", err)
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 
