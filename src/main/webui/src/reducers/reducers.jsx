@@ -36,12 +36,14 @@ function services(state = SI([]), action) {
     }
 }
 
-function selectedService(state = SI([]), action) {
+function selectedService(state = SI({}), action) {
     switch (action.type) {
         case actionTypes.SERVICE_FETCH_SUCCESS:
-            return SI(action.service);
+            return SI({service: action.service,
+                inputMapping: {},
+            outputMapping: {}});
         case actionTypes.SERVICE_FETCH_ERROR:
-            return SI([]);
+            return SI({});
         default:
             return state;
     }
@@ -62,7 +64,7 @@ const rootReducer = combineReducers({
     jobs,
     services,
     volumes,
-    currentService,
+    selectedService,
 });
 
 export default rootReducer;
