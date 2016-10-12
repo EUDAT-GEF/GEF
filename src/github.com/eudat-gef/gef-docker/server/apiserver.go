@@ -99,6 +99,7 @@ func NewServer(cfg Config, docker dckr.Client) *Server {
 
 	apirouter.HandleFunc(volumesAPIPath, server.listVolumesHandler).Methods("GET")
 	//apirouter.HandleFunc(volumesAPIPath+"/{volumeID}", server.inspectVolumeHandler).Methods("GET")
+	apirouter.HandleFunc("/vol", server.inspectVolumeHandler).Methods("GET")
 
 	apirouter.HandleFunc(jobsAPIPath, server.executeServiceHandler).Methods("POST")
 	apirouter.HandleFunc(jobsAPIPath, server.listJobsHandler).Methods("GET")
@@ -117,6 +118,14 @@ func (s *Server) infoHandler(w http.ResponseWriter, r *http.Request) {
 	logRequest(r)
 	Response{w}.Ok(jmap("version", Version))
 }
+
+func (s *Server) inspectVolumeHandler(w http.ResponseWriter, r *http.Request) {
+	logRequest(r)
+	fmt.Println("I should write some code")
+	Response{w}.Ok(jmap("againversion", Version))
+
+}
+
 func (s *Server) newBuildImageHandler(w http.ResponseWriter, r *http.Request ) {
 	logRequest(r)
 	buildID := uuid.NewRandom().String()
