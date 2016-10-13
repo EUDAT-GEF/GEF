@@ -40,6 +40,7 @@
     "react-toggle": "^2.1.0",
     "react-widgets": "^3.2.4",
     "redux": "^3.5.2",
+    "redux-form": "^6.1.0",
     "redux-logger": "^2.6.1",
     "redux-thunk": "^2.1.0",
     "reqwest": "^2.0.5",

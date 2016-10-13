@@ -21,7 +21,7 @@ const mapDispatchToProps = (dispatch) => {
 
         fileUploadSuccess: (response) => {
             const action = actions.fileUploadSuccess(response);
-            dispatch(action);
+            dispatch(action)
         },
 
         fileUploadError: (files, errorMessage) => {

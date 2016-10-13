@@ -224,7 +224,7 @@ function prepareNewBuild() {
 function fetchJobById(jobId) {
     return function (dispatch, getState)  {
         dispatch(jobsFetchStart());
-        const resultPromise = axios.get( api.jobs + '/' + jobId);
+        const resultPromise = axios.get( apiNames.jobs + '/' + jobId);
         resultPromise.then(response => {
             log('fetched job:', response.data);
             //don't know what to do with it yet
@@ -232,6 +232,24 @@ function fetchJobById(jobId) {
             log("An fetch error occurred")
             dispatch(jobsFetchError(err));
         })
+    }
+}
+
+function handleSubmitJob() {
+    return function (dispatch, getState) {
+        const selectedService = getState().selectedService;
+        const jobCreater = getState().form.JobCreator;
+        log("selectedService", selectedService);
+        var fd = new FormData();
+        fd.append("imageID", selectedService.Image.ID);
+        _.toPairs(jobCreater.values).forEach(([k, v]) => fd.append(k, v));
+        const resultPromise = axios.post( apiNames.jobs, fd);
+        resultPromise.then(response => {
+            log("created job:", response.data)
+        }).catch(err => {
+            log("An error occurred during creating a job");
+        });
+        log("submitting current job:", fd)
     }
 }
 
@@ -267,6 +285,8 @@ export default {
     fileUploadStart,
     fileUploadSuccess,
     fileUploadError,
-    prepareNewBuild
+    prepareNewBuild,
+    handleSubmitJob,
+
 };
 
