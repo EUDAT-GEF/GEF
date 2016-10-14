@@ -204,9 +204,9 @@ function fetchVolumes() {
     }
 }
 
-//this creates a new build endpoint on the server,
-//files are posted to this endpoint to construct a docker image
-function prepareNewBuild() {
+//this creates a new upload endpoint on the server,
+//the upload endpoint can be used for both volume constructing or image building
+function getNewUploadEndpoint() {
     return function (dispatch, getState) {
         const resultPromise = axios.get( apiNames.buildImages);
         resultPromise.then(response => {
@@ -218,8 +218,8 @@ function prepareNewBuild() {
             dispatch(newBuildError(err));
         })
     }
-
 }
+
 
 function fetchJobById(jobId) {
     return function (dispatch, getState)  {
@@ -253,6 +253,7 @@ function handleSubmitJob() {
     }
 }
 
+
 function showErrorMessageWithTimeout(id, timeout) {
 
 }
@@ -285,7 +286,7 @@ export default {
     fileUploadStart,
     fileUploadSuccess,
     fileUploadError,
-    prepareNewBuild,
+    getNewUploadEndpoint,
     handleSubmitJob,
 
 };
