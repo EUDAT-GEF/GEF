@@ -289,24 +289,23 @@ func (s *Server) executeServiceHandler(w http.ResponseWriter, r *http.Request) {
 	Response{w}.Location(loc).Created(jmap("Location", loc, "jobID", containerID))
 }
 
+// makeBinds construct volume:path binds
 func makeBinds(r *http.Request, image dckr.Image) ([]string, error) {
 	svc := extractServiceInfo(image)
 	var binds []string
 	for _, in := range svc.Input {
-		hostPartPath := r.FormValue(in.ID)
-		if hostPartPath == "" {
-			return nil, fmt.Errorf("no bind path for input port: %s", in.Name)
+		volumeID := r.FormValue(in.VolumeID)
+		if volumeID == "" {
+			return nil, fmt.Errorf("no bind volume for input port: %s", in.Name)
 		}
-		hostPath := filepath.Join(HarcodedIrodsMountPoint, hostPartPath)
-		binds = append(binds, fmt.Sprintf("%s:%s:ro", hostPath, in.Path))
+		binds = append(binds, fmt.Sprintf("%s:%s:ro", volumeID, in.Path))
 	}
 	for _, out := range svc.Output {
-		hostPartPath := r.FormValue(out.ID)
-		if hostPartPath == "" {
-			return nil, fmt.Errorf("no bind path for output port: %s", out.Name)
+		volumeID := r.FormValue(out.VolumeID)
+		if volumeID == "" {
+			return nil, fmt.Errorf("no bind volume for output port: %s", out.Name)
 		}
-		hostPath := filepath.Join(HarcodedB2DropMountPoint, hostPartPath)
-		binds = append(binds, fmt.Sprintf("%s:%s", hostPath, out.Path))
+		binds = append(binds, fmt.Sprintf("%s:%s", volumeID, out.Path))
 	}
 	return binds, nil
 }
