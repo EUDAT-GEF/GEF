@@ -9,6 +9,7 @@ import {pageNames} from '../containers/Main';
 import bows from 'bows';
 import axios from 'axios';
 import apiNames from '../utils/GefAPI';
+import Alert from 'react-s-alert';
 
 const log = bows('actions');
 //sync actions
@@ -155,6 +156,7 @@ function fetchJobs() {
             log('fetched jobs:', response.data.Jobs);
             dispatch(jobsFetchSuccess(response.data.Jobs));
         }).catch(err => {
+            Alert.error("Cannot fetch job information from the server.");
             log("An fetch error occurred");
             dispatch(jobsFetchError(err));
         })
@@ -167,6 +169,7 @@ function fetchServices() {
         dispatch(servicesFetchStart());
         const resultPromise = axios.get( apiNames.services);
         resultPromise.then(response => {
+            // Alert.info('Services loaded from server');
             log('fetched services:', response.data.Services);
             dispatch(servicesFetchSuccess(response.data.Services));
         }).catch(err => {
@@ -182,8 +185,10 @@ function fetchService(serviceID) {
         const resultPromise = axios.get( apiNames.services + '/' + serviceID);
         resultPromise.then(response => {
             log('fetched service:', response.data);
+
             dispatch(serviceFetchSuccess(response.data));
         }).catch(err => {
+            Alert.error("Cannot fetch service information from the server.");
             log("A fetch error occurred");
             dispatch(serviceFetchError(err));
         })
@@ -198,6 +203,7 @@ function fetchVolumes() {
             log('fetched volumes:', response.data.Volumes);
             dispatch(volumesFetchSuccess(response.data.Volumes))
         }).catch(err => {
+            Alert.error("Cannot fetch volume information from the server.");
             log("A fetch error occurred");
             dispatch(volumesFetchError(err));
         })
@@ -245,9 +251,11 @@ function handleSubmitJob() {
         _.toPairs(jobCreater.values).forEach(([k, v]) => fd.append(k, v));
         const resultPromise = axios.post( apiNames.jobs, fd);
         resultPromise.then(response => {
+            Alert.info("Your job has been successfully submitted");
             log("created job:", response.data)
         }).catch(err => {
-            log("An error occurred during creating a job");
+            Alert.error("An error occurred during submitting your job");
+            log("An error occurred during creating a job", err);
         });
         log("submitting current job:", fd)
     }

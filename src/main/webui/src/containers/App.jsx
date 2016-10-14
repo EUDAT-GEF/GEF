@@ -1,6 +1,7 @@
 'use strict';
 
 import React from 'react';
+import Alert from 'react-s-alert';
 import Header from '../components/Header'
 import Main from './Main';
 import Footer from '../components/Footer';
@@ -12,6 +13,9 @@ import BuildServiceContainer from '../containers/BuildServiceContainer';
 import BrowseServicesContainer from './ServicesContainer';
 import BrowseVolumesContainer from './VolumesContainer';
 import BuildVolumeContainer from '../containers/BuildVolumeContainer';
+
+require('react-s-alert/dist/s-alert-default.css');
+require('react-s-alert/dist/s-alert-css-effects/slide.css');
 
 class App extends React.Component {
     constructor(props) {
@@ -26,9 +30,9 @@ class App extends React.Component {
     render() {
         return (
             <div>
-                <div style={{'padding-bottom': 70}}>
+                <div style={{'paddingBottom': 70}}>
                     <Header />
-                    <Router history={hashHistory}>
+                    <Router history={browserHistory}>
                         <Route path='/' component={Main}>
                             <Route path='workflows' component={BrowseWorkflowsContainer} />
                             <Route path='jobs(/:id)' component={BrowseJobsContainer} />
@@ -40,6 +44,7 @@ class App extends React.Component {
                         </Route>
                     </Router>
                 </div>
+                <Alert stack={{limit:5}}/>
                 <Footer version="0.4.0" />
             </div>
         );

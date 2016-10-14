@@ -5,6 +5,7 @@ import bows from 'bows';
 import _ from 'lodash';
 import {Row, Col} from 'react-bootstrap';
 import {LinkContainer} from 'react-router-bootstrap'
+import Job from './Job'
 
 const log = bows('Jobs');
 
@@ -36,15 +37,18 @@ class Jobs extends React.Component {
     }
 
     render() {
-         _.map(this.props.jobs, (job) => {
-             log("job: ", job );
-         });
         return (
             <div>
                 <h3>Browse Jobs</h3>
                 <h4>All jobs</h4>
                 <Header/>
-                {_.map(this.props.jobs, (job) => (<JobRow job={job}/>))}
+                {_.map(this.props.jobs, (job) => {
+                    if(job.ID === this.props.params.id) {
+                        return <Job key={job.ID} job={job}/>
+                    } else{
+                        return <JobRow key={job.ID} job={job}/>
+                    }
+                })}
             </div>
         );
     }

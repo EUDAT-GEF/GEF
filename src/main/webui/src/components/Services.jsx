@@ -44,9 +44,9 @@ class Services extends React.Component {
                 <Header/>
                 {_.map(this.props.services, (service) => {
                     if(service.ID === this.props.params.id)
-                        return <Service service={service} fetchService={this.fetchService} selectedService={this.props.selectedService} handleSubmit={this.handleSubmit} volumes={this.props.volumes}/>;
+                        return <Service key={service.ID} service={service} fetchService={this.fetchService} selectedService={this.props.selectedService} handleSubmit={this.handleSubmit} volumes={this.props.volumes}/>;
                     else
-                        return <ServiceRow service={service}/>;
+                        return <ServiceRow key={service.ID} service={service}/>;
 
                 })}
             </div>
