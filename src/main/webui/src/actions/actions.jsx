@@ -204,9 +204,9 @@ function fetchVolumes() {
     }
 }
 
-//this creates a new build endpoint on the server,
-//files are posted to this endpoint to construct a docker image
-function prepareNewBuild() {
+//this creates a new upload endpoint on the server,
+//the upload endpoint can be used for both volume constructing or image building
+function getNewUploadEndpoint() {
     return function (dispatch, getState) {
         const resultPromise = axios.get( apiNames.buildImages);
         resultPromise.then(response => {
@@ -218,13 +218,13 @@ function prepareNewBuild() {
             dispatch(newBuildError(err));
         })
     }
-
 }
+
 
 function fetchJobById(jobId) {
     return function (dispatch, getState)  {
         dispatch(jobsFetchStart());
-        const resultPromise = axios.get( api.jobs + '/' + jobId);
+        const resultPromise = axios.get( apiNames.jobs + '/' + jobId);
         resultPromise.then(response => {
             log('fetched job:', response.data);
             //don't know what to do with it yet
@@ -234,6 +234,25 @@ function fetchJobById(jobId) {
         })
     }
 }
+
+function handleSubmitJob() {
+    return function (dispatch, getState) {
+        const selectedService = getState().selectedService;
+        const jobCreater = getState().form.JobCreator;
+        log("selectedService", selectedService);
+        var fd = new FormData();
+        fd.append("imageID", selectedService.Image.ID);
+        _.toPairs(jobCreater.values).forEach(([k, v]) => fd.append(k, v));
+        const resultPromise = axios.post( apiNames.jobs, fd);
+        resultPromise.then(response => {
+            log("created job:", response.data)
+        }).catch(err => {
+            log("An error occurred during creating a job");
+        });
+        log("submitting current job:", fd)
+    }
+}
+
 
 function showErrorMessageWithTimeout(id, timeout) {
 
@@ -267,6 +286,8 @@ export default {
     fileUploadStart,
     fileUploadSuccess,
     fileUploadError,
-    prepareNewBuild
+    getNewUploadEndpoint,
+    handleSubmitJob,
+
 };
 

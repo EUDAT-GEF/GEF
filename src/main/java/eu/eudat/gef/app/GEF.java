@@ -53,8 +53,6 @@ public class GEF extends Application<GEFConfig> {
 			environment.getApplicationContext().setErrorHandler(new ErrorHandler());
 
 			environment.jersey().setUrlPattern(API_ROOT + "/*");
-			environment.jersey().register(DataSets.class);
-			environment.jersey().register(Workflows.class);
 			environment.jersey().register(GefBuildImages.class);
 			environment.jersey().register(GefBuildVolumes.class);
 			environment.jersey().register(GefImages.class);

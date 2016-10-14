@@ -5,7 +5,7 @@
 import SI from 'seamless-immutable';
 import { combineReducers } from 'redux';
 import actionTypes from '../actions/actionTypes';
-import {pageNames} from '../containers/Main';
+import { reducer as formReducer } from 'redux-form'
 
 const sampleState = {
     isFetching : true,
@@ -39,9 +39,7 @@ function services(state = SI([]), action) {
 function selectedService(state = SI({}), action) {
     switch (action.type) {
         case actionTypes.SERVICE_FETCH_SUCCESS:
-            return SI({service: action.service,
-                inputMapping: {},
-            outputMapping: {}});
+            return SI(action.service);
         case actionTypes.SERVICE_FETCH_ERROR:
             return SI({});
         default:
@@ -65,6 +63,7 @@ const rootReducer = combineReducers({
     services,
     volumes,
     selectedService,
+    form: formReducer,
 });
 
 export default rootReducer;

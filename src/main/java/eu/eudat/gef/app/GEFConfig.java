@@ -12,43 +12,11 @@ public class GEFConfig extends Configuration {
 
 		@NotEmpty
 		@JsonProperty
-		Irods irods;
-
-		@NotEmpty
-		@JsonProperty
 		Pid pid;
 
 		@NotEmpty
 		@JsonProperty
 		public GefDocker gefDocker;
-	}
-
-	public static class Irods {
-
-		@NotEmpty
-		@JsonProperty
-		String server;
-
-		@NotEmpty
-		@JsonProperty
-		int port;
-
-		@NotEmpty
-		@JsonProperty
-		String username;
-
-		@NotEmpty
-		@JsonProperty
-		String password;
-
-		@NotEmpty
-		@JsonProperty
-		String path;
-
-		@NotEmpty
-		@JsonProperty
-		String resource;
-
 	}
 
 	public static class Pid {
@@ -89,17 +57,6 @@ public class GEFConfig extends Configuration {
 		pid.user = user;
 		pid.pass = pass;
 		return pid;
-	}
-
-	public static Irods makeIrods(String server, int port, String username, String password, String path, String resource) {
-		Irods irods = new Irods();
-		irods.server = server;
-		irods.port = port;
-		irods.username = username;
-		irods.password = password;
-		irods.path = path;
-		irods.resource = resource;
-		return irods;
 	}
 
 	public static GefDocker makeDocker(String url) throws MalformedURLException {
