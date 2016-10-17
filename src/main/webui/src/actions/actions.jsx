@@ -10,6 +10,7 @@ import bows from 'bows';
 import axios from 'axios';
 import apiNames from '../utils/GefAPI';
 import Alert from 'react-s-alert';
+import { push } from 'react-router-redux';
 
 const log = bows('actions');
 //sync actions
@@ -173,6 +174,7 @@ function fetchServices() {
             log('fetched services:', response.data.Services);
             dispatch(servicesFetchSuccess(response.data.Services));
         }).catch(err => {
+            Alert.error("Cannot fetch service information from the server.");
             log("A fetch error occurred");
             dispatch(servicesFetchError(err));
         })
@@ -235,7 +237,7 @@ function fetchJobById(jobId) {
             log('fetched job:', response.data);
             //don't know what to do with it yet
         }).catch(err => {
-            log("An fetch error occurred")
+            log("An fetch error occurred");
             dispatch(jobsFetchError(err));
         })
     }
@@ -252,6 +254,7 @@ function handleSubmitJob() {
         const resultPromise = axios.post( apiNames.jobs, fd);
         resultPromise.then(response => {
             Alert.info("Your job has been successfully submitted");
+            dispatch(push('/jobs' + '/' + response.data.jobID));
             log("created job:", response.data)
         }).catch(err => {
             Alert.error("An error occurred during submitting your job");

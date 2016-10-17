@@ -5,7 +5,8 @@
 import SI from 'seamless-immutable';
 import { combineReducers } from 'redux';
 import actionTypes from '../actions/actionTypes';
-import { reducer as formReducer } from 'redux-form'
+import { reducer as formReducer } from 'redux-form';
+import { syncHistoryWithStore, routerReducer } from 'react-router-redux';
 
 const sampleState = {
     isFetching : true,
@@ -64,6 +65,7 @@ const rootReducer = combineReducers({
     volumes,
     selectedService,
     form: formReducer,
+    routing: routerReducer
 });
 
 export default rootReducer;

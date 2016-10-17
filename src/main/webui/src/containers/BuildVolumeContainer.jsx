@@ -5,6 +5,7 @@ import BuildVolume from '../components/BuildVolume';
 import actions from '../actions/actions';
 
 import {connect} from 'react-redux';
+import { push } from 'react-router-redux';
 
 const mapStateToProps = (state) => {
     return {
@@ -21,6 +22,7 @@ const mapDispatchToProps = (dispatch) => {
 
         fileUploadSuccess: (response) => {
             const action = actions.fileUploadSuccess(response);
+            dispatch(push('/volumes/' + response.Volume.ID));
             dispatch(action)
         },
 
