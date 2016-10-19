@@ -27,23 +27,57 @@ type Service struct {
 // The service can only read data from volumes and write to a single volume
 // Path specifies where the volumes are mounted
 type IOPort struct {
-	VolumeID string
+	ID string
 	Name     string
 	Path     string
+}
+
+type Bind struct {
+	IOPort IOPort
+	VolumeID dckr.VolumeID
 }
 
 // Job is an instance of a running service
 type Job struct {
 	dckr.Container
 	Service Service
+	Binds []Bind
 }
 
 func makeJob(container dckr.Container) Job {
-	r := Job{Container: container, Service: extractServiceInfo(container.Image)}
+	r := Job{Container: container, Service: extractServiceInfo(container.Image), Binds: extractBindsInfo(container)}
 	return r
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
+func extractBindsInfo(container dckr.Container) []Bind {
+	image := container.Image
+	srv := extractServiceInfo(image)
+	binds := make([]Bind, 0, len(srv.Input) + len(srv.Output))
+	for _, v := range srv.Input {
+		for _, mnt := range container.Mounts {
+			if(mnt.Destination == v.Path) {
+				binds = append(binds, Bind{
+					IOPort: v,
+					VolumeID: dckr.VolumeID(mnt.Name),
+				})
+			}
+		}
+	}
+	for _, v := range srv.Output {
+		for _, mnt := range container.Mounts {
+			if(mnt.Destination == v.Path) {
+				binds = append(binds, Bind{
+					IOPort: v,
+					VolumeID: dckr.VolumeID(mnt.Name),
+				})
+			}
+		}
+	}
+	return binds;
+
+}
 
 func extractServiceInfo(image dckr.Image) Service {
 	srv := Service{
@@ -81,7 +115,7 @@ func extractServiceInfo(image dckr.Image) Service {
 		in := make([]IOPort, 0, len(srv.Input))
 		for _, p := range srv.Input {
 			if p.Path != "" {
-				p.VolumeID = fmt.Sprintf("input%d", len(in))
+				p.ID= fmt.Sprintf("input%d", len(in))
 				in = append(in, p)
 			}
 		}
@@ -91,7 +125,7 @@ func extractServiceInfo(image dckr.Image) Service {
 		out := make([]IOPort, 0, len(srv.Output))
 		for _, p := range srv.Output {
 			if p.Path != "" {
-				p.VolumeID = fmt.Sprintf("output%d", len(out))
+				p.ID = fmt.Sprintf("output%d", len(out))
 				out = append(out, p)
 			}
 		}
