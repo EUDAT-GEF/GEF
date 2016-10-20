@@ -26,7 +26,7 @@ const Value = ({value}) => {
                  <div><dt>{k}</dt><dd>{v}</dd></div>
             ))
     } else {
-        return value;
+        return <div>{value}</div>;
     }
 };
 
@@ -38,9 +38,9 @@ const JobRow = ({tag, value}) => (
 );
 
 
-const InspectJob = ({job}) => {
+const Job = ({job}) => {
     return (
-        <div>
+        <div style={{border: "1px solid black"}}>
             <div style={styles.jobStyle}></div>
             <h4> Selected job</h4>
             <JobRow tag="ID" value={job.ID}/>
@@ -55,9 +55,9 @@ const InspectJob = ({job}) => {
 
 };
 
-InspectJob.propTypes = {
+Job.propTypes = {
     job: PropTypes.object.isRequired
 };
 
-export default Radium(InspectJob)
+export default Radium(Job)
 

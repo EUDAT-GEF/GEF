@@ -5,6 +5,7 @@ import BuildService from '../components/BuildService';
 import actions from '../actions/actions';
 
 import {connect} from 'react-redux';
+import { push } from 'react-router-redux';
 
 const mapStateToProps = (state) => {
     return {
@@ -21,6 +22,7 @@ const mapDispatchToProps = (dispatch) => {
 
         fileUploadSuccess: (response) => {
             const action = actions.fileUploadSuccess(response);
+            dispatch(push('/services/' + response.Image.ID));
             dispatch(action);
         },
 

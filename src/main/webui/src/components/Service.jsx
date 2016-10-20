@@ -24,7 +24,7 @@ const tagValueRow  = (tag, value) => (
 
 const volume = (volume) => {
     return (
-        <option value={volume.ID}> {volume.ID} </option>
+        <option key={volume.ID} value={volume.ID}> {volume.ID} </option>
     )
 };
 

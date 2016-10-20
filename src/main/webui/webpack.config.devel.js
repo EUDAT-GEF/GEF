@@ -27,6 +27,7 @@ module.exports = {
 
     devServer: {
         contentBase: __dirname+"/../resources/assets",
+        historyApiFallback: true,
         proxy: {
             '/gef/api/**': {
                 target :'http://localhost:4042',

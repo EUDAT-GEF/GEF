@@ -43,9 +43,9 @@ class Volumes extends React.Component {
                 <Header/>
                 {_.map(this.props.volumes, (volume) => {
                     if(volume.ID === this.props.params.id)
-                        return <Volume volume={volume}/>;
+                        return <Volume key={volume.ID} volume={volume}/>;
                     else
-                        return <VolumeRow volume={volume}/>;
+                        return <VolumeRow key={volume.ID} volume={volume}/>;
 
                 })}
             </div>
