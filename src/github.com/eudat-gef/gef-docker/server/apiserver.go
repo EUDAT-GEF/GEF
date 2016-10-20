@@ -294,14 +294,14 @@ func makeBinds(r *http.Request, image dckr.Image) ([]string, error) {
 	svc := extractServiceInfo(image)
 	var binds []string
 	for _, in := range svc.Input {
-		volumeID := r.FormValue(in.VolumeID)
+		volumeID := r.FormValue(in.ID)
 		if volumeID == "" {
 			return nil, fmt.Errorf("no bind volume for input port: %s", in.Name)
 		}
 		binds = append(binds, fmt.Sprintf("%s:%s:ro", volumeID, in.Path))
 	}
 	for _, out := range svc.Output {
-		volumeID := r.FormValue(out.VolumeID)
+		volumeID := r.FormValue(out.ID)
 		if volumeID == "" {
 			return nil, fmt.Errorf("no bind volume for output port: %s", out.Name)
 		}

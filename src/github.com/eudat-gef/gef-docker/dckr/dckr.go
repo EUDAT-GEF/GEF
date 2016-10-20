@@ -61,15 +61,15 @@ type Image struct {
 
 // Container is a struct for Docker containers
 type Container struct {
-	ID    ContainerID
-	Image Image
-	State docker.State
+	ID     ContainerID
+	Image  Image
+	State  docker.State
+	Mounts []docker.Mount
 }
 
-type Volume struct{
-	ID VolumeID
+type Volume struct {
+	ID         VolumeID
 	Mountpoint VolumeMountpoint
-
 }
 
 
@@ -145,7 +145,7 @@ func checkForMinimalDockerVersion(c *docker.Client) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("unparsable minor version: %s", version)
 	}
-	if major*1000+minor < minimalDockerVersion {
+	if major * 1000 + minor < minimalDockerVersion {
 		return "", fmt.Errorf("unusably old Docker version: %s", version)
 	}
 	return version, nil
@@ -280,12 +280,24 @@ func (c Client) ListContainers() ([]Container, error) {
 	ret := make([]Container, 0, 0)
 	for _, cont := range conts {
 		img, _ := c.InspectImage(ImageID(cont.Image))
+		mounts := make([]docker.Mount, 0, 0)
+		for _, cont := range cont.Mounts {
+			mounts = append(mounts, docker.Mount{
+				Name: cont.Name,
+				Source: cont.Source,
+				Destination: cont.Destination,
+				Driver: cont.Driver,
+				RW: cont.RW,
+				Mode: cont.Mode,
+			})
+		}
 		ret = append(ret, Container{
 			ID:    ContainerID(cont.ID),
 			Image: img,
 			State: docker.State{
 				Status: cont.Status,
 			},
+			Mounts: mounts,
 		})
 	}
 	return ret, nil
@@ -299,6 +311,7 @@ func (c Client) InspectContainer(id ContainerID) (Container, error) {
 		ID:    ContainerID(cont.ID),
 		Image: img,
 		State: cont.State,
+		Mounts: cont.Mounts,
 	}
 	if err != nil {
 		return ret, err
@@ -315,7 +328,7 @@ func (c Client) ListVolumes() ([]Volume, error) {
 
 	ret := make([]Volume, 0, 0)
 
-	for _, vol := range vols{
+	for _, vol := range vols {
 		volume, _ := c.InspectVolume(VolumeID(vol.Name))
 		ret = append(ret, Volume{
 			ID:    VolumeID(volume.ID),
@@ -357,14 +370,13 @@ func (c Client) BuildVolume(dirpath string) (Volume, error) {
 	return ret, err
 }
 
-func copyDataToVolume(src string, dst string) error{
+func copyDataToVolume(src string, dst string) error {
 	log.Printf("Copying data from %s to volume %s \n", src, dst)
 	entries, err := ioutil.ReadDir(src)
 	if err != nil {
 		return err
 	}
 	copyTreeOptions := &CopyTreeOptions{Symlinks:true}
-
 
 	for _, entry := range entries {
 		srcPath := filepath.Join(src, entry.Name())
