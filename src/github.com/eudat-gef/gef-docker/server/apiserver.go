@@ -150,6 +150,32 @@ func (s *Server) inspectVolumeHandler(w http.ResponseWriter, r *http.Request) {
 
 
 
+	//imageName := "sha256:2b8fd9751c4c0f5dd266fcae00707e67a2545ef34f9a29354585f93dac906749"
+	imageID := "2b8fd9751c4c0f5dd266fcae00707e67a2545ef34f9a29354585f93dac906749"
+	//imageID2 := "0cc497676af005168f1a814923bd2050e9edcc4d4e6fd60a2478417c48603175"
+	/*image, err := s.docker.InspectImage(dckr.ImageID(imageID))
+	if err != nil {
+		Response{w}.ServerError("execute docker image: inspectImage: ", err)
+	}
+	binds, err := makeBinds(r, image)
+	if err != nil {
+		Response{w}.ServerError("execute docker image: binds: ", err)
+		return
+	}
+	logParam("binds", strings.Join(binds, " : "))
+*/
+
+
+
+	containerID, err := s.docker.ExecuteImage(dckr.ImageID(imageID), []string{"/test:/test"})
+	fmt.Println("EXECUTE")
+	fmt.Println((dckr.ImageID(imageID)))
+	fmt.Println(containerID)
+	if err != nil {
+		Response{w}.ServerError("execute docker image: ", err)
+		return
+	}
+	//loc := apiRootPath + jobsAPIPath + "/" + string(containerID)
 
 
 	json.NewEncoder(w).Encode(volumeItems)

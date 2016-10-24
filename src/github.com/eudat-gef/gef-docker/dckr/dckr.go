@@ -249,26 +249,34 @@ func (c *Client) BuildImage(dirpath string) (Image, error) {
 // ExecuteImage takes a docker image, creates a container and executes it
 func (c Client) ExecuteImage(id ImageID, binds []string) (ContainerID, error) {
 	img, err := c.c.InspectImage(string(id))
+	log.Println("img", img)
 	if err != nil {
 		return ContainerID(""), err
 	}
 	hc := docker.HostConfig{
 		Binds: binds,
 	}
+	log.Println("Config", img.Config);
+	log.Println("binds", hc.Binds);
 	cco := docker.CreateContainerOptions{
 		Name:       "",
-		Config:     img.Config,
+		Config:     &docker.Config{Image: img.ID},
+
 		HostConfig: &hc,
 	}
-	// fmt.Println("container options", cco)
+	fmt.Println("container options", cco)
 	cont, err := c.c.CreateContainer(cco)
 	if err != nil {
+		log.Println("Create contianer failed")
 		return ContainerID(""), err
 	}
 
 	err = c.c.StartContainer(cont.ID, &hc)
 	return ContainerID(cont.ID), err
 }
+
+
+
 
 // ListContainers lists the docker images
 func (c Client) ListContainers() ([]Container, error) {
