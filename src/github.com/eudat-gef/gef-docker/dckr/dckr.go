@@ -8,7 +8,6 @@ import (
 	"os"
 	"strconv"
 	"strings"
-
 	docker "github.com/fsouza/go-dockerclient"
 	"io/ioutil"
 	"path/filepath"
@@ -260,18 +259,48 @@ func (c Client) ExecuteImage(id ImageID, binds []string) (ContainerID, error) {
 	log.Println("binds", hc.Binds);
 	cco := docker.CreateContainerOptions{
 		Name:       "",
-		Config:     &docker.Config{Image: img.ID},
+		Config:     &docker.Config{Image: img.ID,
+						Cmd: []string{"ls", "-l"},
+						OpenStdin:    true,
+						StdinOnce:    true,
+						AttachStdin:  true,
+						AttachStdout: true,
+						AttachStderr: true,
+						Tty:          true,
+					},
+
 
 		HostConfig: &hc,
 	}
-	fmt.Println("container options", cco)
+	//fmt.Println("container options", cco)
+
 	cont, err := c.c.CreateContainer(cco)
 	if err != nil {
 		log.Println("Create contianer failed")
 		return ContainerID(""), err
 	}
 
+	//defer c.c.StopContainer(cont.ID, 10000)
+
+	//defer
 	err = c.c.StartContainer(cont.ID, &hc)
+	cstatus, err := c.c.WaitContainer(cont.ID)
+
+	fmt.Println("CSTATUS - ", cstatus)
+	fmt.Println("STATUS - ", cont.State.Running)
+	if cont.State.Running == false {
+		c.c.RemoveContainer(docker.RemoveContainerOptions{ID: cont.ID, Force: true})
+	}
+
+
+	//if err == nil {
+
+
+
+	//}
+
+
+
 	return ContainerID(cont.ID), err
 }
 

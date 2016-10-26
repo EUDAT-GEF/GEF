@@ -16,7 +16,6 @@ import (
 	"time"
 	"encoding/json"
 	"io/ioutil"
-	"github.com/fsouza/go-dockerclient"
 )
 
 const (
@@ -152,7 +151,8 @@ func (s *Server) inspectVolumeHandler(w http.ResponseWriter, r *http.Request) {
 
 
 	//imageName := "sha256:2b8fd9751c4c0f5dd266fcae00707e67a2545ef34f9a29354585f93dac906749"
-	imageID := "2b8fd9751c4c0f5dd266fcae00707e67a2545ef34f9a29354585f93dac906749"
+	//imageID := "2b8fd9751c4c0f5dd266fcae00707e67a2545ef34f9a29354585f93dac906749"
+	imageID := "d755f01f457926e662451aa753a627c84e6e1f76d517d0982000795630673182"
 	//imageID2 := "0cc497676af005168f1a814923bd2050e9edcc4d4e6fd60a2478417c48603175"
 
 
@@ -164,17 +164,25 @@ func (s *Server) inspectVolumeHandler(w http.ResponseWriter, r *http.Request) {
 		"/var/lib/docker/volumes/"+volId+"/_data:/home",}
 
 
+
 	containerID, err := s.docker.ExecuteImage(dckr.ImageID(imageID), volumesToMount)
 	fmt.Println("EXECUTE")
 	fmt.Println((dckr.ImageID(imageID)))
 	fmt.Println(containerID)
-	docker.CreateExecOptions{}
+
 	if err != nil {
 		Response{w}.ServerError("execute docker image: ", err)
 		return
 	}
+
 	//loc := apiRootPath + jobsAPIPath + "/" + string(containerID)
 
+	/*image, err := s.docker.BuildImage("/home/vagrant")
+	if err != nil {
+		Response{w}.ServerError("build docker image: ", err)
+		return
+	}
+	fmt.Println(image)*/
 
 	json.NewEncoder(w).Encode(volumeItems)
 
