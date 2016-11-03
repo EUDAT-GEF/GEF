@@ -248,15 +248,15 @@ func (c *Client) BuildImage(dirpath string) (Image, error) {
 // ExecuteImage takes a docker image, creates a container and executes it
 func (c Client) ExecuteImage(id ImageID, binds []string) (ContainerID, error) {
 	img, err := c.c.InspectImage(string(id))
-	log.Println("img", img)
+	//log.Println("img", img)
 	if err != nil {
 		return ContainerID(""), err
 	}
 	hc := docker.HostConfig{
 		Binds: binds,
 	}
-	log.Println("Config", img.Config);
-	log.Println("binds", hc.Binds);
+	//log.Println("Config", img.Config);
+	//log.Println("binds", hc.Binds);
 	cco := docker.CreateContainerOptions{
 		Name:       "",
 		Config:     &docker.Config{Image: img.ID,
