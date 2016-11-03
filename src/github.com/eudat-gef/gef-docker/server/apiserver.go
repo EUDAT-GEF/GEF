@@ -13,6 +13,9 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/pborman/uuid"
+	"time"
+	"encoding/json"
+	"io/ioutil"
 )
 
 const (
@@ -34,6 +37,7 @@ const (
 	volumesAPIPath = "/volumes"
 	buildImagesAPIPath = "/buildImages"
 	buildVolumesAPIPath = "/buildVolumes"
+	inspectVolumeAPIPath = "/inspectVolume"
 
 	tmpDirDefault = "gefdocker"
 	tmpDirPerm    = 0700
@@ -57,6 +61,20 @@ type Server struct {
 	tmpDir string
 	docker *dckr.Client
 }
+
+
+
+// Volume folder content
+type VolumeItem struct {
+	Name     string
+	Size	 int64
+	IsFolder bool
+	Modified time.Time
+}
+
+type VolumeItems []VolumeItem
+
+
 
 // NewServer creates a new Server
 func NewServer(cfg Config, docker dckr.Client) *Server {
@@ -99,6 +117,7 @@ func NewServer(cfg Config, docker dckr.Client) *Server {
 
 	apirouter.HandleFunc(volumesAPIPath, server.listVolumesHandler).Methods("GET")
 	//apirouter.HandleFunc(volumesAPIPath+"/{volumeID}", server.inspectVolumeHandler).Methods("GET")
+	apirouter.HandleFunc(inspectVolumeAPIPath+"/{volumeID}", server.inspectVolumeHandler).Methods("GET")
 
 	apirouter.HandleFunc(jobsAPIPath, server.executeServiceHandler).Methods("POST")
 	apirouter.HandleFunc(jobsAPIPath, server.listJobsHandler).Methods("GET")
@@ -117,6 +136,58 @@ func (s *Server) infoHandler(w http.ResponseWriter, r *http.Request) {
 	logRequest(r)
 	Response{w}.Ok(jmap("version", Version))
 }
+
+func (s *Server) inspectVolumeHandler(w http.ResponseWriter, r *http.Request) {
+	logRequest(r)
+	volumeItems := VolumeItems{}
+	vars := mux.Vars(r)
+	volId := string(dckr.ImageID(vars["volumeID"]))
+	files, _ := ioutil.ReadDir("/var/lib/docker/volumes/"+volId+"/_data")
+	for _, f := range files {
+		//fmt.Println(f.Name())
+		volumeItems = append(volumeItems, VolumeItem{Name: f.Name(), Size: f.Size(), Modified: f.ModTime(), IsFolder:f.IsDir()})
+	}
+
+
+
+	//imageName := "sha256:2b8fd9751c4c0f5dd266fcae00707e67a2545ef34f9a29354585f93dac906749"
+	//imageID := "2b8fd9751c4c0f5dd266fcae00707e67a2545ef34f9a29354585f93dac906749"
+	imageID := "d755f01f457926e662451aa753a627c84e6e1f76d517d0982000795630673182"
+	//imageID2 := "0cc497676af005168f1a814923bd2050e9edcc4d4e6fd60a2478417c48603175"
+
+
+
+
+	//containerID, err := s.docker.ExecuteImage(dckr.ImageID(imageID), []string{"/test:/tes
+
+	volumesToMount := []string{
+		"/var/lib/docker/volumes/"+volId+"/_data:/home",}
+
+
+
+	containerID, err := s.docker.ExecuteImage(dckr.ImageID(imageID), volumesToMount)
+	fmt.Println("EXECUTE")
+	fmt.Println((dckr.ImageID(imageID)))
+	fmt.Println(containerID)
+
+	if err != nil {
+		Response{w}.ServerError("execute docker image: ", err)
+		return
+	}
+
+	//loc := apiRootPath + jobsAPIPath + "/" + string(containerID)
+
+	/*image, err := s.docker.BuildImage("/home/vagrant")
+	if err != nil {
+		Response{w}.ServerError("build docker image: ", err)
+		return
+	}
+	fmt.Println(image)*/
+
+	json.NewEncoder(w).Encode(volumeItems)
+
+}
+
 func (s *Server) newBuildImageHandler(w http.ResponseWriter, r *http.Request ) {
 	logRequest(r)
 	buildID := uuid.NewRandom().String()
@@ -126,6 +197,7 @@ func (s *Server) newBuildImageHandler(w http.ResponseWriter, r *http.Request ) {
 		return
 	}
 	loc := apiRootPath + buildImagesAPIPath + "/" + buildID
+
 	Response{w}.Location(loc).Created(jmap("Location", loc, "buildID", buildID))
 }
 
@@ -281,6 +353,8 @@ func (s *Server) executeServiceHandler(w http.ResponseWriter, r *http.Request) {
 	logParam("binds", strings.Join(binds, " : "))
 
 	containerID, err := s.docker.ExecuteImage(dckr.ImageID(imageID), binds)
+	fmt.Println("EXECUTE")
+	fmt.Println((dckr.ImageID(imageID)))
 	if err != nil {
 		Response{w}.ServerError("execute docker image: ", err)
 		return

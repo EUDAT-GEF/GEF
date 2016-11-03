@@ -48,3 +48,7 @@ pom.xml.asc
 
 # OSX
 .DS_Store
+
+# Idea
+/.idea
+/bin
