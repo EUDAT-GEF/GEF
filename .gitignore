@@ -1,12 +1,53 @@
-target/
-ErdoIrods.log
-nb-configuration.xml
-.vagrant
+# Compiled Object files, Static and Dynamic libs (Shared Objects)
+*.o
+*.a
+*.so
+
+# Folders
+_obj
+_test
+
+# Architecture specific extensions/prefixes
+*.[568vq]
+[568vq].out
+
+*.cgo1.go
+*.cgo2.c
+_cgo_defun.c
+_cgo_gotypes.go
+_cgo_export.*
+
+_testmain.go
+
+*.exe
+*.test
+*.prof
+
+# Java/Maven
+frontend/target
+frontend/lib
+frontend/classes
+frontend/checkouts
+dependency-reduced-pom.xml
+pom.xml.asc
+*.jar
+*.class
+
+# Sublime
+*.sublime-workspace
+*.sublime-project
+
+# OSX
 .DS_Store
+
+# Idea
+/bin
 .idea
+*.iml
+
+.vagrant
+
+node_modules
 gef-bundle.js
 gef-bundle.js.map
-src/main/resources/assets/lib/css
-src/main/resources/assets/
-node_modules
-*.iml
+frontend/src/main/resources/assets/
