@@ -12,31 +12,26 @@ import (
 
 var (
 	server   *httptest.Server
-	reader   io.Reader //Ignore this for now
-	usersUrl string
+	reader   io.Reader
+	lsUrl string
 )
 
 func init() {
-	server = httptest.NewServer(api.Handlers()) //Creating new server with the user handlers
-
-	usersUrl = fmt.Sprintf("%s/ls", server.URL) //Grab the address for the API endpoint
+	server = httptest.NewServer(api.Handlers())
+	lsUrl = fmt.Sprintf("%s/ls", server.URL)
 }
 
 func TestCreateUser(t *testing.T) {
 	userJson := `{"folderPath": "./"}`
-
-	reader = strings.NewReader(userJson) //Convert string to reader
-
-	request, err := http.NewRequest("POST", usersUrl, reader) //Create request with JSON body
-
+	reader = strings.NewReader(userJson)
+	request, err := http.NewRequest("POST", lsUrl, reader)
 	res, err := http.DefaultClient.Do(request)
-	fmt.Println(usersUrl)
 
 	if err != nil {
-		t.Error(err) //Something is wrong while sending request
+		t.Error(err)
 	}
 
 	if res.StatusCode != 201 {
-		t.Errorf("Success expected: %d", res.StatusCode) //Uh-oh this means our test failed
+		t.Errorf("Success expected: %d", res.StatusCode)
 	}
 }

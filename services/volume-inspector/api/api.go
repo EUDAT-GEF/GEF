@@ -6,10 +6,7 @@ import (
 	"time"
 	"io/ioutil"
 	"encoding/json"
-	"bytes"
-	"io"
 	"os"
-	"github.com/Sirupsen/logrus"
 	"log"
 )
 
@@ -49,20 +46,16 @@ func readFolders(currentFolder string, volumeItems VolumeItems) VolumeItems {
 }
 
 func Handlers() *mux.Router {
-	//router := mux.NewRouter().StrictSlash(true)
 	router := mux.NewRouter()
 	router.HandleFunc("/", Index)
 	router.HandleFunc("/ls", doLsRecursively).Methods("POST")
-	router.HandleFunc("/post", doExamplePost)
-	logrus.Info("Starting server...")
+	log.Println("Starting server...")
 	return router
-	//log.Fatal(http.ListenAndServe(":8080", router))
 }
 
 func Index(w http.ResponseWriter, r *http.Request) {
-	emptyItems := VolumeItems{}
-	volumeItems := readFolders("/Users/megalex/dirlist", emptyItems)
-	json.NewEncoder(w).Encode(volumeItems)
+	indexContent := JReply{Message:"Welcome to VolumeInspector"}
+	json.NewEncoder(w).Encode(indexContent)
 }
 
 func exists(path string) (bool, error) {
@@ -73,7 +66,6 @@ func exists(path string) (bool, error) {
 }
 
 func doLsRecursively(w http.ResponseWriter, r *http.Request) {
-
 	folderPath := ""
 	// Form was POSTed
 	if r.FormValue("folderPath") != "" {
@@ -98,30 +90,18 @@ func doLsRecursively(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(JReply{Message: msgText})
 		log.Fatal(msgText)
 	} else {
-		logrus.Info("Trying to read folder '" + folderPath + "'")
+		log.Println("Trying to read folder '" + folderPath + "'")
 		ifExists, _ := exists(folderPath)
 		if ifExists == true {
 			w.WriteHeader(http.StatusCreated)
 			JFolderList := readFolders(folderPath, VolumeItems{})
 			json.NewEncoder(w).Encode(JFolderList)
-			logrus.Info("Success")
+			log.Println("Success")
 		} else {
 			msgText := "The path does not exist"
 			w.WriteHeader(http.StatusBadRequest)
 			json.NewEncoder(w).Encode(JReply{Message: msgText})
-			logrus.Info(msgText)
+			log.Println(msgText)
 		}
-
-
-
-
 	}
-}
-
-func doExamplePost(w http.ResponseWriter, r *http.Request) {
-	u := JPost{FolderPath: "/Users/megalex/m"}
-	b := new(bytes.Buffer)
-	json.NewEncoder(b).Encode(u)
-	res, _ := http.Post("http://localhost:8080/ls", "application/json; charset=utf-8", b)
-	io.Copy(os.Stdout, res.Body)
 }
