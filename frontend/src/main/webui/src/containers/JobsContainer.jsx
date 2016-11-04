@@ -1,5 +1,3 @@
-'use strict';
-
 import Jobs from '../components/Jobs';
 import actions from '../actions/actions';
 

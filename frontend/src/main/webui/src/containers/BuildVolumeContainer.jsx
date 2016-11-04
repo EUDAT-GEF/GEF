@@ -1,6 +1,3 @@
-'use strict';
-
-
 import BuildVolume from '../components/BuildVolume';
 import actions from '../actions/actions';
 

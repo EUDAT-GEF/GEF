@@ -1,5 +1,3 @@
-'use strict';
-
 //this is a component for constructing and running a workflow
 //a workflow has the form
 //

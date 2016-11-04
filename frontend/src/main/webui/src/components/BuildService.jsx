@@ -1,5 +1,3 @@
-'use strict';
-
 import React, {PropTypes} from 'react';
 import Files from './Files';
 import axios from 'axios';

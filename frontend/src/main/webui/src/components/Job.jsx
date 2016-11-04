@@ -1,5 +1,3 @@
-'use strict';
-
 import React, {PropTypes} from 'react';
 import {Row, Col, Grid} from 'react-bootstrap';
 import Radium from 'radium';
@@ -60,4 +58,3 @@ Job.propTypes = {
 };
 
 export default Radium(Job)
-

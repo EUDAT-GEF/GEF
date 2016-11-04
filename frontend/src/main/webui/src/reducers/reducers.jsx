@@ -1,7 +1,6 @@
 /**
  * Created by wqiu on 18/08/16.
  */
-'use strict';
 import SI from 'seamless-immutable';
 import { combineReducers } from 'redux';
 import actionTypes from '../actions/actionTypes';

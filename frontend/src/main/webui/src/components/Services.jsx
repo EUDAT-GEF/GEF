@@ -1,4 +1,3 @@
-'use strict';
 import React, {PropTypes} from 'react';
 import bows from 'bows';
 import _ from 'lodash';
@@ -65,4 +64,3 @@ Services.propTypes = {
 };
 
 export default Services;
-

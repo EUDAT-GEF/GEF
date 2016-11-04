@@ -4,9 +4,10 @@ var webpack = require('webpack');
 module.exports = {
     entry: ['./src/index.jsx'],
     devtool: 'cheap-module-eval-source-map',
-    output: { path: __dirname+"/../resources/assets",
-              filename: 'gef-bundle.js',
-            },
+    output: {
+        path: __dirname+"/../resources/assets",
+        filename: 'gef-bundle.js',
+    },
     resolve: {
         extensions: ['', '.js', '.jsx']
     },
@@ -24,7 +25,6 @@ module.exports = {
             }
         ]
     },
-
     devServer: {
         contentBase: __dirname+"/../resources/assets",
         historyApiFallback: true,

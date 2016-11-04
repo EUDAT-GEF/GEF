@@ -1,5 +1,3 @@
-'use strict';
-
 import Services from '../components/Services';
 import actions from '../actions/actions';
 import bows from 'bows';

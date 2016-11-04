@@ -1,5 +1,3 @@
-'use strict';
-
 import React, {PropTypes} from 'react';
 import ReactDOMServer from 'react-dom/server';
 import DropzoneComponent from 'react-dropzone-component';
@@ -99,9 +97,3 @@ Files.propTypes = {
 
 
 export default Files;
-
-
-
-
-
-

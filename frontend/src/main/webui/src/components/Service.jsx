@@ -1,8 +1,6 @@
 /**
  * Created by wqiu on 17/08/16.
  */
-'use strict';
-
 import React, {PropTypes} from 'react';
 import axios from 'axios';
 import apiNames from '../utils/GefAPI';
