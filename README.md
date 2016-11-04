@@ -3,6 +3,8 @@ GEF
 
 The EUDAT Generic Execution Framework.
 
+[![Build Status](https://travis-ci.org/EUDAT-GEF/GEF.svg?branch=master)](https://travis-ci.org/EUDAT-GEF/GEF)
+
 Installation
 ------------
 

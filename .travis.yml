@@ -1,0 +1,9 @@
+dist: trusty
+sudo: required
+language: go
+
+before_install:
+  - echo ${TRAVIS_BUILD_DIR}
+  - echo ${GOPATH}
+
+script: make build
