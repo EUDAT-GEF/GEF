@@ -4,13 +4,13 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"log"
-	"os"
-	"strconv"
-	"strings"
 	docker "github.com/fsouza/go-dockerclient"
 	"io/ioutil"
+	"log"
+	"os"
 	"path/filepath"
+	"strconv"
+	"strings"
 )
 
 const (
@@ -70,8 +70,6 @@ type Volume struct {
 	ID         VolumeID
 	Mountpoint VolumeMountpoint
 }
-
-
 
 // NewClientFirstOf returns a new docker client or an error
 func NewClientFirstOf(cfg []Config) (Client, error) {
@@ -144,7 +142,7 @@ func checkForMinimalDockerVersion(c *docker.Client) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("unparsable minor version: %s", version)
 	}
-	if major * 1000 + minor < minimalDockerVersion {
+	if major*1000+minor < minimalDockerVersion {
 		return "", fmt.Errorf("unusably old Docker version: %s", version)
 	}
 	return version, nil
@@ -258,17 +256,16 @@ func (c Client) ExecuteImage(id ImageID, binds []string) (ContainerID, error) {
 	//log.Println("Config", img.Config);
 	//log.Println("binds", hc.Binds);
 	cco := docker.CreateContainerOptions{
-		Name:       "",
-		Config:     &docker.Config{Image: img.ID,
-						Cmd: []string{"ls", "-l"},
-						OpenStdin:    true,
-						StdinOnce:    true,
-						AttachStdin:  true,
-						AttachStdout: true,
-						AttachStderr: true,
-						Tty:          true,
-					},
-
+		Name: "",
+		Config: &docker.Config{Image: img.ID,
+			Cmd:          []string{"ls", "-l"},
+			OpenStdin:    true,
+			StdinOnce:    true,
+			AttachStdin:  true,
+			AttachStdout: true,
+			AttachStderr: true,
+			Tty:          true,
+		},
 
 		HostConfig: &hc,
 	}
@@ -292,20 +289,12 @@ func (c Client) ExecuteImage(id ImageID, binds []string) (ContainerID, error) {
 		c.c.RemoveContainer(docker.RemoveContainerOptions{ID: cont.ID, Force: true})
 	}
 
-
 	//if err == nil {
-
-
 
 	//}
 
-
-
 	return ContainerID(cont.ID), err
 }
-
-
-
 
 // ListContainers lists the docker images
 func (c Client) ListContainers() ([]Container, error) {
@@ -320,12 +309,12 @@ func (c Client) ListContainers() ([]Container, error) {
 		mounts := make([]docker.Mount, 0, 0)
 		for _, cont := range cont.Mounts {
 			mounts = append(mounts, docker.Mount{
-				Name: cont.Name,
-				Source: cont.Source,
+				Name:        cont.Name,
+				Source:      cont.Source,
 				Destination: cont.Destination,
-				Driver: cont.Driver,
-				RW: cont.RW,
-				Mode: cont.Mode,
+				Driver:      cont.Driver,
+				RW:          cont.RW,
+				Mode:        cont.Mode,
 			})
 		}
 		ret = append(ret, Container{
@@ -345,9 +334,9 @@ func (c Client) InspectContainer(id ContainerID) (Container, error) {
 	cont, err := c.c.InspectContainer(string(id))
 	img, _ := c.InspectImage(ImageID(cont.Image))
 	ret := Container{
-		ID:    ContainerID(cont.ID),
-		Image: img,
-		State: cont.State,
+		ID:     ContainerID(cont.ID),
+		Image:  img,
+		State:  cont.State,
 		Mounts: cont.Mounts,
 	}
 	if err != nil {
@@ -368,7 +357,7 @@ func (c Client) ListVolumes() ([]Volume, error) {
 	for _, vol := range vols {
 		volume, _ := c.InspectVolume(VolumeID(vol.Name))
 		ret = append(ret, Volume{
-			ID:    VolumeID(volume.ID),
+			ID:         VolumeID(volume.ID),
 			Mountpoint: VolumeMountpoint(volume.Mountpoint),
 		})
 	}
@@ -378,9 +367,9 @@ func (c Client) ListVolumes() ([]Volume, error) {
 
 // InspectVolume returns the volume details
 func (c Client) InspectVolume(id VolumeID) (Volume, error) {
-	volume, err := c.c.InspectVolume(string(id));
+	volume, err := c.c.InspectVolume(string(id))
 	ret := Volume{
-		ID: VolumeID(volume.Name),
+		ID:         VolumeID(volume.Name),
 		Mountpoint: VolumeMountpoint(volume.Mountpoint),
 	}
 	return ret, err
@@ -394,12 +383,12 @@ func (c Client) ListVolumeContent(id VolumeID) []string {
 
 // BuildVolume creates a volume, copies data from dirpath
 func (c Client) BuildVolume(dirpath string) (Volume, error) {
-	volume, err := c.c.CreateVolume(docker.CreateVolumeOptions{});
+	volume, err := c.c.CreateVolume(docker.CreateVolumeOptions{})
 	if err != nil {
 		return Volume{}, err
 	}
 	ret := Volume{
-		ID: VolumeID(volume.Name),
+		ID:         VolumeID(volume.Name),
 		Mountpoint: VolumeMountpoint(volume.Mountpoint),
 	}
 	//copy all content to volume
@@ -413,7 +402,7 @@ func copyDataToVolume(src string, dst string) error {
 	if err != nil {
 		return err
 	}
-	copyTreeOptions := &CopyTreeOptions{Symlinks:true}
+	copyTreeOptions := &CopyTreeOptions{Symlinks: true}
 
 	for _, entry := range entries {
 		srcPath := filepath.Join(src, entry.Name())
@@ -426,7 +415,7 @@ func copyDataToVolume(src string, dst string) error {
 
 		if !srcFileInfo.IsDir() {
 			//no dir
-			err = CopyFile(srcPath, dstPath, false);
+			err = CopyFile(srcPath, dstPath, false)
 			if err != nil {
 				log.Println("Copy files failed", err)
 				return err
@@ -442,8 +431,6 @@ func copyDataToVolume(src string, dst string) error {
 	}
 	return nil
 }
-
-
 
 //RemoveVolume removes a volume
 func (c Client) RemoveVolume(id VolumeID) error {

@@ -6,8 +6,8 @@ import (
 	"log"
 	"os"
 
-	"github.com/eudat-gef/gef/backend-docker/dckr"
-	"github.com/eudat-gef/gef/backend-docker/server"
+	"github.com/EUDAT-GEF/GEF/backend-docker/dckr"
+	"github.com/EUDAT-GEF/GEF/backend-docker/server"
 )
 
 var configFilePath = "config.json"

@@ -1,13 +1,12 @@
 package dckr
 
 import (
+	"fmt"
+	"io"
+	"io/ioutil"
 	"os"
 	"path/filepath"
-	"io/ioutil"
-	"io"
-	"fmt"
 )
-
 
 type SameFileError struct {
 	Src string
@@ -19,7 +18,7 @@ func (e SameFileError) Error() string {
 }
 
 type SpecialFileError struct {
-	File string
+	File     string
 	FileInfo os.FileInfo
 }
 
@@ -35,7 +34,6 @@ func (e NotADirectoryError) Error() string {
 	return fmt.Sprintf("`%s` is not a directory", e.Src)
 }
 
-
 type AlreadyExistsError struct {
 	Dst string
 }
@@ -43,7 +41,6 @@ type AlreadyExistsError struct {
 func (e AlreadyExistsError) Error() string {
 	return fmt.Sprintf("`%s` already exists", e.Dst)
 }
-
 
 func samefile(src string, dst string) bool {
 	srcInfo, _ := os.Stat(src)
@@ -68,13 +65,12 @@ func IsSymlink(fi os.FileInfo) bool {
 	return (fi.Mode() & os.ModeSymlink) == os.ModeSymlink
 }
 
-
 // Copy data from src to dst
 //
 // If followSymlinks is not set and src is a symbolic link, a
 // new symlink will be created instead of copying the file it points
 // to.
-func CopyFile(src, dst string, followSymlinks bool) (error) {
+func CopyFile(src, dst string, followSymlinks bool) error {
 	if samefile(src, dst) {
 		return &SameFileError{src, dst}
 	}
@@ -139,7 +135,6 @@ func CopyFile(src, dst string, followSymlinks bool) (error) {
 	return nil
 }
 
-
 // Copy mode bits from src to dst.
 //
 // If followSymlinks is false, symlinks aren't followed if and only
@@ -168,7 +163,6 @@ func CopyMode(src, dst string, followSymlinks bool) error {
 	return err
 }
 
-
 // Copy data and mode bits ("cp src dst"). Return the file's destination.
 //
 // The destination may be a directory.
@@ -178,7 +172,7 @@ func CopyMode(src, dst string, followSymlinks bool) error {
 //
 // If source and destination are the same file, a SameFileError will be
 // rased.
-func Copy(src, dst string, followSymlinks bool) (string, error){
+func Copy(src, dst string, followSymlinks bool) (string, error) {
 	dstInfo, err := os.Stat(dst)
 
 	if err == nil && dstInfo.Mode().IsDir() {
@@ -203,10 +197,10 @@ func Copy(src, dst string, followSymlinks bool) (string, error){
 }
 
 type CopyTreeOptions struct {
-	Symlinks bool
+	Symlinks               bool
 	IgnoreDanglingSymlinks bool
-	CopyFunction func (string, string, bool) (string, error)
-	Ignore func (string, []os.FileInfo) []string
+	CopyFunction           func(string, string, bool) (string, error)
+	Ignore                 func(string, []os.FileInfo) []string
 }
 
 // Recursively copy a directory tree.
@@ -242,12 +236,11 @@ type CopyTreeOptions struct {
 // exists) can be used.
 func CopyTree(src, dst string, options *CopyTreeOptions) error {
 	if options == nil {
-		options = &CopyTreeOptions{Symlinks:false,
-			Ignore:nil,
-			CopyFunction:Copy,
-			IgnoreDanglingSymlinks:false}
+		options = &CopyTreeOptions{Symlinks: false,
+			Ignore:                 nil,
+			CopyFunction:           Copy,
+			IgnoreDanglingSymlinks: false}
 	}
-
 
 	srcFileInfo, err := os.Stat(src)
 	if err != nil {

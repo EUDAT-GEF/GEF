@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/eudat-gef/gef/backend-docker/dckr"
+	"github.com/EUDAT-GEF/GEF/backend-docker/dckr"
 
 	"encoding/json"
 	"github.com/gorilla/mux"
