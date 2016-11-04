@@ -1,8 +1,3 @@
-'use strict';
-
-
-
-
 const apiNames = {
     datasets: "/gef/api/datasets",
     buildImages:   "/gef/api/buildImages",

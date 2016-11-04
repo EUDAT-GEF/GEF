@@ -1,8 +1,6 @@
 /**
  * Created by wqiu on 18/08/16.
  */
-'use strict';
-
 import _ from 'lodash';
 import actionTypes from './actionTypes';
 import {pageNames} from '../containers/Main';
@@ -301,4 +299,3 @@ export default {
     handleSubmitJob,
 
 };
-

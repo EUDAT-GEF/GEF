@@ -1,5 +1,3 @@
-'use strict';
-
 import Volumes from '../components/Volumes';
 import actions from '../actions/actions';
 

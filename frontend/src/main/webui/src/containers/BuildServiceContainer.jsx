@@ -1,6 +1,3 @@
-'use strict';
-
-
 import BuildService from '../components/BuildService';
 import actions from '../actions/actions';
 
