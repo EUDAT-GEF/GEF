@@ -14,18 +14,11 @@ func TestClient(t *testing.T) {
 
 	after := listImages(c, t)
 
-	errstr := ""
-	if len(before) != len(after) && len(before) != len(after)-1 {
-		errstr = "Incorrect len"
-	}
-
-	if errstr == "" {
-		errstr = "Cannot find new image in list"
-		for _, x := range after {
-			if x.ID == img.ID {
-				errstr = ""
-				break
-			}
+	errstr := "Cannot find new image in list"
+	for _, x := range after {
+		if x.ID == img.ID {
+			errstr = ""
+			break
 		}
 	}
 

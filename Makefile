@@ -5,10 +5,10 @@ WEBUI = frontend/src/main/webui
 build: dependencies
 	(cd $(WEBUI) && node_modules/webpack/bin/webpack.js -p)
 	(cd frontend && mvn -q package)
-	(cd backend-docker && golint ./...)
-	(cd backend-docker && go vet ./...)
-	(cd backend-docker && go test ./...)
-	(cd backend-docker && go build)
+	golint ./...
+	go vet ./...
+	go test ./...
+	go build ./...
 
 dependencies: $(WEBUI)/node_modules $(GOSRC)/golang/lint/golint $(GOSRC)/fsouza/go-dockerclient $(GOSRC)/gorilla/mux $(GOSRC)/pborman/uuid $(EUDATSRC)/EpicPID
 
@@ -43,7 +43,7 @@ run_backend:
 	(cd backend-docker && go run main.go)
 
 clean:
-	(cd backend-docker && go clean)
+	go clean ./...
 	(cd frontend && mvn -q clean)
 
 .PHONY: build dependencies webui_dev_server run_frontend run_backend clean
