@@ -1,8 +1,8 @@
 SOURCES := $(shell find . -iname '*.go')
 
-build: gef-container-server
+build: volume-inspector
 
-build-linux: gef-container-server-linux
+build-linux: volume-inspector-linux
 
 gef-container-server-linux: $(SOURCES)
 	#golint ./...
@@ -10,7 +10,7 @@ gef-container-server-linux: $(SOURCES)
 	# go test ./...
 	cd ./src
 # install the bin
-	GOOS=linux GOARCH=amd64 go install github.com/gef-container-server
+	GOOS=linux GOARCH=amd64 go install github.com/eudat-gef/gef/services/volume-inspector
 
 gef-container-server: $(SOURCES)
 	#golint ./...
@@ -19,7 +19,7 @@ gef-container-server: $(SOURCES)
 	cd ./src
 
 # install the bin
-	go install github.com/gef-container-server
+	go install github.com/eudat-gef/gef/services/volume-inspector
 
 
 clean:
