@@ -1,7 +1,6 @@
 /**
  * Created by wqiu on 18/08/16.
  */
-'use strict';
 import React from 'react';
 import createLogger from 'redux-logger';
 import { Provider } from 'react-redux';
@@ -17,5 +16,3 @@ render(
     <App />,
     document.getElementById('react')
 );
-
-
