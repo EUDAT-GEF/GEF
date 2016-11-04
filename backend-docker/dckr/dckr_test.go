@@ -29,18 +29,32 @@ func TestClient(t *testing.T) {
 		t.Error("")
 		t.Error(errstr)
 		t.Fail()
+		return
 	}
 
 	containerID := executeImage(c, img.ID, t)
-	log.Println("started container: ", containerID)
+	log.Println("executed container: ", containerID)
 
-	containers := listContainers(c, t)
-	if len(containers) == 0 {
+	containerList := listContainers(c, t)
+	if len(containerList) == 0 {
 		t.Error("cannot find any containers")
 		t.Fail()
+		return
 	}
 
-	inspectContainer(c, containers[0].ID, t)
+	found := false
+	for _, container := range containerList {
+		if container.ID == containerID {
+			found = true
+		}
+	}
+	if !found {
+		t.Error("cannot find the executed container in the list of all containers")
+		t.Fail()
+		return
+	}
+
+	inspectContainer(c, containerID, t)
 }
 
 func newClient(t *testing.T) Client {
