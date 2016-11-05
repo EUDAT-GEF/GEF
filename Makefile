@@ -16,16 +16,16 @@ $(WEBUI)/node_modules:
 	(cd $(WEBUI) && npm install)
 
 $(GOSRC)/golang/lint/golint:
-	go get github.com/golang/lint/golint
+	go get -u github.com/golang/lint/golint
 
 $(GOSRC)/fsouza/go-dockerclient:
-	go get github.com/fsouza/go-dockerclient
+	go get -u github.com/fsouza/go-dockerclient
 
 $(GOSRC)/gorilla/mux:
-	go get github.com/gorilla/mux
+	go get -u github.com/gorilla/mux
 
 $(GOSRC)/pborman/uuid:
-	go get github.com/pborman/uuid
+	go get -u github.com/pborman/uuid
 
 $(EUDATSRC)/EpicPID:
 	git clone https://github.com/EUDAT-GEF/EpicPID

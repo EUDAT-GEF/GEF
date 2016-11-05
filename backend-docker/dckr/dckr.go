@@ -246,54 +246,42 @@ func (c *Client) BuildImage(dirpath string) (Image, error) {
 // ExecuteImage takes a docker image, creates a container and executes it
 func (c Client) ExecuteImage(id ImageID, binds []string) (ContainerID, error) {
 	img, err := c.c.InspectImage(string(id))
-	//log.Println("img", img)
 	if err != nil {
 		return ContainerID(""), err
 	}
+
 	hc := docker.HostConfig{
 		Binds: binds,
 	}
-	//log.Println("Config", img.Config);
-	//log.Println("binds", hc.Binds);
 	cco := docker.CreateContainerOptions{
-		Name: "",
-		Config: &docker.Config{Image: img.ID,
-			Cmd:          []string{"ls", "-l"},
-			OpenStdin:    true,
-			StdinOnce:    true,
-			AttachStdin:  true,
-			AttachStdout: true,
-			AttachStderr: true,
-			Tty:          true,
-		},
-
+		Name:       "",
+		Config:     img.Config,
 		HostConfig: &hc,
 	}
-	//fmt.Println("container options", cco)
 
 	cont, err := c.c.CreateContainer(cco)
 	if err != nil {
-		log.Println("Create contianer failed")
 		return ContainerID(""), err
 	}
 
-	//defer c.c.StopContainer(cont.ID, 10000)
-
-	//defer
 	err = c.c.StartContainer(cont.ID, &hc)
-	cstatus, err := c.c.WaitContainer(cont.ID)
-
-	fmt.Println("CSTATUS - ", cstatus)
-	fmt.Println("STATUS - ", cont.State.Running)
-	if cont.State.Running == false {
+	if err != nil {
 		c.c.RemoveContainer(docker.RemoveContainerOptions{ID: cont.ID, Force: true})
+		return ContainerID(""), err
 	}
 
-	//if err == nil {
+	return ContainerID(cont.ID), nil
+}
 
-	//}
-
-	return ContainerID(cont.ID), err
+// WaitContainer takes a docker container and waits for its finish.
+// It returns the exit code of the container.
+func (c Client) WaitContainer(id ContainerID, removeOnExit bool) (int, error) {
+	containerID := string(id)
+	exitCode, err := c.c.WaitContainer(containerID)
+	if removeOnExit {
+		c.c.RemoveContainer(docker.RemoveContainerOptions{ID: containerID, Force: true})
+	}
+	return exitCode, err
 }
 
 // ListContainers lists the docker images
