@@ -4,7 +4,7 @@
 			"Endpoint" : "unix:///var/run/docker.sock"
 		},
 		{
-			"UseBoot2Docker": false,
+			"UseBoot2Docker": true,
 			"Description": "Using Boot2Docker with its environment variables: $DOCKER_HOST and $DOCKER_CERT_PATH"
 		}
 	],
