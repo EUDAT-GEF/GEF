@@ -90,7 +90,7 @@ func doLsRecursively(w http.ResponseWriter, r *http.Request) {
 
 	if folderPath == "" {
 		log.Println("The path has not been specified")
-		http.Error(w, http.StatusBadRequest, 400)
+		http.Error(w, "Bad request", http.StatusBadRequest)
 	} else {
 		log.Println("Trying to read folder '" + folderPath + "'")
 		doesExist, err := exists(folderPath)
@@ -102,16 +102,16 @@ func doLsRecursively(w http.ResponseWriter, r *http.Request) {
 				json.NewEncoder(w).Encode(JFolderList)
 				log.Println("Success")
 			} else {
-				http.Error(w, http.StatusBadRequest, 400)
+				http.Error(w, "Bad request", http.StatusBadRequest)
 			}
 		} else {
 			log.Println("The folder you are trying to read does not exist")
-			http.Error(w, http.StatusBadRequest, 400)
+			http.Error(w, "Bad request", http.StatusBadRequest)
 		}
 
 		if err != nil {
 			log.Println(err)
-			http.Error(w, http.StatusBadRequest, 400)
+			http.Error(w, "Bad request", http.StatusBadRequest)
 		}
 	}
 }
