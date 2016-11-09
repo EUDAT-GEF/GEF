@@ -10,7 +10,7 @@ gef-container-server-linux: $(SOURCES)
 	# go test ./...
 	cd ./src
 # install the bin
-	GOOS=linux GOARCH=amd64 go install github.com/eudat-gef/gef/services/volume-inspector
+	GOOS=linux GOARCH=amd64 go install github.com/EUDAT-GEF/GEF/services/volume-inspector
 
 gef-container-server: $(SOURCES)
 	#golint ./...
@@ -19,7 +19,7 @@ gef-container-server: $(SOURCES)
 	cd ./src
 
 # install the bin
-	go install github.com/eudat-gef/gef/services/volume-inspector
+	go install github.com/EUDAT-GEF/GEF/services/volume-inspector
 
 
 clean:
