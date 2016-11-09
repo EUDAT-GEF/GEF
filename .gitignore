@@ -50,4 +50,4 @@ pom.xml.asc
 node_modules
 gef-bundle.js
 gef-bundle.js.map
-frontend/src/main/resources/assets/
+frontend/src/main/resources/assets/lib/
