@@ -16,10 +16,10 @@ type VolumeItem struct {
 	Size	   int64 `json:"size"`
 	Modified   time.Time `json:"modified"`
 	IsFolder   bool `json:"isFolder"`
-	FolderTree VolumeItems `json:"folderTree"`
+	FolderTree []VolumeItem `json:"folderTree"`
 }
 
-type VolumeItems []VolumeItem
+
 
 type JReply struct {
 	Message string `json:"message"`
@@ -29,20 +29,24 @@ type JPost struct {
 	FolderPath string `json:"folderPath"`
 }
 
-func readFolders(currentFolder string, volumeItems VolumeItems) VolumeItems {
-	ifExists, _ := exists(currentFolder)
-	if ifExists == true {
-		files, _ := ioutil.ReadDir(currentFolder)
-		for _, f := range files {
-			subFolderItems := VolumeItems{}
-			if f.IsDir() == true {
-				subFolderItems = readFolders(currentFolder + "/" + f.Name(), VolumeItems{})
+func readFolders(currentFolder string, volumeItems []VolumeItem) ([]VolumeItem, error) {
+	doesExist, hasErrors := exists(currentFolder)
+	if hasErrors == nil {
+		if doesExist {
+			files, _ := ioutil.ReadDir(currentFolder)
+			for _, f := range files {
+				subFolderItems := []VolumeItem{}
+				if f.IsDir() == true {
+					subFolderItems, hasErrors = readFolders(currentFolder + "/" + f.Name(), []VolumeItem{})
+				}
+				if hasErrors == nil {
+					volumeItems = append(volumeItems, VolumeItem{Name: f.Name(), Size: f.Size(), Modified: f.ModTime(), IsFolder:f.IsDir(), FolderTree: subFolderItems})
+				}
 			}
-			volumeItems = append(volumeItems, VolumeItem{Name: f.Name(), Size: f.Size(), Modified: f.ModTime(), IsFolder:f.IsDir(), FolderTree: subFolderItems})
 		}
 	}
 
-	return volumeItems
+	return volumeItems, hasErrors
 }
 
 func Handlers() *mux.Router {
@@ -54,7 +58,7 @@ func Handlers() *mux.Router {
 }
 
 func Index(w http.ResponseWriter, r *http.Request) {
-	indexContent := JReply{Message:"Welcome to VolumeInspector"}
+	indexContent := JReply{Message:"Welcome to Volume Inspector"}
 	json.NewEncoder(w).Encode(indexContent)
 }
 
@@ -85,23 +89,29 @@ func doLsRecursively(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if folderPath == "" {
-		w.WriteHeader(http.StatusBadRequest)
-		msgText := "The path has not been specified"
-		json.NewEncoder(w).Encode(JReply{Message: msgText})
-		log.Fatal(msgText)
+		log.Println("The path has not been specified")
+		http.Error(w, http.StatusBadRequest, 400)
 	} else {
 		log.Println("Trying to read folder '" + folderPath + "'")
-		ifExists, _ := exists(folderPath)
-		if ifExists == true {
+		doesExist, err := exists(folderPath)
+
+		if doesExist {
 			w.WriteHeader(http.StatusCreated)
-			JFolderList := readFolders(folderPath, VolumeItems{})
-			json.NewEncoder(w).Encode(JFolderList)
-			log.Println("Success")
+			JFolderList, err := readFolders(folderPath, []VolumeItem{})
+			if err == nil {
+				json.NewEncoder(w).Encode(JFolderList)
+				log.Println("Success")
+			} else {
+				http.Error(w, http.StatusBadRequest, 400)
+			}
 		} else {
-			msgText := "The path does not exist"
-			w.WriteHeader(http.StatusBadRequest)
-			json.NewEncoder(w).Encode(JReply{Message: msgText})
-			log.Println(msgText)
+			log.Println("The folder you are trying to read does not exist")
+			http.Error(w, http.StatusBadRequest, 400)
+		}
+
+		if err != nil {
+			log.Println(err)
+			http.Error(w, http.StatusBadRequest, 400)
 		}
 	}
 }

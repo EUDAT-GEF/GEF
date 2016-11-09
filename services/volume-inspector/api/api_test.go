@@ -21,7 +21,7 @@ func init() {
 	lsUrl = fmt.Sprintf("%s/ls", server.URL)
 }
 
-func TestCreateUser(t *testing.T) {
+func TestLs(t *testing.T) {
 	userJson := `{"folderPath": "./"}`
 	reader = strings.NewReader(userJson)
 	request, err := http.NewRequest("POST", lsUrl, reader)
