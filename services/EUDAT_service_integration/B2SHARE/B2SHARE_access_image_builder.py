@@ -538,7 +538,7 @@ else:
 
 # In order to hand the file to be uploaded to the requests library this dict is created.
 
-file_to_be_uploaded = {'file' : open(filename, 'rb')}
+file_to_be_uploaded = {'file' : open("/input_directory/"+filename, 'rb')}
 
 # Accessing the B2SHARE instance through its API.
 
