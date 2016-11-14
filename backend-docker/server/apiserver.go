@@ -188,12 +188,17 @@ func (s *Server) retrieveFileHandler(w http.ResponseWriter, r *http.Request) {
 
 		if header.Typeflag == tar.TypeReg {
 			if err == nil {
+				w.Header().Set("Content-Disposition", "attachment; filename=\""+filename+"\"")
 				w.Header().Set("Content-Type", r.Header.Get("Content-Type"))
-				http.ServeFile(tarBallReader, r, filename)
+				w.Write(tarBallReader)
+				//http.ServeFile(tarBallReader, r, filename)
+
 			} else {
 				Response{w}.ServerError("cannot read the content of the requested file", err)
 				return
 			}
+
+
 
 		} else {
 			http.Error(w, "Bad request", http.StatusBadRequest)
