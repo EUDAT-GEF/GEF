@@ -16,6 +16,8 @@ import (
 	"github.com/pborman/uuid"
 	"io/ioutil"
 	"time"
+	"net"
+	"archive/tar"
 )
 
 const (
@@ -38,10 +40,13 @@ const (
 	buildImagesAPIPath   = "/buildImages"
 	buildVolumesAPIPath  = "/buildVolumes"
 	inspectVolumeAPIPath = "/inspectVolume"
+	retrieveFileAPIPath = "/retrieveFile"
 
 	tmpDirDefault = "gefdocker"
 	tmpDirPerm    = 0700
 	buildsTmpDir  = "builds"
+
+	sock = "/var/run/docker.sock"
 )
 
 // Config keeps the configuration options needed to make a Server
@@ -114,6 +119,7 @@ func NewServer(cfg Config, docker dckr.Client) *Server {
 	apirouter.HandleFunc(volumesAPIPath, server.listVolumesHandler).Methods("GET")
 	//apirouter.HandleFunc(volumesAPIPath+"/{volumeID}", server.inspectVolumeHandler).Methods("GET")
 	apirouter.HandleFunc(inspectVolumeAPIPath+"/{volumeID}", server.inspectVolumeHandler).Methods("GET")
+	apirouter.HandleFunc(retrieveFileAPIPath+"/{containerID}/{filePath}", server.retrieveFileHandler).Methods("GET")
 
 	apirouter.HandleFunc(jobsAPIPath, server.executeServiceHandler).Methods("POST")
 	apirouter.HandleFunc(jobsAPIPath, server.listJobsHandler).Methods("GET")
@@ -123,14 +129,84 @@ func NewServer(cfg Config, docker dckr.Client) *Server {
 	return server
 }
 
+// remoteApiServer starts a server needed to access Docker remote API
+func remoteApiServer() {
+	l, err := net.Listen("unix", sock)
+	log.Println(err)
+	if err == nil {
+		srv := &http.Server{
+			Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				fmt.Fprintf(w, "Docker remote API server: %v\n", r.RequestURI)
+			}),
+		}
+		srv.Serve(l)
+	}
+}
+
+// fakeDial is needed to work with remoteApiServer
+func fakeDial(proto, addr string) (conn net.Conn, err error) {
+	return net.Dial("unix", sock)
+}
+
+
 // Start starts a new http listener
 func (s *Server) Start() error {
+	defer os.Remove(sock)
+	go remoteApiServer()
 	return s.server.ListenAndServe()
 }
 
 func (s *Server) infoHandler(w http.ResponseWriter, r *http.Request) {
 	logRequest(r)
 	Response{w}.Ok(jmap("version", Version))
+}
+
+func (s *Server) retrieveFileHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	containerID := string(dckr.ImageID(vars["containerID"]))
+	filePath := string(dckr.ImageID(vars["filePath"]))
+
+	tr := &http.Transport{
+		Dial: fakeDial,
+	}
+	client := &http.Client{Transport: tr}
+
+	resp, err := client.Get("http://localhost:4243/containers/"+containerID+"/archive?path="+filePath)
+
+	if err == nil {
+
+		tarBallReader := tar.NewReader(resp.Body)
+
+
+		header, err := tarBallReader.Next()
+		if err != nil {
+			Response{w}.ServerError("cannot read the reqested file from the archive", err)
+			return
+		}
+
+		filename := header.Name
+
+		if header.Typeflag == tar.TypeReg {
+			if err == nil {
+				w.Header().Set("Content-Type", r.Header.Get("Content-Type"))
+				http.ServeFile(tarBallReader, r, filename)
+			} else {
+				Response{w}.ServerError("cannot read the content of the requested file", err)
+				return
+			}
+
+		} else {
+			http.Error(w, "Bad request", http.StatusBadRequest)
+		}
+
+	} else {
+		Response{w}.ServerError("cannot access Docker remote API", err)
+		return
+	}
+
+
+
+
 }
 
 func (s *Server) inspectVolumeHandler(w http.ResponseWriter, r *http.Request) {
