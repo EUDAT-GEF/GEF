@@ -190,7 +190,8 @@ func (s *Server) retrieveFileHandler(w http.ResponseWriter, r *http.Request) {
 			if err == nil {
 				w.Header().Set("Content-Disposition", "attachment; filename=\""+filename+"\"")
 				w.Header().Set("Content-Type", r.Header.Get("Content-Type"))
-				w.Write(tarBallReader)
+				//w.Write(tarBallReader)
+				io.Copy(w, tarBallReader)
 				//http.ServeFile(tarBallReader, r, filename)
 
 			} else {
