@@ -47,6 +47,7 @@ const (
 	buildsTmpDir  = "builds"
 
 	sock = "/var/run/docker.sock"
+	dockerAPIaddr = "http://localhost:4243"
 )
 
 // Config keeps the configuration options needed to make a Server
@@ -171,48 +172,35 @@ func (s *Server) retrieveFileHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	client := &http.Client{Transport: tr}
 
-	resp, err := client.Get("http://localhost:4243/containers/"+containerID+"/archive?path="+filePath)
+	resp, err := client.Get(dockerAPIaddr + "/containers/" + containerID + "/archive?path=" + filePath)
 
 	if err == nil {
-
 		tarBallReader := tar.NewReader(resp.Body)
-
-
 		header, err := tarBallReader.Next()
 		if err != nil {
 			Response{w}.ServerError("cannot read the reqested file from the archive", err)
 			return
 		}
-
 		filename := header.Name
 
 		if header.Typeflag == tar.TypeReg {
 			if err == nil {
 				w.Header().Set("Content-Disposition", "attachment; filename=\""+filename+"\"")
 				w.Header().Set("Content-Type", r.Header.Get("Content-Type"))
-				//w.Write(tarBallReader)
 				io.Copy(w, tarBallReader)
-				//http.ServeFile(tarBallReader, r, filename)
-
 			} else {
-				Response{w}.ServerError("cannot read the content of the requested file", err)
+				http.Error(w, "Cannot read the content of the requested file: " + err.Error(), http.StatusBadRequest)
 				return
 			}
-
-
-
 		} else {
 			http.Error(w, "Bad request", http.StatusBadRequest)
+			return
 		}
 
 	} else {
-		Response{w}.ServerError("cannot access Docker remote API", err)
+		http.Error(w, "Cannot access Docker remote API: " + err.Error(), http.StatusBadRequest)
 		return
 	}
-
-
-
-
 }
 
 func (s *Server) inspectVolumeHandler(w http.ResponseWriter, r *http.Request) {
