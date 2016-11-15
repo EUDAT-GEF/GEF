@@ -47,7 +47,7 @@ const (
 	buildsTmpDir  = "builds"
 
 	sock = "/var/run/docker.sock"
-	dockerAPIaddr = "http://localhost:4243"
+	dockerAPIAddr = "http://localhost:4243"
 )
 
 // Config keeps the configuration options needed to make a Server
@@ -172,7 +172,7 @@ func (s *Server) retrieveFileHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	client := &http.Client{Transport: tr}
 
-	resp, err := client.Get(dockerAPIaddr + "/containers/" + containerID + "/archive?path=" + filePath)
+	resp, err := client.Get(dockerAPIAddr + "/containers/" + containerID + "/archive?path=" + filePath)
 
 	if err == nil {
 		tarBallReader := tar.NewReader(resp.Body)

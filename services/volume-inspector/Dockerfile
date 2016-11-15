@@ -1,4 +1,4 @@
-# Base image: Minimal Alpine Linux image with Java
+# Base image: Minimal Alpine Linux image
 FROM alpine:latest
 
 MAINTAINER Alexandr Chernov <kstchernov@gmail.com>

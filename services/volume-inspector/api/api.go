@@ -29,6 +29,10 @@ type JPost struct {
 	FolderPath string `json:"folderPath"`
 }
 
+const (
+	jsonFileList = "/root/_filelist.json"
+)
+
 func readFolders(currentFolder string, volumeItems []VolumeItem) ([]VolumeItem, error) {
 	doesExist, hasErrors := exists(currentFolder)
 	if hasErrors == nil {
@@ -77,22 +81,21 @@ func doLsRecursively(w http.ResponseWriter, r *http.Request) {
 	} else { // JSON was POSTed
 		var incomingData JPost
 		if r.Body == nil {
-			json.NewEncoder(w).Encode(JReply{Message: "Please send a request body"})
+			http.Error(w, "Please send a request body", http.StatusBadRequest)
 			return
 		}
 		err := json.NewDecoder(r.Body).Decode(&incomingData)
 		if err != nil {
-			json.NewEncoder(w).Encode(JReply{Message: err.Error()})
+			http.Error(w, "Bad request: " + err.Error(), http.StatusBadRequest)
 			return
 		}
 		folderPath = incomingData.FolderPath
 	}
 
 	if folderPath == "" {
-		log.Println("The path has not been specified")
-		http.Error(w, "Bad request", http.StatusBadRequest)
+		http.Error(w, "The path has not been specified", http.StatusBadRequest)
+		return
 	} else {
-		log.Println("Trying to read folder '" + folderPath + "'")
 		doesExist, err := exists(folderPath)
 
 		if doesExist {
@@ -100,18 +103,19 @@ func doLsRecursively(w http.ResponseWriter, r *http.Request) {
 			JFolderList, err := readFolders(folderPath, []VolumeItem{})
 			if err == nil {
 				json.NewEncoder(w).Encode(JFolderList)
-				log.Println("Success")
+				return
 			} else {
-				http.Error(w, "Bad request", http.StatusBadRequest)
+				http.Error(w, "Bad request: " + err.Error(), http.StatusBadRequest)
+				return
 			}
 		} else {
-			log.Println("The folder you are trying to read does not exist")
-			http.Error(w, "Bad request", http.StatusBadRequest)
+			http.Error(w, "The folder you are trying to read does not exist", http.StatusBadRequest)
+			return
 		}
 
 		if err != nil {
-			log.Println(err)
-			http.Error(w, "Bad request", http.StatusBadRequest)
+			http.Error(w, "Bad request: " + err.Error(), http.StatusBadRequest)
+			return
 		}
 	}
 }
