@@ -5,7 +5,7 @@ WEBUI = frontend/src/main/webui
 build: dependencies
 	(cd $(WEBUI) && node_modules/webpack/bin/webpack.js -p)
 	(cd frontend && mvn -q package)
-	golint ./...
+	$(GOPATH)/bin/golint ./...
 	go vet ./...
 	go test ./...
 	go build ./...
@@ -28,8 +28,8 @@ $(GOSRC)/pborman/uuid:
 	go get -u github.com/pborman/uuid
 
 $(EUDATSRC)/EpicPID:
-	git clone https://github.com/EUDAT-GEF/EpicPID
-	(cd EpicPID && mvn install)
+	(cd $(EUDATSRC) && git clone https://github.com/EUDAT-GEF/EpicPID)
+	(cd $(EUDATSRC)/EpicPID && mvn install)
 
 webui_dev_server:
 	(cd $(WEBUI) && node_modules/webpack-dev-server/bin/webpack-dev-server.js --config webpack.config.devel.js)
