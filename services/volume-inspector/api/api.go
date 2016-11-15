@@ -97,7 +97,11 @@ func doLsRecursively(w http.ResponseWriter, r *http.Request) {
 		return
 	} else {
 		doesExist, err := exists(folderPath)
-
+		if err != nil {
+			http.Error(w, "Bad request: " + err.Error(), http.StatusBadRequest)
+			return
+		}
+		
 		if doesExist {
 			w.WriteHeader(http.StatusCreated)
 			JFolderList, err := readFolders(folderPath, []VolumeItem{})
@@ -113,9 +117,6 @@ func doLsRecursively(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		if err != nil {
-			http.Error(w, "Bad request: " + err.Error(), http.StatusBadRequest)
-			return
-		}
+
 	}
 }
