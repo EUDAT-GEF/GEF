@@ -205,7 +205,7 @@ func (s *Server) retrieveFileHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func readJSON(containerID string, filePath string) ([]VolumeItem, error) {
-	volumeFileList := ([]VolumeItem)
+	var volumeFileList []VolumeItem
 	tr := &http.Transport{
 		Dial: fakeDial,
 	}
