@@ -14,7 +14,6 @@ import (
 	"encoding/json"
 	"github.com/gorilla/mux"
 	"github.com/pborman/uuid"
-	"io/ioutil"
 	"time"
 	"net"
 	"archive/tar"
@@ -205,8 +204,8 @@ func (s *Server) retrieveFileHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func readJSON(containerID string, filePath string) (VolumeItem, error) {
-	volumeFileList := VolumeItems{}
+func readJSON(containerID string, filePath string) ([]VolumeItem, error) {
+	volumeFileList := ([]VolumeItem)
 	tr := &http.Transport{
 		Dial: fakeDial,
 	}
@@ -245,7 +244,7 @@ func (s *Server) inspectVolumeHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Reading the JSON file
-	volumeFileList, err := readJSON(containerID, "/root/_filelist.json")
+	volumeFileList, err := readJSON(string(containerID), "/root/_filelist.json")
 	if err != nil {
 		Response{w}.ServerError("reading the list of files in a volume: ", err)
 		return
