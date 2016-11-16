@@ -167,6 +167,8 @@ func (s *Server) retrieveFileHandler(w http.ResponseWriter, r *http.Request) {
 	containerID := string(dckr.ImageID(vars["containerID"]))
 	filePath := string(dckr.ImageID(vars["filePath"]))
 
+
+
 	tr := &http.Transport{
 		Dial: fakeDial,
 	}
@@ -203,47 +205,60 @@ func (s *Server) retrieveFileHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (s *Server) inspectVolumeHandler(w http.ResponseWriter, r *http.Request) {
-	logRequest(r)
-	volumeItems := VolumeItems{}
-	vars := mux.Vars(r)
-	volId := string(dckr.ImageID(vars["volumeID"]))
-	files, _ := ioutil.ReadDir("/var/lib/docker/volumes/" + volId + "/_data")
-	for _, f := range files {
-		//fmt.Println(f.Name())
-		volumeItems = append(volumeItems, VolumeItem{Name: f.Name(), Size: f.Size(), Modified: f.ModTime(), IsFolder: f.IsDir()})
+func readJSON(containerID string, filePath string) (VolumeItem, error) {
+	volumeFileList := VolumeItems{}
+	tr := &http.Transport{
+		Dial: fakeDial,
+	}
+	client := &http.Client{Transport: tr}
+
+	resp, err := client.Get(dockerAPIAddr + "/containers/" + containerID + "/archive?path=" + filePath)
+
+	if err == nil {
+		tarBallReader := tar.NewReader(resp.Body)
+		_, err = tarBallReader.Next()
+		if err == nil {
+			jsonParser := json.NewDecoder(tarBallReader)
+			err = jsonParser.Decode(volumeFileList)
+		}
 	}
 
-	//imageName := "sha256:2b8fd9751c4c0f5dd266fcae00707e67a2545ef34f9a29354585f93dac906749"
-	//imageID := "2b8fd9751c4c0f5dd266fcae00707e67a2545ef34f9a29354585f93dac906749"
+	return volumeFileList, err
+}
+
+func (s *Server) inspectVolumeHandler(w http.ResponseWriter, r *http.Request) {
+	logRequest(r)
+	vars := mux.Vars(r)
+	volId := string(dckr.ImageID(vars["volumeID"]))
+
 	imageID := "d755f01f457926e662451aa753a627c84e6e1f76d517d0982000795630673182"
-	//imageID2 := "0cc497676af005168f1a814923bd2050e9edcc4d4e6fd60a2478417c48603175"
 
-	//containerID, err := s.docker.ExecuteImage(dckr.ImageID(imageID), []string{"/test:/tes
-
+	// Bind the container with the volume
 	volumesToMount := []string{
-		"/var/lib/docker/volumes/" + volId + "/_data:/home"}
+		volId + ":/root/volume"}
 
+	// Execute our image (it should produce a JSON file with the list of files)
 	containerID, err := s.docker.ExecuteImage(dckr.ImageID(imageID), volumesToMount)
-	fmt.Println("EXECUTE")
-	fmt.Println((dckr.ImageID(imageID)))
-	fmt.Println(containerID)
-
 	if err != nil {
 		Response{w}.ServerError("execute docker image: ", err)
 		return
 	}
 
-	//loc := apiRootPath + jobsAPIPath + "/" + string(containerID)
-
-	/*image, err := s.docker.BuildImage("/home/vagrant")
+	// Reading the JSON file
+	volumeFileList, err := readJSON(containerID, "/root/_filelist.json")
 	if err != nil {
-		Response{w}.ServerError("build docker image: ", err)
+		Response{w}.ServerError("reading the list of files in a volume: ", err)
 		return
 	}
-	fmt.Println(image)*/
 
-	json.NewEncoder(w).Encode(volumeItems)
+	// Killing the container
+	_, err = s.docker.WaitContainer(containerID, true)
+	if err != nil {
+		Response{w}.ServerError("removing the container: ", err)
+		return
+	}
+
+	json.NewEncoder(w).Encode(volumeFileList)
 
 }
 
