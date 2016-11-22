@@ -43,9 +43,6 @@ const (
 	tmpDirDefault = "gefdocker"
 	tmpDirPerm    = 0700
 	buildsTmpDir  = "builds"
-
-	sock = "/var/run/docker.sock"
-	dockerAPIAddr = "http://localhost:4243"
 )
 
 // Config keeps the configuration options needed to make a Server
