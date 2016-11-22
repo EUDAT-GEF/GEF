@@ -12,8 +12,6 @@ import (
 	"strconv"
 	"strings"
 	"io"
-	"net"
-	"net/http"
 )
 
 const (
@@ -433,7 +431,7 @@ func (c Client) RemoveVolume(id VolumeID) error {
 func (c Client) GetTarStream(containerID, filePath string) (io.ReadCloser, error) {
 	preader, pwriter := io.Pipe()
 	opts := docker.DownloadFromContainerOptions{
-		Path:         mountedPath(filePath),
+		Path:         filePath,
 		OutputStream: pwriter,
 	}
 
