@@ -435,13 +435,11 @@ func (c Client) GetTarStream(containerID, filePath string) (io.ReadCloser, error
 		OutputStream: pwriter,
 	}
 
-	// Docker asynchronously writes data into the pipe
-	go func() {
-		defer pwriter.Close()
-		log.Println("Requesting file", opts.Path)
-		if err := c.c.DownloadFromContainer(containerID, opts); err != nil {
-			return preader, err
-		}
-	}()
+	defer pwriter.Close()
+	log.Println("Requesting file", opts.Path)
+	if err := c.c.DownloadFromContainer(containerID, opts); err != nil {
+		return preader, err
+	}
+
 	return preader, nil
 }

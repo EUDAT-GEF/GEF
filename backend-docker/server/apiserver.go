@@ -17,6 +17,7 @@ import (
 	"time"
 	"net"
 	"archive/tar"
+	"github.com/docker/docker/client"
 )
 
 const (
@@ -176,17 +177,12 @@ func (s *Server) retrieveFileHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func readJSON(containerID string, filePath string) ([]VolumeItem, error) {
+func (s *Server) readJSON(containerID string, filePath string) ([]VolumeItem, error) {
 	var volumeFileList []VolumeItem
-	tr := &http.Transport{
-		Dial: fakeDial,
-	}
-	client := &http.Client{Transport: tr}
-
-	resp, err := client.Get(dockerAPIAddr + "/containers/" + containerID + "/archive?path=" + filePath)
+	tarStream, err := s.docker.GetTarStream(containerID, filePath)
 
 	if err == nil {
-		tarBallReader := tar.NewReader(resp.Body)
+		tarBallReader := tar.NewReader(tarStream)
 		_, err = tarBallReader.Next()
 		if err == nil {
 			jsonParser := json.NewDecoder(tarBallReader)
