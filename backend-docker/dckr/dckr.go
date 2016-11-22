@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"io"
 )
 
 const (
@@ -424,4 +425,21 @@ func copyDataToVolume(src string, dst string) error {
 func (c Client) RemoveVolume(id VolumeID) error {
 	err := c.c.RemoveVolume(string(id))
 	return err
+}
+
+
+func (c Client) GetTarStream(containerID, filePath string) (io.ReadCloser, error) {
+	preader, pwriter := io.Pipe()
+	opts := docker.DownloadFromContainerOptions{
+		Path:         filePath,
+		OutputStream: pwriter,
+	}
+
+	defer pwriter.Close()
+	log.Println("Requesting file", opts.Path)
+	if err := c.c.DownloadFromContainer(containerID, opts); err != nil {
+		return preader, err
+	}
+
+	return preader, nil
 }
