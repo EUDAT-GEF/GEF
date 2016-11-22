@@ -16,7 +16,6 @@ import (
 	"github.com/pborman/uuid"
 	"time"
 	"archive/tar"
-	"github.com/fsouza/go-dockerclient"
 )
 
 const (
