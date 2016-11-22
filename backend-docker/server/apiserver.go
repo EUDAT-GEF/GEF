@@ -75,8 +75,6 @@ type VolumeItem struct {
 	Modified time.Time
 }
 
-type VolumeItems []VolumeItem
-
 // NewServer creates a new Server
 func NewServer(cfg Config, docker dckr.Client) *Server {
 	tmpDir := cfg.TmpDir
@@ -101,6 +99,7 @@ func NewServer(cfg Config, docker dckr.Client) *Server {
 		tmpDir: tmpDir,
 		docker: &docker,
 	}
+
 	router := mux.NewRouter()
 	apirouter := router.PathPrefix(apiRootPath).Subrouter()
 
@@ -129,30 +128,10 @@ func NewServer(cfg Config, docker dckr.Client) *Server {
 	return server
 }
 
-// remoteApiServer starts a server needed to access Docker remote API
-func remoteApiServer() {
-	l, err := net.Listen("unix", sock)
-	log.Println(err)
-	if err == nil {
-		srv := &http.Server{
-			Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				fmt.Fprintf(w, "Docker remote API server: %v\n", r.RequestURI)
-			}),
-		}
-		srv.Serve(l)
-	}
-}
-
-// fakeDial is needed to work with remoteApiServer
-func fakeDial(proto, addr string) (conn net.Conn, err error) {
-	return net.Dial("unix", sock)
-}
 
 
 // Start starts a new http listener
 func (s *Server) Start() error {
-	defer os.Remove(sock)
-	go remoteApiServer()
 	return s.server.ListenAndServe()
 }
 
@@ -166,17 +145,10 @@ func (s *Server) retrieveFileHandler(w http.ResponseWriter, r *http.Request) {
 	containerID := string(dckr.ImageID(vars["containerID"]))
 	filePath := string(dckr.ImageID(vars["filePath"]))
 
-
-
-	tr := &http.Transport{
-		Dial: fakeDial,
-	}
-	client := &http.Client{Transport: tr}
-
-	resp, err := client.Get(dockerAPIAddr + "/containers/" + containerID + "/archive?path=" + filePath)
+	tarStream, err := s.docker.GetTarStream(containerID, filePath)
 
 	if err == nil {
-		tarBallReader := tar.NewReader(resp.Body)
+		tarBallReader := tar.NewReader(tarStream)
 		header, err := tarBallReader.Next()
 		if err != nil {
 			Response{w}.ServerError("cannot read the reqested file from the archive", err)
