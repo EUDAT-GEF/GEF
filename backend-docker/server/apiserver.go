@@ -15,9 +15,8 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/pborman/uuid"
 	"time"
-	"net"
 	"archive/tar"
-	"github.com/docker/docker/client"
+	"github.com/fsouza/go-dockerclient"
 )
 
 const (
@@ -212,7 +211,7 @@ func (s *Server) inspectVolumeHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Reading the JSON file
-	volumeFileList, err := readJSON(string(containerID), "/root/_filelist.json")
+	volumeFileList, err := s.readJSON(string(containerID), "/root/_filelist.json")
 	if err != nil {
 		Response{w}.ServerError("reading the list of files in a volume: ", err)
 		return
