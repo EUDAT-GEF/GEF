@@ -7,17 +7,32 @@ import (
 
 	"net/http/httptest"
 
+	"fmt"
+	"net/http"
+
 )
+
+
 
 func TestServer(t *testing.T) {
 	c := newClient(t)
 	s := createServer(c, t)
+	srv := httptest.NewServer(s.server.Handler)
+	lsUrl := fmt.Sprintf("%s/api/", srv.URL)
+
+
+	//reader := strings.NewReader(userJson)
+	request, err := http.NewRequest("GET", lsUrl, nil)
+	res, err := http.DefaultClient.Do(request)
+
+	if err != nil {
+		t.Error(err)
+	}
+
+	if res.StatusCode != 200 {
+		t.Errorf("Success expected: %d", res.StatusCode)
+	}
 	
-	server := httptest.NewServer(s.server.Handler)
-
-	defer server.Close()
-
-
 }
 
 func createServer(client dckr.Client, t *testing.T) *Server {
