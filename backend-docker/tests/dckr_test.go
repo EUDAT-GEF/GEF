@@ -3,7 +3,12 @@ package dckr
 import (
 	"log"
 	"testing"
+	"github.com/EUDAT-GEF/GEF/backend-docker/dckr"
+	"github.com/EUDAT-GEF/GEF/backend-docker/config"
+	"fmt"
 )
+
+var configFilePath = "../config/config.json"
 
 func TestClient(t *testing.T) {
 	c := newClient(t)
@@ -57,12 +62,19 @@ func TestClient(t *testing.T) {
 	inspectContainer(c, containerID, t)
 }
 
-func newClient(t *testing.T) Client {
-	config := []Config{
+func newClient(t *testing.T) dckr.Client {
+	settings, err := config.ReadConfigFile(configFilePath)
+	if err != nil {
+		t.Error("FATAL while reading config files: ", err)
+	}
+	fmt.Print(settings)
+
+	/*config := []Config{
 		Config{Endpoint: "unix:///var/run/docker.sock"},
 		Config{UseBoot2Docker: true},
-	}
-	c, err := NewClientFirstOf(config)
+	}*/
+
+	c, err := dckr.NewClientFirstOf(settings.Docker)
 	if err != nil {
 		t.Error(err)
 		t.Error("--- client is not valid (this test requires a docker server)")
@@ -75,7 +87,7 @@ func newClient(t *testing.T) Client {
 	return c
 }
 
-func listImages(client Client, t *testing.T) []Image {
+func listImages(client dckr.Client, t *testing.T) []dckr.Image {
 	imgs, err := client.ListImages()
 	if err != nil {
 		t.Error("List Image Error: ", err)
@@ -84,7 +96,7 @@ func listImages(client Client, t *testing.T) []Image {
 	return imgs
 }
 
-func buildImage(client Client, t *testing.T) Image {
+func buildImage(client dckr.Client, t *testing.T) dckr.Image {
 	img, err := client.BuildImage("./docker_test")
 	if err != nil {
 		t.Error("build image failed: ", err)
@@ -94,7 +106,7 @@ func buildImage(client Client, t *testing.T) Image {
 	return img
 }
 
-func executeImage(client Client, imgid ImageID, t *testing.T) ContainerID {
+func executeImage(client dckr.Client, imgid dckr.ImageID, t *testing.T) dckr.ContainerID {
 	containerID, err := client.ExecuteImage(imgid, nil)
 	if err != nil {
 		t.Error("starting image failed: ", err)
@@ -104,7 +116,7 @@ func executeImage(client Client, imgid ImageID, t *testing.T) ContainerID {
 	return containerID
 }
 
-func listContainers(client Client, t *testing.T) []Container {
+func listContainers(client dckr.Client, t *testing.T) []dckr.Container {
 	containers, err := client.ListContainers()
 	if err != nil {
 		t.Error("list containers failed: ", err)
@@ -114,7 +126,7 @@ func listContainers(client Client, t *testing.T) []Container {
 	return containers
 }
 
-func inspectContainer(client Client, contID ContainerID, t *testing.T) Container {
+func inspectContainer(client dckr.Client, contID dckr.ContainerID, t *testing.T) dckr.Container {
 	cont, err := client.InspectContainer(contID)
 	if err != nil {
 		t.Error("inspect container failed: ", err)
