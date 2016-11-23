@@ -58,7 +58,7 @@ type Config struct {
 
 // Server is a master struct for serving HTTP API requests
 type Server struct {
-	server http.Server
+	Server http.Server
 	tmpDir string
 	docker *dckr.Client
 }
@@ -86,7 +86,7 @@ func NewServer(cfg Config, docker dckr.Client) *Server {
 	}
 
 	server := &Server{
-		server: http.Server{
+		Server: http.Server{
 			Addr: cfg.Address,
 			// timeouts seem to trigger even after a correct read
 			// ReadTimeout: 	cfg.ReadTimeoutSecs * time.Second,
@@ -119,7 +119,7 @@ func NewServer(cfg Config, docker dckr.Client) *Server {
 	apirouter.HandleFunc(jobsAPIPath, server.listJobsHandler).Methods("GET")
 	apirouter.HandleFunc(jobsAPIPath+"/{jobID}", server.inspectJobHandler).Methods("GET")
 
-	server.server.Handler = router
+	server.Server.Handler = router
 	return server
 }
 
@@ -127,7 +127,7 @@ func NewServer(cfg Config, docker dckr.Client) *Server {
 
 // Start starts a new http listener
 func (s *Server) Start() error {
-	return s.server.ListenAndServe()
+	return s.Server.ListenAndServe()
 }
 
 func (s *Server) infoHandler(w http.ResponseWriter, r *http.Request) {

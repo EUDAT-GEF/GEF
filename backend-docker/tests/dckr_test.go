@@ -1,16 +1,21 @@
-package dckr
+package tests
 
 import (
 	"log"
 	"testing"
 	"github.com/EUDAT-GEF/GEF/backend-docker/dckr"
 	"github.com/EUDAT-GEF/GEF/backend-docker/config"
-	"fmt"
 )
 
 var configFilePath = "../config/config.json"
+var clientConf []dckr.Config
 
 func TestClient(t *testing.T) {
+	settings, err := config.ReadConfigFile(configFilePath)
+	if err != nil {
+		t.Error("FATAL while reading config files: ", err)
+	}
+	clientConf = settings.Docker
 	c := newClient(t)
 
 	before := listImages(c, t)
@@ -63,18 +68,7 @@ func TestClient(t *testing.T) {
 }
 
 func newClient(t *testing.T) dckr.Client {
-	settings, err := config.ReadConfigFile(configFilePath)
-	if err != nil {
-		t.Error("FATAL while reading config files: ", err)
-	}
-	fmt.Print(settings)
-
-	/*config := []Config{
-		Config{Endpoint: "unix:///var/run/docker.sock"},
-		Config{UseBoot2Docker: true},
-	}*/
-
-	c, err := dckr.NewClientFirstOf(settings.Docker)
+	c, err := dckr.NewClientFirstOf(clientConf)
 	if err != nil {
 		t.Error(err)
 		t.Error("--- client is not valid (this test requires a docker server)")
