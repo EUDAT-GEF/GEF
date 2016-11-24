@@ -7,7 +7,7 @@ import (
 	"github.com/EUDAT-GEF/GEF/backend-docker/config"
 )
 
-var configFilePath = "../config/config.json"
+var configFilePath = "../config.json"
 var clientConf []dckr.Config
 
 func TestClient(t *testing.T) {

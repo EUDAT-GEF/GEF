@@ -8,7 +8,7 @@ import (
 	"github.com/EUDAT-GEF/GEF/backend-docker/config"
 )
 
-var configFilePath = "config/config.json"
+var configFilePath = "config.json"
 
 func main() {
 	flag.StringVar(&configFilePath, "config", configFilePath, "configuration file")
