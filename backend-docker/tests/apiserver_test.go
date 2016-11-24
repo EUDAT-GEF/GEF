@@ -7,8 +7,8 @@ import (
 	"net/http/httptest"
 	"net/http"
 	"encoding/json"
-	"log"
 	"io/ioutil"
+	"log"
 )
 
 func isJSON(s string) bool {
@@ -29,11 +29,11 @@ func TestServer(t *testing.T) {
 	srv := httptest.NewServer(s.Server.Handler)
 	baseURL := srv.URL + "/api/"
 
-	ifAPIExist(baseURL, t)
+	checkIfAPIExist(baseURL, t)
 	callListVolumesHandler(baseURL + "volumes", t)
 }
 
-func ifAPIExist(callURL string, t *testing.T) bool {
+func checkIfAPIExist(callURL string, t *testing.T) bool {
 	request, err := http.NewRequest("GET", callURL, nil)
 	if err != nil {
 		t.Error(err)

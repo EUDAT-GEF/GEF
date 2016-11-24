@@ -14,7 +14,7 @@ func main() {
 	flag.StringVar(&configFilePath, "config", configFilePath, "configuration file")
 	flag.Parse()
 
-	//var err error
+
 	settings, err := config.ReadConfigFile(configFilePath)
 	if err != nil {
 		log.Fatal("FATAL while reading config files: ", err)
