@@ -4,31 +4,12 @@ import (
 	"testing"
 	"github.com/EUDAT-GEF/GEF/backend-docker/config"
 	"github.com/EUDAT-GEF/GEF/backend-docker/server"
-	//"github.com/EUDAT-GEF/GEF/backend-docker/dckr"
 	"net/http/httptest"
 	"net/http"
 	"encoding/json"
-
 	"log"
 	"io/ioutil"
 )
-
-type VolList struct {
-	Volumes1 map[string]string
-}
-
-func getJson(callURL string, target interface{}) error {
-	request, err := http.NewRequest("GET", callURL, nil)
-	res, err := http.DefaultClient.Do(request)
-
-	//r, err := http.Get(callURL)
-	if err != nil {
-		return err
-	}
-	defer res.Body.Close()
-
-	return json.NewDecoder(res.Body).Decode(target)
-}
 
 func isJSON(s string) bool {
 	var js map[string]interface{}
@@ -47,14 +28,9 @@ func TestServer(t *testing.T) {
 
 	srv := httptest.NewServer(s.Server.Handler)
 	baseURL := srv.URL + "/api/"
+
 	ifAPIExist(baseURL, t)
 	callListVolumesHandler(baseURL + "volumes", t)
-
-
-
-
-
-
 }
 
 func ifAPIExist(callURL string, t *testing.T) bool {
