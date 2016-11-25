@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"encoding/json"
 	"io/ioutil"
-	"log"
 )
 
 func isJSON(s string) bool {
@@ -16,43 +15,16 @@ func isJSON(s string) bool {
 	return json.Unmarshal([]byte(s), &js) == nil
 }
 
-func TestServer(t *testing.T) {
-	settings, err := config.ReadConfigFile(configFilePath)
-	if err != nil {
-		t.Error("FATAL while reading config files: ", err)
+func isInSlice(a string, list []string) bool {
+	for _, b := range list {
+		if b == a {
+			return true
+		}
 	}
-	clientConf = settings.Docker
-
-	c := newClient(t)
-	s := server.NewServer(settings.Server, c)
-
-	srv := httptest.NewServer(s.Server.Handler)
-	baseURL := srv.URL + "/api/"
-
-	checkIfAPIExist(baseURL, t)
-	callListVolumesHandler(baseURL + "volumes", t)
+	return false
 }
 
-func checkIfAPIExist(callURL string, t *testing.T) bool {
-	request, err := http.NewRequest("GET", callURL, nil)
-	if err != nil {
-		t.Error(err)
-	}
-	res, err := http.DefaultClient.Do(request)
-	if err != nil {
-		t.Error(err)
-	}
-
-	if res.StatusCode != 200 {
-		t.Error("Error code: ", res.StatusCode)
-		t.Fail()
-		return false
-	} else {
-		return true
-	}
-}
-
-func callListVolumesHandler(callURL string,  t *testing.T) {
+func checkJSONReply(callURL string, keyList []string, t *testing.T) {
 	request, err := http.NewRequest("GET", callURL, nil)
 	if err != nil {
 		t.Error(err)
@@ -87,20 +59,65 @@ func callListVolumesHandler(callURL string,  t *testing.T) {
 			t.Fail()
 		}
 
-		// a string slice to hold the keys
-		k := make([]string, len(c))
-		i := 0
-		// copy c's keys into k
 		for s, _ := range c {
-			k[i] = s
-			i++
-		}
-		log.Println(k[0])
-
-		// the only found key should look like this
-		if k[0] != "Volumes" {
-			t.Error("Reply is not correct")
-			t.Fail()
+			if isInSlice(s, keyList) !=true {
+				t.Error("The follwoing key was not found in JSON: ", s)
+				t.Error("Reply is incorrect")
+				t.Fail()
+			}
 		}
 	}
+
+}
+func TestServer(t *testing.T) {
+	settings, err := config.ReadConfigFile(configFilePath)
+	if err != nil {
+		t.Error("FATAL while reading config files: ", err)
+	}
+	clientConf = settings.Docker
+
+	c := newClient(t)
+	s := server.NewServer(settings.Server, c)
+
+	srv := httptest.NewServer(s.Server.Handler)
+	baseURL := srv.URL + "/api/"
+
+	checkIfAPIExist(baseURL, t)
+	callListVolumesHandler(baseURL + "volumes", t)
+	callListJobsHandler(baseURL + "jobs", t)
+	callListServicesHandler(baseURL + "images", t)
+}
+
+func checkIfAPIExist(callURL string, t *testing.T) bool {
+	request, err := http.NewRequest("GET", callURL, nil)
+	if err != nil {
+		t.Error(err)
+	}
+	res, err := http.DefaultClient.Do(request)
+	if err != nil {
+		t.Error(err)
+	}
+
+	if res.StatusCode != 200 {
+		t.Error("Error code: ", res.StatusCode)
+		t.Fail()
+		return false
+	} else {
+		return true
+	}
+}
+
+func callListVolumesHandler(callURL string, t *testing.T) {
+	volumeKeys := []string{"Volumes"}
+	checkJSONReply(callURL, volumeKeys, t)
+}
+
+func callListJobsHandler(callURL string, t *testing.T) {
+	jobKeys := []string{"Jobs"}
+	checkJSONReply(callURL, jobKeys, t)
+}
+
+func callListServicesHandler(callURL string, t *testing.T) {
+	jobKeys := []string{"Images", "Services"}
+	checkJSONReply(callURL, jobKeys, t)
 }
