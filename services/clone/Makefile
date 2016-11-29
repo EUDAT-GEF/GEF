@@ -1,15 +1,15 @@
 SOURCES := $(shell find . -iname '*.go')
 
-build: gef-service-example
+build: clone
 
-gef-service-example: $(SOURCES)
-	golint ./...
+clone: $(SOURCES)
+	#golint ./...
 	go vet ./...
 	GOOS=linux GOARCH=amd64 go build
 
 run:
 	# ---- run devel
-	./gef-service-example
+	./clone
 
 clean:
 	go clean

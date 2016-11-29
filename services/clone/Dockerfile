@@ -9,9 +9,9 @@ LABEL "eudat.gef.service.input.1.path"="/mydata/input"
 LABEL "eudat.gef.service.output.1.name"="Output Directory"
 LABEL "eudat.gef.service.output.1.path"="/mydata/output"
 
-COPY gef-service-example /gef-service-example
-RUN chmod +x /gef-service-example
-CMD ["/gef-service-example"]
+COPY clone /clone
+RUN chmod +x /clone
+CMD ["/clone"]
 
 # COPY taverna-commandline-core-2.5.0-linux_amd64.deb /taverna-commandline-core-2.5.0-linux_amd64.deb
 # RUN dpkg -i taverna-commandline-core-2.5.0-linux_amd64.deb
