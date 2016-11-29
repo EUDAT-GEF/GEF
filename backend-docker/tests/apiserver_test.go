@@ -61,7 +61,7 @@ func checkJSONReply(callURL string, keyList []string, t *testing.T) {
 
 		for s, _ := range c {
 			if isInSlice(s, keyList) !=true {
-				t.Error("The follwoing key was not found in JSON: ", s)
+				t.Error("The following key was not found in JSON: ", s)
 				t.Error("Reply is incorrect")
 				t.Fail()
 			}
