@@ -18,9 +18,6 @@ const pageNames = {
 const ToolNav = () => (
     <div>
         <ListGroup>
-            <LinkContainer to='/workflows' >
-                <ListGroupItem> Browse Workflows</ListGroupItem>
-            </LinkContainer>
             <LinkContainer to='/jobs' >
                 <ListGroupItem> Browse Jobs </ListGroupItem>
             </LinkContainer>

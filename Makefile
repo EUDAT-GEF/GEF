@@ -29,7 +29,7 @@ $(GOSRC)/pborman/uuid:
 
 $(EUDATSRC)/EpicPID:
 	(cd $(EUDATSRC) && git clone https://github.com/EUDAT-GEF/EpicPID)
-	(cd $(EUDATSRC)/EpicPID && mvn install)
+	(cd $(EUDATSRC)/EpicPID && mvn package install)
 
 webui_dev_server:
 	(cd $(WEBUI) && node_modules/webpack-dev-server/bin/webpack-dev-server.js --config webpack.config.devel.js)
