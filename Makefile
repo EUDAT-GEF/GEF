@@ -1,4 +1,4 @@
-hGOSRC = ./../..
+GOSRC = ./../..
 EUDATSRC = ./..
 WEBUI = frontend/src/main/webui
 
