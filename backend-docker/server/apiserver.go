@@ -176,10 +176,13 @@ func (s *Server) readJSON(containerID string, filePath string) ([]VolumeItem, er
 	tarStream, err := s.docker.GetTarStream(containerID, filePath)
 
 	if err == nil {
+		log.Println("Reading tar")
 		tarBallReader := tar.NewReader(tarStream)
 		_, err = tarBallReader.Next()
 		if err == nil {
+			log.Println("Getting a reader")
 			jsonParser := json.NewDecoder(tarBallReader)
+
 			err = jsonParser.Decode(volumeFileList)
 		}
 	}
@@ -192,7 +195,7 @@ func (s *Server) inspectVolumeHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	volId := string(dckr.ImageID(vars["volumeID"]))
 
-	imageID := "d755f01f457926e662451aa753a627c84e6e1f76d517d0982000795630673182"
+	imageID := "837ecce57f8ef9c06a288fb9b07b1a78dd35193772613f920c69994904cb9dec"
 
 	// Bind the container with the volume
 	volumesToMount := []string{
@@ -206,7 +209,7 @@ func (s *Server) inspectVolumeHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Reading the JSON file
-	volumeFileList, err := s.readJSON(string(containerID), "/root/_filelist.json")
+	volumeFileList1, err := s.readJSON(string(containerID), "/root/_filelist.json")
 	if err != nil {
 		Response{w}.ServerError("reading the list of files in a volume: ", err)
 		return
@@ -219,7 +222,7 @@ func (s *Server) inspectVolumeHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	json.NewEncoder(w).Encode(volumeFileList)
+	json.NewEncoder(w).Encode(volumeFileList1)
 
 }
 

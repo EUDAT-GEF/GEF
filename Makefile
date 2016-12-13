@@ -3,6 +3,7 @@ EUDATSRC = ./..
 WEBUI = frontend/src/main/webui
 
 build: dependencies
+	docker pull eudatgef/volume-filelist
 	(cd $(WEBUI) && node_modules/webpack/bin/webpack.js -p)
 	(cd frontend && mvn -q package)
 	$(GOPATH)/bin/golint ./...

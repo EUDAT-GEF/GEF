@@ -24,19 +24,23 @@ const (
 
 func main() {
 	jf, err := os.Create(jsonFileList)
+	log.Println("Opening the JSON file")
 	if err != nil {
 		log.Println(err)
 	} else {
+		log.Println("Reading the volume")
 		JFolderList, err := readFolders(volumeFolder, []VolumeItem{})
 		if err != nil {
 			log.Println(err)
 		} else {
 			json.NewEncoder(jf).Encode(JFolderList)
+			log.Println(JFolderList)
 		}
 	}
 }
 
 func readFolders(currentFolder string, volumeItems []VolumeItem) ([]VolumeItem, error) {
+	log.Println("Reading folder: " + currentFolder)
 	doesExist, hasErrors := exists(currentFolder)
 	if hasErrors == nil {
 		if doesExist {
@@ -48,6 +52,7 @@ func readFolders(currentFolder string, volumeItems []VolumeItem) ([]VolumeItem, 
 				}
 				if hasErrors == nil {
 					volumeItems = append(volumeItems, VolumeItem{Name: f.Name(), Size: f.Size(), Modified: f.ModTime(), IsFolder:f.IsDir(), FolderTree: subFolderItems})
+					log.Println(f.Name())
 				}
 			}
 		}

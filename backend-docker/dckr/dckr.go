@@ -5,13 +5,14 @@ import (
 	"errors"
 	"fmt"
 	docker "github.com/fsouza/go-dockerclient"
-	"io/ioutil"
+	//"io/ioutil"
 	"log"
 	"os"
-	"path/filepath"
+	//"path/filepath"
 	"strconv"
 	"strings"
 	"io"
+	//"archive/tar"
 )
 
 const (
@@ -381,10 +382,15 @@ func (c Client) BuildVolume(dirpath string) (Volume, error) {
 		Mountpoint: VolumeMountpoint(volume.Mountpoint),
 	}
 	//copy all content to volume
+	log.Println(dirpath, string(ret.Mountpoint))
 	err = copyDataToVolume(dirpath, string(ret.Mountpoint))
 	return ret, err
 }
 
+func copyDataToVolume(src string, dst string) error {
+	return nil
+}
+/*
 func copyDataToVolume(src string, dst string) error {
 	log.Printf("Copying data from %s to volume %s \n", src, dst)
 	entries, err := ioutil.ReadDir(src)
@@ -419,7 +425,7 @@ func copyDataToVolume(src string, dst string) error {
 		}
 	}
 	return nil
-}
+}*/
 
 //RemoveVolume removes a volume
 func (c Client) RemoveVolume(id VolumeID) error {
@@ -435,11 +441,55 @@ func (c Client) GetTarStream(containerID, filePath string) (io.ReadCloser, error
 		OutputStream: pwriter,
 	}
 
-	defer pwriter.Close()
+	go func() {
+		defer pwriter.Close()
+		fmt.Println("Requesting file", opts.Path)
+		if err := c.c.DownloadFromContainer(containerID, opts); err != nil {
+			log.Println(filePath + " has been retrieved")
+			//return preader, err
+		}
+	}()
+
+
+
+
+	/*defer pwriter.Close()
 	log.Println("Requesting file", opts.Path)
 	if err := c.c.DownloadFromContainer(containerID, opts); err != nil {
+		log.Println(filePath + " has been retrieved")
 		return preader, err
-	}
+	}*/
+	log.Println(filePath + " has not been retrieved")
 
 	return preader, nil
 }
+
+/*
+func (c Client) UploadFiles() {
+	content := "File content"
+
+	buf := new(bytes.Buffer)
+	tw := tar.NewWriter(buf)
+	hdr := &tar.Header{
+		Name: "test.txt",
+		Mode: 0644,
+		Size: int64(len(content)),
+	}
+	err := tw.WriteHeader(hdr)
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+	_, err = tw.Write([]byte(content))
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+
+	in := sT{bytes.NewBufferString(string(buf.Bytes()))}
+	opts := docker.UploadToContainerOptions{Path: "data", InputStream: in}
+	cont, err := client.CreateContainer(options)
+	if err != nil {
+		log.Printf(err.Error())
+		return
+	}
+	err = client.UploadToContainer(container.ID, opts)
+}*/
