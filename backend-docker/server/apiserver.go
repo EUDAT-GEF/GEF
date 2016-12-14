@@ -38,7 +38,8 @@ const (
 	buildImagesAPIPath   = "/buildImages"
 	buildVolumesAPIPath  = "/buildVolumes"
 	inspectVolumeAPIPath = "/inspectVolume"
-	retrieveFileAPIPath = "/retrieveFile"
+	retrieveFileAPIPath  = "/retrieveFile"
+	//buildVolumeWithPID   = "/buildVolumeWithPID"
 
 	tmpDirDefault = "gefdocker"
 	tmpDirPerm    = 0700
@@ -114,6 +115,7 @@ func NewServer(cfg Config, docker dckr.Client) *Server {
 	apirouter.HandleFunc(volumesAPIPath, server.listVolumesHandler).Methods("GET")
 	apirouter.HandleFunc(inspectVolumeAPIPath+"/{volumeID}", server.inspectVolumeHandler).Methods("GET")
 	apirouter.HandleFunc(retrieveFileAPIPath+"/{containerID}/{filePath}", server.retrieveFileHandler).Methods("GET")
+	//apirouter.HandleFunc(buildVolumeWithPID, server.buildVolumeWithPID).Methods("GET")
 
 	apirouter.HandleFunc(jobsAPIPath, server.executeServiceHandler).Methods("POST")
 	apirouter.HandleFunc(jobsAPIPath, server.listJobsHandler).Methods("GET")
@@ -195,7 +197,7 @@ func (s *Server) inspectVolumeHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	volId := string(dckr.ImageID(vars["volumeID"]))
 
-	imageID := "837ecce57f8ef9c06a288fb9b07b1a78dd35193772613f920c69994904cb9dec"
+	imageID := "eudatgef/volume-filelist"
 
 	// Bind the container with the volume
 	volumesToMount := []string{
@@ -225,6 +227,30 @@ func (s *Server) inspectVolumeHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(volumeFileList1)
 
 }
+
+/*
+func (s *Server) buildVolumeWithPID(w http.ResponseWriter, r *http.Request) {
+	logRequest(r)
+
+	// Temporary solution for the list of files
+	var pidList []string
+	pidList = append(pidList, "https://b2share.eudat.eu/record/154/files/ISGC2014_022.pdf?version=1")
+	pidList = append(pidList, "https://b2share.eudat.eu/record/157/files/TenReasonsToSwitchFromMauiToMoab2012-01-05.pdf?version=1")
+	// ------------------
+
+
+
+	vars := mux.Vars(r)
+	buildID := vars["buildID"]
+	buildDir := filepath.Join(s.tmpDir, buildsTmpDir, buildID)
+
+	volume, err := s.docker.BuildVolume(buildDir)
+	if err != nil {
+		Response{w}.ServerError("build docker volume:", err)
+		return
+	}
+	Response{w}.Ok(jmap("Volume", volume))
+}*/
 
 func (s *Server) newBuildImageHandler(w http.ResponseWriter, r *http.Request) {
 	logRequest(r)
@@ -303,7 +329,14 @@ func (s *Server) buildVolumeHandler(w http.ResponseWriter, r *http.Request) {
 	buildID := vars["buildID"]
 	buildDir := filepath.Join(s.tmpDir, buildsTmpDir, buildID)
 
-	mr, err := r.MultipartReader()
+	// Temporary solution for the list of files
+	var pidList []string
+	pidList = append(pidList, "#!/bin/ash")
+	pidList = append(pidList, "wget https://b2share.eudat.eu/record/154/files/ISGC2014_022.pdf?version=1")
+	pidList = append(pidList, "wget https://b2share.eudat.eu/record/157/files/TenReasonsToSwitchFromMauiToMoab2012-01-05.pdf?version=1")
+	// ------------------
+
+	/*mr, err := r.MultipartReader()
 	if err != nil {
 		Response{w}.ServerError("while getting multipart reader ", err)
 		return
@@ -328,13 +361,82 @@ func (s *Server) buildVolumeHandler(w http.ResponseWriter, r *http.Request) {
 			Response{w}.ServerError("while dumping file part ", err)
 			return
 		}
+	}*/
+
+
+	dScriptPath := filepath.Join(buildDir, "downloader.sh")
+	dScriptFile, err := os.Create(dScriptPath)
+	if err != nil {
+		Response{w}.ServerError("create script file:", err)
+		return
 	}
+	log.Println("Script was created")
+	_, err = dScriptFile.WriteString(strings.Join(pidList, "\n"))
+	if err != nil {
+		Response{w}.ServerError("write data into the script file", err)
+		return
+	}
+	dScriptFile.Sync()
+	log.Println("Wrote file list")
+
+	err = dScriptFile.Chmod(0777)
+	if err != nil {
+		Response{w}.ServerError("make downloading script executable:", err)
+		return
+	}
+	log.Println("Changed permissions")
+
 
 	volume, err := s.docker.BuildVolume(buildDir)
 	if err != nil {
 		Response{w}.ServerError("build docker volume:", err)
 		return
 	}
+	log.Println(volume.ID)
+	log.Println(buildDir)
+	log.Println("Volume was created")
+
+
+
+
+
+
+
+	imageID := "eudatgef/pid-downloader"
+
+	// Bind the container with the volume
+	volumesToMount := []string{}
+		//string(volume.ID) + ":/root/volume"}
+
+	// Execute our image (it should produce a JSON file with the list of files)
+	containerID, err := s.docker.ExecuteImage(dckr.ImageID(imageID), volumesToMount)
+	if err != nil {
+		Response{w}.ServerError("execute docker image: ", err)
+		return
+	}
+	log.Println("Executed the image")
+
+
+	// Killing the container
+	/*_, err = s.docker.WaitContainer(containerID, true)
+	if err != nil {
+		Response{w}.ServerError("removing the container: ", err)
+		return
+	}
+	log.Println("Container was removed")*/
+	log.Println(containerID)
+	err = s.docker.UploadSingleFile(string(containerID), dScriptPath)
+	if err != nil {
+		Response{w}.ServerError("upload a file to the container: ", err)
+		return
+	}
+	log.Println("File was uploaded")
+
+
+
+
+
+
 	Response{w}.Ok(jmap("Volume", volume))
 }
 

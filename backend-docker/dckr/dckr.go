@@ -13,6 +13,8 @@ import (
 	"strings"
 	"io"
 	//"archive/tar"
+	"archive/tar"
+	"io/ioutil"
 )
 
 const (
@@ -24,6 +26,10 @@ type Config struct {
 	UseBoot2Docker bool
 	Endpoint       string
 	Description    string
+}
+
+type tarInputStream struct {
+	*bytes.Buffer
 }
 
 func (c Config) String() string {
@@ -382,14 +388,11 @@ func (c Client) BuildVolume(dirpath string) (Volume, error) {
 		Mountpoint: VolumeMountpoint(volume.Mountpoint),
 	}
 	//copy all content to volume
-	log.Println(dirpath, string(ret.Mountpoint))
-	err = copyDataToVolume(dirpath, string(ret.Mountpoint))
+	//log.Println(dirpath, string(ret.Mountpoint))
+	//err = copyDataToVolume(dirpath, string(ret.Mountpoint))
 	return ret, err
 }
 
-func copyDataToVolume(src string, dst string) error {
-	return nil
-}
 /*
 func copyDataToVolume(src string, dst string) error {
 	log.Printf("Copying data from %s to volume %s \n", src, dst)
@@ -451,8 +454,6 @@ func (c Client) GetTarStream(containerID, filePath string) (io.ReadCloser, error
 	}()
 
 
-
-
 	/*defer pwriter.Close()
 	log.Println("Requesting file", opts.Path)
 	if err := c.c.DownloadFromContainer(containerID, opts); err != nil {
@@ -464,32 +465,53 @@ func (c Client) GetTarStream(containerID, filePath string) (io.ReadCloser, error
 	return preader, nil
 }
 
-/*
-func (c Client) UploadFiles() {
-	content := "File content"
 
-	buf := new(bytes.Buffer)
-	tw := tar.NewWriter(buf)
-	hdr := &tar.Header{
-		Name: "test.txt",
+func (c Client) UploadSingleFile(containerID, filePath string) (error) {
+	//buf := new(bytes.Buffer)
+	var b bytes.Buffer
+	fileHandler, err := os.Stat(filePath)
+	if err != nil {
+		log.Printf("Cannot open " + filePath +  ": " + err.Error())
+		return err
+	}
+
+	//fileName := fileHandler.Name()
+	//io.Copy(buf, fileHandler)
+	//fileHandler.Close()
+
+
+	tw := tar.NewWriter(&b)
+	header, err := tar.FileInfoHeader(fileHandler, "")
+
+	/*hdr := &tar.Header{
+		Name: fileName,
 		Mode: 0644,
-		Size: int64(len(content)),
-	}
-	err := tw.WriteHeader(hdr)
+		//Size: int64(buf.Len()),
+	}*/
+	err = tw.WriteHeader(header)
 	if err != nil {
-		fmt.Println(err.Error())
-	}
-	_, err = tw.Write([]byte(content))
-	if err != nil {
-		fmt.Println(err.Error())
+		log.Println(err.Error())
+		return err
 	}
 
-	in := sT{bytes.NewBufferString(string(buf.Bytes()))}
-	opts := docker.UploadToContainerOptions{Path: "data", InputStream: in}
-	cont, err := client.CreateContainer(options)
+	contents, err := ioutil.ReadFile(filePath)
 	if err != nil {
-		log.Printf(err.Error())
-		return
+		log.Println(err.Error())
+		return err
 	}
-	err = client.UploadToContainer(container.ID, opts)
-}*/
+
+	_, err = tw.Write(contents)
+	if err != nil {
+		log.Println("write to a file" + err.Error())
+		return err
+	}
+
+	//in := tarInputStream{bytes.NewBufferString(string(buf.Bytes()))}
+	opts := docker.UploadToContainerOptions{
+		Path: "/root/",
+		InputStream: &b,
+	}
+
+	err = c.c.UploadToContainer(containerID, opts)
+	return err
+}

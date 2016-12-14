@@ -85,13 +85,12 @@ func copyFromSource(sourcePath string, destPath string) (error) {
 		if doesExist {
 			files, _ := ioutil.ReadDir(sourcePath)
 			for _, f := range files {
-				//subFolderItems := []VolumeItem{}
 				if f.IsDir() == true {
 					hasErrors = copyDirectory(sourcePath + "/" + f.Name(), destPath)
 				}
 				if hasErrors == nil {
 					copySingleFile(sourcePath + "/" + f.Name(), destPath)
-					log.Println(f.Name())
+					log.Println("Copying a file: " + f.Name())
 				}
 			}
 		}
