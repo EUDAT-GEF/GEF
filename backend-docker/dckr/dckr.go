@@ -229,7 +229,6 @@ func (c *Client) BuildImage(dirpath string) (Image, error) {
 	for err == nil {
 		var line string
 		line, err = buf.ReadString('\n')
-		// fmt.Printf("build line: `%s`", line)
 		if strings.HasPrefix(line, stepPrefix) {
 			// step++
 		} else if strings.HasPrefix(line, successPrefix) {

@@ -39,7 +39,6 @@ const (
 	buildVolumesAPIPath  = "/buildVolumes"
 	inspectVolumeAPIPath = "/inspectVolume"
 	retrieveFileAPIPath  = "/retrieveFile"
-	//buildVolumeWithPID   = "/buildVolumeWithPID"
 
 	tmpDirDefault = "gefdocker"
 	tmpDirPerm    = 0700
@@ -115,7 +114,6 @@ func NewServer(cfg Config, docker dckr.Client) *Server {
 	apirouter.HandleFunc(volumesAPIPath, server.listVolumesHandler).Methods("GET")
 	apirouter.HandleFunc(inspectVolumeAPIPath+"/{volumeID}", server.inspectVolumeHandler).Methods("GET")
 	apirouter.HandleFunc(retrieveFileAPIPath+"/{containerID}/{filePath}", server.retrieveFileHandler).Methods("GET")
-	//apirouter.HandleFunc(buildVolumeWithPID, server.buildVolumeWithPID).Methods("GET")
 
 	apirouter.HandleFunc(jobsAPIPath, server.executeServiceHandler).Methods("POST")
 	apirouter.HandleFunc(jobsAPIPath, server.listJobsHandler).Methods("GET")
