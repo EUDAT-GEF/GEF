@@ -178,14 +178,11 @@ func (s *Server) readJSON(containerID string, filePath string) ([]VolumeItem, er
 	tarStream, err := s.docker.GetTarStream(containerID, filePath)
 
 	if err == nil {
-		log.Println("Reading tar")
 		tarBallReader := tar.NewReader(tarStream)
 		_, err = tarBallReader.Next()
 		if err == nil {
-			log.Println("Getting a reader")
 			jsonParser := json.NewDecoder(tarBallReader)
-
-			err = jsonParser.Decode(volumeFileList)
+			err = jsonParser.Decode(&volumeFileList)
 		}
 	}
 
@@ -211,7 +208,7 @@ func (s *Server) inspectVolumeHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Reading the JSON file
-	volumeFileList1, err := s.readJSON(string(containerID), "/root/_filelist.json")
+	volumeFiles, err := s.readJSON(string(containerID), "/root/_filelist.json")
 	if err != nil {
 		Response{w}.ServerError("reading the list of files in a volume: ", err)
 		return
@@ -224,33 +221,9 @@ func (s *Server) inspectVolumeHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	json.NewEncoder(w).Encode(volumeFileList1)
+	json.NewEncoder(w).Encode(volumeFiles)
 
 }
-
-/*
-func (s *Server) buildVolumeWithPID(w http.ResponseWriter, r *http.Request) {
-	logRequest(r)
-
-	// Temporary solution for the list of files
-	var pidList []string
-	pidList = append(pidList, "https://b2share.eudat.eu/record/154/files/ISGC2014_022.pdf?version=1")
-	pidList = append(pidList, "https://b2share.eudat.eu/record/157/files/TenReasonsToSwitchFromMauiToMoab2012-01-05.pdf?version=1")
-	// ------------------
-
-
-
-	vars := mux.Vars(r)
-	buildID := vars["buildID"]
-	buildDir := filepath.Join(s.tmpDir, buildsTmpDir, buildID)
-
-	volume, err := s.docker.BuildVolume(buildDir)
-	if err != nil {
-		Response{w}.ServerError("build docker volume:", err)
-		return
-	}
-	Response{w}.Ok(jmap("Volume", volume))
-}*/
 
 func (s *Server) newBuildImageHandler(w http.ResponseWriter, r *http.Request) {
 	logRequest(r)
@@ -329,6 +302,7 @@ func (s *Server) buildVolumeHandler(w http.ResponseWriter, r *http.Request) {
 	buildID := vars["buildID"]
 	buildDir := filepath.Join(s.tmpDir, buildsTmpDir, buildID)
 
+	// STEP 1: Get a list of files from PID
 	// Temporary solution for the list of files
 	var pidList []string
 	pidList = append(pidList, "#!/bin/ash")
@@ -366,7 +340,7 @@ func (s *Server) buildVolumeHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}*/
 
-
+	// STEP 2: create a bash script that downloads those files
 	dScriptPath := filepath.Join(buildDir, "downloader.sh")
 	dScriptFile, err := os.Create(dScriptPath)
 	if err != nil {
@@ -392,7 +366,7 @@ func (s *Server) buildVolumeHandler(w http.ResponseWriter, r *http.Request) {
 
 
 
-
+	// STEP 3: create an image that includes the script
 	var dockerFileContent []string
 	dockerFileContent = append(dockerFileContent, "FROM alpine:latest")
 	dockerFileContent = append(dockerFileContent, "RUN apk add --update --no-cache openssl openssl-dev ca-certificates")
@@ -416,11 +390,7 @@ func (s *Server) buildVolumeHandler(w http.ResponseWriter, r *http.Request) {
 	dockerFile.Sync()
 	log.Println("Wrote Dockerfile content")
 
-
-
-
-
-
+	// STEP 4: create a new empty volume
 	volume, err := s.docker.BuildVolume(buildDir)
 	if err != nil {
 		Response{w}.ServerError("build docker volume:", err)
@@ -441,12 +411,10 @@ func (s *Server) buildVolumeHandler(w http.ResponseWriter, r *http.Request) {
 
 	imageID := string(image.ID)
 
-
-	// Bind the container with the volume
+	// STEP 5: run the image, as a result we get a volume with our files
 	volumesToMount := []string{
 		string(volume.ID) + ":/root/volume"}
 
-	// Execute our image (it should produce a JSON file with the list of files)
 	containerID, err := s.docker.ExecuteImage(dckr.ImageID(imageID), volumesToMount)
 	if err != nil {
 		Response{w}.ServerError("execute docker image: ", err)

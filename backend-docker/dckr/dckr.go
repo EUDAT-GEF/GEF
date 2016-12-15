@@ -11,10 +11,11 @@ import (
 	//"path/filepath"
 	"strconv"
 	"strings"
-	"io"
+	//"io"
 	//"archive/tar"
 	"archive/tar"
 	"io/ioutil"
+	"io"
 )
 
 const (
@@ -420,37 +421,26 @@ func (c Client) RemoveVolume(id VolumeID) error {
 }
 
 
-func (c Client) GetTarStream(containerID, filePath string) (io.ReadCloser, error) {
-	preader, pwriter := io.Pipe()
+func (c Client) GetTarStream(containerID, filePath string) (io.Reader, error) {
+	var b bytes.Buffer
+
 	opts := docker.DownloadFromContainerOptions{
 		Path:         filePath,
-		OutputStream: pwriter,
+		OutputStream: &b,
 	}
 
-	go func() {
-		defer pwriter.Close()
-		fmt.Println("Requesting file", opts.Path)
-		if err := c.c.DownloadFromContainer(containerID, opts); err != nil {
-			log.Println(filePath + " has been retrieved")
-			//return preader, err
-		}
-	}()
+	err := c.c.DownloadFromContainer(containerID, opts)
+	if err != nil {
+		log.Println(filePath + " has not been retrieved")
+	}
 
-
-	/*defer pwriter.Close()
-	log.Println("Requesting file", opts.Path)
-	if err := c.c.DownloadFromContainer(containerID, opts); err != nil {
-		log.Println(filePath + " has been retrieved")
-		return preader, err
-	}*/
-	log.Println(filePath + " has not been retrieved")
-
-	return preader, nil
+	return bytes.NewReader(b.Bytes()), err
 }
 
 
 func (c Client) UploadSingleFile(containerID, filePath string) (error) {
 	var b bytes.Buffer
+
 	fileHandler, err := os.Stat(filePath)
 	if err != nil {
 		log.Printf("Cannot open " + filePath +  ": " + err.Error())
