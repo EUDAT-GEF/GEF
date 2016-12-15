@@ -332,8 +332,11 @@ func (s *Server) buildVolumeHandler(w http.ResponseWriter, r *http.Request) {
 	// Temporary solution for the list of files
 	var pidList []string
 	pidList = append(pidList, "#!/bin/ash")
-	pidList = append(pidList, "wget https://b2share.eudat.eu/record/154/files/ISGC2014_022.pdf?version=1")
-	pidList = append(pidList, "wget https://b2share.eudat.eu/record/157/files/TenReasonsToSwitchFromMauiToMoab2012-01-05.pdf?version=1")
+	pidList = append(pidList, "wget https://b2share.eudat.eu/record/154/files/ISGC2014_022.pdf?version=1 -P /root/volume")
+	pidList = append(pidList, "wget https://b2share.eudat.eu/record/157/files/TenReasonsToSwitchFromMauiToMoab2012-01-05.pdf?version=1 -P /root/volume")
+	//pidList = append(pidList, "cp /root/* /root/volume/")
+	//pidList = append(pidList, "cp /root/* /root/volume")
+	pidList = append(pidList, "ls -l /root/volume/")
 	// ------------------
 
 	/*mr, err := r.MultipartReader()
@@ -387,6 +390,37 @@ func (s *Server) buildVolumeHandler(w http.ResponseWriter, r *http.Request) {
 	log.Println("Changed permissions")
 
 
+
+
+
+	var dockerFileContent []string
+	dockerFileContent = append(dockerFileContent, "FROM alpine:latest")
+	dockerFileContent = append(dockerFileContent, "RUN apk add --update --no-cache openssl openssl-dev ca-certificates")
+	dockerFileContent = append(dockerFileContent, "RUN mkdir /root/volume")
+	dockerFileContent = append(dockerFileContent, "ADD downloader.sh /root")
+	dockerFileContent = append(dockerFileContent, "CMD [\"/root/downloader.sh\"]")
+
+
+	dockerFilePath := filepath.Join(buildDir, "Dockerfile")
+	dockerFile, err := os.Create(dockerFilePath)
+	if err != nil {
+		Response{w}.ServerError("create script file:", err)
+		return
+	}
+	log.Println("Dockerfile was created")
+	_, err = dockerFile.WriteString(strings.Join(dockerFileContent, "\n"))
+	if err != nil {
+		Response{w}.ServerError("write data into the  Dockerfile", err)
+		return
+	}
+	dockerFile.Sync()
+	log.Println("Wrote Dockerfile content")
+
+
+
+
+
+
 	volume, err := s.docker.BuildVolume(buildDir)
 	if err != nil {
 		Response{w}.ServerError("build docker volume:", err)
@@ -397,16 +431,20 @@ func (s *Server) buildVolumeHandler(w http.ResponseWriter, r *http.Request) {
 	log.Println("Volume was created")
 
 
+	image, err := s.docker.BuildImage(buildDir)
+	if err != nil {
+		Response{w}.ServerError("build docker image: ", err)
+		return
+	}
+	log.Println("Docker image was created")
+	log.Println(image.ID)
 
+	imageID := string(image.ID)
 
-
-
-
-	imageID := "eudatgef/pid-downloader"
 
 	// Bind the container with the volume
-	volumesToMount := []string{}
-		//string(volume.ID) + ":/root/volume"}
+	volumesToMount := []string{
+		string(volume.ID) + ":/root/volume"}
 
 	// Execute our image (it should produce a JSON file with the list of files)
 	containerID, err := s.docker.ExecuteImage(dckr.ImageID(imageID), volumesToMount)
@@ -417,25 +455,23 @@ func (s *Server) buildVolumeHandler(w http.ResponseWriter, r *http.Request) {
 	log.Println("Executed the image")
 
 
-	// Killing the container
-	/*_, err = s.docker.WaitContainer(containerID, true)
+	log.Println(containerID)
+
+
+	_, err = s.docker.WaitContainer(containerID, true)
 	if err != nil {
 		Response{w}.ServerError("removing the container: ", err)
 		return
 	}
-	log.Println("Container was removed")*/
-	log.Println(containerID)
-	err = s.docker.UploadSingleFile(string(containerID), dScriptPath)
+	log.Println("Container was removed")
+
+
+	err = s.docker.DeleteImage(imageID)
 	if err != nil {
-		Response{w}.ServerError("upload a file to the container: ", err)
+		Response{w}.ServerError("removing the image " + imageID + ": ", err)
 		return
 	}
-	log.Println("File was uploaded")
-
-
-
-
-
+	log.Println("Image was removed")
 
 	Response{w}.Ok(jmap("Volume", volume))
 }

@@ -281,6 +281,26 @@ func (c Client) ExecuteImage(id ImageID, binds []string) (ContainerID, error) {
 	return ContainerID(cont.ID), nil
 }
 
+// DeleteImage removes an image by ID
+func (c Client) DeleteImage(id string) (error) {
+	err := c.c.RemoveImage(id)
+	return err
+}
+
+// StartExitedContainer starts an existing container
+func (c Client) StartExistingContainer(contID string, binds []string) (ContainerID, error) {
+	hc := docker.HostConfig{
+		Binds: binds,
+	}
+
+	err := c.c.StartContainer(contID, &hc)
+	if err != nil {
+		c.c.RemoveContainer(docker.RemoveContainerOptions{ID: contID, Force: true})
+		return ContainerID(""), err
+	}
+	return ContainerID(contID), nil
+}
+
 // WaitContainer takes a docker container and waits for its finish.
 // It returns the exit code of the container.
 func (c Client) WaitContainer(id ContainerID, removeOnExit bool) (int, error) {
@@ -393,43 +413,6 @@ func (c Client) BuildVolume(dirpath string) (Volume, error) {
 	return ret, err
 }
 
-/*
-func copyDataToVolume(src string, dst string) error {
-	log.Printf("Copying data from %s to volume %s \n", src, dst)
-	entries, err := ioutil.ReadDir(src)
-	if err != nil {
-		return err
-	}
-	copyTreeOptions := &CopyTreeOptions{Symlinks: true}
-
-	for _, entry := range entries {
-		srcPath := filepath.Join(src, entry.Name())
-		dstPath := filepath.Join(dst, entry.Name())
-
-		srcFileInfo, err := os.Stat(srcPath)
-		if err != nil {
-			return err
-		}
-
-		if !srcFileInfo.IsDir() {
-			//no dir
-			err = CopyFile(srcPath, dstPath, false)
-			if err != nil {
-				log.Println("Copy files failed", err)
-				return err
-			}
-		} else {
-			//copy dir
-			err = CopyTree(srcPath, dstPath, copyTreeOptions)
-			if err != nil {
-				log.Println("Copy directories failed", err)
-				return err
-			}
-		}
-	}
-	return nil
-}*/
-
 //RemoveVolume removes a volume
 func (c Client) RemoveVolume(id VolumeID) error {
 	err := c.c.RemoveVolume(string(id))
@@ -467,7 +450,6 @@ func (c Client) GetTarStream(containerID, filePath string) (io.ReadCloser, error
 
 
 func (c Client) UploadSingleFile(containerID, filePath string) (error) {
-	//buf := new(bytes.Buffer)
 	var b bytes.Buffer
 	fileHandler, err := os.Stat(filePath)
 	if err != nil {
@@ -475,19 +457,9 @@ func (c Client) UploadSingleFile(containerID, filePath string) (error) {
 		return err
 	}
 
-	//fileName := fileHandler.Name()
-	//io.Copy(buf, fileHandler)
-	//fileHandler.Close()
-
-
 	tw := tar.NewWriter(&b)
 	header, err := tar.FileInfoHeader(fileHandler, "")
 
-	/*hdr := &tar.Header{
-		Name: fileName,
-		Mode: 0644,
-		//Size: int64(buf.Len()),
-	}*/
 	err = tw.WriteHeader(header)
 	if err != nil {
 		log.Println(err.Error())
@@ -506,7 +478,6 @@ func (c Client) UploadSingleFile(containerID, filePath string) (error) {
 		return err
 	}
 
-	//in := tarInputStream{bytes.NewBufferString(string(buf.Bytes()))}
 	opts := docker.UploadToContainerOptions{
 		Path: "/root/",
 		InputStream: &b,
