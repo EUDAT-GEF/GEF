@@ -143,6 +143,21 @@ function fileUploadError(errorMessage) {
     }
 }
 
+function inspectVolumeSuccess(data) {
+    return {
+        type: actionTypes.INSPECT_VOLUME_SUCCESS,
+        data: data
+    }
+}
+
+function inspectVolumeError(errorMessage) {
+    return {
+        type: actionTypes.INSPECT_VOLUME_ERROR,
+        errorMessage: errorMessage
+    }
+}
+
+
 
 //TODO: catch seems to swallow all of the exceptions, not only the exceptions occurred in fetch
 //async actions
@@ -196,6 +211,21 @@ function fetchService(serviceID) {
 }
 
 function fetchVolumes() {
+    return function (dispatch, getState) {
+        dispatch(volumesFetchStart());
+        const resultPromise = axios.get(apiNames.volumes);
+        resultPromise.then(response => {
+            log('fetched volumes:', response.data.Volumes);
+            dispatch(volumesFetchSuccess(response.data.Volumes))
+        }).catch(err => {
+            Alert.error("Cannot fetch volume information from the server.");
+            log("A fetch error occurred");
+            dispatch(volumesFetchError(err));
+        })
+    }
+}
+
+function fetchVolumeContent() {
     return function (dispatch, getState) {
         dispatch(volumesFetchStart());
         const resultPromise = axios.get(apiNames.volumes);
