@@ -143,6 +143,12 @@ function fileUploadError(errorMessage) {
     }
 }
 
+function inspectVolumeStart() {
+    return {
+        type: actionTypes.INSPECT_VOLUME_START
+    }
+}
+
 function inspectVolumeSuccess(data) {
     return {
         type: actionTypes.INSPECT_VOLUME_SUCCESS,
@@ -200,7 +206,6 @@ function fetchService(serviceID) {
         const resultPromise = axios.get( apiNames.services + '/' + serviceID);
         resultPromise.then(response => {
             log('fetched service:', response.data);
-
             dispatch(serviceFetchSuccess(response.data));
         }).catch(err => {
             Alert.error("Cannot fetch service information from the server.");
@@ -225,17 +230,20 @@ function fetchVolumes() {
     }
 }
 
-function fetchVolumeContent() {
+export function inspectVolume(volumeId) {
     return function (dispatch, getState) {
-        dispatch(volumesFetchStart());
-        const resultPromise = axios.get(apiNames.volumes);
+        dispatch(inspectVolumeStart());
+        const resultPromise = axios.get( apiNames.volumes + '/' + volumeId);
+        console.log(apiNames.volumes + '/' + volumeId);
+        //console.log(resultPromise);
         resultPromise.then(response => {
-            log('fetched volumes:', response.data.Volumes);
-            dispatch(volumesFetchSuccess(response.data.Volumes))
+            log('fetched volume content:', response.data.Volumes);
+            console.log(response.data);
+            dispatch(inspectVolumeSuccess(response.data))
         }).catch(err => {
-            Alert.error("Cannot fetch volume information from the server.");
+            Alert.error("Cannot fetch volume content information from the server.");
             log("A fetch error occurred");
-            dispatch(volumesFetchError(err));
+            dispatch(inspectVolumeError(err));
         })
     }
 }
@@ -316,10 +324,14 @@ export default {
     volumesFetchStart,
     volumesFetchSuccess,
     volumesFetchError,
+    inspectVolumeStart,
+    inspectVolumeSuccess,
+    inspectVolumeError,
     fetchJobs,
     fetchServices,
     fetchService,
     fetchVolumes,
+    inspectVolume,
     showErrorMessageWithTimeout,
     hideErrorMessage,
     fileUploadStart,

@@ -5,7 +5,6 @@ const apiNames = {
     volumes: "/gef/api/volumes",
     services: "/gef/api/images",
     jobs: "/gef/api/jobs",
-    inspectVolume: "inspectVolume",
 };
 
 export default apiNames;
