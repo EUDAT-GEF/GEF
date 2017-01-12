@@ -4,6 +4,10 @@ import _ from 'lodash';
 import {Row, Col} from 'react-bootstrap';
 import {LinkContainer} from 'react-router-bootstrap'
 import Volume from './Volume'
+import { connect } from 'react-redux'
+import { bindActionCreators } from 'redux'
+import actions from '../actions/actions'
+
 
 const log = bows('Volumes');
 
@@ -39,16 +43,28 @@ class Volumes extends React.Component {
                 <h4>All Volumes</h4>
                 <Header/>
                 {_.map(this.props.volumes, (volume) => {
+                    //console.log(this.props.selectedVolume);
                     if(volume.ID === this.props.params.id)
-                        return <Volume key={volume.ID} volume={volume}/>;
+                        return <Volume actions={this.props.actions} key={volume.ID} volume={volume} selectedVolume={this.props.selectedVolume}/>;
                     else
-                        return <VolumeRow key={volume.ID} volume={volume}/>;
+                        return <VolumeRow actions={this.props.actions} key={volume.ID} volume={volume} selectedVolume={this.props.selectedVolume}/>;
 
                 })}
             </div>
         );
     }
 
+}
+
+function mapStateToProps(state) {
+  console.log(state);
+  return state
+}
+
+function mapDispatchToProps(dispatch) {
+  return {
+    actions: bindActionCreators(actions, dispatch)
+  }
 }
 
 Volumes.propTypes = {
@@ -58,4 +74,12 @@ Volumes.propTypes = {
 
 };
 
-export default Volumes;
+export default connect(mapStateToProps, mapDispatchToProps)(Volumes);
+
+
+
+
+
+
+
+

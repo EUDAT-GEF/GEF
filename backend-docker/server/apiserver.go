@@ -37,8 +37,8 @@ const (
 	volumesAPIPath       = "/volumes"
 	buildImagesAPIPath   = "/buildImages"
 	buildVolumesAPIPath  = "/buildVolumes"
-	inspectVolumeAPIPath = "/inspectVolume"
-	retrieveFileAPIPath = "/retrieveFile"
+	//inspectVolumeAPIPath = "/inspectVolume"
+	retrieveFileAPIPath  = "/retrieveFile"
 
 	tmpDirDefault = "gefdocker"
 	tmpDirPerm    = 0700
@@ -112,7 +112,7 @@ func NewServer(cfg Config, docker dckr.Client) *Server {
 	apirouter.HandleFunc(imagesAPIPath+"/{imageID}", server.inspectServiceHandler).Methods("GET")
 
 	apirouter.HandleFunc(volumesAPIPath, server.listVolumesHandler).Methods("GET")
-	apirouter.HandleFunc(inspectVolumeAPIPath+"/{volumeID}", server.inspectVolumeHandler).Methods("GET")
+	apirouter.HandleFunc(volumesAPIPath+"/{volumeID}", server.inspectVolumeHandler).Methods("GET")
 	apirouter.HandleFunc(retrieveFileAPIPath+"/{containerID}/{filePath}", server.retrieveFileHandler).Methods("GET")
 
 	apirouter.HandleFunc(jobsAPIPath, server.executeServiceHandler).Methods("POST")
@@ -180,7 +180,7 @@ func (s *Server) readJSON(containerID string, filePath string) ([]VolumeItem, er
 		_, err = tarBallReader.Next()
 		if err == nil {
 			jsonParser := json.NewDecoder(tarBallReader)
-			err = jsonParser.Decode(volumeFileList)
+			err = jsonParser.Decode(&volumeFileList)
 		}
 	}
 
@@ -192,7 +192,7 @@ func (s *Server) inspectVolumeHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	volId := string(dckr.ImageID(vars["volumeID"]))
 
-	imageID := "d755f01f457926e662451aa753a627c84e6e1f76d517d0982000795630673182"
+	imageID := "eudatgef/volume-filelist"
 
 	// Bind the container with the volume
 	volumesToMount := []string{
@@ -206,7 +206,7 @@ func (s *Server) inspectVolumeHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Reading the JSON file
-	volumeFileList, err := s.readJSON(string(containerID), "/root/_filelist.json")
+	volumeFiles, err := s.readJSON(string(containerID), "/root/_filelist.json")
 	if err != nil {
 		Response{w}.ServerError("reading the list of files in a volume: ", err)
 		return
@@ -219,7 +219,7 @@ func (s *Server) inspectVolumeHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	json.NewEncoder(w).Encode(volumeFileList)
+	json.NewEncoder(w).Encode(volumeFiles)
 
 }
 
@@ -300,7 +300,18 @@ func (s *Server) buildVolumeHandler(w http.ResponseWriter, r *http.Request) {
 	buildID := vars["buildID"]
 	buildDir := filepath.Join(s.tmpDir, buildsTmpDir, buildID)
 
-	mr, err := r.MultipartReader()
+	// STEP 1: Get a list of files from PID
+	// Temporary solution for the list of files
+	var pidList []string
+	pidList = append(pidList, "#!/bin/ash")
+	pidList = append(pidList, "wget https://b2share.eudat.eu/record/154/files/ISGC2014_022.pdf?version=1 -P /root/volume")
+	pidList = append(pidList, "wget https://b2share.eudat.eu/record/157/files/TenReasonsToSwitchFromMauiToMoab2012-01-05.pdf?version=1 -P /root/volume")
+	//pidList = append(pidList, "cp /root/* /root/volume/")
+	//pidList = append(pidList, "cp /root/* /root/volume")
+	pidList = append(pidList, "ls -l /root/volume/")
+	// ------------------
+
+	/*mr, err := r.MultipartReader()
 	if err != nil {
 		Response{w}.ServerError("while getting multipart reader ", err)
 		return
@@ -325,13 +336,109 @@ func (s *Server) buildVolumeHandler(w http.ResponseWriter, r *http.Request) {
 			Response{w}.ServerError("while dumping file part ", err)
 			return
 		}
-	}
+	}*/
 
+	// STEP 2: create a bash script that downloads those files
+	dScriptPath := filepath.Join(buildDir, "downloader.sh")
+	dScriptFile, err := os.Create(dScriptPath)
+	if err != nil {
+		Response{w}.ServerError("create script file:", err)
+		return
+	}
+	log.Println("Script was created")
+	_, err = dScriptFile.WriteString(strings.Join(pidList, "\n"))
+	if err != nil {
+		Response{w}.ServerError("write data into the script file", err)
+		return
+	}
+	dScriptFile.Sync()
+	log.Println("Wrote file list")
+
+	err = dScriptFile.Chmod(0777)
+	if err != nil {
+		Response{w}.ServerError("make downloading script executable:", err)
+		return
+	}
+	log.Println("Changed permissions")
+
+
+
+
+	// STEP 3: create an image that includes the script
+	var dockerFileContent []string
+	dockerFileContent = append(dockerFileContent, "FROM alpine:latest")
+	dockerFileContent = append(dockerFileContent, "RUN apk add --update --no-cache openssl openssl-dev ca-certificates")
+	dockerFileContent = append(dockerFileContent, "RUN mkdir /root/volume")
+	dockerFileContent = append(dockerFileContent, "ADD downloader.sh /root")
+	dockerFileContent = append(dockerFileContent, "CMD [\"/root/downloader.sh\"]")
+
+
+	dockerFilePath := filepath.Join(buildDir, "Dockerfile")
+	dockerFile, err := os.Create(dockerFilePath)
+	if err != nil {
+		Response{w}.ServerError("create script file:", err)
+		return
+	}
+	log.Println("Dockerfile was created")
+	_, err = dockerFile.WriteString(strings.Join(dockerFileContent, "\n"))
+	if err != nil {
+		Response{w}.ServerError("write data into the  Dockerfile", err)
+		return
+	}
+	dockerFile.Sync()
+	log.Println("Wrote Dockerfile content")
+
+	// STEP 4: create a new empty volume
 	volume, err := s.docker.BuildVolume(buildDir)
 	if err != nil {
 		Response{w}.ServerError("build docker volume:", err)
 		return
 	}
+	log.Println(volume.ID)
+	log.Println(buildDir)
+	log.Println("Volume was created")
+
+
+	image, err := s.docker.BuildImage(buildDir)
+	if err != nil {
+		Response{w}.ServerError("build docker image: ", err)
+		return
+	}
+	log.Println("Docker image was created")
+	log.Println(image.ID)
+
+	imageID := string(image.ID)
+
+	// STEP 5: run the image, as a result we get a volume with our files
+	volumesToMount := []string{
+		string(volume.ID) + ":/root/volume"}
+
+	containerID, err := s.docker.ExecuteImage(dckr.ImageID(imageID), volumesToMount)
+	if err != nil {
+		Response{w}.ServerError("execute docker image: ", err)
+		return
+	}
+	log.Println("Executed the image")
+
+
+	log.Println(containerID)
+
+
+	_, err = s.docker.WaitContainer(containerID, true)
+	if err != nil {
+		Response{w}.ServerError("removing the container: ", err)
+		return
+	}
+	log.Println("Container was removed")
+
+
+	err = s.docker.DeleteImage(imageID)
+	if err != nil {
+		Response{w}.ServerError("removing the image " + imageID + ": ", err)
+		return
+	}
+	log.Println("Image was removed")
+
 	Response{w}.Ok(jmap("Volume", volume))
 }
 

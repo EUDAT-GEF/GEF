@@ -5,12 +5,16 @@ import (
 	"errors"
 	"fmt"
 	docker "github.com/fsouza/go-dockerclient"
-	"io/ioutil"
+	//"io/ioutil"
 	"log"
 	"os"
-	"path/filepath"
+	//"path/filepath"
 	"strconv"
 	"strings"
+	//"io"
+	//"archive/tar"
+	"archive/tar"
+	"io/ioutil"
 	"io"
 )
 
@@ -23,6 +27,10 @@ type Config struct {
 	UseBoot2Docker bool
 	Endpoint       string
 	Description    string
+}
+
+type tarInputStream struct {
+	*bytes.Buffer
 }
 
 func (c Config) String() string {
@@ -221,7 +229,6 @@ func (c *Client) BuildImage(dirpath string) (Image, error) {
 	for err == nil {
 		var line string
 		line, err = buf.ReadString('\n')
-		// fmt.Printf("build line: `%s`", line)
 		if strings.HasPrefix(line, stepPrefix) {
 			// step++
 		} else if strings.HasPrefix(line, successPrefix) {
@@ -272,6 +279,26 @@ func (c Client) ExecuteImage(id ImageID, binds []string) (ContainerID, error) {
 	}
 
 	return ContainerID(cont.ID), nil
+}
+
+// DeleteImage removes an image by ID
+func (c Client) DeleteImage(id string) (error) {
+	err := c.c.RemoveImage(id)
+	return err
+}
+
+// StartExitedContainer starts an existing container
+func (c Client) StartExistingContainer(contID string, binds []string) (ContainerID, error) {
+	hc := docker.HostConfig{
+		Binds: binds,
+	}
+
+	err := c.c.StartContainer(contID, &hc)
+	if err != nil {
+		c.c.RemoveContainer(docker.RemoveContainerOptions{ID: contID, Force: true})
+		return ContainerID(""), err
+	}
+	return ContainerID(contID), nil
 }
 
 // WaitContainer takes a docker container and waits for its finish.
@@ -381,44 +408,9 @@ func (c Client) BuildVolume(dirpath string) (Volume, error) {
 		Mountpoint: VolumeMountpoint(volume.Mountpoint),
 	}
 	//copy all content to volume
-	err = copyDataToVolume(dirpath, string(ret.Mountpoint))
+	//log.Println(dirpath, string(ret.Mountpoint))
+	//err = copyDataToVolume(dirpath, string(ret.Mountpoint))
 	return ret, err
-}
-
-func copyDataToVolume(src string, dst string) error {
-	log.Printf("Copying data from %s to volume %s \n", src, dst)
-	entries, err := ioutil.ReadDir(src)
-	if err != nil {
-		return err
-	}
-	copyTreeOptions := &CopyTreeOptions{Symlinks: true}
-
-	for _, entry := range entries {
-		srcPath := filepath.Join(src, entry.Name())
-		dstPath := filepath.Join(dst, entry.Name())
-
-		srcFileInfo, err := os.Stat(srcPath)
-		if err != nil {
-			return err
-		}
-
-		if !srcFileInfo.IsDir() {
-			//no dir
-			err = CopyFile(srcPath, dstPath, false)
-			if err != nil {
-				log.Println("Copy files failed", err)
-				return err
-			}
-		} else {
-			//copy dir
-			err = CopyTree(srcPath, dstPath, copyTreeOptions)
-			if err != nil {
-				log.Println("Copy directories failed", err)
-				return err
-			}
-		}
-	}
-	return nil
 }
 
 //RemoveVolume removes a volume
@@ -428,18 +420,58 @@ func (c Client) RemoveVolume(id VolumeID) error {
 }
 
 
-func (c Client) GetTarStream(containerID, filePath string) (io.ReadCloser, error) {
-	preader, pwriter := io.Pipe()
+func (c Client) GetTarStream(containerID, filePath string) (io.Reader, error) {
+	var b bytes.Buffer
+
 	opts := docker.DownloadFromContainerOptions{
 		Path:         filePath,
-		OutputStream: pwriter,
+		OutputStream: &b,
 	}
 
-	defer pwriter.Close()
-	log.Println("Requesting file", opts.Path)
-	if err := c.c.DownloadFromContainer(containerID, opts); err != nil {
-		return preader, err
+	err := c.c.DownloadFromContainer(containerID, opts)
+	if err != nil {
+		log.Println(filePath + " has not been retrieved")
 	}
 
-	return preader, nil
+	return bytes.NewReader(b.Bytes()), err
+}
+
+
+func (c Client) UploadSingleFile(containerID, filePath string) (error) {
+	var b bytes.Buffer
+
+	fileHandler, err := os.Stat(filePath)
+	if err != nil {
+		log.Printf("Cannot open " + filePath +  ": " + err.Error())
+		return err
+	}
+
+	tw := tar.NewWriter(&b)
+	header, err := tar.FileInfoHeader(fileHandler, "")
+
+	err = tw.WriteHeader(header)
+	if err != nil {
+		log.Println(err.Error())
+		return err
+	}
+
+	contents, err := ioutil.ReadFile(filePath)
+	if err != nil {
+		log.Println(err.Error())
+		return err
+	}
+
+	_, err = tw.Write(contents)
+	if err != nil {
+		log.Println("write to a file" + err.Error())
+		return err
+	}
+
+	opts := docker.UploadToContainerOptions{
+		Path: "/root/",
+		InputStream: &b,
+	}
+
+	err = c.c.UploadToContainer(containerID, opts)
+	return err
 }
