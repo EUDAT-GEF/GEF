@@ -37,7 +37,6 @@ const (
 	volumesAPIPath       = "/volumes"
 	buildImagesAPIPath   = "/buildImages"
 	buildVolumesAPIPath  = "/buildVolumes"
-	//inspectVolumeAPIPath = "/inspectVolume"
 	retrieveFileAPIPath  = "/retrieveFile"
 
 	tmpDirDefault = "gefdocker"
@@ -306,37 +305,8 @@ func (s *Server) buildVolumeHandler(w http.ResponseWriter, r *http.Request) {
 	pidList = append(pidList, "#!/bin/ash")
 	pidList = append(pidList, "wget https://b2share.eudat.eu/record/154/files/ISGC2014_022.pdf?version=1 -P /root/volume")
 	pidList = append(pidList, "wget https://b2share.eudat.eu/record/157/files/TenReasonsToSwitchFromMauiToMoab2012-01-05.pdf?version=1 -P /root/volume")
-	//pidList = append(pidList, "cp /root/* /root/volume/")
-	//pidList = append(pidList, "cp /root/* /root/volume")
 	pidList = append(pidList, "ls -l /root/volume/")
-	// ------------------
 
-	/*mr, err := r.MultipartReader()
-	if err != nil {
-		Response{w}.ServerError("while getting multipart reader ", err)
-		return
-	}
-
-	for {
-		part, err := mr.NextPart()
-		if err == io.EOF {
-			break
-		}
-		if part.FileName() == "" {
-			continue
-		}
-		dst, err := os.Create(filepath.Join(buildDir, part.FileName()))
-		if err != nil {
-			Response{w}.ServerError("while creating file to save file part ", err)
-			return
-		}
-		defer dst.Close()
-
-		if _, err := io.Copy(dst, part); err != nil {
-			Response{w}.ServerError("while dumping file part ", err)
-			return
-		}
-	}*/
 
 	// STEP 2: create a bash script that downloads those files
 	dScriptPath := filepath.Join(buildDir, "downloader.sh")
@@ -360,9 +330,6 @@ func (s *Server) buildVolumeHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	log.Println("Changed permissions")
-
-
-
 
 	// STEP 3: create an image that includes the script
 	var dockerFileContent []string

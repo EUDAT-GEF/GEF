@@ -57,14 +57,13 @@ class Volumes extends React.Component {
 }
 
 function mapStateToProps(state) {
-  console.log(state);
-  return state
+    return state
 }
 
 function mapDispatchToProps(dispatch) {
-  return {
-    actions: bindActionCreators(actions, dispatch)
-  }
+    return {
+        actions: bindActionCreators(actions, dispatch)
+    }
 }
 
 Volumes.propTypes = {

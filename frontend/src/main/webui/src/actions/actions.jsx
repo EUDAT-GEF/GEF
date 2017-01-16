@@ -156,6 +156,13 @@ function inspectVolumeSuccess(data) {
     }
 }
 
+function inspectVolumeEmpty() {
+    return {
+        type: actionTypes.INSPECT_VOLUME_EMPTY,
+        data: []
+    }
+}
+
 function inspectVolumeError(errorMessage) {
     return {
         type: actionTypes.INSPECT_VOLUME_ERROR,
@@ -234,11 +241,11 @@ export function inspectVolume(volumeId) {
     return function (dispatch, getState) {
         dispatch(inspectVolumeStart());
         const resultPromise = axios.get( apiNames.volumes + '/' + volumeId);
-        console.log(apiNames.volumes + '/' + volumeId);
-        //console.log(resultPromise);
+        if (volumeId == null) {
+            dispatch(inspectVolumeEmpty());
+        }
         resultPromise.then(response => {
             log('fetched volume content:', response.data.Volumes);
-            console.log(response.data);
             dispatch(inspectVolumeSuccess(response.data))
         }).catch(err => {
             Alert.error("Cannot fetch volume content information from the server.");

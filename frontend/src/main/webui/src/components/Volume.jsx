@@ -4,7 +4,7 @@
 import React, {PropTypes} from 'react';
 import bows from 'bows';
 import _ from 'lodash';
-import {Row, Col} from 'react-bootstrap';
+import {Row, Col, Table} from 'react-bootstrap';
 import {LinkContainer} from 'react-router-bootstrap'
 import actions from '../actions/actions'
 
@@ -34,52 +34,40 @@ const Value = ({value}) => {
     }
 };
 
-
-const FormattedList = ({formattedList}) => {
-    console.log(formattedList);
-    console.log(formattedList.length);
-    console.log(formattedList[0]);
-
-
- {_.map(formattedList, (fileListItem) => {
-                        console.log(fileListItem.Name);
-
-
-                    })}
-
-
-    var volumeFiles = [];
-    for (var i = 0; i < formattedList.length; i++) {
-        volumeFiles.push("<li>" + formattedList[i].Name + "</li>");
-    }
-    if (volumeFiles.length > 0) {
-    var lst = volumeFiles.join("\n");
-        return <div><ul>{lst}</ul></div>;
-    } else {
-        return <div>Files not found</div>;
-    }
-
-
-
-
-};
-
 const VolumeRow = ({tag, value, fileList}) => (
     <Row>
         <Col xs={12} sm={3} md={3} style={styles.volumeRowStyle}>{tag}</Col>
-        <Col xs={12} sm={3} md={3} ><Value value={value}/><br/>
-        <ul>
-        {_.map(fileList, (fileListItem) => {
-            console.log(fileListItem.Name);
-            return <li>{fileListItem.Name}</li>;
-
-        })}
-        </ul>
-
-        </Col>
+        <Col xs={12} sm={3} md={3} ><Value value={value}/></Col>
     </Row>
 );
 
+const VolumeFilesTable = ({fileList}) => (
+    <Row>
+        <Col xs={12} sm={3} md={3}>
+
+        <Table striped bordered condensed hover>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Name</th>
+                <th>Size</th>
+                <th>Modified</th>
+              </tr>
+            </thead>
+            <tbody>
+                {_.map(fileList, (fileListItem, index) => {
+                    return <tr key={index}>
+                           <td>{index+1}</td>
+                           <td>{fileListItem.Name}</td>
+                           <td>{fileListItem.Size}</td>
+                           <td>@{fileListItem.Modified}</td>
+                         </tr>;
+                })}
+            </tbody>
+        </Table>
+        </Col>
+    </Row>
+);
 
 
 
@@ -89,42 +77,36 @@ class Volume extends React.Component {
     }
 
     handleInspect() {
-        console.log("checking");
         this.props.actions.inspectVolume(this.props.volume.ID)
     }
 
+    componentDidMount() {
+        this.props.actions.inspectVolume(); // send an empty list of files when a new box is drown
+    }
 
     render() {
 
-        console.log(this.props);
-        console.log(this.props.selectedVolume);
-        var someVar = "Some text";
-
-        return (
-
-            <div style={{border: "1px solid black"}} onClick={this.handleInspect.bind(this)}>
+        let filesTable = null;
+        if (this.props.selectedVolume.length > 0) {
+            filesTable = <VolumeFilesTable fileList={this.props.selectedVolume}/>
+        } else {
+            filesTable = null;
+        }
+        return(
+            <div style={{border: "1px solid black"}}>
                 <div style={styles.volumeStyle}></div>
                 <h4>Selected volume</h4>
-
-                <VolumeRow tag="ID" value={this.props.volume.ID} fileList={this.props.selectedVolume}/>
-
-
-
+                <VolumeRow tag="ID" value={this.props.volume.ID}/>
+                <button type="submit" onClick={this.handleInspect.bind(this)}>Show list of files</button>
+                {filesTable}
             </div>
         )
-
     }
-
 
 }
 
-
-
-
 Volume.propTypes = {
-    volume: PropTypes.object.isRequired,
-    fetchVolume: PropTypes.func.isRequired,
-    handleSubmit: PropTypes.func.isRequired,
+    volume: PropTypes.object.isRequired
 };
 
 export default Volume

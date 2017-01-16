@@ -62,6 +62,8 @@ function selectedVolume(state = SI([]), action) {
     switch (action.type) {
         case actionTypes.INSPECT_VOLUME_SUCCESS:
             return SI(action.data);
+        case actionTypes.INSPECT_VOLUME_EMPTY:
+            return SI([]);
         case actionTypes.INSPECT_VOLUME_ERROR:
             return SI([]);
         default:
