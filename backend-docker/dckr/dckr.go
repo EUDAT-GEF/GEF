@@ -25,10 +25,6 @@ type Config struct {
 	Description    string
 }
 
-type tarInputStream struct {
-	*bytes.Buffer
-}
-
 func (c Config) String() string {
 	if c.Endpoint != "" {
 		return fmt.Sprintf("Endpoint: %s -- %s", c.Endpoint, c.Description)
