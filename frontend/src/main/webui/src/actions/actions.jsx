@@ -288,13 +288,11 @@ function fetchJobById(jobId) {
 
 function handleSubmitJob() {
     return function (dispatch, getState) {
-        console.log(getState());
         const selectedService = getState().selectedService;
         const jobCreater = getState().form.JobCreator;
         log("selectedService", selectedService);
         var fd = new FormData();
         fd.append("imageID", selectedService.Image.ID);
-        console.log(jobCreater);
         _.toPairs(jobCreater.values).forEach(([k, v]) => fd.append(k, v));
         const resultPromise = axios.post( apiNames.jobs, fd);
         resultPromise.then(response => {

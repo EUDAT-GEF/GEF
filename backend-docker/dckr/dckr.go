@@ -5,14 +5,10 @@ import (
 	"errors"
 	"fmt"
 	docker "github.com/fsouza/go-dockerclient"
-	//"io/ioutil"
 	"log"
 	"os"
-	//"path/filepath"
 	"strconv"
 	"strings"
-	//"io"
-	//"archive/tar"
 	"archive/tar"
 	"io/ioutil"
 	"io"
@@ -407,9 +403,6 @@ func (c Client) BuildVolume(dirpath string) (Volume, error) {
 		ID:         VolumeID(volume.Name),
 		Mountpoint: VolumeMountpoint(volume.Mountpoint),
 	}
-	//copy all content to volume
-	//log.Println(dirpath, string(ret.Mountpoint))
-	//err = copyDataToVolume(dirpath, string(ret.Mountpoint))
 	return ret, err
 }
 

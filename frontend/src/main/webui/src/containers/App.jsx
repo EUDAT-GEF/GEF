@@ -55,7 +55,6 @@ class App extends React.Component {
                         <Header />
                         <Router history={history}>
                             <Route path='/' component={Main}>
-                                //<Route path='workflows' component={BrowseWorkflowsContainer} />
                                 <Route path='jobs' component={BrowseJobsContainer} >
                                     <Route path=':id' />
                                 </Route>
