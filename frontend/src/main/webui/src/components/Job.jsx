@@ -47,7 +47,7 @@ const Job = ({job}) => {
             <JobRow tag="Description" value={job.Service.Description}/>
             <JobRow tag="Version" value={job.Service.Version}/>
             <div style={styles.jobStyle}></div>
-            <JobRow tag="Status" value={job.Status}/>
+            <JobRow tag="Status" value={job.State.Status}/>
         </div>
     )
 

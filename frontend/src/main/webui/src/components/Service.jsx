@@ -46,13 +46,18 @@ const IOMap = (volumes, {VolumeID, Name, Path}) => (
 );
 
 const JobCreatorForm = (props) => {
+    console.log(props);
     const { handleSubmit, pristine, reset, submitting, volumes, service } = props;
+    console.log("PRISTINE = " + pristine);
+    console.log("SUBMITTING = " + submitting);
     return (
     <form onSubmit={handleSubmit}>
-        <div style={{fontWeight:700}}> Input Mapping </div>
-        {service.Input.map(IOMap.bind(this, volumes))}
-        <div style={{fontWeight:700}}> Output Mapping </div>
-        {service.Output.map(IOMap.bind(this, volumes))}
+        <div>
+            <label>PID</label>
+            <div>
+                <Field name="pid" component="input" type="text" placeholder="PID"/>
+            </div>
+        </div>
         <div>
             <button type="submit" onClick={handleSubmit} disabled={pristine || submitting}>Submit</button>
         </div>
@@ -88,7 +93,6 @@ class Service extends React.Component {
                     {tagValueRow("ID", ID)}
                     {tagValueRow("Description", Description)}
                     {tagValueRow("Version", Version)}
-                    {/*{_.toPairs()}*/}
                     <JobCreator volumes={this.props.volumes} handleSubmit={this.handleSubmit} service={this.props.selectedService.Service}/>
                     <div style={{height: "1em"}}></div>
                 </div>

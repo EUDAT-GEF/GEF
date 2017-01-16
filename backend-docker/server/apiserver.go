@@ -307,7 +307,6 @@ func (s *Server) buildVolumeHandler(w http.ResponseWriter, r *http.Request) {
 	pidList = append(pidList, "wget https://b2share.eudat.eu/record/157/files/TenReasonsToSwitchFromMauiToMoab2012-01-05.pdf?version=1 -P /root/volume")
 	pidList = append(pidList, "ls -l /root/volume/")
 
-
 	// STEP 2: create a bash script that downloads those files
 	dScriptPath := filepath.Join(buildDir, "downloader.sh")
 	dScriptFile, err := os.Create(dScriptPath)
@@ -418,7 +417,6 @@ func (s *Server) listServicesHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	services := make([]Service, len(images), len(images))
 	for i, img := range images {
-		// fmt.Println("list serv handler: ", img)
 		services[i] = extractServiceInfo(img)
 	}
 	Response{w}.Ok(jmap("Images", images, "Services", services))
@@ -443,6 +441,8 @@ func (s *Server) executeServiceHandler(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		imageID = vars["imageID"]
 	}
+
+	imageID = strings.Replace(imageID, "sha256:", "", 1) // removing sha256 prefix
 	if imageID == "" {
 		Response{w}.ServerNewError("execute docker image: imageID required")
 		return
@@ -461,8 +461,7 @@ func (s *Server) executeServiceHandler(w http.ResponseWriter, r *http.Request) {
 	logParam("binds", strings.Join(binds, " : "))
 
 	containerID, err := s.docker.ExecuteImage(dckr.ImageID(imageID), binds)
-	fmt.Println("EXECUTE")
-	fmt.Println((dckr.ImageID(imageID)))
+
 	if err != nil {
 		Response{w}.ServerError("execute docker image: ", err)
 		return
@@ -476,14 +475,14 @@ func makeBinds(r *http.Request, image dckr.Image) ([]string, error) {
 	svc := extractServiceInfo(image)
 	var binds []string
 	for _, in := range svc.Input {
-		volumeID := r.FormValue(in.ID)
+		volumeID := in.ID
 		if volumeID == "" {
 			return nil, fmt.Errorf("no bind volume for input port: %s", in.Name)
 		}
 		binds = append(binds, fmt.Sprintf("%s:%s:ro", volumeID, in.Path))
 	}
 	for _, out := range svc.Output {
-		volumeID := r.FormValue(out.ID)
+		volumeID := out.ID
 		if volumeID == "" {
 			return nil, fmt.Errorf("no bind volume for output port: %s", out.Name)
 		}
