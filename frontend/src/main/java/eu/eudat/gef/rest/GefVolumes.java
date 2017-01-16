@@ -48,7 +48,7 @@ public class GefVolumes {
 
     @GET
     @Path("{volumeID}")
-    public InputStream inspectJob(@PathParam("volumeID") String volumeID) throws Exception {
+    public InputStream inspectVolume(@PathParam("volumeID") String volumeID) throws Exception {
         return rp.forward(gefDockerVolumesApi + "/" + volumeID, request, response);
     }
 }

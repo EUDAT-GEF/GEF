@@ -143,6 +143,34 @@ function fileUploadError(errorMessage) {
     }
 }
 
+function inspectVolumeStart() {
+    return {
+        type: actionTypes.INSPECT_VOLUME_START
+    }
+}
+
+function inspectVolumeSuccess(data) {
+    return {
+        type: actionTypes.INSPECT_VOLUME_SUCCESS,
+        data: data
+    }
+}
+
+function inspectVolumeEmpty() {
+    return {
+        type: actionTypes.INSPECT_VOLUME_EMPTY,
+        data: []
+    }
+}
+
+function inspectVolumeError(errorMessage) {
+    return {
+        type: actionTypes.INSPECT_VOLUME_ERROR,
+        errorMessage: errorMessage
+    }
+}
+
+
 
 //TODO: catch seems to swallow all of the exceptions, not only the exceptions occurred in fetch
 //async actions
@@ -185,7 +213,6 @@ function fetchService(serviceID) {
         const resultPromise = axios.get( apiNames.services + '/' + serviceID);
         resultPromise.then(response => {
             log('fetched service:', response.data);
-
             dispatch(serviceFetchSuccess(response.data));
         }).catch(err => {
             Alert.error("Cannot fetch service information from the server.");
@@ -206,6 +233,24 @@ function fetchVolumes() {
             Alert.error("Cannot fetch volume information from the server.");
             log("A fetch error occurred");
             dispatch(volumesFetchError(err));
+        })
+    }
+}
+
+export function inspectVolume(volumeId) {
+    return function (dispatch, getState) {
+        dispatch(inspectVolumeStart());
+        const resultPromise = axios.get( apiNames.volumes + '/' + volumeId);
+        if (volumeId == null) {
+            dispatch(inspectVolumeEmpty());
+        }
+        resultPromise.then(response => {
+            log('fetched volume content:', response.data.Volumes);
+            dispatch(inspectVolumeSuccess(response.data))
+        }).catch(err => {
+            Alert.error("Cannot fetch volume content information from the server.");
+            log("A fetch error occurred");
+            dispatch(inspectVolumeError(err));
         })
     }
 }
@@ -286,10 +331,14 @@ export default {
     volumesFetchStart,
     volumesFetchSuccess,
     volumesFetchError,
+    inspectVolumeStart,
+    inspectVolumeSuccess,
+    inspectVolumeError,
     fetchJobs,
     fetchServices,
     fetchService,
     fetchVolumes,
+    inspectVolume,
     showErrorMessageWithTimeout,
     hideErrorMessage,
     fileUploadStart,
