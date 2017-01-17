@@ -36,7 +36,6 @@ class Services extends React.Component {
 
     render() {
         log("The id of selected service is:", this.props.params.id);
-        let notGEFService = null;
 
         return (
             <div>
