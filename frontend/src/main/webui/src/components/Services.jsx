@@ -36,16 +36,21 @@ class Services extends React.Component {
 
     render() {
         log("The id of selected service is:", this.props.params.id);
+
         return (
             <div>
                 <h3>Browse Services</h3>
                 <h4>All Services</h4>
                 <Header/>
                 {_.map(this.props.services, (service) => {
-                    if(service.ID === this.props.params.id)
+                    if(service.ID === this.props.params.id) {
                         return <Service key={service.ID} service={service} fetchService={this.fetchService} selectedService={this.props.selectedService} handleSubmit={this.handleSubmit} volumes={this.props.volumes}/>;
-                    else
-                        return <ServiceRow key={service.ID} service={service}/>;
+                    }
+                    else {
+                        if ((service.Input.length > 0) && (service.Output.length > 0)) { // Show only GEF services
+                            return <ServiceRow key={service.ID} service={service} />;
+                        }
+                    }
 
                 })}
             </div>
