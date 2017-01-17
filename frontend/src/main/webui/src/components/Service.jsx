@@ -46,10 +46,7 @@ const IOMap = (volumes, {VolumeID, Name, Path}) => (
 );
 
 const JobCreatorForm = (props) => {
-    console.log(props);
     const { handleSubmit, pristine, reset, submitting, volumes, service } = props;
-    console.log("PRISTINE = " + pristine);
-    console.log("SUBMITTING = " + submitting);
     return (
     <form onSubmit={handleSubmit}>
         <div>
