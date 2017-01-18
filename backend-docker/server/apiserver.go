@@ -78,33 +78,32 @@ type AllServices struct {
 	cache map[string]dckr.Image
 }
 
-// New returns a pointer to the shared structure
+// NewServices returns a pointer to the shared structure
 func NewServices() *AllServices {
 	return &AllServices{
 		cache: make(map[string]dckr.Image),
 	}
 }
 
-// set writes new information about an image into an array
+// setService writes new information about an image into an array
 func (servicesList *AllServices) setService(key string, values dckr.Image) {
 	servicesList.Lock()
 	defer servicesList.Unlock()
 	servicesList.cache[string(values.ID)] = values
 }
 
-// getAll returns a list of all services available
+// getAllServices returns a list of all services available
 func (servicesList *AllServices) getAllServices() []dckr.Image {
 	var allImages []dckr.Image
 	servicesList.Lock()
 	defer servicesList.Unlock()
 	for _, img := range servicesList.cache {
 		allImages = append(allImages, img)
-
 	}
 	return allImages
 }
 
-// get returns image info by its id
+// getService returns image info by its id
 func (servicesList *AllServices) getService(key string) dckr.Image {
 	var item dckr.Image
 	servicesList.Lock()
@@ -123,14 +122,14 @@ type AllJobs struct {
 	cache map[string]dckr.Container
 }
 
-// New returns a pointer to the shared structure
+// NewJobs returns a pointer to the shared structure
 func NewJobs() *AllJobs {
 	return &AllJobs{
 		cache: make(map[string]dckr.Container),
 	}
 }
 
-// set writes new information about a job into an array
+// setJob writes new information about a job into an array
 func (jobsList *AllJobs) setJob(key string, values dckr.Container) {
 	jobsList.Lock()
 	defer jobsList.Unlock()
@@ -144,12 +143,11 @@ func (jobsList *AllJobs) getAllJobs() []dckr.Container {
 	defer jobsList.Unlock()
 	for _, img := range jobsList.cache {
 		allContainers = append(allContainers, img)
-
 	}
 	return allContainers
 }
 
-// get returns container info by its id
+// getJob returns container info by its id
 func (jobsList *AllJobs) getJob(key string) dckr.Container {
 	var item dckr.Container
 	jobsList.Lock()
