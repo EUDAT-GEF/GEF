@@ -29,7 +29,7 @@ const Footer = ({version}) => (
                 </ul>
                 <ul className="list-inline pull-right">
                     <li><a target="_blank" href="http://eudat.eu/what-eudat">About EUDAT</a></li>
-                    <li><a href="https://github.com/GEFx">Go to GitHub</a></li>
+                    <li><a href="https://github.com/EUDAT-GEF">Go to GitHub</a></li>
                     <li><a href="mailto:emanuel.dima@uni-tuebingen.de">Contact</a></li>
                 </ul>
             </Col>

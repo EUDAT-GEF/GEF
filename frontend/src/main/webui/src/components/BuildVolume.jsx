@@ -1,7 +1,7 @@
 import React, {PropTypes} from 'react';
 import Files from './Files';
 import axios from 'axios';
-import apiNames from '../utils/GefAPI';
+import apiNames from '../GefAPI';
 import bows from 'bows';
 
 const log = bows('BuildVolume');

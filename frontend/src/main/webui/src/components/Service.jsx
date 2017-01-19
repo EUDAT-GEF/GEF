@@ -3,7 +3,6 @@
  */
 import React, {PropTypes} from 'react';
 import axios from 'axios';
-import apiNames from '../utils/GefAPI';
 import bows from 'bows';
 import _ from 'lodash';
 import {Row, Col, Grid} from 'react-bootstrap';

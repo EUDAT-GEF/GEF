@@ -24,16 +24,10 @@ const ToolNav = () => (
             <LinkContainer to='/services' >
                 <ListGroupItem> Browse Services </ListGroupItem>
             </LinkContainer>
-            <LinkContainer to='/volumes' >
-                <ListGroupItem> Browse Volumes</ListGroupItem>
-            </LinkContainer>
         </ListGroup>
         <ListGroup>
             <LinkContainer to='/buildImage' >
                 <ListGroupItem> Build a Service </ListGroupItem>
-            </LinkContainer>
-            <LinkContainer to='/buildVolume' >
-                <ListGroupItem> Build a Volume</ListGroupItem>
             </LinkContainer>
         </ListGroup>
     </div>

@@ -10,7 +10,7 @@ gefParams:
 
 # use the simple server factory, run on a single port
 server:
-  applicationContextPath: /gef
+  applicationContextPath: /
   type: simple
   connector:
     type: http
@@ -27,4 +27,3 @@ logging:
 
   appenders:
     - type: console
-
