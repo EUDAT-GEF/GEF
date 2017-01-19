@@ -29,7 +29,7 @@ module.exports = {
         contentBase: __dirname+"/../resources/assets",
         historyApiFallback: true,
         proxy: {
-            '/gef/api/**': {
+            '/api/**': {
                 target :'http://localhost:4042',
                 changeOrigin: true,
                 secure: false

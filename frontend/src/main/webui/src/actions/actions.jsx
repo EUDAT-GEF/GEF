@@ -3,10 +3,9 @@
  */
 import _ from 'lodash';
 import actionTypes from './actionTypes';
-import {pageNames} from '../containers/Main';
 import bows from 'bows';
 import axios from 'axios';
-import apiNames from '../utils/GefAPI';
+import apiNames from '../GefAPI';
 import Alert from 'react-s-alert';
 import { push } from 'react-router-redux';
 

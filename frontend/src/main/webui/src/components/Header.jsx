@@ -12,7 +12,7 @@ const Header = () => (
         <Row>
             <Col xs={12} md={3} sm={3}>
                 <div>
-                    <a href="/gef"><img width="232" height="128" src="images/logo.png" alt=""/></a>
+                    <a href="/"><img width="232" height="128" src="images/logo.png" alt=""/></a>
                 </div>
             </Col>
             <Col xs={12} md={9} sm={9}>
