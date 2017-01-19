@@ -37,7 +37,6 @@ const JobRow = ({tag, value}) => (
 
 
 const Job = ({job, title}) => {
-    console.log(job);
     return (
         <div style={{border: "1px solid black"}}>
             <div style={styles.jobStyle}></div>
