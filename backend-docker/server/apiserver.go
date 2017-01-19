@@ -16,6 +16,8 @@ import (
 	"github.com/pborman/uuid"
 	"time"
 	"archive/tar"
+	"sync"
+	"regexp"
 )
 
 const (
@@ -69,6 +71,97 @@ type VolumeItem struct {
 	IsFolder bool
 	Modified time.Time
 }
+
+// AllServices is a shared structure that stores info about all services
+type AllServices struct {
+	sync.Mutex
+	cache map[string]dckr.Image
+}
+
+// NewServices returns a pointer to the shared structure
+func NewServices() *AllServices {
+	return &AllServices{
+		cache: make(map[string]dckr.Image),
+	}
+}
+
+// setService writes new information about an image into an array
+func (servicesList *AllServices) setService(key string, values dckr.Image) {
+	servicesList.Lock()
+	defer servicesList.Unlock()
+	servicesList.cache[string(values.ID)] = values
+}
+
+// getAllServices returns a list of all services available
+func (servicesList *AllServices) getAllServices() []dckr.Image {
+	var allImages []dckr.Image
+	servicesList.Lock()
+	defer servicesList.Unlock()
+	for _, img := range servicesList.cache {
+		allImages = append(allImages, img)
+	}
+	return allImages
+}
+
+// getService returns image info by its id
+func (servicesList *AllServices) getService(key string) dckr.Image {
+	var item dckr.Image
+	servicesList.Lock()
+	defer servicesList.Unlock()
+
+	if len(servicesList.cache) > 0 {
+		item = servicesList.cache[key]
+	}
+	return item
+}
+var serviceStore = NewServices()
+
+// AllJobs is a shared structure that stores info about all jobs
+type AllJobs struct {
+	sync.Mutex
+	cache map[string]dckr.Container
+}
+
+// NewJobs returns a pointer to the shared structure
+func NewJobs() *AllJobs {
+	return &AllJobs{
+		cache: make(map[string]dckr.Container),
+	}
+}
+
+// setJob writes new information about a job into an array
+func (jobsList *AllJobs) setJob(key string, values dckr.Container) {
+	jobsList.Lock()
+	defer jobsList.Unlock()
+	jobsList.cache[string(values.ID)] = values
+}
+
+// getAllJobs returns a list of all jobs available
+func (jobsList *AllJobs) getAllJobs() []dckr.Container {
+	var allContainers []dckr.Container
+	jobsList.Lock()
+	defer jobsList.Unlock()
+	for _, img := range jobsList.cache {
+		allContainers = append(allContainers, img)
+	}
+	return allContainers
+}
+
+// getJob returns container info by its id
+func (jobsList *AllJobs) getJob(key string) dckr.Container {
+	var item dckr.Container
+	jobsList.Lock()
+	defer jobsList.Unlock()
+
+	if len(jobsList.cache) > 0 {
+		item = jobsList.cache[key]
+	}
+	return item
+}
+var jobStore = NewJobs()
+
+
+
 
 // NewServer creates a new Server
 func NewServer(cfg Config, docker dckr.Client) *Server {
@@ -126,6 +219,26 @@ func NewServer(cfg Config, docker dckr.Client) *Server {
 
 // Start starts a new http listener
 func (s *Server) Start() error {
+	// Populate the list of services
+	images, err := s.docker.ListImages()
+	if err != nil {
+		log.Println("list of docker images: ", err)
+	} else {
+		for _, img := range images {
+			serviceStore.setService(string(img.ID), img)
+		}
+	}
+
+	// Populate the list of jobs
+	containers, err := s.docker.ListContainers()
+	if err != nil {
+		log.Println("list all docker containers: ", err)
+	} else {
+		for _, cont := range containers {
+			jobStore.setJob(string(cont.ID), cont)
+		}
+	}
+
 	return s.Server.ListenAndServe()
 }
 
@@ -290,6 +403,10 @@ func (s *Server) buildImageHandler(w http.ResponseWriter, r *http.Request) {
 		Response{w}.ServerError("build docker image: ", err)
 		return
 	}
+
+	// Update the list of services
+	serviceStore.setService(string(image.ID), image)
+
 	Response{w}.Ok(jmap("Image", image, "Service", extractServiceInfo(image)))
 }
 
@@ -410,11 +527,7 @@ func (s *Server) buildVolumeHandler(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) listServicesHandler(w http.ResponseWriter, r *http.Request) {
 	logRequest(r)
-	images, err := s.docker.ListImages()
-	if err != nil {
-		Response{w}.ServerError("list of docker images: ", err)
-		return
-	}
+	images := serviceStore.getAllServices()
 	services := make([]Service, len(images), len(images))
 	for i, img := range images {
 		services[i] = extractServiceInfo(img)
@@ -426,11 +539,7 @@ func (s *Server) inspectServiceHandler(w http.ResponseWriter, r *http.Request) {
 	logRequest(r)
 	vars := mux.Vars(r)
 	imageID := dckr.ImageID(vars["imageID"])
-	image, err := s.docker.InspectImage(imageID)
-	if err != nil {
-		Response{w}.ServerError("inspect docker image: ", err)
-		return
-	}
+	image := serviceStore.getService(string(imageID))
 	Response{w}.Ok(jmap("Image", image, "Service", extractServiceInfo(image)))
 }
 
@@ -467,6 +576,14 @@ func (s *Server) executeServiceHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	loc := apiRootPath + jobsAPIPath + "/" + string(containerID)
+
+	// Update the list of jobs
+	container, err := s.docker.InspectContainer(containerID)
+	if err != nil {
+		Response{w}.ServerError("execute docker image: inspectContainer: ", err)
+	}
+	jobStore.setJob(string(containerID), container)
+
 	Response{w}.Location(loc).Created(jmap("Location", loc, "jobID", containerID))
 }
 
@@ -493,14 +610,19 @@ func makeBinds(r *http.Request, image dckr.Image) ([]string, error) {
 
 func (s *Server) listJobsHandler(w http.ResponseWriter, r *http.Request) {
 	logRequest(r)
-	containers, err := s.docker.ListContainers()
-	if err != nil {
-		Response{w}.ServerError("list all docker containers: ", err)
-		return
-	}
+	re := regexp.MustCompile("(([0-9]+)|([a-zA-Z]+)) ([a-zA-Z]+) ([a-zA-Z]+)")
+	containers := jobStore.getAllJobs()
 	jobs := make([]Job, len(containers), len(containers))
 	for i, c := range containers {
 		jobs[i] = makeJob(c)
+		// Now we need to remove information about time and to slightly change the status message
+		statusMessage := jobs[i].Container.State.Status
+		statusMessage = strings.Replace(statusMessage, "About", "", 1)
+		statusMessage = re.ReplaceAllString(statusMessage, "")
+		statusMessage = strings.Trim(statusMessage, " ")
+		statusMessage = strings.Replace(statusMessage, "Exited", "Finished", 1)
+		jobs[i].Container.State.Status = statusMessage
+
 	}
 	Response{w}.Ok(jmap("Jobs", jobs))
 }
@@ -509,11 +631,7 @@ func (s *Server) inspectJobHandler(w http.ResponseWriter, r *http.Request) {
 	logRequest(r)
 	vars := mux.Vars(r)
 	contID := dckr.ContainerID(vars["jobID"])
-	cont, err := s.docker.InspectContainer(contID)
-	if err != nil {
-		Response{w}.ServerError("inspect docker container: ", err)
-		return
-	}
+	cont := jobStore.getJob(string(contID))
 	Response{w}.Ok(jmap("Job", makeJob(cont)))
 }
 
