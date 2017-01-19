@@ -32,9 +32,6 @@ const ToolNav = () => (
             <LinkContainer to='/buildImage' >
                 <ListGroupItem> Build a Service </ListGroupItem>
             </LinkContainer>
-            <LinkContainer to='/buildVolume' >
-                <ListGroupItem> Build a Volume</ListGroupItem>
-            </LinkContainer>
         </ListGroup>
     </div>
 );

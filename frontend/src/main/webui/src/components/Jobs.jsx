@@ -7,11 +7,10 @@ import Job from './Job'
 
 const log = bows('Jobs');
 
-const JobRow = ({job}) => (
+const JobRow = ({job, title}) => (
     <LinkContainer to={`/jobs/${job.ID}`}>
         <Row>
-            <Col xs={12} sm={4} md={4}>{job.ID}</Col>
-            <Col xs={12} sm={4} md={4}><i className="glyphicon glyphicon-transfer"/>{job.Service.Name}</Col>
+            <Col xs={12} sm={4} md={4}>{title}</Col>
             <Col xs={12} sm={4} md={4}>{job.State.Status}</Col>
         </Row>
     </LinkContainer>
@@ -19,8 +18,7 @@ const JobRow = ({job}) => (
 
 const Header = () => (
     <div className="row table-head">
-        <div className="col-xs-12 col-sm-4">Job ID</div>
-        <div className="col-xs-12 col-sm-4">Service Name</div>
+        <div className="col-xs-12 col-sm-4">Job</div>
         <div className="col-xs-12 col-sm-4">Status</div>
     </div>
 );
@@ -41,10 +39,17 @@ class Jobs extends React.Component {
                 <h4>All jobs</h4>
                 <Header/>
                 {_.map(this.props.jobs, (job) => {
-                    if(job.ID === this.props.params.id) {
-                        return <Job key={job.ID} job={job}/>
-                    } else{
-                        return <JobRow key={job.ID} job={job}/>
+                    let title = "Job from ";
+                    let serviceName = job.Service.Name;
+                    if (serviceName.length == 0) {
+                        serviceName = "Unknown service";
+                    }
+                    title = title + serviceName;
+
+                    if (job.ID === this.props.params.id) {
+                        return <Job key={job.ID} job={job} title={title}/>
+                    } else {
+                        return <JobRow key={job.ID} job={job} title={title}/>
                     }
                 })}
             </div>
