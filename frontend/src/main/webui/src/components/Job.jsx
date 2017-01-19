@@ -36,13 +36,13 @@ const JobRow = ({tag, value}) => (
 );
 
 
-const Job = ({job}) => {
+const Job = ({job, title}) => {
     return (
         <div style={{border: "1px solid black"}}>
             <div style={styles.jobStyle}></div>
             <h4> Selected job</h4>
             <JobRow tag="ID" value={job.ID}/>
-            <JobRow tag="Name" value={job.Service.Name}/>
+            <JobRow tag="Name" value={title}/>
             <JobRow tag="Service ID" value={job.Service.ID}/>
             <JobRow tag="Description" value={job.Service.Description}/>
             <JobRow tag="Version" value={job.Service.Version}/>

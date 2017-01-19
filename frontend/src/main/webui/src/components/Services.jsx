@@ -10,8 +10,8 @@ const log = bows('Servcies');
 const ServiceRow = ({service}) => (
     <LinkContainer to={`/services/${service.ID}`}>
         <Row>
-            <Col xs={12} sm={4} md={4}><i className="glyphicon glyphicon-transfer"/>{service.Name}</Col>
-            <Col xs={12} sm={4} md={4}>{service.ID}</Col>
+            <Col xs={12} sm={4} md={4}>{service.Name}</Col>
+            <Col xs={12} sm={4} md={4}>{service.Description}</Col>
         </Row>
     </LinkContainer>
 );
@@ -19,7 +19,7 @@ const ServiceRow = ({service}) => (
 const Header = () => (
     <div className="row table-head">
         <div className="col-xs-12 col-sm-4">Name</div>
-        <div className="col-xs-12 col-sm-4">ID</div>
+        <div className="col-xs-12 col-sm-4">Description</div>
     </div>
 );
 
