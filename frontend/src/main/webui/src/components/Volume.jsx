@@ -3,10 +3,11 @@
  */
 import React, {PropTypes} from 'react';
 import bows from 'bows';
-import _ from 'lodash';
 import {Row, Col, Table} from 'react-bootstrap';
 import {LinkContainer} from 'react-router-bootstrap'
 import actions from '../actions/actions'
+import {toPairs} from '../utils/utils';
+
 
 const log = bows("Volume");
 
@@ -25,7 +26,7 @@ const volumeRowStyle = {
 
 const Value = ({value}) => {
     if (typeof value === 'object') {
-        _.toPairs(value).map(({k, v}) =>
+        toPairs(value).map(({k, v}) =>
             (
                  <div><dt>{k}</dt><dd>{v}</dd></div>
             ))
@@ -55,7 +56,7 @@ const VolumeFilesTable = ({fileList}) => (
               </tr>
             </thead>
             <tbody>
-                {_.map(fileList, (fileListItem, index) => {
+                {fileList.map((fileListItem, index) => {
                     return <tr key={index}>
                            <td>{index+1}</td>
                            <td>{fileListItem.Name}</td>

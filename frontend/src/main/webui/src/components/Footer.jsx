@@ -1,5 +1,4 @@
 import React from 'react';
-import Radium from 'radium';
 import {PropTypes} from 'react';
 import {Grid, Row, Col} from 'react-bootstrap';
 
@@ -8,7 +7,7 @@ const styles = {
     bottom: 0,
     width: '100%',
     height: 70,   /* Height of the footer */
-    background: '#F7F3E9 url("images/color-line.jpg") repeat-x top left',
+    background: '#F7F3E9 url("/images/color-line.jpg") repeat-x top left',
     padding: '20px 10px 0px 10px',
     fontSize: 12
 };
@@ -17,7 +16,7 @@ const Footer = ({version}) => (
     <Grid style={styles}>
         <Row>
             <Col xs={12} md={6} sm={6}>
-                <p>	<img width="45" height="31" src="images/flag-ce.jpg" style={{float:'left', marginRight:10}}/>
+                <p>	<img width="45" height="31" src="/images/flag-ce.jpg" style={{float:'left', marginRight:10}}/>
                     EUDAT receives funding from the European Union’s Horizon 2020 research
                     and innovation programme under grant agreement No. 654065.&nbsp;
                     <a href="#">Legal Notice</a>.
@@ -41,4 +40,4 @@ Footer.propTypes = {
     version: PropTypes.string.isRequired
 };
 
-export default Radium(Footer);
+export default Footer;

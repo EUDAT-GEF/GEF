@@ -21,7 +21,6 @@
 
 import React, {PropTypes} from 'react';
 import bows from 'bows';
-import _ from 'lodash';
 
 const Workflow = () => (
     <div>Not implemented yet</div>

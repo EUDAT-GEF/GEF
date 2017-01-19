@@ -1,5 +1,4 @@
 import React from 'react';
-import Radium from 'radium';
 import {PropTypes} from 'react';
 
 const NotFound = () => (
