@@ -9,12 +9,6 @@ import {ListGroup, ListGroupItem} from 'react-bootstrap'
 import {LinkContainer} from 'react-router-bootstrap'
 
 
-const pageNames = {
-    browseJobs : 'Browse Jobs',
-    buildService: 'Build a Service',
-    executeService: 'Execute a Service'
-};
-
 const ToolNav = () => (
     <div>
         <ListGroup>
@@ -68,5 +62,4 @@ const MainContainer = connect(mapStateToProps, mapDispatchToProps)(
     Main
 );
 
-export {pageNames};
 export default MainContainer

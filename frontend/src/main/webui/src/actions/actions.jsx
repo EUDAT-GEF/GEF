@@ -1,13 +1,13 @@
 /**
  * Created by wqiu on 18/08/16.
  */
-import _ from 'lodash';
 import actionTypes from './actionTypes';
 import bows from 'bows';
 import axios from 'axios';
 import apiNames from '../GefAPI';
 import Alert from 'react-s-alert';
 import { push } from 'react-router-redux';
+import { toPairs } from '../utils/utils';
 
 const log = bows('actions');
 //sync actions
@@ -292,7 +292,7 @@ function handleSubmitJob() {
         log("selectedService", selectedService);
         var fd = new FormData();
         fd.append("imageID", selectedService.Image.ID);
-        _.toPairs(jobCreater.values).forEach(([k, v]) => fd.append(k, v));
+        toPairs(jobCreater.values).forEach(([k, v]) => fd.append(k, v));
         const resultPromise = axios.post( apiNames.jobs, fd);
         resultPromise.then(response => {
             Alert.info("Your job has been successfully submitted");

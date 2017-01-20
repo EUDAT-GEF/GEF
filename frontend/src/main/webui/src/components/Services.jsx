@@ -1,6 +1,5 @@
 import React, {PropTypes} from 'react';
 import bows from 'bows';
-import _ from 'lodash';
 import {Row, Col} from 'react-bootstrap';
 import {LinkContainer} from 'react-router-bootstrap'
 import Service from './Service'
@@ -42,7 +41,7 @@ class Services extends React.Component {
                 <h3>Browse Services</h3>
                 <h4>All Services</h4>
                 <Header/>
-                {_.map(this.props.services, (service) => {
+                { this.props.services.map((service) => {
                     if (service.ID === this.props.params.id) {
                         return <Service key={service.ID} service={service} fetchService={this.fetchService} selectedService={this.props.selectedService} handleSubmit={this.handleSubmit} volumes={this.props.volumes}/>;
                     } else {

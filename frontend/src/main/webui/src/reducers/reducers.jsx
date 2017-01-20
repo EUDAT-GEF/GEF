@@ -7,13 +7,6 @@ import actionTypes from '../actions/actionTypes';
 import { reducer as formReducer } from 'redux-form';
 import { syncHistoryWithStore, routerReducer } from 'react-router-redux';
 
-const sampleState = {
-    isFetching : true,
-    services: [],
-    jobs: [],
-    workflows: []
-};
-
 function jobs(state = SI([]), action) {
     switch (action.type) {
         case actionTypes.JOB_FETCH_SUCCESS:

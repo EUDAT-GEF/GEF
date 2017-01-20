@@ -4,7 +4,6 @@
 import React, {PropTypes} from 'react';
 import axios from 'axios';
 import bows from 'bows';
-import _ from 'lodash';
 import {Row, Col, Grid} from 'react-bootstrap';
 import {Field, reduxForm} from 'redux-form';
 // this is a detailed view of a service, user will be able to execute service in this view
@@ -46,27 +45,43 @@ const IOMap = (volumes, {VolumeID, Name, Path}) => (
 
 const JobCreatorForm = (props) => {
     const { handleSubmit, pristine, reset, submitting, volumes, service } = props;
+    const inputStyle = {
+        height: '34px',
+        padding: '6px 12px',
+        fontSize: '14px',
+        lineHeight: '1.42857143',
+        color: '#555',
+        backgroundColor: '#fff',
+        backgroundImage: 'none',
+        border: '1px solid #ccc',
+        borderRadius: '4px',
+    }
     return (
-    <form onSubmit={handleSubmit}>
-        <div>
-            <label>PID</label>
-            <div>
-                <Field name="pid" component="input" type="text" placeholder="PID"/>
-            </div>
-        </div>
-        <div>
-            <button type="submit" onClick={handleSubmit} disabled={pristine || submitting}>Submit</button>
-        </div>
-    </form>
+        <form onSubmit={handleSubmit}>
+            <Row>
+                <Col xs={12} sm={3} md={3} style={{fontWeight:700}}>
+                    PID
+                </Col>
+                <Col xs={12} sm={9} md={9} >
+                    <div className="input-group">
+                        <Field name="pid" component="input" type="text" placeholder="PID"
+                               style={inputStyle}/>
+                    </div>
+                </Col>
+            </Row>
+            <Row style={{marginTop:'1em'}}>
+                <Col xs={12} sm={3} md={3}/>
+                <Col xs={12} sm={9} md={9} >
+                    <button type="submit" className="btn btn-default" onClick={handleSubmit} disabled={pristine || submitting}>Submit</button>
+                </Col>
+            </Row>
+        </form>
     )
 };
 
-const JobCreator = reduxForm(
-    {form: 'JobCreator'}
-)(JobCreatorForm);
+const JobCreator = reduxForm({form: 'JobCreator'} )(JobCreatorForm);
 
 class Service extends React.Component {
-
     constructor(props) {
         super(props);
         this.handleSubmit = this.props.handleSubmit.bind(this);

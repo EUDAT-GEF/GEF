@@ -1,6 +1,5 @@
 import React, {PropTypes} from 'react';
 import bows from 'bows';
-import _ from 'lodash';
 import {Row, Col} from 'react-bootstrap';
 import {LinkContainer} from 'react-router-bootstrap'
 import Volume from './Volume'
@@ -42,7 +41,7 @@ class Volumes extends React.Component {
                 <h3>Browse Volumes</h3>
                 <h4>All Volumes</h4>
                 <Header/>
-                {_.map(this.props.volumes, (volume) => {
+                {this.props.volumes.map((volume) => {
                     //console.log(this.props.selectedVolume);
                     if(volume.ID === this.props.params.id)
                         return <Volume actions={this.props.actions} key={volume.ID} volume={volume} selectedVolume={this.props.selectedVolume}/>;

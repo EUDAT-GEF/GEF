@@ -1,6 +1,5 @@
 import React, {PropTypes} from 'react';
 import bows from 'bows';
-import _ from 'lodash';
 import {Row, Col} from 'react-bootstrap';
 import {LinkContainer} from 'react-router-bootstrap'
 import Job from './Job'
@@ -38,7 +37,7 @@ class Jobs extends React.Component {
                 <h3>Browse Jobs</h3>
                 <h4>All jobs</h4>
                 <Header/>
-                {_.map(this.props.jobs, (job) => {
+                { this.props.jobs.map((job) => {
                     let title = "Job from ";
                     let serviceName = job.Service.Name;
                     if (serviceName.length == 0) {
