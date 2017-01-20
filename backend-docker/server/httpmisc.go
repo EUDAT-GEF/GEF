@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"path"
 
 	"net/http"
 )
@@ -18,12 +19,12 @@ func logRequest(r *http.Request) {
 }
 
 func logParam(name, value string) {
-	log.Println("    ", name, "=", value)
+	log.Println("   ", name, "=", value)
 }
 
 // ServerError sets a 500/server error
 func (w Response) ServerError(message string, err error) {
-	str := fmt.Sprintf("    API Server ERROR: %s :: %s", message, err.Error())
+	str := fmt.Sprintf("    API Server ERROR: %s\n\t%s", message, err.Error())
 	log.Println(str)
 	http.Error(w, str, 500)
 }
@@ -77,7 +78,7 @@ func setCodeAndBody(w Response, code int, body interface{}) {
 	w.WriteHeader(code)
 	w.Write(data)
 	// log.Println("setCodeAndBody:", code, contentType, body)
-	log.Println("    HTTP", code, ",", contentType, ",", len(data), "bytes")
+	log.Println(" -> HTTP", code, ",", contentType, ",", len(data), "bytes")
 }
 
 func jmap(kv ...interface{}) map[string]interface{} {
@@ -107,4 +108,10 @@ func jmap(kv ...interface{}) map[string]interface{} {
 		}
 	}
 	return m
+}
+
+func urljoin(r *http.Request, suffix string) string {
+	url := *(r.URL)
+	url.Path = path.Join(url.Path, suffix)
+	return url.String()
 }
