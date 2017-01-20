@@ -426,7 +426,7 @@ func (c Client) GetTarStream(containerID, filePath string) (io.Reader, error) {
 }
 
 
-func (c Client) UploadSingleFile(containerID, filePath string) (error) {
+func (c Client) UploadSingleFile(containerID, filePath string, dstPath string) (error) {
 	var b bytes.Buffer
 
 	fileHandler, err := os.Stat(filePath)
@@ -457,7 +457,7 @@ func (c Client) UploadSingleFile(containerID, filePath string) (error) {
 	}
 
 	opts := docker.UploadToContainerOptions{
-		Path: "/root/",
+		Path: dstPath,
 		InputStream: &b,
 	}
 

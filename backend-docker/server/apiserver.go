@@ -18,6 +18,7 @@ import (
 	"archive/tar"
 	"sync"
 	"regexp"
+	"bytes"
 )
 
 const (
@@ -39,7 +40,8 @@ const (
 	volumesAPIPath       = "/volumes"
 	buildImagesAPIPath   = "/buildImages"
 	buildVolumesAPIPath  = "/buildVolumes"
-	retrieveFileAPIPath  = "/retrieveFile"
+	downloadFileAPIPath  = "/downloadFile"
+	uploadFileAPIPath    = "/uploadFile"
 
 	tmpDirDefault = "gefdocker"
 	tmpDirPerm    = 0700
@@ -205,7 +207,8 @@ func NewServer(cfg Config, docker dckr.Client) *Server {
 
 	apirouter.HandleFunc(volumesAPIPath, server.listVolumesHandler).Methods("GET")
 	apirouter.HandleFunc(volumesAPIPath+"/{volumeID}", server.inspectVolumeHandler).Methods("GET")
-	apirouter.HandleFunc(retrieveFileAPIPath+"/{containerID}/{filePath}", server.retrieveFileHandler).Methods("GET")
+	apirouter.HandleFunc(downloadFileAPIPath+"/{containerID}", server.downloadFileHandler).Methods("POST")
+	apirouter.HandleFunc(uploadFileAPIPath+"/{containerID}", server.uploadFileHandler).Methods("POST")
 
 	apirouter.HandleFunc(jobsAPIPath, server.executeServiceHandler).Methods("POST")
 	apirouter.HandleFunc(jobsAPIPath, server.listJobsHandler).Methods("GET")
@@ -247,13 +250,12 @@ func (s *Server) infoHandler(w http.ResponseWriter, r *http.Request) {
 	Response{w}.Ok(jmap("version", Version))
 }
 
-func (s *Server) retrieveFileHandler(w http.ResponseWriter, r *http.Request) {
+func (s *Server) downloadFileHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	containerID := string(dckr.ImageID(vars["containerID"]))
-	filePath := string(dckr.ImageID(vars["filePath"]))
+	containerID := vars["containerID"]
+	filePath := r.FormValue("filePath")
 
 	tarStream, err := s.docker.GetTarStream(containerID, filePath)
-
 	if err == nil {
 		tarBallReader := tar.NewReader(tarStream)
 		header, err := tarBallReader.Next()
@@ -280,6 +282,60 @@ func (s *Server) retrieveFileHandler(w http.ResponseWriter, r *http.Request) {
 	} else {
 		http.Error(w, "Cannot access Docker remote API: " + err.Error(), http.StatusBadRequest)
 		return
+	}
+}
+
+func (s *Server) uploadFileHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	containerID := vars["containerID"]
+	dstPath := ""
+
+	mr, err := r.MultipartReader()
+	if err != nil {
+		Response{w}.ServerError("while getting multipart reader ", err)
+		return
+	}
+
+	for {
+		part, err := mr.NextPart()
+		if err == io.EOF {
+			break
+		}
+
+		if part.FormName() == "dstPath" {
+			buf := new(bytes.Buffer)
+			buf.ReadFrom(part)
+			dstPath = buf.String()
+		}
+
+		if part.FileName() == "" {
+			continue
+		}
+		uploadedFilePath := filepath.Join(s.tmpDir, part.FileName())
+		dst, err := os.Create(uploadedFilePath)
+		if err != nil {
+			Response{w}.ServerError("while creating file to save file part ", err)
+			return
+		}
+		defer dst.Close()
+
+		if _, err := io.Copy(dst, part); err != nil {
+			Response{w}.ServerError("while dumping file part ", err)
+			return
+		} else {
+			err = s.docker.UploadSingleFile(containerID, uploadedFilePath, dstPath)
+			if err != nil {
+				http.Error(w, "Cannot upload file into the container: " + err.Error(), http.StatusBadRequest)
+				return
+			} else {
+				err = os.Remove(uploadedFilePath)
+				if err != nil {
+					http.Error(w, "Cannot remove the temporary file: " + err.Error(), http.StatusBadRequest)
+					return
+				}
+			}
+
+		}
 	}
 }
 
