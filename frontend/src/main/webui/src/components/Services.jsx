@@ -4,16 +4,26 @@ import {Row, Col} from 'react-bootstrap';
 import {LinkContainer} from 'react-router-bootstrap'
 import Service from './Service'
 
-const log = bows('Servcies');
+const log = bows('Services');
 
 const ServiceRow = ({service}) => (
     <LinkContainer to={`/services/${service.ID}`}>
-        <Row>
+        <Row style={{marginTop:'0.5em', marginBottom:'0.5em'}}>
             <Col xs={12} sm={4} md={4}>{service.Name}</Col>
             <Col xs={12} sm={4} md={4}>{service.Description}</Col>
         </Row>
     </LinkContainer>
 );
+
+const ImageRow = ({image}) => {
+    const style={color:'#aaa'}
+    return (
+        <Row style={{marginTop:'0.5em', marginBottom:'0.5em'}}>
+            <Col xs={12} sm={4} md={4} style={style}>{image.Name || image.RepoTag}</Col>
+            <Col xs={12} sm={4} md={4} style={style}>{image.Description}</Col>
+        </Row>
+    )
+};
 
 const Header = () => (
     <div className="row table-head">
@@ -45,10 +55,13 @@ class Services extends React.Component {
                     if (service.ID === this.props.params.id) {
                         return <Service key={service.ID} service={service} fetchService={this.fetchService} selectedService={this.props.selectedService} handleSubmit={this.handleSubmit} volumes={this.props.volumes}/>;
                     } else {
-                        if ((service.Input.length > 0) && (service.Output.length > 0)) { // Show only GEF services
-                            return <ServiceRow key={service.ID} service={service} />;
-                        }
+                        const isGef = service.Input.length > 0 && service.Output.length > 0;
+                        return isGef ? <ServiceRow key={service.ID} service={service} /> : false;
                     }
+                })}
+                { this.props.services.map((service) => {
+                    const isGef = service.Input.length > 0 && service.Output.length > 0;
+                    return isGef ? false : <ImageRow key={service.ID} image={service} />;
                 })}
             </div>
         );

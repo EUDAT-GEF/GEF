@@ -50,17 +50,13 @@ class App extends React.Component {
                         <Header />
                         <Router history={history}>
                             <Route path='/' component={Main}>
-                                <Route path='jobs' component={BrowseJobsContainer} >
-                                    <Route path=':id' />
-                                </Route>
-                                <Route path='buildImage' component={BuildServiceContainer} />
+                                <Route path='builds' component={BuildServiceContainer} />
                                 <Route path='services' component={BrowseServicesContainer} >
                                     <Route path=':id' />
                                 </Route>
-                                <Route path='volumes' component={BrowseVolumesContainer} >
+                                <Route path='jobs' component={BrowseJobsContainer} >
                                     <Route path=':id' />
                                 </Route>
-                                <Route path='buildVolume' component={BuildVolumeContainer} />
                                 <Route path='*' component={NotFound} />
                             </Route>
                         </Router>

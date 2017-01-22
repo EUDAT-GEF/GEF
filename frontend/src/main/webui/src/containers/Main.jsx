@@ -12,16 +12,16 @@ import {LinkContainer} from 'react-router-bootstrap'
 const ToolNav = () => (
     <div>
         <ListGroup>
-            <LinkContainer to='/jobs' >
-                <ListGroupItem> Browse Jobs </ListGroupItem>
-            </LinkContainer>
-            <LinkContainer to='/services' >
-                <ListGroupItem> Browse Services </ListGroupItem>
+            <LinkContainer to='/builds' >
+                <ListGroupItem> Build a Service </ListGroupItem>
             </LinkContainer>
         </ListGroup>
         <ListGroup>
-            <LinkContainer to='/buildImage' >
-                <ListGroupItem> Build a Service </ListGroupItem>
+            <LinkContainer to='/services' >
+                <ListGroupItem> Browse Services </ListGroupItem>
+            </LinkContainer>
+            <LinkContainer to='/jobs' >
+                <ListGroupItem> Browse Jobs </ListGroupItem>
             </LinkContainer>
         </ListGroup>
     </div>

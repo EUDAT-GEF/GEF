@@ -305,7 +305,7 @@ export const Files = React.createClass({
 				{ this.state.files.length ?
 					<div className="col-md-3">
 						<button type="submit" className="btn btn-primary" style={{width:'100%'}}>
-							<i className="glyphicon glyphicon-upload"/> Build Image
+							<i className="glyphicon glyphicon-upload"/> Build Service
 						</button>
 					</div> : false }
 			</div>

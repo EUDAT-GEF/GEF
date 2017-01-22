@@ -22,7 +22,7 @@ import java.text.DateFormat;
 public class GefBuildVolumes {
     private static final String gefDockerBuildApi = "buildVolumes";
 
-    private static final org.slf4j.Logger log = LoggerFactory.getLogger(GefBuildImages.class);
+    private static final org.slf4j.Logger log = LoggerFactory.getLogger(GefBuildVolumes.class);
     final static DateFormat dateFormatter = DateFormat.getDateTimeInstance(DateFormat.DEFAULT, DateFormat.SHORT);
 
     ReverseProxy rp;

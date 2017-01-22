@@ -18,8 +18,6 @@ const mapDispatchToProps = (dispatch) => {
     return {
         fetchServices: () => {
             const action = actions.fetchServices();
-            const action2 = actions.fetchVolumes();
-            dispatch(action2);
             dispatch(action);
         },
         fetchService: (serviceID) => {
@@ -28,7 +26,6 @@ const mapDispatchToProps = (dispatch) => {
         },
         handleSubmit: (e) => {
             e.preventDefault();
-            log("handleSubmit called");
             const action = actions.handleSubmitJob();
             dispatch(action);
         }

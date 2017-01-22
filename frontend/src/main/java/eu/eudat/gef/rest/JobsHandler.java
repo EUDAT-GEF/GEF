@@ -15,10 +15,10 @@ import org.slf4j.LoggerFactory;
  * @author edima
  */
 @Path("jobs")
-public class GefJobs {
-	private static final String gefDockerJobsApi = "jobs";
+public class JobsHandler {
+	private static final String apiUrl = "jobs";
 
-	private static final org.slf4j.Logger log = LoggerFactory.getLogger(GefJobs.class);
+	private static final org.slf4j.Logger log = LoggerFactory.getLogger(JobsHandler.class);
 	final static DateFormat dateFormatter = DateFormat.getDateTimeInstance(DateFormat.DEFAULT, DateFormat.SHORT);
 
 	ReverseProxy rp;
@@ -27,23 +27,23 @@ public class GefJobs {
 	@Context
 	HttpServletResponse response;
 
-	public GefJobs() throws MalformedURLException {
+	public JobsHandler() throws MalformedURLException {
 		rp = new ReverseProxy(GEF.getInstance().config.gefParams.gefDocker);
 	}
 
 	@POST
 	public InputStream postJob() throws Exception {
-		return rp.forward(gefDockerJobsApi, request, response);
+		return rp.forward(apiUrl, request, response);
 	}
 
 	@GET
 	public InputStream listJobs() throws Exception {
-		return rp.forward(gefDockerJobsApi, request, response);
+		return rp.forward(apiUrl, request, response);
 	}
 
 	@GET
 	@Path("{jobID}")
 	public InputStream inspectJob(@PathParam("jobID") String jobID) throws Exception {
-		return rp.forward(gefDockerJobsApi + "/" + jobID, request, response);
+		return rp.forward(apiUrl + "/" + jobID, request, response);
 	}
 }

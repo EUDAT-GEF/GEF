@@ -15,11 +15,11 @@ import org.slf4j.LoggerFactory;
 /**
  * @author edima
  */
-@Path("buildImages")
-public class GefBuildImages {
-	private static final String gefDockerBuildApi = "buildImages";
+@Path("builds")
+public class BuildsHandler {
+	private static final String apiUrl = "builds";
 
-	private static final org.slf4j.Logger log = LoggerFactory.getLogger(GefBuildImages.class);
+	private static final org.slf4j.Logger log = LoggerFactory.getLogger(BuildsHandler.class);
 	final static DateFormat dateFormatter = DateFormat.getDateTimeInstance(DateFormat.DEFAULT, DateFormat.SHORT);
 
 	ReverseProxy rp;
@@ -28,19 +28,19 @@ public class GefBuildImages {
 	@Context
 	HttpServletResponse response;
 
-	public GefBuildImages() throws MalformedURLException {
+	public BuildsHandler() throws MalformedURLException {
 		rp = new ReverseProxy(GEF.getInstance().config.gefParams.gefDocker);
 	}
 
 	@POST
 	public InputStream newBuild() throws Exception {
-		return rp.forward(gefDockerBuildApi, request, response);
+		return rp.forward(apiUrl, request, response);
 	}
 
 	@POST
 	@Path("{buildID}")
 	@Consumes(MediaType.MULTIPART_FORM_DATA)
 	public InputStream doBuild(@PathParam("buildID") String buildID) throws Exception {
-		return rp.forward(gefDockerBuildApi + "/" + buildID, request, response);
+		return rp.forward(apiUrl + "/" + buildID, request, response);
 	}
 }

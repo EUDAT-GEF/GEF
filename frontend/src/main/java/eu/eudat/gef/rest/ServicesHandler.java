@@ -14,11 +14,11 @@ import org.slf4j.LoggerFactory;
 /**
  * @author edima
  */
-@Path("images")
-public class GefImages {
-	private static final String gefDockerImagesApi = "images";
+@Path("services")
+public class ServicesHandler {
+	private static final String apiUrl = "services";
 
-	private static final org.slf4j.Logger log = LoggerFactory.getLogger(GefImages.class);
+	private static final org.slf4j.Logger log = LoggerFactory.getLogger(ServicesHandler.class);
 	final static DateFormat dateFormatter = DateFormat.getDateTimeInstance(DateFormat.DEFAULT, DateFormat.SHORT);
 
 	ReverseProxy rp;
@@ -27,18 +27,18 @@ public class GefImages {
 	@Context
 	HttpServletResponse response;
 
-	public GefImages() throws MalformedURLException {
+	public ServicesHandler() throws MalformedURLException {
 		rp = new ReverseProxy(GEF.getInstance().config.gefParams.gefDocker);
 	}
 
 	@GET
 	public InputStream listImages() throws Exception {
-		return rp.forward(gefDockerImagesApi, request, response);
+		return rp.forward(apiUrl, request, response);
 	}
 
 	@GET
 	@Path("{imageID}")
 	public InputStream inspectImage(@PathParam("imageID") String imageID) throws Exception {
-		return rp.forward(gefDockerImagesApi + "/" + imageID, request, response);
+		return rp.forward(apiUrl + "/" + imageID, request, response);
 	}
 }

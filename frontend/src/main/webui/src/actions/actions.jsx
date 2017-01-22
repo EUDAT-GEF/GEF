@@ -255,10 +255,10 @@ export function inspectVolume(volumeId) {
 }
 
 //this creates a new upload endpoint on the server,
-//the upload endpoint can be used for both volume constructing or image building
+//the upload endpoint can be used for building services and volumes
 function getNewUploadEndpoint() {
     return function (dispatch, getState) {
-        const resultPromise = axios.get( apiNames.buildImages);
+        const resultPromise = axios.get( apiNames.builds);
         resultPromise.then(response => {
             const buildID = response.data.buildID;
             log('Preapred a new buildID', buildID);
@@ -291,7 +291,7 @@ function handleSubmitJob() {
         const jobCreater = getState().form.JobCreator;
         log("selectedService", selectedService);
         var fd = new FormData();
-        fd.append("imageID", selectedService.Image.ID);
+        fd.append("serviceID", selectedService.Service.ID);
         toPairs(jobCreater.values).forEach(([k, v]) => fd.append(k, v));
         const resultPromise = axios.post( apiNames.jobs, fd);
         resultPromise.then(response => {
