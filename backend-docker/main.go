@@ -3,9 +3,10 @@ package main
 import (
 	"flag"
 	"log"
-	"github.com/EUDAT-GEF/GEF/backend-docker/dckr"
+
+	"github.com/EUDAT-GEF/GEF/backend-docker/def"
+	"github.com/EUDAT-GEF/GEF/backend-docker/pier"
 	"github.com/EUDAT-GEF/GEF/backend-docker/server"
-	"github.com/EUDAT-GEF/GEF/backend-docker/config"
 )
 
 var configFilePath = "config.json"
@@ -14,27 +15,25 @@ func main() {
 	flag.StringVar(&configFilePath, "config", configFilePath, "configuration file")
 	flag.Parse()
 
-
-	settings, err := config.ReadConfigFile(configFilePath)
+	config, err := def.ReadConfigFile(configFilePath)
 	if err != nil {
-		log.Fatal("FATAL while reading config files: ", err)
-	}
-	if len(settings.Docker) == 0 {
-		log.Fatal("FATAL: empty docker configuration list:\n", settings)
+		log.Fatal("FATAL: ", err)
 	}
 
-	client, err := dckr.NewClientFirstOf(settings.Docker)
+	var p *pier.Pier
+	p, err = pier.NewPier(config.Docker, config.TmpDir)
 	if err != nil {
-		log.Print(err)
-		log.Fatal("Failed to make any docker client, exiting")
+		log.Fatal("FATAL: ", def.Err(err, "Cannot create Pier"))
 	}
 
-	server := server.NewServer(settings.Server, client)
-	log.Println("Starting GEF server at: ", settings.Server.Address)
+	server, err := server.NewServer(config.Server, p, config.TmpDir)
+	if err != nil {
+		log.Fatal("FATAL: ", def.Err(err, "Cannot create API server"))
+	}
+
+	log.Println("Starting GEF server at: ", config.Server.Address)
 	err = server.Start()
 	if err != nil {
-		log.Println("GEF server failed: ", err)
+		log.Fatal("FATAL: ", def.Err(err, "Cannot start API server"))
 	}
 }
-
-

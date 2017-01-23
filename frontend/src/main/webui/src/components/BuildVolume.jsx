@@ -20,12 +20,12 @@ class BuildVolume extends React.Component {
     getApiURL(){
         // log("ApiURL get called");
         // log("buildID is", this.state.buildID);
-        return apiNames.buildVolumes + '/' + this.state.buildID;
+        return apiNames.builds + '/' + this.state.buildID;
     }
 
 
     componentWillMount() {
-        const resultPromise = axios.post(apiNames.buildImages);
+        const resultPromise = axios.post(apiNames.builds);
         resultPromise.then(response => {
             this.setState({buildID : response.data.buildID});
             log('New service URL:', this.state.buildID);
