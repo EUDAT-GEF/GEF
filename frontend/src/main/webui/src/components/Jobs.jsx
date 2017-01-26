@@ -48,7 +48,11 @@ class Jobs extends React.Component {
                         }
                     }
                     if (service != null) {
-                        title = title + service.Name;
+                        if (service.Name.length == 0) {
+                            title = title + "Unknown service";
+                        } else {
+                            title = title + service.Name;
+                        }
                     }
 
                     if (job.ID === this.props.params.id) {
