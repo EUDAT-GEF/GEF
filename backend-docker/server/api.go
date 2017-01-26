@@ -32,6 +32,11 @@ type Server struct {
 	tmpDir string
 }
 
+type JobListItem struct {
+	Item pier.Job
+	Title string
+}
+
 // NewServer creates a new Server
 func NewServer(cfg def.ServerConfig, pier *pier.Pier, tmpDir string) (*Server, error) {
 	tmpDir, err := def.MakeTmpDir(tmpDir)

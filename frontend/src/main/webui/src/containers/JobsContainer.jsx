@@ -6,7 +6,8 @@ import {connect} from 'react-redux';
 
 const mapStateToProps = (state) => {
     return {
-        jobs: state.jobs
+        jobs: state.jobs,
+        services: state.services
     };
 };
 
@@ -14,6 +15,10 @@ const mapDispatchToProps = (dispatch) => {
     return {
         fetchJobs: () => {
                 const action = actions.fetchJobs();
+                dispatch(action);
+        },
+        fetchServices: () => {
+                const action = actions.fetchServices();
                 dispatch(action);
         }
     };
