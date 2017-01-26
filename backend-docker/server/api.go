@@ -1,7 +1,6 @@
 package server
 
 import (
-	// "fmt"
 	"io"
 	"net/http"
 	"os"
@@ -30,11 +29,6 @@ type Server struct {
 	Server http.Server
 	pier   *pier.Pier
 	tmpDir string
-}
-
-type JobListItem struct {
-	Item pier.Job
-	Title string
 }
 
 // NewServer creates a new Server

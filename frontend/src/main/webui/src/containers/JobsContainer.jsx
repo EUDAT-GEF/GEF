@@ -1,8 +1,6 @@
 import Jobs from '../components/Jobs';
 import actions from '../actions/actions';
-
 import {connect} from 'react-redux';
-
 
 const mapStateToProps = (state) => {
     return {
@@ -23,7 +21,6 @@ const mapDispatchToProps = (dispatch) => {
         }
     };
 };
-
 
 const JobsContainer = connect(mapStateToProps, mapDispatchToProps)(
    Jobs

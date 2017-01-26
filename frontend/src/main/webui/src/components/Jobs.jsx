@@ -33,26 +33,15 @@ class Jobs extends React.Component {
     }
 
     render() {
-        //console.log(this.props);
         return (
             <div>
                 <h3>Browse Jobs</h3>
                 <h4>All jobs</h4>
                 <Header/>
-
                 { this.props.jobs.map((job) => {
                     let title = "Job from ";
-                    //let serviceName = job.Title;
-                    //if (serviceName.length == 0) {
-                    //    serviceName = "Unknown service";
-                    //}
-                    //title = title + serviceName;
-                    //title = "Title";
                     let service = null;
-                     console.log(this.props.services);
-                    //console.log( this.props);
                     for (var i = 0; i < this.props.services.length; ++i) {
-                        console.log(this.props.services[i]);
                         if (job.ServiceID == this.props.services[i].ID) {
                             service = this.props.services[i];
                             break;
@@ -63,7 +52,7 @@ class Jobs extends React.Component {
                     }
 
                     if (job.ID === this.props.params.id) {
-                        return <Job key={job.ID} job={job} service={service}/>
+                        return <Job key={job.ID} job={job} service={service} title={title}/>
                     } else {
                         return <JobRow key={job.ID} job={job} title={title}/>
                     }
@@ -71,7 +60,6 @@ class Jobs extends React.Component {
             </div>
         );
     }
-
 }
 
 Jobs.propTypes = {
