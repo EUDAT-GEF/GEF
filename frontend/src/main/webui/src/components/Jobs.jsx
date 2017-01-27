@@ -10,7 +10,7 @@ const JobRow = ({job, title}) => (
     <LinkContainer to={`/jobs/${job.ID}`}>
         <Row>
             <Col xs={12} sm={4} md={4}>{title}</Col>
-            <Col xs={12} sm={4} md={4}>{job.State.Status}</Col>
+            <Col xs={12} sm={4} md={4}>{job.Status}</Col>
         </Row>
     </LinkContainer>
 );
@@ -29,6 +29,7 @@ class Jobs extends React.Component {
 
     componentDidMount() {
         this.props.fetchJobs();
+        this.props.fetchServices();
     }
 
     render() {
@@ -39,14 +40,23 @@ class Jobs extends React.Component {
                 <Header/>
                 { this.props.jobs.map((job) => {
                     let title = "Job from ";
-                    let serviceName = job.Service.Name;
-                    if (serviceName.length == 0) {
-                        serviceName = "Unknown service";
+                    let service = null;
+                    for (var i = 0; i < this.props.services.length; ++i) {
+                        if (job.ServiceID == this.props.services[i].ID) {
+                            service = this.props.services[i];
+                            break;
+                        }
                     }
-                    title = title + serviceName;
+                    if (service != null) {
+                        if (service.Name.length == 0) {
+                            title = title + "Unknown service";
+                        } else {
+                            title = title + service.Name;
+                        }
+                    }
 
                     if (job.ID === this.props.params.id) {
-                        return <Job key={job.ID} job={job} title={title}/>
+                        return <Job key={job.ID} job={job} service={service} title={title}/>
                     } else {
                         return <JobRow key={job.ID} job={job} title={title}/>
                     }
@@ -54,12 +64,13 @@ class Jobs extends React.Component {
             </div>
         );
     }
-
 }
 
 Jobs.propTypes = {
     jobs: PropTypes.array.isRequired,
     fetchJobs: PropTypes.func.isRequired,
+    services: PropTypes.array.isRequired,
+    fetchServices: PropTypes.func.isRequired,
     jobID: PropTypes.string
 };
 

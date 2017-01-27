@@ -21,20 +21,18 @@ const JobRow = ({tag, value, style}) => (
     </Row>
 );
 
-
-const Job = ({job, title}) => {
+const Job = ({job, service, title}) => {
     return (
         <div style={{border: "1px solid black"}}>
             <h4> Selected job</h4>
             <JobRow tag="ID" value={job.ID}/>
             <JobRow tag="Name" value={title}/>
-            <JobRow tag="Service ID" value={job.Service.ID}/>
-            <JobRow tag="Description" value={job.Service.Description}/>
-            <JobRow tag="Version" value={job.Service.Version}/>
-            <JobRow style={{marginTop:'1em'}} tag="Status" value={job.State.Status}/>
+            <JobRow tag="Service ID" value={job.ServiceID}/>
+            <JobRow tag="Description" value={service.Description}/>
+            <JobRow tag="Version" value={service.Version}/>
+            <JobRow style={{marginTop:'1em'}} tag="Status" value={job.Status}/>
         </div>
     )
-
 };
 
 Job.propTypes = {
