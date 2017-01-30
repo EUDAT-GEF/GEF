@@ -4,8 +4,6 @@ import {Row, Col} from 'react-bootstrap';
 import {LinkContainer} from 'react-router-bootstrap'
 import Job from './Job'
 
-const log = bows('Jobs');
-
 const JobRow = ({job, title}) => (
     <LinkContainer to={`/jobs/${job.ID}`}>
         <Row>
@@ -39,7 +37,6 @@ class Jobs extends React.Component {
                 <h4>All jobs</h4>
                 <Header/>
                 { this.props.jobs.map((job) => {
-                    let title = "Job from ";
                     let service = null;
                     for (var i = 0; i < this.props.services.length; ++i) {
                         if (job.ServiceID == this.props.services[i].ID) {
@@ -47,13 +44,9 @@ class Jobs extends React.Component {
                             break;
                         }
                     }
-                    if (service != null) {
-                        if (service.Name.length == 0) {
-                            title = title + "Unknown service";
-                        } else {
-                            title = title + service.Name;
-                        }
-                    }
+                    const serviceName = (service && service.Name && service.Name.length) ? service.Name :
+                        (service && service.ID && service.ID.length) ? service.ID : "unknown service";
+                    const title = "Job from " + serviceName;
 
                     if (job.ID === this.props.params.id) {
                         return <Job key={job.ID} job={job} service={service} title={title}/>

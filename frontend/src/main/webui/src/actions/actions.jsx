@@ -9,7 +9,7 @@ import Alert from 'react-s-alert';
 import { push } from 'react-router-redux';
 import { toPairs } from '../utils/utils';
 
-const log = bows('actions');
+const log = console.log; // bows('actions');
 //sync actions
 //these are just plain action creators
 
@@ -68,22 +68,22 @@ function serviceFetchError(errorMessage) {
     }
 }
 
-function jobsFetchStart() {
+function jobListFetchStart() {
     return {
-        type: actionTypes.JOB_FETCH_START
+        type: actionTypes.JOB_LIST_FETCH_START
     }
 }
 
-function jobsFetchSuccess(jobs) {
+function jobListFetchSuccess(jobs) {
     return {
-        type: actionTypes.JOB_FETCH_SUCCESS,
+        type: actionTypes.JOB_LIST_FETCH_SUCCESS,
         jobs: jobs
     }
 }
 
-function jobsFetchError(errorMessage) {
+function jobListFetchError(errorMessage) {
     return {
-        type: actionTypes.JOB_FETCH_ERROR,
+        type: actionTypes.JOB_LIST_FETCH_ERROR,
         errorMessage: errorMessage
     }
 }
@@ -176,15 +176,15 @@ function inspectVolumeError(errorMessage) {
 //these do some extra async stuff before the real actions are dispatched
 function fetchJobs() {
     return function (dispatch, getState)  {
-        dispatch(jobsFetchStart());
+        dispatch(jobListFetchStart());
         const resultPromise = axios.get( apiNames.jobs);
         resultPromise.then(response => {
             log('fetched jobs:', response.data.Jobs);
-            dispatch(jobsFetchSuccess(response.data.Jobs));
+            dispatch(jobListFetchSuccess(response.data.Jobs));
         }).catch(err => {
             Alert.error("Cannot fetch job information from the server.");
-            log("An fetch error occurred");
-            dispatch(jobsFetchError(err));
+            log("An fetch error occurred", err);
+            dispatch(jobListFetchError(err));
         })
     }
 }
@@ -273,14 +273,14 @@ function getNewUploadEndpoint() {
 
 function fetchJobById(jobId) {
     return function (dispatch, getState)  {
-        dispatch(jobsFetchStart());
+        dispatch(jobListFetchStart());
         const resultPromise = axios.get( apiNames.jobs + '/' + jobId);
         resultPromise.then(response => {
             log('fetched job:', response.data);
             //don't know what to do with it yet
         }).catch(err => {
             log("An fetch error occurred");
-            dispatch(jobsFetchError(err));
+            dispatch(jobListFetchError(err));
         })
     }
 }
@@ -302,7 +302,7 @@ function handleSubmitJob() {
             Alert.error("An error occurred during submitting your job");
             log("An error occurred during creating a job", err);
         });
-        log("submitting current job:", fd)
+        console.log("submitting current job:", fd)
     }
 }
 
@@ -324,9 +324,9 @@ export default {
     serviceFetchStart,
     serviceFetchSuccess,
     serviceFetchError,
-    jobsFetchStart,
-    jobsFetchSuccess,
-    jobsFetchError,
+    jobListFetchStart,
+    jobListFetchSuccess,
+    jobListFetchError,
     volumesFetchStart,
     volumesFetchSuccess,
     volumesFetchError,

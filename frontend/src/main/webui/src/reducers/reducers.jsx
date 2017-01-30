@@ -9,9 +9,9 @@ import { syncHistoryWithStore, routerReducer } from 'react-router-redux';
 
 function jobs(state = SI([]), action) {
     switch (action.type) {
-        case actionTypes.JOB_FETCH_SUCCESS:
+        case actionTypes.JOB_LIST_FETCH_SUCCESS:
             return SI(action.jobs);
-        case actionTypes.JOB_FETCH_ERROR:
+        case actionTypes.JOB_LIST_FETCH_ERROR:
             return SI([]);
         default:
             return state;

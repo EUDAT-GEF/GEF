@@ -4,8 +4,6 @@ import {Row, Col} from 'react-bootstrap';
 import {LinkContainer} from 'react-router-bootstrap'
 import Service from './Service'
 
-const log = bows('Services');
-
 const ServiceRow = ({service}) => (
     <LinkContainer to={`/services/${service.ID}`}>
         <Row style={{marginTop:'0.5em', marginBottom:'0.5em'}}>
@@ -44,7 +42,7 @@ class Services extends React.Component {
     }
 
     render() {
-        log("The id of selected service is:", this.props.params.id);
+        console.log("The id of selected service is:", this.props.params.id);
 
         return (
             <div>
