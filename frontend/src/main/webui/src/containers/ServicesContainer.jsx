@@ -4,8 +4,6 @@ import bows from 'bows';
 
 import {connect} from 'react-redux';
 
-const log = bows("ServiceContainer");
-
 const mapStateToProps = (state) => {
     return {
         services: state.services,

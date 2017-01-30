@@ -27,10 +27,12 @@ const Job = ({job, service, title}) => {
             <h4> Selected job</h4>
             <JobRow tag="ID" value={job.ID}/>
             <JobRow tag="Name" value={title}/>
+            <JobRow tag="Input" value={job.Input}/>
             <JobRow tag="Service ID" value={job.ServiceID}/>
-            <JobRow tag="Description" value={service.Description}/>
-            <JobRow tag="Version" value={service.Version}/>
-            <JobRow style={{marginTop:'1em'}} tag="Status" value={job.Status}/>
+            <JobRow tag="Service Description" value={service ? service.Description : false}/>
+            <JobRow tag="Service Version" value={service ? service.Version : false}/>
+            <JobRow style={{marginTop:'1em'}} tag="Status" value={job.State.Status}/>
+            <JobRow style={{marginTop:'1em'}} tag="Error" value={job.State.Error}/>
         </div>
     )
 };

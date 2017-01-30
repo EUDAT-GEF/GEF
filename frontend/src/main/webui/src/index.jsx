@@ -17,7 +17,6 @@ import Header from './components/Header'
 import Footer from './components/Footer';
 import NotFound from './components/NotFound';
 
-import BrowseWorkflowsContainer from './containers/WorkflowsContainer';
 import BrowseJobsContainer from './containers/JobsContainer';
 import BuildServiceContainer from './containers/BuildServiceContainer';
 import BrowseServicesContainer from './containers/ServicesContainer';
