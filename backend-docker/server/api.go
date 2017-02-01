@@ -11,6 +11,7 @@ import (
 
 	"github.com/EUDAT-GEF/GEF/backend-docker/def"
 	"github.com/EUDAT-GEF/GEF/backend-docker/pier"
+	"encoding/json"
 )
 
 const (
@@ -292,10 +293,12 @@ func (s *Server) downloadFileHandler(w http.ResponseWriter, r *http.Request) {
 func (s *Server) inspectVolumeHandler(w http.ResponseWriter, r *http.Request) {
 	logRequest(r)
 	vars := mux.Vars(r)
-	err := s.pier.StreamVolumeFileList(pier.VolumeID(vars["volumeID"]), w)
+	volumeFiles, err := s.pier.ListFiles(pier.VolumeID(vars["volumeID"]))
 	if err != nil {
 		Response{w}.ServerError("streaming container files failed", err)
 	}
+	Response{w}.Ok(json.NewEncoder(w).Encode(volumeFiles))
+
 }
 
 func (s *Server) buildVolumeHandler(w http.ResponseWriter, r *http.Request) {

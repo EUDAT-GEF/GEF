@@ -85,6 +85,7 @@ func (p *Pier) GetService(serviceID ServiceID) (Service, error) {
 	return service, nil
 }
 
+
 // RunService exported
 func (p *Pier) RunService(service Service, inputPID string) (Job, error) {
 	job := Job{
@@ -96,15 +97,15 @@ func (p *Pier) RunService(service Service, inputPID string) (Job, error) {
 	}
 	p.jobs.add(job)
 
-	go p.runJob(job, service, inputPID)
+	go p.runJob(&job, service, inputPID)
 
 	return job, nil
 }
 
-func (p *Pier) runJob(job Job, service Service, inputPID string) {
+func (p *Pier) runJob(job *Job, service Service, inputPID string) {
 	inputVolume, err := p.docker.NewVolume()
 	if err != nil {
-		job.SetState(JobState{def.Err(err, "Error while creating new input volume"), "Error"})
+		p.jobs.setState(job.ID, JobState{def.Err(err, "Error while creating new input volume"), "Error"})
 		return
 	}
 	fmt.Println("new input volume created: ", inputVolume)
@@ -115,19 +116,20 @@ func (p *Pier) runJob(job Job, service Service, inputPID string) {
 		exitCode, err := p.docker.ExecuteImage(p.stagingImageID, []string{inputPID}, binds, true)
 		fmt.Println("  staging ended: ", exitCode, ", error: ", err)
 		if err != nil {
-			job.SetState(JobState{def.Err(err, "Data staging failed"), "Error"})
+			p.jobs.setState(job.ID, JobState{def.Err(err, "Data staging failed"), "Error"})
 			return
 		}
 		if exitCode != 0 {
-			msg := fmt.Sprintf("Data staging failed (exitCode = %s)", exitCode)
-			job.SetState(JobState{nil, msg})
+			fmt.Println("EXIT CODE = 1")
+			msg := fmt.Sprintf("Data staging failed (exitCode = %v)", exitCode)
+			p.jobs.setState(job.ID, JobState{nil, msg})
 			return
 		}
 	}
 
 	outputVolume, err := p.docker.NewVolume()
 	if err != nil {
-		job.SetState(JobState{def.Err(err, "Error while creating new output volume"), "Error"})
+		p.jobs.setState(job.ID, JobState{def.Err(err, "Error while creating new output volume"), "Error"})
 		return
 	}
 	fmt.Println("new output volume created: ", inputVolume)
@@ -139,12 +141,14 @@ func (p *Pier) runJob(job Job, service Service, inputPID string) {
 		exitCode, err := p.docker.ExecuteImage(dckr.ImageID(service.imageID), nil, binds, true)
 		fmt.Println("  job ended: ", exitCode, ", error: ", err)
 		if err != nil {
-			job.SetState(JobState{def.Err(err, "Service failed"), "Error"})
+			p.jobs.setState(job.ID, JobState{def.Err(err, "Service failed"), "Error"})
 			return
 		}
 		if exitCode != 0 {
-			msg := fmt.Sprintf("Service failed (exitCode = %s)", exitCode)
-			job.SetState(JobState{nil, msg})
+			fmt.Println("EXIT CODE2 = 1")
+			fmt.Println(outputVolume.ID)
+			msg := fmt.Sprintf("Service failed (exitCode = %v)", exitCode)
+			p.jobs.setState(job.ID, JobState{nil, msg})
 			return
 		}
 	}
@@ -160,6 +164,7 @@ func (p *Pier) ListJobs() []Job {
 // GetJob exported
 func (p *Pier) GetJob(jobID JobID) (Job, error) {
 	job, ok := p.jobs.get(jobID)
+
 	if !ok {
 		return job, def.Err(nil, "not found")
 	}

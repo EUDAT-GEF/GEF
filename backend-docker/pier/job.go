@@ -27,8 +27,9 @@ type JobState struct {
 // JobID exported
 type JobID string
 
-func (job *Job) SetState(state JobState) {
+func (p *Pier) SetState(job Job, state JobState) {
 	// TODO: set this atomically
+
 	job.State = &state
 }
 
@@ -87,4 +88,12 @@ func (jobList *JobList) get(key JobID) (Job, bool) {
 	defer jobList.Unlock()
 	job, ok := jobList.cache[key]
 	return job, ok
+}
+
+func (jobList *JobList) setState(jobID JobID, state JobState) {
+	jobList.Lock()
+	defer jobList.Unlock()
+	job := jobList.cache[jobID]
+	job.State = &state
+	jobList.cache[jobID] = job
 }

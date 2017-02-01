@@ -6,6 +6,7 @@ import (
 
 	"github.com/EUDAT-GEF/GEF/backend-docker/def"
 	"github.com/EUDAT-GEF/GEF/backend-docker/pier"
+	"fmt"
 )
 
 const testPID = "11304/a3d012ca-4e23-425e-9e2a-1e6a195b966f"
@@ -84,7 +85,7 @@ func TestExecution(t *testing.T) {
 	pier, err := pier.NewPier(config.Docker, config.TmpDir)
 	checkMsg(t, err, "creating new pier")
 
-	service, err := pier.BuildService("./docker_clone")
+	service, err := pier.BuildService("./clone_test")
 	checkMsg(t, err, "build service failed")
 	log.Println("built service:", service)
 
@@ -98,11 +99,16 @@ func TestExecution(t *testing.T) {
 		job, err = pier.GetJob(jobid)
 		checkMsg(t, err, "getting job failed")
 	}
-
+	fmt.Println("-----------------")
+	fmt.Println(job.State.Status)
+	fmt.Println(job.State.Error)
+	fmt.Println(string(job.OutputVolume))
+	fmt.Println("-----------------")
 	expect(t, job.State.Error != nil, "job error")
 
 	files, err := pier.ListFiles(job.OutputVolume)
 	checkMsg(t, err, "getting volume failed")
+
 
 	expect(t, len(files) == 1, "bad returned files")
 }

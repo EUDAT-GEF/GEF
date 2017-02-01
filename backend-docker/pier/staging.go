@@ -46,9 +46,10 @@ func (p *Pier) DownStreamContainerFile(containerID string, filePath string, w ht
 	return nil
 }
 
-// StreamVolumeFileList exported
-func (p *Pier) StreamVolumeFileList(volumeID VolumeID, w http.ResponseWriter) error {
+// ListFiles exported
+func (p *Pier) ListFiles(volumeID VolumeID) ([]VolumeItem, error)  {
 	imageID := "eudatgef/volume-filelist"
+	var volumeFileList []VolumeItem
 
 	// Bind the container with the volume
 	volumesToMount := []dckr.VolBind{
@@ -58,25 +59,26 @@ func (p *Pier) StreamVolumeFileList(volumeID VolumeID, w http.ResponseWriter) er
 	// Execute our image (it should produce a JSON file with the list of files)
 	containerID, err := p.docker.StartImage(dckr.ImageID(imageID), nil, volumesToMount)
 	if err != nil {
-		return def.Err(err, "running image failed")
+		return volumeFileList, def.Err(err, "running image failed")
 	}
 
 	// Reading the JSON file
-	volumeFiles, err := p.readJSON(string(containerID), "/root/_filelist.json")
+	volumeFileList, err = p.readJSON(string(containerID), "/root/_filelist.json")
 	if err != nil {
-		return def.Err(err, "readJson failed")
+		return volumeFileList, def.Err(err, "readJson failed")
 	}
 
 	// Killing the container
 	_, err = p.docker.WaitContainer(containerID, true)
 	if err != nil {
-		return def.Err(err, "waiting for container to end failed")
+		return volumeFileList, def.Err(err, "waiting for container to end failed")
 	}
 
-	json.NewEncoder(w).Encode(volumeFiles)
-	return nil
+	//json.NewEncoder(w).Encode(volumeFiles)
+	return volumeFileList, err
 }
 
+// readJSON reads a JSON file with the list of files (in a volume) from a container
 func (p *Pier) readJSON(containerID string, filePath string) ([]VolumeItem, error) {
 	var volumeFileList []VolumeItem
 	tarStream, err := p.docker.GetTarStream(containerID, filePath)

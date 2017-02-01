@@ -297,11 +297,12 @@ func (c Client) StartImage(id ImageID, cmdArgs []string, binds []VolBind) (Conta
 func (c Client) ExecuteImage(id ImageID, cmdArgs []string, binds []VolBind, removeOnExit bool) (int, error) {
 	containerID, err := c.StartImage(id, cmdArgs, binds)
 	if err != nil {
-		return 0, err
-		//return 0, def.Err(err, "StartImage failed")
+		//return 0, err
+		return 0, def.Err(err, "StartImage failed")
 	}
 
-	return c.WaitContainer(containerID, removeOnExit)
+	//return c.WaitContainer(containerID, removeOnExit)
+	return c.WaitContainer(containerID, false)
 }
 
 // DeleteImage removes an image by ID
