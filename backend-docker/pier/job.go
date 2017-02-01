@@ -10,14 +10,27 @@ import (
 
 // Job stores the information about a service execution
 type Job struct {
-	ID          JobID
-	ServiceID   ServiceID
-	containerID dckr.ContainerID
-	Binds       []Bind
-	Status      string
-	Created     time.Time
+	ID           JobID
+	ServiceID    ServiceID
+	Input        string
+	Created      time.Time
+	State        *JobState
+	OutputVolume VolumeID
 }
+
+// JobState export
+type JobState struct {
+	Error  error
+	Status string
+}
+
+// JobID exported
 type JobID string
+
+func (job *Job) SetState(state JobState) {
+	// TODO: set this atomically
+	job.State = &state
+}
 
 type jobArray []Job
 
@@ -43,6 +56,7 @@ type JobList struct {
 	cache map[JobID]Job
 }
 
+// NewJobList exported
 func NewJobList() *JobList {
 	return &JobList{
 		cache: make(map[JobID]Job),
@@ -68,8 +82,9 @@ func (jobList *JobList) list() []Job {
 	return all
 }
 
-func (jobList *JobList) get(key JobID) Job {
+func (jobList *JobList) get(key JobID) (Job, bool) {
 	jobList.Lock()
 	defer jobList.Unlock()
-	return jobList.cache[key]
+	job, ok := jobList.cache[key]
+	return job, ok
 }

@@ -23,6 +23,13 @@ func logParam(name, value string) {
 }
 
 // ServerError sets a 500/server error
+func (w Response) ClientError(message string, err error) {
+	str := fmt.Sprintf("    API Client ERROR: %s\n\t%s", message, err.Error())
+	log.Println(str)
+	http.Error(w, str, 400)
+}
+
+// ServerError sets a 500/server error
 func (w Response) ServerError(message string, err error) {
 	str := fmt.Sprintf("    API Server ERROR: %s\n\t%s", message, err.Error())
 	log.Println(str)

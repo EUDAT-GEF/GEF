@@ -13,7 +13,7 @@ import (
 	"github.com/EUDAT-GEF/GEF/backend-docker/pier/internal/dckr"
 )
 
-// Volume folder content
+// VolumeItem describes a folder content
 type VolumeItem struct {
 	Name     string
 	Size     int64
@@ -21,6 +21,7 @@ type VolumeItem struct {
 	Modified time.Time
 }
 
+// DownStreamContainerFile exported
 func (p *Pier) DownStreamContainerFile(containerID string, filePath string, w http.ResponseWriter) error {
 	tarStream, err := p.docker.GetTarStream(containerID, filePath)
 	if err != nil {
@@ -45,14 +46,17 @@ func (p *Pier) DownStreamContainerFile(containerID string, filePath string, w ht
 	return nil
 }
 
-func (p *Pier) StreamVolumeFileList(volumeID string, w http.ResponseWriter) error {
+// StreamVolumeFileList exported
+func (p *Pier) StreamVolumeFileList(volumeID VolumeID, w http.ResponseWriter) error {
 	imageID := "eudatgef/volume-filelist"
 
 	// Bind the container with the volume
-	volumesToMount := []string{volumeID + ":/root/volume"}
+	volumesToMount := []dckr.VolBind{
+		dckr.VolBind{dckr.VolumeID(volumeID), "/root/volume", false},
+	}
 
 	// Execute our image (it should produce a JSON file with the list of files)
-	containerID, err := p.docker.ExecuteImage(dckr.ImageID(imageID), volumesToMount)
+	containerID, err := p.docker.StartImage(dckr.ImageID(imageID), nil, volumesToMount)
 	if err != nil {
 		return def.Err(err, "running image failed")
 	}
@@ -94,6 +98,7 @@ func (p *Pier) readJSON(containerID string, filePath string) ([]VolumeItem, erro
 
 ////////
 
+// BuildVolume exported
 func (p *Pier) BuildVolume(pid string) {
 	// TODO
 	log.Println("BuildVolume: not implemented")

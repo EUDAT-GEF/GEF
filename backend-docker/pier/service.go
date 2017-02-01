@@ -30,6 +30,8 @@ type Service struct {
 	Input       []IOPort
 	Output      []IOPort
 }
+
+// ServiceID exported
 type ServiceID string
 
 // IOPort is an i/o specification for a service
@@ -59,6 +61,7 @@ type ServiceList struct {
 	cache map[ServiceID]Service
 }
 
+// NewServiceList exportedk
 func NewServiceList() *ServiceList {
 	return &ServiceList{
 		cache: make(map[ServiceID]Service),
@@ -85,10 +88,12 @@ func (serviceList *ServiceList) list() []Service {
 	return all
 }
 
-func (serviceList *ServiceList) get(key ServiceID) Service {
+func (serviceList *ServiceList) get(key ServiceID) (Service, bool) {
 	serviceList.Lock()
 	defer serviceList.Unlock()
-	return serviceList.cache[key]
+	service, ok := serviceList.cache[key]
+	return service, ok
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////

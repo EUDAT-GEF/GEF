@@ -1,9 +1,8 @@
 package pier
 
 import (
+	"fmt"
 	"log"
-	"regexp"
-	"strings"
 	"time"
 
 	"github.com/pborman/uuid"
@@ -12,14 +11,21 @@ import (
 	"github.com/EUDAT-GEF/GEF/backend-docker/pier/internal/dckr"
 )
 
+const stagingVolumeName = "Volume Stage In"
+
 // Pier is a master struct for gef-docker abstractions
 type Pier struct {
-	docker   dckr.Client
-	services *ServiceList
-	jobs     *JobList
-	tmpDir   string
+	docker         dckr.Client
+	services       *ServiceList
+	jobs           *JobList
+	tmpDir         string
+	stagingImageID dckr.ImageID
 }
 
+// VolumeID exported
+type VolumeID dckr.VolumeID
+
+// NewPier exported
 func NewPier(cfgList []def.DockerConfig, tmpDir string) (*Pier, error) {
 	docker, err := dckr.NewClientFirstOf(cfgList)
 	if err != nil {
@@ -43,9 +49,16 @@ func NewPier(cfgList []def.DockerConfig, tmpDir string) (*Pier, error) {
 		}
 	}
 
+	for _, srv := range pier.services.list() {
+		if srv.Name == stagingVolumeName {
+			pier.stagingImageID = srv.imageID
+		}
+	}
+
 	return &pier, nil
 }
 
+// BuildService exported
 func (p *Pier) BuildService(buildDir string) (Service, error) {
 	image, err := p.docker.BuildImage(buildDir)
 	if err != nil {
@@ -58,59 +71,123 @@ func (p *Pier) BuildService(buildDir string) (Service, error) {
 	return service, nil
 }
 
+// ListServices exported
 func (p *Pier) ListServices() []Service {
 	return p.services.list()
 }
 
-func (p *Pier) GetService(serviceID ServiceID) Service {
-	return p.services.get(serviceID)
+// GetService exported
+func (p *Pier) GetService(serviceID ServiceID) (Service, error) {
+	service, ok := p.services.get(serviceID)
+	if !ok {
+		return service, def.Err(nil, "not found")
+	}
+	return service, nil
 }
 
-func (p *Pier) Run(service Service) (Job, error) {
-	imageID := strings.Replace(string(service.imageID), "sha256:", "", 1)
-	containerID, err := p.docker.ExecuteImage(dckr.ImageID(imageID), nil)
-	if err != nil {
-		return Job{}, def.Err(err, "docker ExecuteImage failed")
-	}
-
+// RunService exported
+func (p *Pier) RunService(service Service, inputPID string) (Job, error) {
 	job := Job{
-		ID:          JobID(uuid.New()),
-		ServiceID:   service.ID,
-		containerID: containerID,
-		Status:      "Created",
-		Created:     time.Now(),
+		ID:        JobID(uuid.New()),
+		ServiceID: service.ID,
+		Created:   time.Now(),
+		Input:     inputPID,
+		State:     &JobState{nil, "Created"},
 	}
 	p.jobs.add(job)
+
+	go p.runJob(job, service, inputPID)
 
 	return job, nil
 }
 
-func (p *Pier) ListJobs() []Job {
-	jobs := p.jobs.list()
-	for i := range jobs {
-		p.updateMessage(&jobs[i])
-	}
-	return jobs
-}
-
-func (p *Pier) GetJob(jobID JobID) Job {
-	job := p.jobs.get(jobID)
-	p.updateMessage(&job)
-	return job
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-var statusRegExp = regexp.MustCompile("(([0-9]+)|([a-zA-Z]+)) ([a-zA-Z]+) ([a-zA-Z]+)")
-
-func (p *Pier) updateMessage(job *Job) {
-	cont, err := p.docker.InspectContainer(job.containerID)
+func (p *Pier) runJob(job Job, service Service, inputPID string) {
+	inputVolume, err := p.docker.NewVolume()
 	if err != nil {
-		statusMessage := cont.State.Status
-		statusMessage = strings.Replace(statusMessage, "About", "", 1)
-		statusMessage = statusRegExp.ReplaceAllString(statusMessage, "")
-		statusMessage = strings.Trim(statusMessage, " ")
-		statusMessage = strings.Replace(statusMessage, "Exited", "Finished", 1)
-		job.Status = statusMessage
+		job.SetState(JobState{def.Err(err, "Error while creating new input volume"), "Error"})
+		return
 	}
+	fmt.Println("new input volume created: ", inputVolume)
+	{
+		binds := []dckr.VolBind{
+			dckr.VolBind{inputVolume.ID, "/volume", false},
+		}
+		exitCode, err := p.docker.ExecuteImage(p.stagingImageID, []string{inputPID}, binds, true)
+		fmt.Println("  staging ended: ", exitCode, ", error: ", err)
+		if err != nil {
+			job.SetState(JobState{def.Err(err, "Data staging failed"), "Error"})
+			return
+		}
+		if exitCode != 0 {
+			msg := fmt.Sprintf("Data staging failed (exitCode = %s)", exitCode)
+			job.SetState(JobState{nil, msg})
+			return
+		}
+	}
+
+	outputVolume, err := p.docker.NewVolume()
+	if err != nil {
+		job.SetState(JobState{def.Err(err, "Error while creating new output volume"), "Error"})
+		return
+	}
+	fmt.Println("new output volume created: ", inputVolume)
+	{
+		binds := []dckr.VolBind{
+			dckr.VolBind{inputVolume.ID, service.Input[0].Path, true},
+			dckr.VolBind{outputVolume.ID, service.Output[0].Path, false},
+		}
+		exitCode, err := p.docker.ExecuteImage(dckr.ImageID(service.imageID), nil, binds, true)
+		fmt.Println("  job ended: ", exitCode, ", error: ", err)
+		if err != nil {
+			job.SetState(JobState{def.Err(err, "Service failed"), "Error"})
+			return
+		}
+		if exitCode != 0 {
+			msg := fmt.Sprintf("Service failed (exitCode = %s)", exitCode)
+			job.SetState(JobState{nil, msg})
+			return
+		}
+	}
+
+	job.OutputVolume = VolumeID(outputVolume.ID)
 }
+
+// ListJobs exported
+func (p *Pier) ListJobs() []Job {
+	return p.jobs.list()
+}
+
+// GetJob exported
+func (p *Pier) GetJob(jobID JobID) (Job, error) {
+	job, ok := p.jobs.get(jobID)
+	if !ok {
+		return job, def.Err(nil, "not found")
+	}
+	return job, nil
+}
+
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//

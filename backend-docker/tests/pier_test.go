@@ -8,6 +8,8 @@ import (
 	"github.com/EUDAT-GEF/GEF/backend-docker/pier"
 )
 
+const testPID = "11304/a3d012ca-4e23-425e-9e2a-1e6a195b966f"
+
 var configFilePath = "../config.json"
 var config []def.DockerConfig
 
@@ -46,7 +48,7 @@ func TestClient(t *testing.T) {
 		return
 	}
 
-	job, err := pier.Run(service)
+	job, err := pier.RunService(service, "")
 	checkMsg(t, err, "running service failed")
 	log.Println("job: ", job)
 
@@ -67,9 +69,40 @@ func TestClient(t *testing.T) {
 		t.FailNow()
 	}
 
-	j := pier.GetJob(job.ID)
+	j, err := pier.GetJob(job.ID)
+	checkMsg(t, err, "getting job failed")
 	if j.ID != job.ID {
 		t.Error("job retrieval based on id failure")
 		t.FailNow()
 	}
+}
+
+func TestExecution(t *testing.T) {
+	config, err := def.ReadConfigFile(configFilePath)
+	checkMsg(t, err, "reading config files")
+
+	pier, err := pier.NewPier(config.Docker, config.TmpDir)
+	checkMsg(t, err, "creating new pier")
+
+	service, err := pier.BuildService("./docker_clone")
+	checkMsg(t, err, "build service failed")
+	log.Println("built service:", service)
+
+	job, err := pier.RunService(service, testPID)
+	checkMsg(t, err, "running service failed")
+
+	log.Println("job: ", job)
+	jobid := job.ID
+
+	for job.State.Status == "Created" {
+		job, err = pier.GetJob(jobid)
+		checkMsg(t, err, "getting job failed")
+	}
+
+	expect(t, job.State.Error != nil, "job error")
+
+	files, err := pier.ListFiles(job.OutputVolume)
+	checkMsg(t, err, "getting volume failed")
+
+	expect(t, len(files) == 1, "bad returned files")
 }

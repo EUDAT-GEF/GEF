@@ -31,8 +31,7 @@ const Job = ({job, service, title}) => {
             <JobRow tag="Service ID" value={job.ServiceID}/>
             <JobRow tag="Service Description" value={service ? service.Description : false}/>
             <JobRow tag="Service Version" value={service ? service.Version : false}/>
-            <JobRow style={{marginTop:'1em'}} tag="Status" value={job.State.Status}/>
-            <JobRow style={{marginTop:'1em'}} tag="Error" value={job.State.Error}/>
+
         </div>
     )
 };
