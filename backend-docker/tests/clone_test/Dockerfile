@@ -11,4 +11,4 @@ LABEL "eudat.gef.service.input.1.path"="/mydata/input"
 LABEL "eudat.gef.service.output.1.name"="Output Directory"
 LABEL "eudat.gef.service.output.1.path"="/mydata/output"
 
-CMD ["cp", "/mydata/input/*", "/mydata/output/"]
+CMD ["cp", "-r", "/mydata/input/", "/mydata/output/"]

@@ -14,7 +14,7 @@ const testPID = "11304/a3d012ca-4e23-425e-9e2a-1e6a195b966f"
 var configFilePath = "../config.json"
 var config []def.DockerConfig
 
-func TestClient(t *testing.T) {
+func __TestClient(t *testing.T) {
 	config, err := def.ReadConfigFile(configFilePath)
 	checkMsg(t, err, "reading config files")
 
@@ -95,18 +95,23 @@ func TestExecution(t *testing.T) {
 	log.Println("job: ", job)
 	jobid := job.ID
 
+
 	for job.State.Status == "Created" {
 		job, err = pier.GetJob(jobid)
+		fmt.Println(string(job.OutputVolume))
 		checkMsg(t, err, "getting job failed")
 	}
 	fmt.Println("-----------------")
 	fmt.Println(job.State.Status)
 	fmt.Println(job.State.Error)
 	fmt.Println(string(job.OutputVolume))
+	fmt.Println(job.ID)
 	fmt.Println("-----------------")
-	expect(t, job.State.Error != nil, "job error")
+
+	expect(t, job.State.Error == nil, "job error")
 
 	files, err := pier.ListFiles(job.OutputVolume)
+	fmt.Println(err)
 	checkMsg(t, err, "getting volume failed")
 
 

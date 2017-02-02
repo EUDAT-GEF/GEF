@@ -50,6 +50,10 @@ func (p *Pier) DownStreamContainerFile(containerID string, filePath string, w ht
 func (p *Pier) ListFiles(volumeID VolumeID) ([]VolumeItem, error)  {
 	imageID := "eudatgef/volume-filelist"
 	var volumeFileList []VolumeItem
+	var err error
+	if (string(volumeID) == "") {
+		return volumeFileList, def.Err(err, "volume name has not been specified")
+	}
 
 	// Bind the container with the volume
 	volumesToMount := []dckr.VolBind{
@@ -73,6 +77,7 @@ func (p *Pier) ListFiles(volumeID VolumeID) ([]VolumeItem, error)  {
 	if err != nil {
 		return volumeFileList, def.Err(err, "waiting for container to end failed")
 	}
+
 
 	//json.NewEncoder(w).Encode(volumeFiles)
 	return volumeFileList, err

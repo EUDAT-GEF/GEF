@@ -3,11 +3,11 @@ import os.path
 import sys
 import re
 import requests
+from subprocess import call
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
 download_dir = '/volume'
-error_file = '/status/error.txt'
 hdl_prefix = 'http://hdl.handle.net/'
 b2share_prefixes = ['https://b2share.eudat.eu/',
                     'https://trng-b2share.eudat.eu/']
@@ -19,6 +19,7 @@ def main():
         print("Usage: {} PID-or-URL".format(sys.argv[0]))
         exit(1)
 
+    call(["ls", "-l", download_dir])
     kind, url = analyze_and_resolve(sys.argv[1])
     if kind == 'b2share_record':
         for f in list_b2share_record_files(url):
@@ -26,6 +27,8 @@ def main():
             download_file(f['url'], local_filename=f['key'])
     else:
         download_file(url)
+    call(["ls", "-l", download_dir])
+
 
 
 def analyze_and_resolve(url):
@@ -89,8 +92,7 @@ def download_file(url, local_filename=None):
 
 
 def error(msg):
-    with open(error_file, 'w') as f:
-        f.write(msg)
+    println(msg)
     exit(1)
 
 

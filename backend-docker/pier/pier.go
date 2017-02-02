@@ -51,6 +51,7 @@ func NewPier(cfgList []def.DockerConfig, tmpDir string) (*Pier, error) {
 
 	for _, srv := range pier.services.list() {
 		if srv.Name == stagingVolumeName {
+			fmt.Println("using staging image ", srv.imageID)
 			pier.stagingImageID = srv.imageID
 		}
 	}
@@ -98,6 +99,8 @@ func (p *Pier) RunService(service Service, inputPID string) (Job, error) {
 	p.jobs.add(job)
 
 	go p.runJob(&job, service, inputPID)
+	//p.runJob(&job, service, inputPID)
+	//fmt.Println(job.OutputVolume)
 
 	return job, nil
 }
@@ -132,7 +135,9 @@ func (p *Pier) runJob(job *Job, service Service, inputPID string) {
 		p.jobs.setState(job.ID, JobState{def.Err(err, "Error while creating new output volume"), "Error"})
 		return
 	}
-	fmt.Println("new output volume created: ", inputVolume)
+	fmt.Println("new output volume created: ", outputVolume)
+	job.OutputVolume = VolumeID(outputVolume.ID)
+	p.jobs.setOutputVolume(job.ID, VolumeID(outputVolume.ID))
 	{
 		binds := []dckr.VolBind{
 			dckr.VolBind{inputVolume.ID, service.Input[0].Path, true},
@@ -153,7 +158,10 @@ func (p *Pier) runJob(job *Job, service Service, inputPID string) {
 		}
 	}
 
-	job.OutputVolume = VolumeID(outputVolume.ID)
+	p.jobs.setState(job.ID, JobState{nil, "Ended successfully"})
+	//job.OutputVolume = VolumeID(outputVolume.ID)
+	fmt.Println("OUTPUT VOLUME = ")
+	fmt.Println(job.OutputVolume)
 }
 
 // ListJobs exported

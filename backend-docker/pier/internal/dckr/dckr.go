@@ -251,7 +251,7 @@ func (c Client) StartImage(id ImageID, cmdArgs []string, binds []VolBind) (Conta
 	if id == "" {
 		return ContainerID(""), def.Err(nil, "Empty image id")
 	}
-	fmt.Println("inspect image ", id)
+	fmt.Println("START image ", id)
 	img, err := c.c.InspectImage(string(id))
 	if err != nil {
 		return ContainerID(""), def.Err(err, "InspectImage failed")
@@ -264,11 +264,15 @@ func (c Client) StartImage(id ImageID, cmdArgs []string, binds []VolBind) (Conta
 			bs[i] = fmt.Sprintf("%s:ro", bs[i])
 		}
 	}
+	fmt.Println("bindings are: ", bs)
 
 	config := *img.Config
 	for _, arg := range cmdArgs {
 		config.Cmd = append(config.Cmd, arg)
 	}
+
+	config.AttachStdout = true
+	config.AttachStderr = true
 
 	hc := docker.HostConfig{
 		Binds: bs,
@@ -284,14 +288,64 @@ func (c Client) StartImage(id ImageID, cmdArgs []string, binds []VolBind) (Conta
 		return ContainerID(""), def.Err(err, "CreateContainer failed")
 	}
 
+
+
+
+
+
+	attached := make(chan struct{})
+	//r, w := io.Pipe()
+	go func() {
+		//log.Printf("AttachToContainer")
+		//err := c.c.AttachToContainer(docker.AttachToContainerOptions{
+		c.c.AttachToContainer(docker.AttachToContainerOptions{
+			Container:    cont.ID,
+			OutputStream: os.Stdout,
+			ErrorStream:  os.Stderr,
+			Logs:         true,
+			Stdout:       true,
+			Stderr:       true,
+			Stream:       true,
+			Success:      attached,
+		})
+		//log.Printf("~AttachToContainer")
+		// io.Pipe hardwired to never return error here.
+		//_ = w.CloseWithError(err)
+	}()
+
+	<-attached
+	attached <- struct{}{}
+
+
+
 	err = c.c.StartContainer(cont.ID, &hc)
 	if err != nil {
 		c.c.RemoveContainer(docker.RemoveContainerOptions{ID: cont.ID, Force: true})
 		return ContainerID(""), def.Err(err, "StartContainer failed")
 	}
 
+
+	//defer func() {
+	//	err := r.Close()
+		//if err != nil {
+			//log.Printf("r.Close(): %v", err)
+		//}
+	//}()
+
+	//n, err := io.Copy(os.Stdout, r)
+	//log.Printf("io.Copy: %v, %v", n, err)
+
 	return ContainerID(cont.ID), nil
 }
+
+type WriteMonitor struct{ io.Writer }
+
+func (w *WriteMonitor) Write(bs []byte) (int, error) {
+	n, err := w.Writer.Write(bs)
+	log.Printf("Write() (%v, %v)", n, err)
+	return n, err
+}
+
 
 // ExecuteImage takes a docker image, creates a container and executes it, and waits for it to end
 func (c Client) ExecuteImage(id ImageID, cmdArgs []string, binds []VolBind, removeOnExit bool) (int, error) {
