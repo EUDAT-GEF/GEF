@@ -4,8 +4,8 @@ import (
 	"sort"
 	"sync"
 	"time"
-
 	"github.com/EUDAT-GEF/GEF/backend-docker/pier/internal/dckr"
+	"bytes"
 )
 
 // Job stores the information about a service execution
@@ -15,13 +15,23 @@ type Job struct {
 	Input        string
 	Created      time.Time
 	State        *JobState
+	InputVolume  VolumeID
 	OutputVolume VolumeID
+	Tasks        []TaskStatus
 }
 
 // JobState export
 type JobState struct {
 	Error  error
 	Status string
+}
+
+// Task status exported
+type TaskStatus struct {
+	Name string
+	Error error
+	ExitCode int
+	ConsoleOutput *bytes.Buffer
 }
 
 // JobID exported
@@ -103,5 +113,20 @@ func (jobList *JobList) setOutputVolume(jobID JobID, outputVolume VolumeID) {
 	defer jobList.Unlock()
 	job := jobList.cache[jobID]
 	job.OutputVolume = outputVolume
+	jobList.cache[jobID] = job
+}
+
+func (jobList *JobList) addTask(jobID JobID, taskName string, taskError error, taskExitCode int, taskConsoleOutput *bytes.Buffer) {
+	jobList.Lock()
+	defer jobList.Unlock()
+	job := jobList.cache[jobID]
+
+	var newTask TaskStatus
+	newTask.Name = taskName
+	newTask.Error = taskError
+	newTask.ExitCode = taskExitCode
+	newTask.ConsoleOutput = taskConsoleOutput
+	job.Tasks = append(job.Tasks, newTask)
+
 	jobList.cache[jobID] = job
 }

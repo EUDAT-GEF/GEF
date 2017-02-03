@@ -4,9 +4,7 @@ import (
 	"fmt"
 	"log"
 	"time"
-
 	"github.com/pborman/uuid"
-
 	"github.com/EUDAT-GEF/GEF/backend-docker/def"
 	"github.com/EUDAT-GEF/GEF/backend-docker/pier/internal/dckr"
 )
@@ -99,8 +97,6 @@ func (p *Pier) RunService(service Service, inputPID string) (Job, error) {
 	p.jobs.add(job)
 
 	go p.runJob(&job, service, inputPID)
-	//p.runJob(&job, service, inputPID)
-	//fmt.Println(job.OutputVolume)
 
 	return job, nil
 }
@@ -111,19 +107,21 @@ func (p *Pier) runJob(job *Job, service Service, inputPID string) {
 		p.jobs.setState(job.ID, JobState{def.Err(err, "Error while creating new input volume"), "Error"})
 		return
 	}
-	fmt.Println("new input volume created: ", inputVolume)
+	log.Println("new input volume created: ", inputVolume)
+	job.InputVolume = VolumeID(inputVolume.ID)
 	{
 		binds := []dckr.VolBind{
 			dckr.VolBind{inputVolume.ID, "/volume", false},
 		}
-		exitCode, err := p.docker.ExecuteImage(p.stagingImageID, []string{inputPID}, binds, true)
-		fmt.Println("  staging ended: ", exitCode, ", error: ", err)
+		exitCode, consoleOutput, err := p.docker.ExecuteImage(p.stagingImageID, []string{inputPID}, binds, true)
+		p.jobs.addTask(job.ID, "Data staging", err, exitCode, consoleOutput)
+
+		log.Println("  staging ended: ", exitCode, ", error: ", err)
 		if err != nil {
 			p.jobs.setState(job.ID, JobState{def.Err(err, "Data staging failed"), "Error"})
 			return
 		}
 		if exitCode != 0 {
-			fmt.Println("EXIT CODE = 1")
 			msg := fmt.Sprintf("Data staging failed (exitCode = %v)", exitCode)
 			p.jobs.setState(job.ID, JobState{nil, msg})
 			return
@@ -135,7 +133,7 @@ func (p *Pier) runJob(job *Job, service Service, inputPID string) {
 		p.jobs.setState(job.ID, JobState{def.Err(err, "Error while creating new output volume"), "Error"})
 		return
 	}
-	fmt.Println("new output volume created: ", outputVolume)
+	log.Println("new output volume created: ", outputVolume)
 	job.OutputVolume = VolumeID(outputVolume.ID)
 	p.jobs.setOutputVolume(job.ID, VolumeID(outputVolume.ID))
 	{
@@ -143,25 +141,21 @@ func (p *Pier) runJob(job *Job, service Service, inputPID string) {
 			dckr.VolBind{inputVolume.ID, service.Input[0].Path, true},
 			dckr.VolBind{outputVolume.ID, service.Output[0].Path, false},
 		}
-		exitCode, err := p.docker.ExecuteImage(dckr.ImageID(service.imageID), nil, binds, true)
-		fmt.Println("  job ended: ", exitCode, ", error: ", err)
+		exitCode, consoleOutput, err := p.docker.ExecuteImage(dckr.ImageID(service.imageID), nil, binds, true)
+		p.jobs.addTask(job.ID, "Service execution", err, exitCode, consoleOutput)
+
+		log.Println("  job ended: ", exitCode, ", error: ", err)
 		if err != nil {
 			p.jobs.setState(job.ID, JobState{def.Err(err, "Service failed"), "Error"})
 			return
 		}
 		if exitCode != 0 {
-			fmt.Println("EXIT CODE2 = 1")
-			fmt.Println(outputVolume.ID)
 			msg := fmt.Sprintf("Service failed (exitCode = %v)", exitCode)
 			p.jobs.setState(job.ID, JobState{nil, msg})
 			return
 		}
 	}
-
 	p.jobs.setState(job.ID, JobState{nil, "Ended successfully"})
-	//job.OutputVolume = VolumeID(outputVolume.ID)
-	fmt.Println("OUTPUT VOLUME = ")
-	fmt.Println(job.OutputVolume)
 }
 
 // ListJobs exported

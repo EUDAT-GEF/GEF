@@ -50,9 +50,8 @@ func (p *Pier) DownStreamContainerFile(containerID string, filePath string, w ht
 func (p *Pier) ListFiles(volumeID VolumeID) ([]VolumeItem, error)  {
 	imageID := "eudatgef/volume-filelist"
 	var volumeFileList []VolumeItem
-	var err error
 	if (string(volumeID) == "") {
-		return volumeFileList, def.Err(err, "volume name has not been specified")
+		return volumeFileList, def.Err(nil, "volume name has not been specified")
 	}
 
 	// Bind the container with the volume
@@ -61,7 +60,8 @@ func (p *Pier) ListFiles(volumeID VolumeID) ([]VolumeItem, error)  {
 	}
 
 	// Execute our image (it should produce a JSON file with the list of files)
-	containerID, err := p.docker.StartImage(dckr.ImageID(imageID), nil, volumesToMount)
+	containerID, consoleOutput, err := p.docker.StartImage(dckr.ImageID(imageID), nil, volumesToMount)
+
 	if err != nil {
 		return volumeFileList, def.Err(err, "running image failed")
 	}
@@ -73,13 +73,11 @@ func (p *Pier) ListFiles(volumeID VolumeID) ([]VolumeItem, error)  {
 	}
 
 	// Killing the container
-	_, err = p.docker.WaitContainer(containerID, true)
+	_, _, err = p.docker.WaitContainer(containerID, consoleOutput, true)
 	if err != nil {
 		return volumeFileList, def.Err(err, "waiting for container to end failed")
 	}
-
-
-	//json.NewEncoder(w).Encode(volumeFiles)
+	
 	return volumeFileList, err
 }
 

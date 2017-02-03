@@ -247,14 +247,16 @@ func (c *Client) BuildImage(dirpath string) (Image, error) {
 }
 
 // StartImage takes a docker image, creates a container and starts it
-func (c Client) StartImage(id ImageID, cmdArgs []string, binds []VolBind) (ContainerID, error) {
+func (c Client) StartImage(id ImageID, cmdArgs []string, binds []VolBind) (ContainerID, *bytes.Buffer, error) {
+	var stdout bytes.Buffer
+
 	if id == "" {
-		return ContainerID(""), def.Err(nil, "Empty image id")
+		return ContainerID(""), &stdout, def.Err(nil, "Empty image id")
 	}
-	fmt.Println("START image ", id)
+
 	img, err := c.c.InspectImage(string(id))
 	if err != nil {
-		return ContainerID(""), def.Err(err, "InspectImage failed")
+		return ContainerID(""), &stdout, def.Err(err, "InspectImage failed")
 	}
 
 	bs := make([]string, len(binds), len(binds))
@@ -264,7 +266,7 @@ func (c Client) StartImage(id ImageID, cmdArgs []string, binds []VolBind) (Conta
 			bs[i] = fmt.Sprintf("%s:ro", bs[i])
 		}
 	}
-	fmt.Println("bindings are: ", bs)
+	log.Println("bindings are: ", bs)
 
 	config := *img.Config
 	for _, arg := range cmdArgs {
@@ -285,57 +287,33 @@ func (c Client) StartImage(id ImageID, cmdArgs []string, binds []VolBind) (Conta
 
 	cont, err := c.c.CreateContainer(cco)
 	if err != nil {
-		return ContainerID(""), def.Err(err, "CreateContainer failed")
+		return ContainerID(""), &stdout, def.Err(err, "CreateContainer failed")
 	}
 
-
-
-
-
-
 	attached := make(chan struct{})
-	//r, w := io.Pipe()
 	go func() {
-		//log.Printf("AttachToContainer")
-		//err := c.c.AttachToContainer(docker.AttachToContainerOptions{
 		c.c.AttachToContainer(docker.AttachToContainerOptions{
 			Container:    cont.ID,
-			OutputStream: os.Stdout,
-			ErrorStream:  os.Stderr,
+			OutputStream: &stdout,
+			ErrorStream:  &stdout,
 			Logs:         true,
 			Stdout:       true,
 			Stderr:       true,
 			Stream:       true,
 			Success:      attached,
 		})
-		//log.Printf("~AttachToContainer")
-		// io.Pipe hardwired to never return error here.
-		//_ = w.CloseWithError(err)
 	}()
 
 	<-attached
 	attached <- struct{}{}
 
-
-
 	err = c.c.StartContainer(cont.ID, &hc)
 	if err != nil {
 		c.c.RemoveContainer(docker.RemoveContainerOptions{ID: cont.ID, Force: true})
-		return ContainerID(""), def.Err(err, "StartContainer failed")
+		return ContainerID(""), &stdout, def.Err(err, "StartContainer failed")
 	}
 
-
-	//defer func() {
-	//	err := r.Close()
-		//if err != nil {
-			//log.Printf("r.Close(): %v", err)
-		//}
-	//}()
-
-	//n, err := io.Copy(os.Stdout, r)
-	//log.Printf("io.Copy: %v, %v", n, err)
-
-	return ContainerID(cont.ID), nil
+	return ContainerID(cont.ID), &stdout, nil
 }
 
 type WriteMonitor struct{ io.Writer }
@@ -348,15 +326,13 @@ func (w *WriteMonitor) Write(bs []byte) (int, error) {
 
 
 // ExecuteImage takes a docker image, creates a container and executes it, and waits for it to end
-func (c Client) ExecuteImage(id ImageID, cmdArgs []string, binds []VolBind, removeOnExit bool) (int, error) {
-	containerID, err := c.StartImage(id, cmdArgs, binds)
+func (c Client) ExecuteImage(id ImageID, cmdArgs []string, binds []VolBind, removeOnExit bool) (int, *bytes.Buffer, error) {
+	containerID, consoleOutput, err := c.StartImage(id, cmdArgs, binds)
 	if err != nil {
-		//return 0, err
-		return 0, def.Err(err, "StartImage failed")
+		return 0, consoleOutput, def.Err(err, "StartImage failed")
 	}
 
-	//return c.WaitContainer(containerID, removeOnExit)
-	return c.WaitContainer(containerID, false)
+	return c.WaitContainer(containerID, consoleOutput, removeOnExit)
 }
 
 // DeleteImage removes an image by ID
@@ -381,13 +357,13 @@ func (c Client) StartExistingContainer(contID string, binds []string) (Container
 
 // WaitContainer takes a docker container and waits for its finish.
 // It returns the exit code of the container.
-func (c Client) WaitContainer(id ContainerID, removeOnExit bool) (int, error) {
+func (c Client) WaitContainer(id ContainerID, consoleOutput *bytes.Buffer, removeOnExit bool) (int, *bytes.Buffer, error) {
 	containerID := string(id)
 	exitCode, err := c.c.WaitContainer(containerID)
 	if removeOnExit {
 		c.c.RemoveContainer(docker.RemoveContainerOptions{ID: containerID, Force: true})
 	}
-	return exitCode, err
+	return exitCode, consoleOutput, err
 }
 
 // ListContainers lists the docker images
