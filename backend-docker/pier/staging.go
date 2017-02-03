@@ -77,7 +77,7 @@ func (p *Pier) ListFiles(volumeID VolumeID) ([]VolumeItem, error)  {
 	if err != nil {
 		return volumeFileList, def.Err(err, "waiting for container to end failed")
 	}
-	
+
 	return volumeFileList, err
 }
 

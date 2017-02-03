@@ -108,6 +108,14 @@ func (jobList *JobList) setState(jobID JobID, state JobState) {
 	jobList.cache[jobID] = job
 }
 
+func (jobList *JobList) setInputVolume(jobID JobID, inputVolume VolumeID) {
+	jobList.Lock()
+	defer jobList.Unlock()
+	job := jobList.cache[jobID]
+	job.InputVolume = inputVolume
+	jobList.cache[jobID] = job
+}
+
 func (jobList *JobList) setOutputVolume(jobID JobID, outputVolume VolumeID) {
 	jobList.Lock()
 	defer jobList.Unlock()

@@ -108,7 +108,7 @@ func (p *Pier) runJob(job *Job, service Service, inputPID string) {
 		return
 	}
 	log.Println("new input volume created: ", inputVolume)
-	job.InputVolume = VolumeID(inputVolume.ID)
+	p.jobs.setInputVolume(job.ID, VolumeID(inputVolume.ID))
 	{
 		binds := []dckr.VolBind{
 			dckr.VolBind{inputVolume.ID, "/volume", false},
@@ -134,7 +134,6 @@ func (p *Pier) runJob(job *Job, service Service, inputPID string) {
 		return
 	}
 	log.Println("new output volume created: ", outputVolume)
-	job.OutputVolume = VolumeID(outputVolume.ID)
 	p.jobs.setOutputVolume(job.ID, VolumeID(outputVolume.ID))
 	{
 		binds := []dckr.VolBind{
