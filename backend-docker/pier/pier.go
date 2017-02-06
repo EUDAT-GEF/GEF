@@ -9,8 +9,8 @@ import (
 	"github.com/EUDAT-GEF/GEF/backend-docker/pier/internal/dckr"
 )
 
-const stagingVolumeName = "Volume Stage In"
-const volumeFileList = "Volume file list"
+const stagingVolumeName = "volume-stage-in"
+
 
 // Pier is a master struct for gef-docker abstractions
 type Pier struct {
@@ -18,8 +18,6 @@ type Pier struct {
 	services            *ServiceList
 	jobs                *JobList
 	tmpDir         	    string
-	stagingImageID      dckr.ImageID
-	listingFilesImageID dckr.ImageID
 }
 
 // VolumeID exported
@@ -46,19 +44,6 @@ func NewPier(cfgList []def.DockerConfig, tmpDir string) (*Pier, error) {
 	} else {
 		for _, img := range images {
 			pier.services.add(newServiceFromImage(img))
-		}
-	}
-
-	for _, srv := range pier.services.list() {
-		fmt.Println(srv.ID)
-		if srv.Name == stagingVolumeName {
-			log.Println("using staging image ", srv.imageID)
-			pier.stagingImageID = srv.imageID
-		}
-
-		if srv.Name == volumeFileList {
-			log.Println("using file listing image ", srv.imageID)
-			pier.listingFilesImageID = srv.imageID
 		}
 	}
 
@@ -121,7 +106,7 @@ func (p *Pier) runJob(job *Job, service Service, inputPID string) {
 		binds := []dckr.VolBind{
 			dckr.VolBind{inputVolume.ID, "/volume", false},
 		}
-		exitCode, consoleOutput, err := p.docker.ExecuteImage(p.stagingImageID, []string{inputPID}, binds, true)
+		exitCode, consoleOutput, err := p.docker.ExecuteImage(dckr.ImageID(stagingVolumeName), []string{inputPID}, binds, true)
 		p.jobs.addTask(job.ID, "Data staging", err, exitCode, consoleOutput)
 
 		log.Println("  staging ended: ", exitCode, ", error: ", err)

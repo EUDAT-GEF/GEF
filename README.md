@@ -8,7 +8,7 @@ The EUDAT Generic Execution Framework.
 Installation
 ------------
 
-- Make sure you have `go` (the language tools) installed on your machine.
+- Make sure you have `go` (the language tools), `java`, `maven`, and `docker` installed on your machine.
 - Set a GOPATH, e.g.: `export GOPATH=/Users/myself/Projects/Go`.
 - Use `go get` to clone the GEF repository: `go get -u github.com/EUDAT-GEF/GEF`.
 - Go to the downloaded repository location: `cd $GOPATH/src/github.com/EUDAT-GEF/GEF`.

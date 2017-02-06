@@ -316,6 +316,7 @@ func (c Client) StartImage(id ImageID, cmdArgs []string, binds []VolBind) (Conta
 	return ContainerID(cont.ID), &stdout, nil
 }
 
+// WriteMonitor used to keep console output
 type WriteMonitor struct{ io.Writer }
 
 func (w *WriteMonitor) Write(bs []byte) (int, error) {

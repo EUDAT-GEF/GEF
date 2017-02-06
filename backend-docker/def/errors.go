@@ -10,7 +10,6 @@ type Error struct {
 	cause   error
 }
 
-// Error
 func (e Error) Error() string {
 	var b bytes.Buffer
 	fmt.Fprintf(&b, "%s", e.message)
@@ -20,7 +19,6 @@ func (e Error) Error() string {
 	return b.String()
 }
 
-// Err
 func Err(cause error, format string, a ...interface{}) Error {
 	return Error{
 		fmt.Sprintf(format, a...),
