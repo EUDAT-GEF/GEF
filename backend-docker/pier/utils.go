@@ -8,36 +8,44 @@ import (
 	"path/filepath"
 )
 
+// SameFileError exported
 type SameFileError struct {
 	Src string
 	Dst string
 }
 
+// Error to implement error
 func (e SameFileError) Error() string {
 	return fmt.Sprintf("%s and %s are the same file", e.Src, e.Dst)
 }
 
+// SpecialFileError exported
 type SpecialFileError struct {
 	File     string
 	FileInfo os.FileInfo
 }
 
+// Error to implement error
 func (e SpecialFileError) Error() string {
 	return fmt.Sprintf("`%s` is a named pipe", e.File)
 }
 
+// NotADirectoryError exported
 type NotADirectoryError struct {
 	Src string
 }
 
+// Error to implement error
 func (e NotADirectoryError) Error() string {
 	return fmt.Sprintf("`%s` is not a directory", e.Src)
 }
 
+// AlreadyExistsError exported
 type AlreadyExistsError struct {
 	Dst string
 }
 
+// Error to implement error
 func (e AlreadyExistsError) Error() string {
 	return fmt.Sprintf("`%s` already exists", e.Dst)
 }
@@ -61,11 +69,12 @@ func stringInSlice(a string, list []string) bool {
 	return false
 }
 
+// IsSymlink exported
 func IsSymlink(fi os.FileInfo) bool {
 	return (fi.Mode() & os.ModeSymlink) == os.ModeSymlink
 }
 
-// Copy data from src to dst
+// CopyFile copies data from src to dst
 //
 // If followSymlinks is not set and src is a symbolic link, a
 // new symlink will be created instead of copying the file it points
@@ -135,7 +144,7 @@ func CopyFile(src, dst string, followSymlinks bool) error {
 	return nil
 }
 
-// Copy mode bits from src to dst.
+// CopyMode copies mode bits from src to dst.
 //
 // If followSymlinks is false, symlinks aren't followed if and only
 // if both `src` and `dst` are symlinks. If `lchmod` isn't available
@@ -196,6 +205,7 @@ func Copy(src, dst string, followSymlinks bool) (string, error) {
 	return dst, nil
 }
 
+// CopyTreeOptions exported
 type CopyTreeOptions struct {
 	Symlinks               bool
 	IgnoreDanglingSymlinks bool
@@ -203,7 +213,7 @@ type CopyTreeOptions struct {
 	Ignore                 func(string, []os.FileInfo) []string
 }
 
-// Recursively copy a directory tree.
+// CopyTree recursively copies a directory tree.
 //
 // The destination directory must not already exist.
 //

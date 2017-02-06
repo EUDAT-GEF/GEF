@@ -12,6 +12,7 @@ const (
 	tmpDirPerm    = 0700
 )
 
+// NewRandomTmpDir creates a temporary folder with a unique name
 func NewRandomTmpDir(parentComponents ...string) (path string, id string, err error) {
 	id = uuid.New()
 	path = filepath.Join(append(parentComponents, id)...)
@@ -22,6 +23,7 @@ func NewRandomTmpDir(parentComponents ...string) (path string, id string, err er
 	return path, id, nil
 }
 
+// MakeTmpDir creates a temporary folder
 func MakeTmpDir(tmpDir string) (string, error) {
 	if tmpDir == "" {
 		tmpDir = tmpDirDefault

@@ -37,9 +37,6 @@ type ContainerID string
 // VolumeID is a type for docker volume ids
 type VolumeID string
 
-//VolumeMountpoint is a type for docker volume mountpoint
-type VolumeMountpoint string
-
 // Image is a struct for Docker images
 type Image struct {
 	ID      ImageID
@@ -57,9 +54,16 @@ type Container struct {
 	Mounts []docker.Mount
 }
 
+// Volume is a struct for Docker volumes
 type Volume struct {
-	ID         VolumeID
-	Mountpoint VolumeMountpoint
+	ID VolumeID
+}
+
+// VolBind is a binding between a Docker volume and a mounting path
+type VolBind struct {
+	VolumeID   VolumeID
+	MountPoint string
+	IsReadOnly bool
 }
 
 // NewClientFirstOf returns a new docker client or an error
@@ -159,12 +163,21 @@ func (c Client) InspectImage(id ImageID) (Image, error) {
 		labels = img.Config.Labels
 	}
 	return Image{
-		ID:      ImageID(img.ID),
+		ID:      stringToImageID(img.ID),
 		RepoTag: repoTag,
 		Labels:  labels,
 		Created: img.Created,
 		Size:    img.Size,
 	}, nil
+}
+
+func stringToImageID(id string) ImageID {
+	id = strings.TrimSpace(id)
+	shaPrefix := "sha256:"
+	if strings.HasPrefix(id, shaPrefix) {
+		id = id[len(shaPrefix):]
+	}
+	return ImageID(id)
 }
 
 // ListImages lists the docker images
@@ -179,7 +192,7 @@ func (c Client) ListImages() ([]Image, error) {
 			repoTag = img.RepoTags[0]
 		}
 		return Image{
-			ID:      ImageID(img.ID),
+			ID:      stringToImageID(img.ID),
 			RepoTag: repoTag,
 			Labels:  img.Labels,
 			Created: time.Unix(img.Created, 0),
@@ -214,7 +227,7 @@ func (c *Client) BuildImage(dirpath string) (Image, error) {
 		if strings.HasPrefix(line, stepPrefix) {
 			// step++
 		} else if strings.HasPrefix(line, successPrefix) {
-			img.ID = ImageID(strings.TrimSpace(line[len(successPrefix):]))
+			img.ID = stringToImageID(line[len(successPrefix):])
 		}
 	}
 	err = c.c.Ping()
@@ -233,34 +246,94 @@ func (c *Client) BuildImage(dirpath string) (Image, error) {
 	return c.InspectImage(img.ID)
 }
 
-// ExecuteImage takes a docker image, creates a container and executes it
-func (c Client) ExecuteImage(id ImageID, binds []string) (ContainerID, error) {
-	img, err := c.c.InspectImage(string(id))
-	if err != nil {
-		return ContainerID(""), err
+// StartImage takes a docker image, creates a container and starts it
+func (c Client) StartImage(id ImageID, cmdArgs []string, binds []VolBind) (ContainerID, *bytes.Buffer, error) {
+	var stdout bytes.Buffer
+
+	if id == "" {
+		return ContainerID(""), &stdout, def.Err(nil, "Empty image id")
 	}
 
-	hc := docker.HostConfig{
-		Binds: binds,
+	img, err := c.c.InspectImage(string(id))
+	if err != nil {
+		return ContainerID(""), &stdout, def.Err(err, "InspectImage failed")
 	}
+
+	bs := make([]string, len(binds), len(binds))
+	for i, b := range binds {
+		bs[i] = fmt.Sprintf("%s:%s", b.VolumeID, b.MountPoint)
+		if b.IsReadOnly {
+			bs[i] = fmt.Sprintf("%s:ro", bs[i])
+		}
+	}
+	log.Println("bindings are: ", bs)
+
+	config := *img.Config
+	for _, arg := range cmdArgs {
+		config.Cmd = append(config.Cmd, arg)
+	}
+
+	config.AttachStdout = true
+	config.AttachStderr = true
+
+	hc := docker.HostConfig{
+		Binds: bs,
+	}
+
 	cco := docker.CreateContainerOptions{
-		Name:       "",
-		Config:     img.Config,
+		Config:     &config,
 		HostConfig: &hc,
 	}
 
 	cont, err := c.c.CreateContainer(cco)
 	if err != nil {
-		return ContainerID(""), err
+		return ContainerID(""), &stdout, def.Err(err, "CreateContainer failed")
 	}
+
+	attached := make(chan struct{})
+	go func() {
+		c.c.AttachToContainer(docker.AttachToContainerOptions{
+			Container:    cont.ID,
+			OutputStream: &stdout,
+			ErrorStream:  &stdout,
+			Logs:         true,
+			Stdout:       true,
+			Stderr:       true,
+			Stream:       true,
+			Success:      attached,
+		})
+	}()
+
+	<-attached
+	attached <- struct{}{}
 
 	err = c.c.StartContainer(cont.ID, &hc)
 	if err != nil {
 		c.c.RemoveContainer(docker.RemoveContainerOptions{ID: cont.ID, Force: true})
-		return ContainerID(""), err
+		return ContainerID(""), &stdout, def.Err(err, "StartContainer failed")
 	}
 
-	return ContainerID(cont.ID), nil
+	return ContainerID(cont.ID), &stdout, nil
+}
+
+// WriteMonitor used to keep console output
+type WriteMonitor struct{ io.Writer }
+
+func (w *WriteMonitor) Write(bs []byte) (int, error) {
+	n, err := w.Writer.Write(bs)
+	log.Printf("Write() (%v, %v)", n, err)
+	return n, err
+}
+
+
+// ExecuteImage takes a docker image, creates a container and executes it, and waits for it to end
+func (c Client) ExecuteImage(id ImageID, cmdArgs []string, binds []VolBind, removeOnExit bool) (int, *bytes.Buffer, error) {
+	containerID, consoleOutput, err := c.StartImage(id, cmdArgs, binds)
+	if err != nil {
+		return 0, consoleOutput, def.Err(err, "StartImage failed")
+	}
+
+	return c.WaitContainer(containerID, consoleOutput, removeOnExit)
 }
 
 // DeleteImage removes an image by ID
@@ -269,7 +342,7 @@ func (c Client) DeleteImage(id string) error {
 	return err
 }
 
-// StartExitedContainer starts an existing container
+// StartExistingContainer starts an existing container
 func (c Client) StartExistingContainer(contID string, binds []string) (ContainerID, error) {
 	hc := docker.HostConfig{
 		Binds: binds,
@@ -285,13 +358,13 @@ func (c Client) StartExistingContainer(contID string, binds []string) (Container
 
 // WaitContainer takes a docker container and waits for its finish.
 // It returns the exit code of the container.
-func (c Client) WaitContainer(id ContainerID, removeOnExit bool) (int, error) {
+func (c Client) WaitContainer(id ContainerID, consoleOutput *bytes.Buffer, removeOnExit bool) (int, *bytes.Buffer, error) {
 	containerID := string(id)
 	exitCode, err := c.c.WaitContainer(containerID)
 	if removeOnExit {
 		c.c.RemoveContainer(docker.RemoveContainerOptions{ID: containerID, Force: true})
 	}
-	return exitCode, err
+	return exitCode, consoleOutput, err
 }
 
 // ListContainers lists the docker images
@@ -303,7 +376,7 @@ func (c Client) ListContainers() ([]Container, error) {
 	}
 	ret := make([]Container, 0, 0)
 	for _, cont := range conts {
-		img, _ := c.InspectImage(ImageID(cont.Image))
+		img, _ := c.InspectImage(stringToImageID(cont.Image))
 		mounts := make([]docker.Mount, 0, 0)
 		for _, cont := range cont.Mounts {
 			mounts = append(mounts, docker.Mount{
@@ -330,7 +403,7 @@ func (c Client) ListContainers() ([]Container, error) {
 // InspectContainer returns the container details
 func (c Client) InspectContainer(id ContainerID) (Container, error) {
 	cont, err := c.c.InspectContainer(string(id))
-	img, _ := c.InspectImage(ImageID(cont.Image))
+	img, _ := c.InspectImage(stringToImageID(cont.Image))
 	ret := Container{
 		ID:     ContainerID(cont.ID),
 		Image:  img,
@@ -343,6 +416,18 @@ func (c Client) InspectContainer(id ContainerID) (Container, error) {
 	return ret, err
 }
 
+// NewVolume builds an empty Docker volume
+func (c *Client) NewVolume() (Volume, error) {
+	cvo := docker.CreateVolumeOptions{}
+	v, err := c.c.CreateVolume(cvo)
+	if err != nil {
+		return Volume{}, err
+	}
+	return Volume{
+		ID: VolumeID(v.Name),
+	}, nil
+}
+
 // ListVolumes list all named volumes
 func (c Client) ListVolumes() ([]Volume, error) {
 	vols, err := c.c.ListVolumes(docker.ListVolumesOptions{})
@@ -352,32 +437,19 @@ func (c Client) ListVolumes() ([]Volume, error) {
 
 	ret := make([]Volume, 0, 0)
 	for _, vol := range vols {
-		volume, _ := c.InspectVolume(VolumeID(vol.Name))
 		ret = append(ret, Volume{
-			ID:         VolumeID(volume.ID),
-			Mountpoint: VolumeMountpoint(volume.Mountpoint),
+			ID: VolumeID(vol.Name),
 		})
 	}
 	return ret, nil
-
-}
-
-// InspectVolume returns the volume details
-func (c Client) InspectVolume(id VolumeID) (Volume, error) {
-	volume, err := c.c.InspectVolume(string(id))
-	ret := Volume{
-		ID:         VolumeID(volume.Name),
-		Mountpoint: VolumeMountpoint(volume.Mountpoint),
-	}
-	return ret, err
 }
 
 //RemoveVolume removes a volume
 func (c Client) RemoveVolume(id VolumeID) error {
-	err := c.c.RemoveVolume(string(id))
-	return err
+	return c.c.RemoveVolume(string(id))
 }
 
+// GetTarStream returns a reader with a tar stream of a file path in a container
 func (c Client) GetTarStream(containerID, filePath string) (io.Reader, error) {
 	var b bytes.Buffer
 
@@ -394,6 +466,7 @@ func (c Client) GetTarStream(containerID, filePath string) (io.Reader, error) {
 	return bytes.NewReader(b.Bytes()), err
 }
 
+// UploadSingleFile exported
 func (c Client) UploadSingleFile(containerID, filePath string, dstPath string) error {
 	var b bytes.Buffer
 

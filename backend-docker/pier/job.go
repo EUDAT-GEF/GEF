@@ -4,19 +4,37 @@ import (
 	"sort"
 	"sync"
 	"time"
-
 	"github.com/EUDAT-GEF/GEF/backend-docker/pier/internal/dckr"
+	"bytes"
 )
 
 // Job stores the information about a service execution
 type Job struct {
-	ID          JobID
-	ServiceID   ServiceID
-	containerID dckr.ContainerID
-	Binds       []Bind
-	Status      string
-	Created     time.Time
+	ID           JobID
+	ServiceID    ServiceID
+	Input        string
+	Created      time.Time
+	State        *JobState
+	InputVolume  VolumeID
+	OutputVolume VolumeID
+	Tasks        []TaskStatus
 }
+
+// JobState exported
+type JobState struct {
+	Error  error
+	Status string
+}
+
+// TaskStatus exported
+type TaskStatus struct {
+	Name string
+	Error error
+	ExitCode int
+	ConsoleOutput *bytes.Buffer
+}
+
+// JobID exported
 type JobID string
 
 type jobArray []Job
@@ -43,6 +61,7 @@ type JobList struct {
 	cache map[JobID]Job
 }
 
+// NewJobList exported
 func NewJobList() *JobList {
 	return &JobList{
 		cache: make(map[JobID]Job),
@@ -68,8 +87,48 @@ func (jobList *JobList) list() []Job {
 	return all
 }
 
-func (jobList *JobList) get(key JobID) Job {
+func (jobList *JobList) get(key JobID) (Job, bool) {
 	jobList.Lock()
 	defer jobList.Unlock()
-	return jobList.cache[key]
+	job, ok := jobList.cache[key]
+	return job, ok
+}
+
+func (jobList *JobList) setState(jobID JobID, state JobState) {
+	jobList.Lock()
+	defer jobList.Unlock()
+	job := jobList.cache[jobID]
+	job.State = &state
+	jobList.cache[jobID] = job
+}
+
+func (jobList *JobList) setInputVolume(jobID JobID, inputVolume VolumeID) {
+	jobList.Lock()
+	defer jobList.Unlock()
+	job := jobList.cache[jobID]
+	job.InputVolume = inputVolume
+	jobList.cache[jobID] = job
+}
+
+func (jobList *JobList) setOutputVolume(jobID JobID, outputVolume VolumeID) {
+	jobList.Lock()
+	defer jobList.Unlock()
+	job := jobList.cache[jobID]
+	job.OutputVolume = outputVolume
+	jobList.cache[jobID] = job
+}
+
+func (jobList *JobList) addTask(jobID JobID, taskName string, taskError error, taskExitCode int, taskConsoleOutput *bytes.Buffer) {
+	jobList.Lock()
+	defer jobList.Unlock()
+	job := jobList.cache[jobID]
+
+	var newTask TaskStatus
+	newTask.Name = taskName
+	newTask.Error = taskError
+	newTask.ExitCode = taskExitCode
+	newTask.ConsoleOutput = taskConsoleOutput
+	job.Tasks = append(job.Tasks, newTask)
+
+	jobList.cache[jobID] = job
 }

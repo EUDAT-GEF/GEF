@@ -22,6 +22,7 @@ const JobRow = ({tag, value, style}) => (
 );
 
 const Job = ({job, service, title}) => {
+    console.log(job.State)
     return (
         <div style={{border: "1px solid black"}}>
             <h4> Selected job</h4>
@@ -32,7 +33,8 @@ const Job = ({job, service, title}) => {
             <JobRow tag="Service Description" value={service ? service.Description : false}/>
             <JobRow tag="Service Version" value={service ? service.Version : false}/>
             <JobRow style={{marginTop:'1em'}} tag="Status" value={job.State.Status}/>
-            <JobRow style={{marginTop:'1em'}} tag="Error" value={job.State.Error}/>
+             <JobRow style={{marginTop:'1em'}} tag="Error" value={job.State.Error ? job.State.Error : false}/>
+
         </div>
     )
 };

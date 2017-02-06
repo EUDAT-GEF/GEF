@@ -39,6 +39,7 @@ func (c DockerConfig) String() string {
 	return fmt.Sprintf("unknown -- %s", c.Description)
 }
 
+// ReadConfigFile reads a configuration file
 func ReadConfigFile(configFilepath string) (Configuration, error) {
 	var config Configuration
 
