@@ -50,6 +50,7 @@ func NewPier(cfgList []def.DockerConfig, tmpDir string) (*Pier, error) {
 	}
 
 	for _, srv := range pier.services.list() {
+		fmt.Println(srv.ID)
 		if srv.Name == stagingVolumeName {
 			log.Println("using staging image ", srv.imageID)
 			pier.stagingImageID = srv.imageID

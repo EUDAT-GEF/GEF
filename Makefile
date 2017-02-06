@@ -8,6 +8,7 @@ build: dependencies
 	(cd $(WEBUI) && node_modules/webpack/bin/webpack.js -p)
 	(cd $(EPICPID) && mvn package install)
 	(cd frontend && mvn -q package)
+	(cd $(INTERNALSERVICES)/volume-stage-in && docker build -t volume-stage-in .)
 	(cd $(INTERNALSERVICES)/volume-filelist && GOOS=linux GOARCH=amd64 go build && docker build -t volume-filelist .)
 	$(GOPATH)/bin/golint ./...
 	go vet ./...

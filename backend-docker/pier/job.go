@@ -20,13 +20,13 @@ type Job struct {
 	Tasks        []TaskStatus
 }
 
-// JobState export
+// JobState exported
 type JobState struct {
 	Error  error
 	Status string
 }
 
-// Task status exported
+// TaskStatus exported
 type TaskStatus struct {
 	Name string
 	Error error
@@ -36,12 +36,6 @@ type TaskStatus struct {
 
 // JobID exported
 type JobID string
-
-func (p *Pier) SetState(job Job, state JobState) {
-	// TODO: set this atomically
-
-	job.State = &state
-}
 
 type jobArray []Job
 
