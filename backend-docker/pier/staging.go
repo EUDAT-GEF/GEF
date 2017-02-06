@@ -48,7 +48,7 @@ func (p *Pier) DownStreamContainerFile(containerID string, filePath string, w ht
 
 // ListFiles exported
 func (p *Pier) ListFiles(volumeID VolumeID) ([]VolumeItem, error)  {
-	imageID := "eudatgef/volume-filelist"
+	imageID := "volume-filelist:latest"
 	var volumeFileList []VolumeItem
 	if (string(volumeID) == "") {
 		return volumeFileList, def.Err(nil, "volume name has not been specified")
