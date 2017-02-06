@@ -10,6 +10,7 @@ import (
 )
 
 const stagingVolumeName = "Volume Stage In"
+const volumeFileList = "Volume file list"
 
 // Pier is a master struct for gef-docker abstractions
 type Pier struct {
@@ -52,6 +53,11 @@ func NewPier(cfgList []def.DockerConfig, tmpDir string) (*Pier, error) {
 		if srv.Name == stagingVolumeName {
 			log.Println("using staging image ", srv.imageID)
 			pier.stagingImageID = srv.imageID
+		}
+
+		if srv.Name == volumeFileList {
+			log.Println("using file listing image ", srv.imageID)
+			pier.listingFilesImageID = srv.imageID
 		}
 	}
 

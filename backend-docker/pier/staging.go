@@ -50,7 +50,7 @@ func (p *Pier) DownStreamContainerFile(containerID string, filePath string, w ht
 
 // ListFiles exported
 func (p *Pier) ListFiles(volumeID VolumeID) ([]VolumeItem, error)  {
-	imageID := "volume-filelist:latest"
+	//imageID := "volume-filelist"
 	var volumeFileList []VolumeItem
 	if (string(volumeID) == "") {
 		return volumeFileList, def.Err(nil, "volume name has not been specified")
@@ -62,7 +62,8 @@ func (p *Pier) ListFiles(volumeID VolumeID) ([]VolumeItem, error)  {
 	}
 
 	// Execute our image (it should produce a JSON file with the list of files)
-	containerID, consoleOutput, err := p.docker.StartImage(dckr.ImageID(imageID), nil, volumesToMount)
+	//containerID, consoleOutput, err := p.docker.StartImage(dckr.ImageID(imageID), nil, volumesToMount)
+	containerID, consoleOutput, err := p.docker.StartImage(p.listingFilesImageID, nil, volumesToMount)
 
 
 	if err != nil {
