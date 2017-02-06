@@ -13,11 +13,12 @@ const stagingVolumeName = "Volume Stage In"
 
 // Pier is a master struct for gef-docker abstractions
 type Pier struct {
-	docker         dckr.Client
-	services       *ServiceList
-	jobs           *JobList
-	tmpDir         string
-	stagingImageID dckr.ImageID
+	docker              dckr.Client
+	services            *ServiceList
+	jobs                *JobList
+	tmpDir         	    string
+	stagingImageID      dckr.ImageID
+	listingFilesImageID dckr.ImageID
 }
 
 // VolumeID exported
@@ -49,7 +50,7 @@ func NewPier(cfgList []def.DockerConfig, tmpDir string) (*Pier, error) {
 
 	for _, srv := range pier.services.list() {
 		if srv.Name == stagingVolumeName {
-			fmt.Println("using staging image ", srv.imageID)
+			log.Println("using staging image ", srv.imageID)
 			pier.stagingImageID = srv.imageID
 		}
 	}
@@ -171,29 +172,3 @@ func (p *Pier) GetJob(jobID JobID) (Job, error) {
 	}
 	return job, nil
 }
-
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//

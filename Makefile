@@ -2,12 +2,13 @@ GOSRC = ./../..
 EUDATSRC = ./..
 WEBUI = frontend/src/main/webui
 EPICPID = ../EpicPID
+INTERNALSERVICES = services/_internal
 
 build: dependencies
 	(cd $(WEBUI) && node_modules/webpack/bin/webpack.js -p)
 	(cd $(EPICPID) && mvn package install)
 	(cd frontend && mvn -q package)
-	(cd services/_internal/volume-filelist && go build && docker build -t volume-filelist .)
+	(cd $(INTERNALSERVICES)/volume-filelist && GOOS=linux GOARCH=amd64 go build && docker build -t volume-filelist .)
 	$(GOPATH)/bin/golint ./...
 	go vet ./...
 	go test ./...

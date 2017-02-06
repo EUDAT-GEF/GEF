@@ -21,6 +21,8 @@ type VolumeItem struct {
 	Modified time.Time
 }
 
+
+
 // DownStreamContainerFile exported
 func (p *Pier) DownStreamContainerFile(containerID string, filePath string, w http.ResponseWriter) error {
 	tarStream, err := p.docker.GetTarStream(containerID, filePath)
@@ -61,6 +63,7 @@ func (p *Pier) ListFiles(volumeID VolumeID) ([]VolumeItem, error)  {
 
 	// Execute our image (it should produce a JSON file with the list of files)
 	containerID, consoleOutput, err := p.docker.StartImage(dckr.ImageID(imageID), nil, volumesToMount)
+
 
 	if err != nil {
 		return volumeFileList, def.Err(err, "running image failed")
