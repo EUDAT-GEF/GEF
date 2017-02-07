@@ -11,6 +11,8 @@ import (
 
 	"github.com/EUDAT-GEF/GEF/backend-docker/def"
 	"github.com/EUDAT-GEF/GEF/backend-docker/pier"
+	//"encoding/json"
+	"fmt"
 	"encoding/json"
 )
 
@@ -64,8 +66,8 @@ func NewServer(cfg def.ServerConfig, pier *pier.Pier, tmpDir string) (*Server, e
 		"GET /jobs":         server.listJobsHandler,
 		"GET /jobs/{jobID}": server.inspectJobHandler,
 
-		// "GET /volumes/{volumeID}":  server.inspectVolumeHandler,
-		// "POST /volumes/{volumeID}": server.uploadToVolumeHandler,
+		"GET /volumes/{volumeID}":  server.inspectVolumeHandler,
+		//"POST /volumes/{volumeID}": server.uploadToVolumeHandler,
 
 		// "POST /uploadFile/{containerID}":   server.uploadFileHandler,
 		// "POST /downloadFile/{containerID}": server.downloadFileHandler,
@@ -297,8 +299,9 @@ func (s *Server) inspectVolumeHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		Response{w}.ServerError("streaming container files failed", err)
 	}
-	Response{w}.Ok(json.NewEncoder(w).Encode(volumeFiles))
-
+	fmt.Println(volumeFiles)
+	//Response{w}.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(volumeFiles)
 }
 
 func (s *Server) buildVolumeHandler(w http.ResponseWriter, r *http.Request) {
