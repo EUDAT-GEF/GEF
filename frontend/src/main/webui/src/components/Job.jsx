@@ -50,7 +50,7 @@ const volumeFile = ({file, index, iconClass, indentStyle}) => (
     </li>
 );
 
-const volumeFilesTable = ({fileList}) => (
+const VolumeFilesTable = ({fileList}) => (
     <div style={{margin:'1em'}}>
         <ol className="list-unstyled fileList" style={{textAlign:'left', minHeight:'30em'}}>
             <li className="heading row" style={{padding:'0.5em 0'}}>
@@ -60,52 +60,24 @@ const volumeFilesTable = ({fileList}) => (
             </li>
 
             {fileList.map((fileListItem, index) => {
-                <li className="row file" key={file.path} style={{lineHeight:2}} onClick={this.handleFileClick.bind(this, file, index)}>
+                console.log(index);
+                let indentStyle = {paddingLeft: (3*1)+'em'};
+                let iconClass = "glyphicon-file";
+                if (fileListItem.isFolder == true) {
+                    iconClass = "glyphicon-folder-close";
+                }
+                return <li className="row file" key={index} style={{lineHeight:2}}>
                    <div className="col-sm-6">
                        <span style={indentStyle}/>
-                       { file.isdir ?
-                           file.children == undefined ?
-                               <button style={{width:20, background:'none', border:'none', fontSize:20, padding:0}}>+</button> :
-                               <button style={{width:20, background:'none', border:'none', fontSize:20, padding:0}}>-</button> :
-                           <input type="checkbox" style={{width:20}} checked={file.selected}/> }
-                       <span className={"glyphicon "+iconClass} aria-hidden={true} /> {file.name}
+                       <span className={"glyphicon "+iconClass} aria-hidden={true} /> {fileListItem.name}
                    </div>
-                   <div className="col-sm-3">{file.size}</div>
-                   <div className="col-sm-3">{file.date}</div>
+                   <div className="col-sm-3">{fileListItem.size}</div>
+                   <div className="col-sm-3">{fileListItem.modified}</div>
                </li>
             })}
         </ol>
     </div>
 );
-
-const VolumeFilesTable2 = ({fileList}) => (
-    <Row>
-        <Col xs={12} sm={3} md={3}>
-
-        <Table striped bordered condensed hover>
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Name</th>
-                <th>Size</th>
-                <th>Modified</th>
-              </tr>
-            </thead>
-            <tbody>
-                {fileList.map((fileListItem, index) => {
-                    return <tr key={index}>
-                           <td>{index+1}</td>
-                           <td>{fileListItem.Name}</td>
-                           <td>{fileListItem.Size}</td>
-                           <td>@{fileListItem.Modified}</td>
-                         </tr>;
-                })}
-            </tbody>
-        </Table>
-        </Col>
-    </Row>
-);
-
 
 class Job extends React.Component {
     constructor(props) {
@@ -130,12 +102,11 @@ class Job extends React.Component {
         let service = this.props.service;
         let title = this.props.title;
 
-
+        console.log(this.props.selectedVolume);
         let filesTable = null;
         if (this.props.selectedVolume.length > 0) {
-            filesTable = <VolumeFilesTable2 fileList={this.props.selectedVolume}/>
-        } else {
-            filesTable = null;
+            //filesTable = this.props.selectedVolume.map((fileList))
+            filesTable = <VolumeFilesTable fileList={this.props.selectedVolume}/>
         }
 
         return (

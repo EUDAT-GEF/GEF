@@ -261,3 +261,43 @@ code {
 	margin: 0 2px;
 	padding: 0px 5px;
 }
+
+
+/*** List of files from a volume ***/
+
+.fileList {
+  /*background-color: white;*/
+}
+.fileList .fileHeader {
+  margin: 0.5em 0px;
+  padding: 0.5em 0;
+  border-bottom: 1px solid #ddd;
+}
+.fileList .fileHeader *{
+  font-weight: bold;
+}
+.fileList .file {
+  padding: 0.5em 0;
+  word-wrap: break-word;
+}
+.fileList .file .details{
+  overflow-x: auto;
+}
+.fileList .file:nth-child(odd) {
+  background-color: #f4f4f4;
+}
+.fileList .file:nth-child(even) {
+  background-color: #fafafa;
+}
+.fileList .file:hover {
+  background-color: #fff;
+}
+.fileList .file .btn.remove {
+  float: right;
+  color: #F45D00;
+  border: none;
+  background-color: transparent;
+}
+.fileList .file .btn.remove:hover {
+  color: red;
+}

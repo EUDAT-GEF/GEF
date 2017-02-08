@@ -244,7 +244,7 @@ export function inspectVolume(volumeId) {
             dispatch(inspectVolumeEmpty());
         }
         resultPromise.then(response => {
-            log('fetched volume content:', response.data.Volumes);
+            log('fetched volume content:', response.data);
             dispatch(inspectVolumeSuccess(response.data))
         }).catch(err => {
             Alert.error("Cannot fetch volume content information from the server.");

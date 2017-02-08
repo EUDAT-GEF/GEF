@@ -15,10 +15,11 @@ import (
 
 // VolumeItem describes a folder content
 type VolumeItem struct {
-	Name     string
-	Size     int64
-	IsFolder bool
-	Modified time.Time
+	Name       string `json:"name"`
+	Size	   int64 `json:"size"`
+	Modified   time.Time `json:"modified"`
+	IsFolder   bool `json:"isFolder"`
+	FolderTree []VolumeItem `json:"folderTree"`
 }
 
 const volumeFileListName = "volume-filelist"
