@@ -467,12 +467,12 @@ func (c Client) GetTarStream(containerID, filePath string) (io.Reader, error) {
 }
 
 // UploadSingleFile exported
-func (c Client) UploadSingleFile(containerID, filePath string, dstPath string) error {
+func (c Client) UploadFile2Container(containerID, srcPath string, dstPath string) error {
 	var b bytes.Buffer
 
-	fileHandler, err := os.Stat(filePath)
+	fileHandler, err := os.Stat(srcPath)
 	if err != nil {
-		log.Printf("Cannot open " + filePath + ": " + err.Error())
+		log.Printf("Cannot open " + srcPath + ": " + err.Error())
 		return err
 	}
 
@@ -485,7 +485,7 @@ func (c Client) UploadSingleFile(containerID, filePath string, dstPath string) e
 		return err
 	}
 
-	contents, err := ioutil.ReadFile(filePath)
+	contents, err := ioutil.ReadFile(srcPath)
 	if err != nil {
 		log.Println(err.Error())
 		return err
