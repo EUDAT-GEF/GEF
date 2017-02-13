@@ -9,9 +9,9 @@ import (
 
 	"github.com/gorilla/mux"
 
+	"encoding/json"
 	"github.com/EUDAT-GEF/GEF/backend-docker/def"
 	"github.com/EUDAT-GEF/GEF/backend-docker/pier"
-	"encoding/json"
 )
 
 const (
@@ -50,6 +50,7 @@ func NewServer(cfg def.ServerConfig, pier *pier.Pier, tmpDir string) (*Server, e
 		tmpDir: tmpDir,
 	}
 
+	pathID := "{path}"
 	routes := map[string]func(http.ResponseWriter, *http.Request){
 		"GET /":     server.infoHandler,
 		"GET /info": server.infoHandler,
@@ -64,8 +65,7 @@ func NewServer(cfg def.ServerConfig, pier *pier.Pier, tmpDir string) (*Server, e
 		"GET /jobs":         server.listJobsHandler,
 		"GET /jobs/{jobID}": server.inspectJobHandler,
 
-		// "GET /volumes/{volumeID}":  server.inspectVolumeHandler,
-		// "POST /volumes/{volumeID}": server.uploadToVolumeHandler,
+		"GET /volumes/{volumeID}/{path}": server.inspectVolumeHandler,
 
 		// "POST /uploadFile/{containerID}":   server.uploadFileHandler,
 		// "POST /downloadFile/{containerID}": server.downloadFileHandler,
@@ -76,8 +76,16 @@ func NewServer(cfg def.ServerConfig, pier *pier.Pier, tmpDir string) (*Server, e
 
 	for mp, handler := range routes {
 		methodPath := strings.SplitN(mp, " ", 2)
-		apirouter.HandleFunc(methodPath[1], handler).Methods(methodPath[0])
+		path = methodPath[1]
+		if strings.HasSuffix(path, pathWord) {
+			path = path[:len(path)-len(pathID)]
+			apirouter.PathPrefix(path).HandlerFunc(handler).Methods(methodPath[0])
+		} else {
+			apirouter.HandleFunc(methodPath[1], handler).Methods(methodPath[0])
+		}
 	}
+
+	apirouter.PathPrefix("/volumes/")
 
 	server.Server.Handler = router
 	return server, nil
