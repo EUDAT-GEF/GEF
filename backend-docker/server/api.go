@@ -51,7 +51,6 @@ func NewServer(cfg def.ServerConfig, pier *pier.Pier, tmpDir string) (*Server, e
 		tmpDir: tmpDir,
 	}
 
-	//pathID := "{path}"
 	routes := map[string]func(http.ResponseWriter, *http.Request){
 		"GET /":     server.infoHandler,
 		"GET /info": server.infoHandler,
@@ -66,14 +65,7 @@ func NewServer(cfg def.ServerConfig, pier *pier.Pier, tmpDir string) (*Server, e
 		"GET /jobs":         server.listJobsHandler,
 		"GET /jobs/{jobID}": server.inspectJobHandler,
 
-		//"GET /volumes/{volumeID}":  server.volumeContentHandler,
 		"GET /volumes/{volumeID}/{path:.*}":  server.volumeContentHandler,
-		//"GET /volumes/{volumeID}/{path: .*}":  server.volumeContentHandler,
-		//"POST /volumes/download/{volumeID}":  server.downloadVolumeFileHandler,
-		//"POST /volumes/{volumeID}": server.uploadToVolumeHandler,
-
-		//"POST /containers/uploadFile/{containerID}":   server.uploadFileHandler,
-		//"POST /containers/download/{containerID}": server.downloadContainerFileHandler,
 	}
 
 	router := mux.NewRouter()
@@ -255,7 +247,7 @@ func (s *Server) volumeContentHandler(w http.ResponseWriter, r *http.Request) {
 		Response{w}.Header().Set("Content-Disposition", "attachment; filename=" + fileName)
 
 	} else { // Return of list of files in a specific location in a volume
-		volumeFiles, err := s.pier.ListFiles(pier.VolumeID(vars["volumeID"]))
+		volumeFiles, err := s.pier.ListFiles(pier.VolumeID(vars["volumeID"]), filePath)
 		if err != nil {
 			Response{w}.ServerError("streaming container files failed", err)
 		}

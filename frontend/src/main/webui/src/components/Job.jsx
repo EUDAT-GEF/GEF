@@ -155,5 +155,4 @@ Job.propTypes = {
     job: PropTypes.object.isRequired
 };
 
-//export default Job
 export default connect(mapStateToProps, mapDispatchToProps)(Job);
