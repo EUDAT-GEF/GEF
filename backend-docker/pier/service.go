@@ -112,7 +112,6 @@ func newServiceFromImage(image dckr.Image) Service {
 			continue
 		}
 		k = k[len(GefSrvLabelPrefix):]
-		// fmt.Println(k, " -> ", v)
 		ks := strings.Split(k, ".")
 		if len(ks) == 0 {
 			continue

@@ -56,6 +56,7 @@ public class GEF extends Application<GEFConfig> {
 			environment.jersey().register(BuildsHandler.class);
 			environment.jersey().register(ServicesHandler.class);
 			environment.jersey().register(JobsHandler.class);
+			environment.jersey().register(GefVolumes.class);
 
 			Services.init(config);
 		} catch (Exception ex) {

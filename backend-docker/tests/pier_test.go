@@ -102,7 +102,7 @@ func TestExecution(t *testing.T) {
 
 	expect(t, job.State.Error == nil, "job error")
 
-	files, err := pier.ListFiles(job.OutputVolume)
+	files, err := pier.ListFiles(job.OutputVolume, "")
 	checkMsg(t, err, "getting volume failed")
 
 	expect(t, len(files) == 1, "bad returned files")

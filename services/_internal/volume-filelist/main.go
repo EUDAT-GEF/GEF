@@ -23,13 +23,14 @@ const (
 )
 
 func main() {
+	subFolder := os.Args[1]
 	jf, err := os.Create(jsonFileList)
 	log.Println("Opening the JSON file")
 	if err != nil {
 		log.Println(err)
 	} else {
 		log.Println("Reading the volume")
-		JFolderList, err := readFolders(volumeFolder, []VolumeItem{})
+		JFolderList, err := readFolders(volumeFolder + "/" + subFolder, []VolumeItem{})
 		if err != nil {
 			log.Println(err)
 		} else {

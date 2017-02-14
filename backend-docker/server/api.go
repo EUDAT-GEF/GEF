@@ -6,12 +6,11 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-
+	"encoding/json"
 	"github.com/gorilla/mux"
 
 	"github.com/EUDAT-GEF/GEF/backend-docker/def"
 	"github.com/EUDAT-GEF/GEF/backend-docker/pier"
-	"encoding/json"
 )
 
 const (
@@ -64,11 +63,7 @@ func NewServer(cfg def.ServerConfig, pier *pier.Pier, tmpDir string) (*Server, e
 		"GET /jobs":         server.listJobsHandler,
 		"GET /jobs/{jobID}": server.inspectJobHandler,
 
-		// "GET /volumes/{volumeID}":  server.inspectVolumeHandler,
-		// "POST /volumes/{volumeID}": server.uploadToVolumeHandler,
-
-		// "POST /uploadFile/{containerID}":   server.uploadFileHandler,
-		// "POST /downloadFile/{containerID}": server.downloadFileHandler,
+		"GET /volumes/{volumeID}/{path:.*}":  server.volumeContentHandler,
 	}
 
 	router := mux.NewRouter()
@@ -226,79 +221,34 @@ func (s *Server) inspectJobHandler(w http.ResponseWriter, r *http.Request) {
 	Response{w}.Ok(jmap("Job", job))
 }
 
-func (s *Server) uploadFileHandler(w http.ResponseWriter, r *http.Request) {
-	logRequest(r)
-	// TODO
-	// vars := mux.Vars(r)
-	// job := s.pier.GetJob(pier.JobID(vars["jobID"]))
-	// dstPath := ""
-
-	// mr, err := r.MultipartReader()
-	// if err != nil {
-	// 	Response{w}.ServerError("while getting multipart reader ", err)
-	// 	return
-	// }
-
-	// for {
-	// 	part, err := mr.NextPart()
-	// 	if err == io.EOF {
-	// 		break
-	// 	}
-
-	// 	if part.FormName() == "dstPath" {
-	// 		buf := new(bytes.Buffer)
-	// 		buf.ReadFrom(part)
-	// 		dstPath = buf.String()
-	// 	}
-
-	// 	if part.FileName() == "" {
-	// 		continue
-	// 	}
-	// 	uploadedFilePath := filepath.Join(s.tmpDir, part.FileName())
-	// 	dst, err := os.Create(uploadedFilePath)
-	// 	if err != nil {
-	// 		Response{w}.ServerError("while creating file to save file part ", err)
-	// 		return
-	// 	}
-	// 	defer dst.Close()
-
-	// 	if _, err := io.Copy(dst, part); err != nil {
-	// 		Response{w}.ServerError("while dumping file part ", err)
-	// 		return
-	// 	} else {
-	// 		err = s.pier.UploadSingleFile(jobID, uploadedFilePath, dstPath)
-	// 		if err != nil {
-	// 			http.Error(w, "Cannot upload file into the container: "+err.Error(), http.StatusBadRequest)
-	// 			return
-	// 		} else {
-	// 			err = os.Remove(uploadedFilePath)
-	// 			if err != nil {
-	// 				http.Error(w, "Cannot remove the temporary file: "+err.Error(), http.StatusBadRequest)
-	// 				return
-	// 			}
-	// 		}
-	// 	}
-	// }
-}
-
-func (s *Server) downloadFileHandler(w http.ResponseWriter, r *http.Request) {
+func (s *Server) volumeContentHandler(w http.ResponseWriter, r *http.Request) {
 	logRequest(r)
 	vars := mux.Vars(r)
-	err := s.pier.DownStreamContainerFile(vars["containerID"], vars["filePath"], w)
-	if err != nil {
-		Response{w}.ServerError("downloading container files failed", err)
-	}
-}
+	fileLocation := vars["path"]
+	_, hasContent := r.URL.Query()["content"]
 
-func (s *Server) inspectVolumeHandler(w http.ResponseWriter, r *http.Request) {
-	logRequest(r)
-	vars := mux.Vars(r)
-	volumeFiles, err := s.pier.ListFiles(pier.VolumeID(vars["volumeID"]))
-	if err != nil {
-		Response{w}.ServerError("streaming container files failed", err)
+	slashIndex := strings.LastIndex(fileLocation, "/")
+	if slashIndex == -1 {
+		slashIndex = 0
 	}
-	Response{w}.Ok(json.NewEncoder(w).Encode(volumeFiles))
+	fileName := filepath.Base(fileLocation)
 
+	if hasContent { // Download a file from a volume
+		err := s.pier.DownStreamContainerFile(vars["volumeID"], filepath.Join("/root/", fileLocation), w)
+		if err != nil {
+			Response{w}.ServerError("downloading volume files failed", err)
+		}
+
+		Response{w}.Header().Set("Content-Type", r.Header.Get("Content-Type"))
+		Response{w}.Header().Set("Content-Disposition", "attachment; filename=" + fileName)
+
+	} else { // Return of list of files in a specific location in a volume
+		volumeFiles, err := s.pier.ListFiles(pier.VolumeID(vars["volumeID"]), fileLocation)
+		if err != nil {
+			Response{w}.ServerError("streaming container files failed", err)
+		}
+		json.NewEncoder(w).Encode(volumeFiles)
+	}
 }
 
 func (s *Server) buildVolumeHandler(w http.ResponseWriter, r *http.Request) {
@@ -308,76 +258,3 @@ func (s *Server) buildVolumeHandler(w http.ResponseWriter, r *http.Request) {
 	buildDir := filepath.Join(s.tmpDir, buildsTmpDir, buildID)
 	s.pier.BuildVolume(buildDir)
 }
-
-// func (s *Server) listVolumeContentsHandler(w http.ResponseWriter, r *http.Request) {
-// 	logRequest(r)
-// 	vars := mux.Vars(r)
-// 	err := s.pier.StreamVolumeFileList(vars["volumeID"], w)
-// 	if err != nil {
-// 		Response{w}.ServerError("streaming container files failed", err)
-// 	}
-// }
-
-// func (s *Server) downloadFromVolumeHandler(w http.ResponseWriter, r *http.Request) {
-// 	logRequest(r)
-// 	vars := mux.Vars(r)
-// 	err := s.pier.DownStreamContainerFile(vars["containerID"], vars["filePath"], w)
-// 	if err != nil {
-// 		Response{w}.ServerError("downloading container files failed", err)
-// 	}
-// }
-
-// func (s *Server) uploadToVolumeHandler(w http.ResponseWriter, r *http.Request) {
-// 	logRequest(r)
-// 	// TODO
-// 	// vars := mux.Vars(r)
-// 	// job := s.pier.GetJob(pier.JobID(vars["jobID"]))
-// 	// dstPath := ""
-
-// 	// mr, err := r.MultipartReader()
-// 	// if err != nil {
-// 	// 	Response{w}.ServerError("while getting multipart reader ", err)
-// 	// 	return
-// 	// }
-
-// 	// for {
-// 	// 	part, err := mr.NextPart()
-// 	// 	if err == io.EOF {
-// 	// 		break
-// 	// 	}
-
-// 	// 	if part.FormName() == "dstPath" {
-// 	// 		buf := new(bytes.Buffer)
-// 	// 		buf.ReadFrom(part)
-// 	// 		dstPath = buf.String()
-// 	// 	}
-
-// 	// 	if part.FileName() == "" {
-// 	// 		continue
-// 	// 	}
-// 	// 	uploadedFilePath := filepath.Join(s.tmpDir, part.FileName())
-// 	// 	dst, err := os.Create(uploadedFilePath)
-// 	// 	if err != nil {
-// 	// 		Response{w}.ServerError("while creating file to save file part ", err)
-// 	// 		return
-// 	// 	}
-// 	// 	defer dst.Close()
-
-// 	// 	if _, err := io.Copy(dst, part); err != nil {
-// 	// 		Response{w}.ServerError("while dumping file part ", err)
-// 	// 		return
-// 	// 	} else {
-// 	// 		err = s.pier.UploadSingleFile(jobID, uploadedFilePath, dstPath)
-// 	// 		if err != nil {
-// 	// 			http.Error(w, "Cannot upload file into the container: "+err.Error(), http.StatusBadRequest)
-// 	// 			return
-// 	// 		} else {
-// 	// 			err = os.Remove(uploadedFilePath)
-// 	// 			if err != nil {
-// 	// 				http.Error(w, "Cannot remove the temporary file: "+err.Error(), http.StatusBadRequest)
-// 	// 				return
-// 	// 			}
-// 	// 		}
-// 	// 	}
-// 	// }
-// }

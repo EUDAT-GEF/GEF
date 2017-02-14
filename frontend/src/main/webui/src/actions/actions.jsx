@@ -239,12 +239,12 @@ function fetchVolumes() {
 export function inspectVolume(volumeId) {
     return function (dispatch, getState) {
         dispatch(inspectVolumeStart());
-        const resultPromise = axios.get( apiNames.volumes + '/' + volumeId);
+        const resultPromise = axios.get( apiNames.volumes + '/' + volumeId + "/");
         if (volumeId == null) {
             dispatch(inspectVolumeEmpty());
         }
         resultPromise.then(response => {
-            log('fetched volume content:', response.data.Volumes);
+            //log('fetched volume content:', response.data);
             dispatch(inspectVolumeSuccess(response.data))
         }).catch(err => {
             Alert.error("Cannot fetch volume content information from the server.");

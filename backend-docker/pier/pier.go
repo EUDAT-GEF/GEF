@@ -12,6 +12,7 @@ import (
 const stagingVolumeName = "volume-stage-in"
 
 
+
 // Pier is a master struct for gef-docker abstractions
 type Pier struct {
 	docker              dckr.Client
