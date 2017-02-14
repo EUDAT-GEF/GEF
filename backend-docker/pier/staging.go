@@ -11,6 +11,7 @@ import (
 
 	"github.com/EUDAT-GEF/GEF/backend-docker/def"
 	"github.com/EUDAT-GEF/GEF/backend-docker/pier/internal/dckr"
+	"path/filepath"
 )
 
 // VolumeItem describes a folder content
@@ -23,10 +24,22 @@ type VolumeItem struct {
 }
 
 const volumeFileListName = "volume-filelist"
+const copyFromVolumeName = "copy-from-volume"
 
 // DownStreamContainerFile exported
-func (p *Pier) DownStreamContainerFile(containerID string, filePath string, w http.ResponseWriter) error {
-	tarStream, err := p.docker.GetTarStream(containerID, filePath)
+func (p *Pier) DownStreamContainerFile(volumeID string, fileLocation string, w http.ResponseWriter) error {
+	// Copy the file from the volume to a new container
+	binds := []dckr.VolBind{
+		dckr.VolBind{dckr.VolumeID(volumeID), "/root/volume", false},
+	}
+	containerID, _, err := p.docker.StartImage(dckr.ImageID(copyFromVolumeName), []string{filepath.Join("/root/volume/", fileLocation), "/root"}, binds)
+
+	if err != nil {
+		return def.Err(err, "copying files from the volume to the container failed")
+	}
+
+	// Stream the file from the container
+	tarStream, err := p.docker.GetTarStream(string(containerID), fileLocation)
 	if err != nil {
 		return def.Err(err, "GetTarStream failed")
 	}

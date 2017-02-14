@@ -10,7 +10,7 @@ import (
 )
 
 const stagingVolumeName = "volume-stage-in"
-const copyFromVolumeName = "copy-from-volume"
+
 
 
 // Pier is a master struct for gef-docker abstractions
@@ -164,22 +164,4 @@ func (p *Pier) GetJob(jobID JobID) (Job, error) {
 		return job, def.Err(nil, "not found")
 	}
 	return job, nil
-}
-
-// CopyFromVolume exported
-func (p *Pier) CopyFromVolume(volumeID string, filePath string) (dckr.ContainerID, error){
-	binds := []dckr.VolBind{
-		dckr.VolBind{dckr.VolumeID(volumeID), "/root/volume", false},
-	}
-	//exitCode, consoleOutput, err := p.docker.ExecuteImage(dckr.ImageID(copyToVolumeName), []string{filePath, "/root"}, binds, true)
-	cont, consoleOutput, err := p.docker.StartImage(dckr.ImageID(copyFromVolumeName), []string{"/root/volume/" + filePath, "/root"}, binds)
-
-	fmt.Println(cont)
-	fmt.Println(consoleOutput)
-
-	if err != nil {
-		log.Println("error: ", err)
-		return cont, err
-	}
-	return cont, err
 }

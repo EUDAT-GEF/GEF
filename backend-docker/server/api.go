@@ -11,8 +11,6 @@ import (
 
 	"github.com/EUDAT-GEF/GEF/backend-docker/def"
 	"github.com/EUDAT-GEF/GEF/backend-docker/pier"
-
-	"fmt"
 )
 
 const (
@@ -226,19 +224,17 @@ func (s *Server) inspectJobHandler(w http.ResponseWriter, r *http.Request) {
 func (s *Server) volumeContentHandler(w http.ResponseWriter, r *http.Request) {
 	logRequest(r)
 	vars := mux.Vars(r)
-	filePath := strings.TrimRight(vars["path"], "?content")
-	isContent := strings.HasSuffix(r.RequestURI, "?content")
+	fileLocation := vars["path"]
+	_, hasContent := r.URL.Query()["content"]
 
-	slashIndex := strings.LastIndex(filePath, "/")
+	slashIndex := strings.LastIndex(fileLocation, "/")
 	if slashIndex == -1 {
 		slashIndex = 0
 	}
-	fileName := filePath[slashIndex:(len(filePath)-slashIndex)]
+	fileName := filepath.Base(fileLocation)
 
-	if isContent { // Download a file from a volume
-		fmt.Println("Downloading")
-		contID, err := s.pier.CopyFromVolume(vars["volumeID"], filePath)
-		err = s.pier.DownStreamContainerFile(string(contID), "/root/" + filePath, w)
+	if hasContent { // Download a file from a volume
+		err := s.pier.DownStreamContainerFile(vars["volumeID"], filepath.Join("/root/", fileLocation), w)
 		if err != nil {
 			Response{w}.ServerError("downloading volume files failed", err)
 		}
@@ -247,7 +243,7 @@ func (s *Server) volumeContentHandler(w http.ResponseWriter, r *http.Request) {
 		Response{w}.Header().Set("Content-Disposition", "attachment; filename=" + fileName)
 
 	} else { // Return of list of files in a specific location in a volume
-		volumeFiles, err := s.pier.ListFiles(pier.VolumeID(vars["volumeID"]), filePath)
+		volumeFiles, err := s.pier.ListFiles(pier.VolumeID(vars["volumeID"]), fileLocation)
 		if err != nil {
 			Response{w}.ServerError("streaming container files failed", err)
 		}
