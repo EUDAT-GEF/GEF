@@ -23,17 +23,6 @@ const JobRow = ({tag, value, style}) => (
     </Row>
 );
 
-
-
-///var iconClass = !file.isdir ? "glyphicon-file"
-//                        : file.children == undefined ? "glyphicon-folder-close"
-//                        : "glyphicon-folder-open";
-//
-
-
-// const indentStyle = {paddingLeft: (3*file.indent)+'em'};
-//      const handlerStyle = {width:20, background:'none', border:'none', fontSize:20, padding:0};
-
 const volumeFile = ({file, index, iconClass, indentStyle}) => (
     <li className="row file" key={file.path} style={{lineHeight:2}} onClick={this.handleFileClick.bind(this, file, index)}>
         <div className="col-sm-6">
@@ -105,7 +94,6 @@ class Job extends React.Component {
         console.log(this.props.selectedVolume);
         let filesTable = null;
         if (this.props.selectedVolume.length > 0) {
-            //filesTable = this.props.selectedVolume.map((fileList))
             filesTable = <VolumeFilesTable fileList={this.props.selectedVolume}/>
         }
 

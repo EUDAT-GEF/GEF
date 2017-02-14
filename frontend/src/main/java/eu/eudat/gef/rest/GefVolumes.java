@@ -49,8 +49,6 @@ public class GefVolumes {
     @GET
     @Path("{volumeID}/{path: .*}")
     public InputStream volumeContentHandler(@PathParam("volumeID") String volumeID, @PathParam("path") String path) throws Exception {
-        log.info("GEF Volumes called.");
-        System.out.println("GEF Volumes called.");
         return rp.forward(gefDockerVolumesApi + "/" + volumeID + "/" + path, request, response);
     }
 }
