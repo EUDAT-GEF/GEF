@@ -105,11 +105,6 @@ func (p *Pier) readJSON(containerID string, filePath string) ([]VolumeItem, erro
 	return volumeFileList, err
 }
 
-func (p *Pier) UploadFile2Container(containerID, srcPath string, dstPath string) error {
-
-	return p.docker.UploadFile2Container(containerID, srcPath, dstPath)
-}
-
 ////////
 
 // BuildVolume exported

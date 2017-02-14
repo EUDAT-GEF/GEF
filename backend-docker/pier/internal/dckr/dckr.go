@@ -466,7 +466,7 @@ func (c Client) GetTarStream(containerID, filePath string) (io.Reader, error) {
 	return bytes.NewReader(b.Bytes()), err
 }
 
-// UploadSingleFile exported
+// UploadFile2Container exported
 func (c Client) UploadFile2Container(containerID, srcPath string, dstPath string) error {
 	var b bytes.Buffer
 

@@ -66,7 +66,9 @@ func NewServer(cfg def.ServerConfig, pier *pier.Pier, tmpDir string) (*Server, e
 		"GET /jobs":         server.listJobsHandler,
 		"GET /jobs/{jobID}": server.inspectJobHandler,
 
-		"GET /volumes/{volumeID}/{path:.+}":  server.volumeContentHandler,
+		//"GET /volumes/{volumeID}":  server.volumeContentHandler,
+		"GET /volumes/{volumeID}/{path:.*}":  server.volumeContentHandler,
+		//"GET /volumes/{volumeID}/{path: .*}":  server.volumeContentHandler,
 		//"POST /volumes/download/{volumeID}":  server.downloadVolumeFileHandler,
 		//"POST /volumes/{volumeID}": server.uploadToVolumeHandler,
 
@@ -80,16 +82,7 @@ func NewServer(cfg def.ServerConfig, pier *pier.Pier, tmpDir string) (*Server, e
 	for mp, handler := range routes {
 		methodPath := strings.SplitN(mp, " ", 2)
 		apirouter.HandleFunc(methodPath[1], handler).Methods(methodPath[0])
-		/*path := methodPath[1]
-		if strings.HasSuffix(path, pathID) {
-			path = path[:len(path)-len(pathID)]
-			apirouter.PathPrefix(path).HandlerFunc(handler).Methods(methodPath[0])
-			apirouter.BuildVarsFunc()
-		} else {
-			apirouter.HandleFunc(methodPath[1], handler).Methods(methodPath[0])
-		}*/
 	}
-	//apirouter.PathPrefix("/volumes/")
 
 	server.Server.Handler = router
 	return server, nil
