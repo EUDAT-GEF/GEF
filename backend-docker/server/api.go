@@ -226,11 +226,6 @@ func (s *Server) volumeContentHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	fileLocation := vars["path"]
 	_, hasContent := r.URL.Query()["content"]
-
-	slashIndex := strings.LastIndex(fileLocation, "/")
-	if slashIndex == -1 {
-		slashIndex = 0
-	}
 	fileName := filepath.Base(fileLocation)
 
 	if hasContent { // Download a file from a volume
