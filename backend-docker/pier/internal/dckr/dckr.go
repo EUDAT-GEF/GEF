@@ -325,7 +325,6 @@ func (w *WriteMonitor) Write(bs []byte) (int, error) {
 	return n, err
 }
 
-
 // ExecuteImage takes a docker image, creates a container and executes it, and waits for it to end
 func (c Client) ExecuteImage(id ImageID, cmdArgs []string, binds []VolBind, removeOnExit bool) (int, *bytes.Buffer, error) {
 	containerID, consoleOutput, err := c.StartImage(id, cmdArgs, binds)

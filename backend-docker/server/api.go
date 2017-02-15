@@ -1,13 +1,13 @@
 package server
 
 import (
+	"encoding/json"
+	"github.com/gorilla/mux"
 	"io"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
-	"encoding/json"
-	"github.com/gorilla/mux"
 
 	"github.com/EUDAT-GEF/GEF/backend-docker/def"
 	"github.com/EUDAT-GEF/GEF/backend-docker/pier"
@@ -63,7 +63,7 @@ func NewServer(cfg def.ServerConfig, pier *pier.Pier, tmpDir string) (*Server, e
 		"GET /jobs":         server.listJobsHandler,
 		"GET /jobs/{jobID}": server.inspectJobHandler,
 
-		"GET /volumes/{volumeID}/{path:.*}":  server.volumeContentHandler,
+		"GET /volumes/{volumeID}/{path:.*}": server.volumeContentHandler,
 	}
 
 	router := mux.NewRouter()
@@ -240,7 +240,7 @@ func (s *Server) volumeContentHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		Response{w}.Header().Set("Content-Type", r.Header.Get("Content-Type"))
-		Response{w}.Header().Set("Content-Disposition", "attachment; filename=" + fileName)
+		Response{w}.Header().Set("Content-Disposition", "attachment; filename="+fileName)
 
 	} else { // Return of list of files in a specific location in a volume
 		volumeFiles, err := s.pier.ListFiles(pier.VolumeID(vars["volumeID"]), fileLocation)

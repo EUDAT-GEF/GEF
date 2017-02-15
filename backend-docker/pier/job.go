@@ -1,11 +1,11 @@
 package pier
 
 import (
+	"bytes"
+	"github.com/EUDAT-GEF/GEF/backend-docker/pier/internal/dckr"
 	"sort"
 	"sync"
 	"time"
-	"github.com/EUDAT-GEF/GEF/backend-docker/pier/internal/dckr"
-	"bytes"
 )
 
 // Job stores the information about a service execution
@@ -28,9 +28,9 @@ type JobState struct {
 
 // TaskStatus exported
 type TaskStatus struct {
-	Name string
-	Error error
-	ExitCode int
+	Name          string
+	Error         error
+	ExitCode      int
 	ConsoleOutput *bytes.Buffer
 }
 

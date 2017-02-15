@@ -1,19 +1,21 @@
 package main
 
 import (
-	"os"
 	"encoding/json"
-	"log"
-	"time"
 	"io/ioutil"
+	"log"
+	"os"
+	"time"
+	"path/filepath"
 )
 
 // Volume folder content
 type VolumeItem struct {
-	Name       string `json:"name"`
-	Size	   int64 `json:"size"`
-	Modified   time.Time `json:"modified"`
-	IsFolder   bool `json:"isFolder"`
+	Name       string       `json:"name"`
+	Size       int64        `json:"size"`
+	Modified   time.Time    `json:"modified"`
+	IsFolder   bool         `json:"isFolder"`
+	Path   	   string       `json:"path"`
 	FolderTree []VolumeItem `json:"folderTree"`
 }
 
@@ -23,14 +25,24 @@ const (
 )
 
 func main() {
-	subFolder := os.Args[1]
+	subFolder := ""
+	isRecursive := false
+	if len(os.Args) > 1 {
+		subFolder = os.Args[1]
+	}
+	if len(os.Args) > 2 {
+		if os.Args[2] == "r" {
+			isRecursive = true
+		}
+	}
+
 	jf, err := os.Create(jsonFileList)
 	log.Println("Opening the JSON file")
 	if err != nil {
 		log.Println(err)
 	} else {
 		log.Println("Reading the volume")
-		JFolderList, err := readFolders(volumeFolder + "/" + subFolder, []VolumeItem{})
+		JFolderList, err := readFolders(subFolder, []VolumeItem{}, isRecursive)
 		if err != nil {
 			log.Println(err)
 		} else {
@@ -40,19 +52,19 @@ func main() {
 	}
 }
 
-func readFolders(currentFolder string, volumeItems []VolumeItem) ([]VolumeItem, error) {
-	log.Println("Reading folder: " + currentFolder)
-	doesExist, hasErrors := exists(currentFolder)
+func readFolders(currentFolder string, volumeItems []VolumeItem, isRecursive bool) ([]VolumeItem, error) {
+	log.Println("Reading folder: " + filepath.Join(volumeFolder, currentFolder))
+	doesExist, hasErrors := exists(filepath.Join(volumeFolder, currentFolder))
 	if hasErrors == nil {
 		if doesExist {
-			files, _ := ioutil.ReadDir(currentFolder)
+			files, _ := ioutil.ReadDir(filepath.Join(volumeFolder, currentFolder))
 			for _, f := range files {
 				subFolderItems := []VolumeItem{}
-				if f.IsDir() == true {
-					subFolderItems, hasErrors = readFolders(currentFolder + "/" + f.Name(), []VolumeItem{})
+				if (f.IsDir() == true) && (isRecursive == true) {
+					subFolderItems, hasErrors = readFolders(filepath.Join(currentFolder, f.Name()), []VolumeItem{}, isRecursive)
 				}
 				if hasErrors == nil {
-					volumeItems = append(volumeItems, VolumeItem{Name: f.Name(), Size: f.Size(), Modified: f.ModTime(), IsFolder:f.IsDir(), FolderTree: subFolderItems})
+					volumeItems = append(volumeItems, VolumeItem{Name: f.Name(), Size: f.Size(), Modified: f.ModTime(), IsFolder: f.IsDir(), Path: currentFolder, FolderTree: subFolderItems})
 					log.Println(f.Name())
 				}
 			}
@@ -64,7 +76,11 @@ func readFolders(currentFolder string, volumeItems []VolumeItem) ([]VolumeItem, 
 
 func exists(path string) (bool, error) {
 	_, err := os.Stat(path)
-	if err == nil { return true, nil }
-	if os.IsNotExist(err) { return false, nil }
+	if err == nil {
+		return true, nil
+	}
+	if os.IsNotExist(err) {
+		return false, nil
+	}
 	return true, err
 }

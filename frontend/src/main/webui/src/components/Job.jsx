@@ -39,6 +39,15 @@ const volumeFile = ({file, index, iconClass, indentStyle}) => (
     </li>
 );
 
+
+// const iconClass = !file.isdir ? "glyphicon-file"
+//                               : file.children == undefined ? "glyphicon-folder-close"
+//                               : "glyphicon-folder-open";
+//           const size = file.size ? humanSize(file.size) : "";
+//           const date = moment(file.date).format('ll');
+//           const indentStyle = {paddingLeft: (3*file.indent)+'em'};
+//           const handlerStyle = {width:20, background:'none', border:'none', fontSize:20, padding:0};
+
 const VolumeFilesTable = ({fileList}) => (
     <div style={{margin:'1em'}}>
         <ol className="list-unstyled fileList" style={{textAlign:'left', minHeight:'30em'}}>
@@ -78,6 +87,7 @@ class Job extends React.Component {
     }
 
     handleInspectOutputVolume() {
+        console.log(this.props.job.OutputVolume)
         this.props.actions.inspectVolume(this.props.job.OutputVolume)
     }
 

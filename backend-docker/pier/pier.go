@@ -2,23 +2,21 @@ package pier
 
 import (
 	"fmt"
-	"log"
-	"time"
-	"github.com/pborman/uuid"
 	"github.com/EUDAT-GEF/GEF/backend-docker/def"
 	"github.com/EUDAT-GEF/GEF/backend-docker/pier/internal/dckr"
+	"github.com/pborman/uuid"
+	"log"
+	"time"
 )
 
 const stagingVolumeName = "volume-stage-in"
 
-
-
 // Pier is a master struct for gef-docker abstractions
 type Pier struct {
-	docker              dckr.Client
-	services            *ServiceList
-	jobs                *JobList
-	tmpDir         	    string
+	docker   dckr.Client
+	services *ServiceList
+	jobs     *JobList
+	tmpDir   string
 }
 
 // VolumeID exported
@@ -77,7 +75,6 @@ func (p *Pier) GetService(serviceID ServiceID) (Service, error) {
 	}
 	return service, nil
 }
-
 
 // RunService exported
 func (p *Pier) RunService(service Service, inputPID string) (Job, error) {
