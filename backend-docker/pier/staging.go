@@ -76,7 +76,7 @@ func (p *Pier) ListFiles(volumeID VolumeID, filePath string) ([]VolumeItem, erro
 	}
 
 	// Execute our image (it should produce a JSON file with the list of files)
-	containerID, consoleOutput, err := p.docker.StartImage(dckr.ImageID(volumeFileListName), []string{filePath}, volumesToMount)
+	containerID, consoleOutput, err := p.docker.StartImage(dckr.ImageID(volumeFileListName), []string{filePath, "r"}, volumesToMount)
 
 	if err != nil {
 		return volumeFileList, def.Err(err, "running image failed")

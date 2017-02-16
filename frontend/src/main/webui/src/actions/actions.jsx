@@ -148,10 +148,11 @@ function inspectVolumeStart() {
     }
 }
 
-function inspectVolumeSuccess(data) {
+function inspectVolumeSuccess(data, volumeID) {
     return {
         type: actionTypes.INSPECT_VOLUME_SUCCESS,
-        data: data
+        data: data,
+        volumeID: volumeID
     }
 }
 
@@ -245,7 +246,7 @@ export function inspectVolume(volumeId) {
         }
         resultPromise.then(response => {
             //log('fetched volume content:', response.data);
-            dispatch(inspectVolumeSuccess(response.data))
+            dispatch(inspectVolumeSuccess(response.data, volumeId))
         }).catch(err => {
             Alert.error("Cannot fetch volume content information from the server.");
             log("A fetch error occurred");
