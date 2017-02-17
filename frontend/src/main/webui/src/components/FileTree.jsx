@@ -8,7 +8,7 @@ import actions from '../actions/actions';
 
 const VolumeFile = ({handleFileClick, file, iconClass, indentStyle}) => (
 
-    <li className="row file" style={{lineHeight:2}} onClick={handleFileClick()}>
+    <li className="row file" style={{lineHeight:2}} onClick={handleFileClick.bind(file)}>
         <div className="col-sm-6">
             <span style={indentStyle}/>
             <button style={{width:20, background:'none', border:'none', fontSize:20, padding:0}}>+</button>
@@ -64,14 +64,59 @@ const VolumeFilesTable1 = ({fileList}) => (
 class FileTree extends React.Component {
     constructor(props) {
         super(props);
+        this.state = {
+            itemChecked: {},
+        };
     }
 
     handleFileClick() {
         console.log("File was clicked");
+        console.log(this);
+        //this.props.actions.volumeItemClick(this)
         //this.props.actions.inspectVolume(this.props.job.InputVolume)
+    }
+
+
+    renderFile(file, index, iconClass, indentStyle) {
+            //return <VolumeFile handleFileClick={this.handleFileClick} key={fileListItem.path+"/"+fileListItem.name} file={fileListItem} iconClass={iconClass} indentStyle={indentStyle}/>
+            return (
+                 <li key={file.path+"/"+file.name}  className="row file" style={{lineHeight:2}} onClick={this.handleFileClick.bind(file)}>
+                    <div className="col-sm-6">
+                        <span style={indentStyle}/>
+                        <button style={{width:20, background:'none', border:'none', fontSize:20, padding:0}}>+</button>
+
+                        <span className={"glyphicon "+iconClass} aria-hidden={true} /> {file.name}
+                    </div>
+                    <div className="col-sm-3">{file.size}</div>
+                    <div className="col-sm-3">{file.date}</div>
+                </li>
+            )
+    }
+
+
+    readVolumeContent(volumeContent, depthLevel, volumeItems) {
+        volumeContent.map((fileListItem, index) => {
+            let indentStyle = {paddingLeft: (3*(1+depthLevel))+'em'};
+            let iconClass = "glyphicon-file";
+
+
+            if (fileListItem.isFolder == true) {
+                iconClass = "glyphicon-folder-close";
+            }
+
+            volumeItems.push(this.renderFile(fileListItem, index+volumeItems.length, iconClass, indentStyle))
+
+            if (fileListItem.isFolder == true) {
+                depthLevel += 1;
+                volumeItems = this.readVolumeContent(fileListItem.folderTree, depthLevel, volumeItems);
+                depthLevel -= 1;
+            }
+        })
+        return volumeItems
     }
     render() {
         console.log(this.props);
+        let sLines = [];
         if (this.props.selectedVolume.length > 0) {
             return (
                 <div style={{margin:'1em'}}>
@@ -81,26 +126,9 @@ class FileTree extends React.Component {
                             <div className="col-sm-3" style={{fontWeight:'bold'}}>Size</div>
                             <div className="col-sm-3" style={{fontWeight:'bold'}}>Date</div>
                         </li>
-
-                        {this.props.selectedVolume.map((fileListItem, index) => {
-
-                            let indentStyle1 = {paddingLeft: (3*1)+'em'};
-                            let iconClass1 = "glyphicon-file";
-                            if (fileListItem.isFolder == true) {
-                                iconClass1 = "glyphicon-folder-close";
-                            }
-
-                            //this.volumeFile(fileListItem, index, iconClass, indentStyle)
-                            //console.log(index)
-                            //console.log(fileListItem)
-                            //console.log(fileListItem)
-                            return <VolumeFile handleFileClick={this.handleFileClick} key={"vf"+index} file={fileListItem} iconClass={iconClass1} indentStyle={indentStyle1}/>
+                        {sLines = this.readVolumeContent(this.props.selectedVolume, 0, [])}
 
 
-
-
-
-                        })}
                     </ol>
                 </div>
             )
