@@ -69,9 +69,13 @@ class FileTree extends React.Component {
         };
     }
 
-    handleFileClick() {
+    handleFileClick(child, e) {
         console.log("File was clicked");
-        console.log(this);
+        console.log(this.state);
+        let itemChecked = this.state.itemChecked;
+        itemChecked[child.name] = e.target.checked;
+        this.setState({itemChecked});
+        console.log(this.state);
         //this.props.actions.volumeItemClick(this)
         //this.props.actions.inspectVolume(this.props.job.InputVolume)
     }
@@ -79,12 +83,17 @@ class FileTree extends React.Component {
 
     renderFile(file, index, iconClass, indentStyle) {
             //return <VolumeFile handleFileClick={this.handleFileClick} key={fileListItem.path+"/"+fileListItem.name} file={fileListItem} iconClass={iconClass} indentStyle={indentStyle}/>
+            let renderedChildren;
+            //if(this.state.itemChecked[child.id]) {
+
+            //}
+
             return (
-                 <li key={file.path+"/"+file.name}  className="row file" style={{lineHeight:2}} onClick={this.handleFileClick.bind(file)}>
+                 <li key={file.path+"/"+file.name}  className="row file" style={{lineHeight:2}} >
                     <div className="col-sm-6">
                         <span style={indentStyle}/>
                         <button style={{width:20, background:'none', border:'none', fontSize:20, padding:0}}>+</button>
-
+                        <input type="checkbox" onChange={ (e) => this.handleFileClick(file, e)} />
                         <span className={"glyphicon "+iconClass} aria-hidden={true} /> {file.name}
                     </div>
                     <div className="col-sm-3">{file.size}</div>
