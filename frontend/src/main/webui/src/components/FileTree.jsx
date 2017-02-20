@@ -4,116 +4,102 @@ import { toPairs } from '../utils/utils';
 import { connect } from 'react-redux'
 import { bindActionCreators } from 'redux'
 import actions from '../actions/actions';
+import moment from 'moment';
 
-
-const VolumeFile = ({handleFileClick, file, iconClass, indentStyle}) => (
-
-    <li className="row file" style={{lineHeight:2}} onClick={handleFileClick.bind(file)}>
-        <div className="col-sm-6">
-            <span style={indentStyle}/>
-            <button style={{width:20, background:'none', border:'none', fontSize:20, padding:0}}>+</button>
-
-            <span className={"glyphicon "+iconClass} aria-hidden={true} /> {file.name}
-        </div>
-        <div className="col-sm-3">{file.size}</div>
-        <div className="col-sm-3">{file.date}</div>
-    </li>
-);
-
-
-// const iconClass = !file.isdir ? "glyphicon-file"
-//                               : file.children == undefined ? "glyphicon-folder-close"
-//                               : "glyphicon-folder-open";
-//           const size = file.size ? humanSize(file.size) : "";
-//           const date = moment(file.date).format('ll');
-//           const indentStyle = {paddingLeft: (3*file.indent)+'em'};
-//           const handlerStyle = {width:20, background:'none', border:'none', fontSize:20, padding:0};
-//
-const VolumeFilesTable1 = ({fileList}) => (
-    <div style={{margin:'1em'}}>
-        <ol className="list-unstyled fileList" style={{textAlign:'left', minHeight:'30em'}}>
-            <li className="heading row" style={{padding:'0.5em 0'}}>
-                <div className="col-sm-6" style={{fontWeight:'bold'}}>File Name</div>
-                <div className="col-sm-3" style={{fontWeight:'bold'}}>Size</div>
-                <div className="col-sm-3" style={{fontWeight:'bold'}}>Date</div>
-            </li>
-
-            {fileList.map((fileListItem, index) => {
-                console.log(index);
-                let indentStyle = {paddingLeft: (3*1)+'em'};
-                let iconClass = "glyphicon-file";
-                if (fileListItem.isFolder == true) {
-                    iconClass = "glyphicon-folder-close";
-                }
-                return <li className="row file" key={index} style={{lineHeight:2}}>
-                   <div className="col-sm-6">
-                       <span style={indentStyle}/>
-                       fileListItem.isFolder == true ?
-                              (<button style={{width:20, background:'none', border:'none', fontSize:20, padding:0}}>+</button>)
-
-                       <span className={"glyphicon "+iconClass} aria-hidden={true} /> {fileListItem.name}
-                   </div>
-                   <div className="col-sm-3">{fileListItem.size}</div>
-                   <div className="col-sm-3">{fileListItem.modified}</div>
-               </li>
-            })}
-        </ol>
-    </div>
-);
+var path = require('path');
 
 class FileTree extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
-            itemChecked: {},
+            folderOpen: {},
         };
     }
 
-    handleFileClick(child, e) {
-        console.log("File was clicked");
+    handleFolderClick(child, isOpen, e) {
+        let folderOpen = this.state.folderOpen;
+        let volumeInternalPath = path.join(child.path, child.name);
+
+        folderOpen[volumeInternalPath] = isOpen;
+        this.setState({folderOpen});
+
+
+
         console.log(this.state);
-        let itemChecked = this.state.itemChecked;
-        itemChecked[child.name] = e.target.checked;
-        this.setState({itemChecked});
-        console.log(this.state);
-        //this.props.actions.volumeItemClick(this)
-        //this.props.actions.inspectVolume(this.props.job.InputVolume)
+
     }
 
+    renderFile(file, indentStyle) {
+        let volumeInternalPath = path.join(file.path, file.name);
+        let iconClass = "glyphicon-file";
+        let browseButton;
+        let isContentVisible = true;
 
-    renderFile(file, index, iconClass, indentStyle) {
-            //return <VolumeFile handleFileClick={this.handleFileClick} key={fileListItem.path+"/"+fileListItem.name} file={fileListItem} iconClass={iconClass} indentStyle={indentStyle}/>
-            let renderedChildren;
-            //if(this.state.itemChecked[child.id]) {
+        if (file.isFolder) {
+            iconClass = "glyphicon-folder-close";
+            browseButton = <button style={{width:20, background:'none', border:'none', fontSize:20, padding:0}} onClick={ (e) => this.handleFolderClick(file, true, e)}>+</button>
+            if (this.state.folderOpen[volumeInternalPath] != null) {
+                if (this.state.folderOpen[volumeInternalPath]) {
+                    //isContentVisible = true;
+                    iconClass = "glyphicon-folder-open";
+                    browseButton = <button style={{width:20, background:'none', border:'none', fontSize:20, padding:0}} onClick={ (e) => this.handleFolderClick(file, false, e)}>-</button>
+                } //else {
+                 //   isContentVisible = false;
+                //}
+            }
+        }
 
-            //}
 
+        if (this.state.folderOpen[file.path] != null) {
+            if (this.state.folderOpen[file.path]) {
+                isContentVisible = true
+            } else {
+                isContentVisible = false
+            }
+        } else {
+            isContentVisible = false
+        }
+
+
+        for (var folderName in this.state.folderOpen) {
+            console.log(folderName);
+            console.log("********")
+
+            if ((file.path.indexOf(folderName) == 0) && (this.state.folderOpen[folderName]==false)) {
+                isContentVisible = false;
+            }
+
+        }
+
+
+
+
+        if (file.path == "") {
+            isContentVisible = true;
+        }
+
+        if (isContentVisible) {
             return (
-                 <li key={file.path+"/"+file.name}  className="row file" style={{lineHeight:2}} >
+                <li key={volumeInternalPath} className="row file" style={{lineHeight: 2}}>
                     <div className="col-sm-6">
                         <span style={indentStyle}/>
-                        <button style={{width:20, background:'none', border:'none', fontSize:20, padding:0}}>+</button>
-                        <input type="checkbox" onChange={ (e) => this.handleFileClick(file, e)} />
-                        <span className={"glyphicon "+iconClass} aria-hidden={true} /> {file.name}
+                        {browseButton}
+                        <span className={"glyphicon " + iconClass} aria-hidden={true}/> {file.name}
                     </div>
                     <div className="col-sm-3">{file.size}</div>
-                    <div className="col-sm-3">{file.date}</div>
+                    <div className="col-sm-3">{moment(file.date).format('ll')}</div>
                 </li>
             )
+        }
     }
 
 
     readVolumeContent(volumeContent, depthLevel, volumeItems) {
-        volumeContent.map((fileListItem, index) => {
+        volumeContent.map((fileListItem) => {
             let indentStyle = {paddingLeft: (3*(1+depthLevel))+'em'};
-            let iconClass = "glyphicon-file";
 
 
-            if (fileListItem.isFolder == true) {
-                iconClass = "glyphicon-folder-close";
-            }
-
-            volumeItems.push(this.renderFile(fileListItem, index+volumeItems.length, iconClass, indentStyle))
+            volumeItems.push(this.renderFile(fileListItem, indentStyle))
 
             if (fileListItem.isFolder == true) {
                 depthLevel += 1;
@@ -123,6 +109,24 @@ class FileTree extends React.Component {
         })
         return volumeItems
     }
+
+    isInsideFolder(volumeContent, folderPath, fileName, currentFolder) {
+        volumeContent.map((fileListItem) => {
+
+
+
+            //volumeItems.push(this.renderFile(fileListItem, indentStyle))
+
+            if (fileListItem.isFolder == true) {
+
+                isFound = this.isInsideFolder(volumeContent, folderPath, fileName);
+
+            }
+
+        })
+        return isFound
+    }
+
     render() {
         console.log(this.props);
         let sLines = [];
@@ -136,8 +140,6 @@ class FileTree extends React.Component {
                             <div className="col-sm-3" style={{fontWeight:'bold'}}>Date</div>
                         </li>
                         {sLines = this.readVolumeContent(this.props.selectedVolume, 0, [])}
-
-
                     </ol>
                 </div>
             )
@@ -159,9 +161,5 @@ function mapDispatchToProps(dispatch) {
         actions: bindActionCreators(actions, dispatch)
     }
 }
-
-FileTree.propTypes = {
-    handleFileClick: PropTypes.func.isRequired,
-};
 
 export default connect(mapStateToProps, mapDispatchToProps)(FileTree);
