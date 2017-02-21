@@ -51,7 +51,7 @@ function volumes(state = SI([]), action) {
     }
 }
 
-function selectedVolume(state = SI([]), action) {
+function selectedVolumeContent(state = SI([]), action) {
     switch (action.type) {
         case actionTypes.INSPECT_VOLUME_SUCCESS:
             return SI(action.data);
@@ -64,12 +64,56 @@ function selectedVolume(state = SI([]), action) {
     }
 }
 
+function selectedVolumeID(state = SI([]), action) {
+    switch (action.type) {
+        case actionTypes.SELECT_VOLUME_SUCCESS:
+            return SI(action.data);
+        case actionTypes.SELECT_VOLUME_EMPTY:
+            return SI([]);
+        case actionTypes.SELECT_VOLUME_ERROR:
+            return SI([]);
+        default:
+            return state;
+    }
+}
+
+function downloadedFile(state = SI([]), action) {
+    switch (action.type) {
+        case actionTypes.DOWNLOAD_VOLUME_FILE_SUCCESS:
+
+
+            var blob = new Blob([action.data]);
+            if (window.navigator.msSaveOrOpenBlob)  // IE hack; see http://msdn.microsoft.com/en-us/library/ie/hh779016.aspx
+                window.navigator.msSaveBlob(blob, "filename.txt");
+            else
+            {
+                var a = window.document.createElement("a");
+                a.href = window.URL.createObjectURL(blob, {type: "text/plain"});
+                a.download = "filename.csv";
+                document.body.appendChild(a);
+                a.click();  // IE: "Access is denied"; see: https://connect.microsoft.com/IE/feedback/details/797361/ie-10-treats-blob-url-as-cross-origin-and-denies-access
+                document.body.removeChild(a);
+            }
+
+            return SI(action.data);
+        case actionTypes.DOWNLOAD_VOLUME_FILE_START:
+            return SI([]);
+        case actionTypes.DOWNLOAD_VOLUME_FILE_ERROR:
+            return SI([]);
+        default:
+            return state;
+    }
+}
+
+
 const rootReducer = combineReducers({
     jobs,
     services,
     volumes,
     selectedService,
-    selectedVolume,
+    selectedVolumeContent,
+    selectedVolumeID,
+    downloadedFile,
     form: formReducer,
     routing: routerReducer
 });

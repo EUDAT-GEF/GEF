@@ -22,57 +22,68 @@ class FileTree extends React.Component {
 
         folderOpen[volumeInternalPath] = isOpen;
         this.setState({folderOpen});
+    }
 
+    humanSize(sz) {
+        let K = 1000, M = K*K, G = K*M, T = K*G;
 
+        if (sz < K) {
+            return [sz,'B '];
+        } else if (sz < M) {
+            return [(sz/K).toFixed(2), 'KB'];
+        } else if (sz < G) {
+            return [(sz/M).toFixed(2), 'MB'];
+        } else if (sz < T) {
+            return [(sz/G).toFixed(2), 'GB'];
+        } else {
+            return [(sz/T).toFixed(2), 'TB'];
+        }
+    }
 
-        console.log(this.state);
-
+    downloadVolumeFile(volumeID, file, e) {
+        console.log("DOWNLOADING FILE");
+        console.log(file);
+        console.log(volumeID);
+        this.props.actions.downloadVolumeFile(volumeID, file);
+        console.log(this.props);
+        //("/volumes/{this.props.selectedVolumeID}/"++"?content"
     }
 
     renderFile(file, indentStyle) {
         let volumeInternalPath = path.join(file.path, file.name);
         let iconClass = "glyphicon-file";
         let browseButton;
-        let isContentVisible = true;
-
+        let downloadButton;
+        let b2dropButton;
+        let isContentVisible = false;
+        //console.log(this.props.selectedVolumeID);
         if (file.isFolder) {
+            //downloadButton = "";
+            //b2dropButton = "";
             iconClass = "glyphicon-folder-close";
             browseButton = <button style={{width:20, background:'none', border:'none', fontSize:20, padding:0}} onClick={ (e) => this.handleFolderClick(file, true, e)}>+</button>
             if (this.state.folderOpen[volumeInternalPath] != null) {
                 if (this.state.folderOpen[volumeInternalPath]) {
-                    //isContentVisible = true;
                     iconClass = "glyphicon-folder-open";
                     browseButton = <button style={{width:20, background:'none', border:'none', fontSize:20, padding:0}} onClick={ (e) => this.handleFolderClick(file, false, e)}>-</button>
-                } //else {
-                 //   isContentVisible = false;
-                //}
+                }
             }
+        } else {
+            downloadButton = <span className="glyphicon glyphicon-download-alt" aria-hidden={true} onClick={ (e) => this.downloadVolumeFile(this.props.selectedVolumeID, file, e)}/>
+            b2dropButton = <span className="glyphicon glyphicon-cloud-upload" aria-hidden={true}/>
         }
-
 
         if (this.state.folderOpen[file.path] != null) {
             if (this.state.folderOpen[file.path]) {
                 isContentVisible = true
-            } else {
-                isContentVisible = false
             }
-        } else {
-            isContentVisible = false
         }
 
-
         for (var folderName in this.state.folderOpen) {
-            console.log(folderName);
-            console.log("********")
-
             if ((file.path.indexOf(folderName) == 0) && (this.state.folderOpen[folderName]==false)) {
                 isContentVisible = false;
             }
-
         }
-
-
-
 
         if (file.path == "") {
             isContentVisible = true;
@@ -85,19 +96,19 @@ class FileTree extends React.Component {
                         <span style={indentStyle}/>
                         {browseButton}
                         <span className={"glyphicon " + iconClass} aria-hidden={true}/> {file.name}
+                        {downloadButton}
+                        {b2dropButton}
                     </div>
-                    <div className="col-sm-3">{file.size}</div>
+                    <div className="col-sm-3">{this.humanSize(file.size)}</div>
                     <div className="col-sm-3">{moment(file.date).format('ll')}</div>
                 </li>
             )
         }
     }
 
-
     readVolumeContent(volumeContent, depthLevel, volumeItems) {
         volumeContent.map((fileListItem) => {
             let indentStyle = {paddingLeft: (3*(1+depthLevel))+'em'};
-
 
             volumeItems.push(this.renderFile(fileListItem, indentStyle))
 
@@ -110,27 +121,10 @@ class FileTree extends React.Component {
         return volumeItems
     }
 
-    isInsideFolder(volumeContent, folderPath, fileName, currentFolder) {
-        volumeContent.map((fileListItem) => {
-
-
-
-            //volumeItems.push(this.renderFile(fileListItem, indentStyle))
-
-            if (fileListItem.isFolder == true) {
-
-                isFound = this.isInsideFolder(volumeContent, folderPath, fileName);
-
-            }
-
-        })
-        return isFound
-    }
-
     render() {
-        console.log(this.props);
+        //console.log(this.props);
         let sLines = [];
-        if (this.props.selectedVolume.length > 0) {
+        if (this.props.selectedVolumeContent.length > 0) {
             return (
                 <div style={{margin:'1em'}}>
                     <ol className="list-unstyled fileList" style={{textAlign:'left', minHeight:'30em'}}>
@@ -139,7 +133,7 @@ class FileTree extends React.Component {
                             <div className="col-sm-3" style={{fontWeight:'bold'}}>Size</div>
                             <div className="col-sm-3" style={{fontWeight:'bold'}}>Date</div>
                         </li>
-                        {sLines = this.readVolumeContent(this.props.selectedVolume, 0, [])}
+                        {sLines = this.readVolumeContent(this.props.selectedVolumeContent, 0, [])}
                     </ol>
                 </div>
             )

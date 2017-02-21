@@ -148,11 +148,10 @@ function inspectVolumeStart() {
     }
 }
 
-function inspectVolumeSuccess(data, volumeID) {
+function inspectVolumeSuccess(data) {
     return {
         type: actionTypes.INSPECT_VOLUME_SUCCESS,
-        data: data,
-        volumeID: volumeID
+        data: data
     }
 }
 
@@ -169,6 +168,55 @@ function inspectVolumeError(errorMessage) {
         errorMessage: errorMessage
     }
 }
+
+function selectVolumeStart() {
+    return {
+        type: actionTypes.SELECT_VOLUME_START
+    }
+}
+
+function selectVolumeSuccess(data) {
+    return {
+        type: actionTypes.SELECT_VOLUME_SUCCESS,
+        data: data
+    }
+}
+
+function selectVolumeEmpty() {
+    return {
+        type: actionTypes.SELECT_VOLUME_EMPTY,
+        data: []
+    }
+}
+
+function selectVolumeError(errorMessage) {
+    return {
+        type: actionTypes.SELECT_VOLUME_ERROR,
+        errorMessage: errorMessage
+    }
+}
+
+function downloadVolumeFileStart() {
+    return {
+        type: actionTypes.DOWNLOAD_VOLUME_FILE_START
+    }
+}
+
+function downloadVolumeFileSuccess(data) {
+    return {
+        type: actionTypes.DOWNLOAD_VOLUME_FILE_START,
+        data: data
+    }
+}
+
+function downloadVolumeFileError(errorMessage) {
+    return {
+        type: actionTypes.DOWNLOAD_VOLUME_FILE_START,
+        errorMessage: errorMessage
+    }
+}
+
+
 
 
 
@@ -240,17 +288,41 @@ function fetchVolumes() {
 export function inspectVolume(volumeId) {
     return function (dispatch, getState) {
         dispatch(inspectVolumeStart());
+        dispatch(selectVolumeStart());
         const resultPromise = axios.get( apiNames.volumes + '/' + volumeId + "/");
         if (volumeId == null) {
             dispatch(inspectVolumeEmpty());
+            dispatch(selectVolumeEmpty());
         }
         resultPromise.then(response => {
             //log('fetched volume content:', response.data);
             dispatch(inspectVolumeSuccess(response.data))
+            dispatch(selectVolumeSuccess(volumeId))
         }).catch(err => {
             Alert.error("Cannot fetch volume content information from the server.");
             log("A fetch error occurred");
             dispatch(inspectVolumeError(err));
+            dispatch(selectVolumeError(err));
+        })
+    }
+}
+
+export function downloadVolumeFile(volumeId, file) {
+    return function (dispatch, getState) {
+        dispatch(downloadVolumeFileStart());
+        let path = require("path");
+
+        const resultPromise = axios.get( path.join(apiNames.volumes, volumeId, "volume", file.path, file.name + "?content"));
+
+        resultPromise.then(response => {
+            //log('fetched volume content:', response.data);
+            dispatch(downloadVolumeFileSuccess(response.data))
+
+        }).catch(err => {
+            Alert.error("Cannot download file from the specified volume.");
+            log("A download error occurred");
+            dispatch(downloadVolumeFileError(err));
+
         })
     }
 }
@@ -334,6 +406,14 @@ export default {
     inspectVolumeStart,
     inspectVolumeSuccess,
     inspectVolumeError,
+    selectVolumeStart,
+    selectVolumeSuccess,
+    selectVolumeEmpty,
+    selectVolumeError,
+    downloadVolumeFileStart,
+    downloadVolumeFileSuccess,
+    downloadVolumeFileError,
+    downloadVolumeFile,
     fetchJobs,
     fetchServices,
     fetchService,

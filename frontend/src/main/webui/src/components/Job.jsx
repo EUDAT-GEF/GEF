@@ -38,16 +38,13 @@ class Job extends React.Component {
     }
 
     componentDidMount() {
-        this.props.actions.inspectVolume(); // send an empty list of files when a new box is drown
+        //this.props.actions.inspectVolume(); // send an empty list of files when a new box is drown
     }
 
     render() {
-        console.log(this.props);
         let job = this.props.job;
         let service = this.props.service;
         let title = this.props.title;
-
-        console.log(this.props.selectedVolume);
         return (
             <div style={{border: "1px solid black"}}>
                 <h4> Selected job</h4>
@@ -71,7 +68,7 @@ class Job extends React.Component {
                         <button type="submit" className="btn btn-default" onClick={this.handleInspectOutputVolume.bind(this)}>Inspect</button>
                     </Col>
                 </Row>
-                <FileTree fileList={this.props.selectedVolume} job={job}/>
+                <FileTree fileList={this.props.selectedVolumeContent} job={job}/>
             </div>
 
         )
