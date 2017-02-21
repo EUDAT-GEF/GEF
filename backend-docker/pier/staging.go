@@ -20,7 +20,7 @@ type VolumeItem struct {
 	Size       int64        `json:"size"`
 	Modified   time.Time    `json:"modified"`
 	IsFolder   bool         `json:"isFolder"`
-	Path   	   string       `json:"path"`
+	Path       string       `json:"path"`
 	FolderTree []VolumeItem `json:"folderTree"`
 }
 
