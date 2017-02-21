@@ -51,7 +51,7 @@ function volumes(state = SI([]), action) {
     }
 }
 
-function selectedVolumeContent(state = SI([]), action) {
+function selectedVolume(state = SI([]), action) {
     switch (action.type) {
         case actionTypes.INSPECT_VOLUME_SUCCESS:
             return SI(action.data);
@@ -64,27 +64,13 @@ function selectedVolumeContent(state = SI([]), action) {
     }
 }
 
-function selectedVolumeID(state = SI([]), action) {
-    switch (action.type) {
-        case actionTypes.SELECT_VOLUME_SUCCESS:
-            return SI(action.data);
-        case actionTypes.SELECT_VOLUME_EMPTY:
-            return SI([]);
-        case actionTypes.SELECT_VOLUME_ERROR:
-            return SI([]);
-        default:
-            return state;
-    }
-}
-
 
 const rootReducer = combineReducers({
     jobs,
     services,
     volumes,
     selectedService,
-    selectedVolumeContent,
-    selectedVolumeID,
+    selectedVolume,
     form: formReducer,
     routing: routerReducer
 });

@@ -68,7 +68,7 @@ class Job extends React.Component {
                         <button type="submit" className="btn btn-default" onClick={this.handleInspectOutputVolume.bind(this)}>Inspect</button>
                     </Col>
                 </Row>
-                <FileTree fileList={this.props.selectedVolumeContent} job={job}/>
+                <FileTree fileList={this.props.selectedVolume} job={job}/>
             </div>
 
         )

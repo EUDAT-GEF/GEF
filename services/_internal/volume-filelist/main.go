@@ -60,11 +60,12 @@ func readFolders(currentFolder string, volumeItems []VolumeItem, isRecursive boo
 			files, _ := ioutil.ReadDir(filepath.Join(volumeFolder, currentFolder))
 			for _, f := range files {
 				subFolderItems := []VolumeItem{}
-				if (f.IsDir() == true) && (isRecursive == true) {
+				if f.IsDir() && isRecursive {
 					subFolderItems, hasErrors = readFolders(filepath.Join(currentFolder, f.Name()), []VolumeItem{}, isRecursive)
 				}
 				if hasErrors == nil {
-					volumeItems = append(volumeItems, VolumeItem{Name: f.Name(), Size: f.Size(), Modified: f.ModTime(), IsFolder: f.IsDir(), Path: currentFolder, FolderTree: subFolderItems})
+					volumeItems = append(volumeItems, VolumeItem{Name: f.Name(), Size: f.Size(), Modified: f.ModTime(), IsFolder: f.IsDir(),
+						Path: currentFolder, FolderTree: subFolderItems})
 					log.Println(f.Name())
 				}
 			}

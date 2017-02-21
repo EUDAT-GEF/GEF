@@ -1,16 +1,14 @@
 package server
 
 import (
-	"encoding/json"
-	"github.com/gorilla/mux"
 	"io"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
-
 	"github.com/EUDAT-GEF/GEF/backend-docker/def"
 	"github.com/EUDAT-GEF/GEF/backend-docker/pier"
+	"github.com/gorilla/mux"
 )
 
 const (
@@ -242,7 +240,7 @@ func (s *Server) volumeContentHandler(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			Response{w}.ServerError("streaming container files failed", err)
 		}
-		json.NewEncoder(w).Encode(volumeFiles)
+		Response{w}.Ok(jmap("volumeID", vars["volumeID"], "volumeContent", volumeFiles))
 	}
 }
 

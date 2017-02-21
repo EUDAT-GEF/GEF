@@ -169,33 +169,6 @@ function inspectVolumeError(errorMessage) {
     }
 }
 
-function selectVolumeStart() {
-    return {
-        type: actionTypes.SELECT_VOLUME_START
-    }
-}
-
-function selectVolumeSuccess(data) {
-    return {
-        type: actionTypes.SELECT_VOLUME_SUCCESS,
-        data: data
-    }
-}
-
-function selectVolumeEmpty() {
-    return {
-        type: actionTypes.SELECT_VOLUME_EMPTY,
-        data: []
-    }
-}
-
-function selectVolumeError(errorMessage) {
-    return {
-        type: actionTypes.SELECT_VOLUME_ERROR,
-        errorMessage: errorMessage
-    }
-}
-
 
 
 
@@ -267,21 +240,16 @@ function fetchVolumes() {
 export function inspectVolume(volumeId) {
     return function (dispatch, getState) {
         dispatch(inspectVolumeStart());
-        dispatch(selectVolumeStart());
         const resultPromise = axios.get( apiNames.volumes + '/' + volumeId + "/");
         if (volumeId == null) {
             dispatch(inspectVolumeEmpty());
-            dispatch(selectVolumeEmpty());
         }
         resultPromise.then(response => {
-            //log('fetched volume content:', response.data);
             dispatch(inspectVolumeSuccess(response.data))
-            dispatch(selectVolumeSuccess(volumeId))
         }).catch(err => {
             Alert.error("Cannot fetch volume content information from the server.");
             log("A fetch error occurred");
             dispatch(inspectVolumeError(err));
-            dispatch(selectVolumeError(err));
         })
     }
 }
@@ -365,10 +333,6 @@ export default {
     inspectVolumeStart,
     inspectVolumeSuccess,
     inspectVolumeError,
-    selectVolumeStart,
-    selectVolumeSuccess,
-    selectVolumeEmpty,
-    selectVolumeError,
     fetchJobs,
     fetchServices,
     fetchService,

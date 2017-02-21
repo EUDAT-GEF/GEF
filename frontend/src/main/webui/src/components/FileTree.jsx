@@ -64,18 +64,18 @@ class FileTree extends React.Component {
                 volumeFilePath = "/" + file.path;
             }
 
-            downloadButton = <a href={apiNames.volumes + "/" + this.props.selectedVolumeID + volumeFilePath + "/" + file.name + "?content"}><span className="glyphicon glyphicon-download-alt" aria-hidden={true}/></a>
+            downloadButton = <a href={apiNames.volumes + "/" + this.props.selectedVolume.volumeID + volumeFilePath + "/" + file.name + "?content"}><span className="glyphicon glyphicon-download-alt" aria-hidden={true}/></a>
             b2dropButton = <span className="glyphicon glyphicon-cloud-upload" aria-hidden={true}/>
         }
 
-        if (this.state.folderOpen[file.path] != null) {
+        if (this.state.folderOpen[file.path]) {
             if (this.state.folderOpen[file.path]) {
                 isContentVisible = true
             }
         }
 
         for (var folderName in this.state.folderOpen) {
-            if ((file.path.indexOf(folderName) == 0) && (this.state.folderOpen[folderName]==false)) {
+            if ((file.path.indexOf(folderName) == 0) && (!this.state.folderOpen[folderName])) {
                 isContentVisible = false;
             }
         }
@@ -108,16 +108,14 @@ class FileTree extends React.Component {
             volumeItems.push(this.renderFile(fileListItem, indentStyle))
 
             if (fileListItem.isFolder == true) {
-                depthLevel += 1;
-                volumeItems = this.readVolumeContent(fileListItem.folderTree, depthLevel, volumeItems);
-                depthLevel -= 1;
+                volumeItems = this.readVolumeContent(fileListItem.folderTree, depthLevel+1, volumeItems);
             }
         })
         return volumeItems
     }
 
     render() {
-        if (this.props.selectedVolumeContent.length > 0) {
+        if (this.props.selectedVolume.volumeID) {
             return (
                 <div style={{margin:'1em'}}>
                     <ol className="list-unstyled fileList" style={{textAlign:'left', minHeight:'30em'}}>
@@ -126,7 +124,7 @@ class FileTree extends React.Component {
                             <div className="col-sm-3" style={{fontWeight:'bold'}}>Size</div>
                             <div className="col-sm-3" style={{fontWeight:'bold'}}>Date</div>
                         </li>
-                        {this.readVolumeContent(this.props.selectedVolumeContent, 0, [])}
+                        {this.readVolumeContent(this.props.selectedVolume.volumeContent, 0, [])}
                     </ol>
                 </div>
             )
