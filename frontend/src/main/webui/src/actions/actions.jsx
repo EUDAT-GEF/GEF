@@ -196,27 +196,6 @@ function selectVolumeError(errorMessage) {
     }
 }
 
-function downloadVolumeFileStart() {
-    return {
-        type: actionTypes.DOWNLOAD_VOLUME_FILE_START
-    }
-}
-
-function downloadVolumeFileSuccess(data) {
-    return {
-        type: actionTypes.DOWNLOAD_VOLUME_FILE_START,
-        data: data
-    }
-}
-
-function downloadVolumeFileError(errorMessage) {
-    return {
-        type: actionTypes.DOWNLOAD_VOLUME_FILE_START,
-        errorMessage: errorMessage
-    }
-}
-
-
 
 
 
@@ -307,26 +286,6 @@ export function inspectVolume(volumeId) {
     }
 }
 
-export function downloadVolumeFile(volumeId, file) {
-    return function (dispatch, getState) {
-        dispatch(downloadVolumeFileStart());
-        let path = require("path");
-
-        const resultPromise = axios.get( path.join(apiNames.volumes, volumeId, "volume", file.path, file.name + "?content"));
-
-        resultPromise.then(response => {
-            //log('fetched volume content:', response.data);
-            dispatch(downloadVolumeFileSuccess(response.data))
-
-        }).catch(err => {
-            Alert.error("Cannot download file from the specified volume.");
-            log("A download error occurred");
-            dispatch(downloadVolumeFileError(err));
-
-        })
-    }
-}
-
 //this creates a new upload endpoint on the server,
 //the upload endpoint can be used for building services and volumes
 function getNewUploadEndpoint() {
@@ -410,10 +369,6 @@ export default {
     selectVolumeSuccess,
     selectVolumeEmpty,
     selectVolumeError,
-    downloadVolumeFileStart,
-    downloadVolumeFileSuccess,
-    downloadVolumeFileError,
-    downloadVolumeFile,
     fetchJobs,
     fetchServices,
     fetchService,

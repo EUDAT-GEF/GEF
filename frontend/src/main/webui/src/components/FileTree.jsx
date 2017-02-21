@@ -5,6 +5,7 @@ import { connect } from 'react-redux'
 import { bindActionCreators } from 'redux'
 import actions from '../actions/actions';
 import moment from 'moment';
+import apiNames from '../GefAPI';
 
 var path = require('path');
 
@@ -19,7 +20,6 @@ class FileTree extends React.Component {
     handleFolderClick(child, isOpen, e) {
         let folderOpen = this.state.folderOpen;
         let volumeInternalPath = path.join(child.path, child.name);
-
         folderOpen[volumeInternalPath] = isOpen;
         this.setState({folderOpen});
     }
@@ -40,15 +40,6 @@ class FileTree extends React.Component {
         }
     }
 
-    downloadVolumeFile(volumeID, file, e) {
-        console.log("DOWNLOADING FILE");
-        console.log(file);
-        console.log(volumeID);
-        this.props.actions.downloadVolumeFile(volumeID, file);
-        console.log(this.props);
-        //("/volumes/{this.props.selectedVolumeID}/"++"?content"
-    }
-
     renderFile(file, indentStyle) {
         let volumeInternalPath = path.join(file.path, file.name);
         let iconClass = "glyphicon-file";
@@ -56,10 +47,7 @@ class FileTree extends React.Component {
         let downloadButton;
         let b2dropButton;
         let isContentVisible = false;
-        //console.log(this.props.selectedVolumeID);
         if (file.isFolder) {
-            //downloadButton = "";
-            //b2dropButton = "";
             iconClass = "glyphicon-folder-close";
             browseButton = <button style={{width:20, background:'none', border:'none', fontSize:20, padding:0}} onClick={ (e) => this.handleFolderClick(file, true, e)}>+</button>
             if (this.state.folderOpen[volumeInternalPath] != null) {
@@ -69,7 +57,14 @@ class FileTree extends React.Component {
                 }
             }
         } else {
-            downloadButton = <span className="glyphicon glyphicon-download-alt" aria-hidden={true} onClick={ (e) => this.downloadVolumeFile(this.props.selectedVolumeID, file, e)}/>
+            let volumeFilePath;
+            if (file.path == "") {
+                volumeFilePath = ""
+            } else {
+                volumeFilePath = "/" + file.path;
+            }
+
+            downloadButton = <a href={apiNames.volumes + "/" + this.props.selectedVolumeID + volumeFilePath + "/" + file.name + "?content"}><span className="glyphicon glyphicon-download-alt" aria-hidden={true}/></a>
             b2dropButton = <span className="glyphicon glyphicon-cloud-upload" aria-hidden={true}/>
         }
 
@@ -122,8 +117,6 @@ class FileTree extends React.Component {
     }
 
     render() {
-        //console.log(this.props);
-        let sLines = [];
         if (this.props.selectedVolumeContent.length > 0) {
             return (
                 <div style={{margin:'1em'}}>
@@ -133,7 +126,7 @@ class FileTree extends React.Component {
                             <div className="col-sm-3" style={{fontWeight:'bold'}}>Size</div>
                             <div className="col-sm-3" style={{fontWeight:'bold'}}>Date</div>
                         </li>
-                        {sLines = this.readVolumeContent(this.props.selectedVolumeContent, 0, [])}
+                        {this.readVolumeContent(this.props.selectedVolumeContent, 0, [])}
                     </ol>
                 </div>
             )

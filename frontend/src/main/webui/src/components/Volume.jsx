@@ -71,7 +71,6 @@ const VolumeFilesTable = ({fileList}) => (
 );
 
 
-
 class Volume extends React.Component {
     constructor(props) {
         super(props);
@@ -86,7 +85,6 @@ class Volume extends React.Component {
     }
 
     render() {
-
         let filesTable = null;
         if (this.props.selectedVolume.length > 0) {
             filesTable = <VolumeFilesTable fileList={this.props.selectedVolume}/>

@@ -229,7 +229,7 @@ func (s *Server) volumeContentHandler(w http.ResponseWriter, r *http.Request) {
 	fileName := filepath.Base(fileLocation)
 
 	if hasContent { // Download a file from a volume
-		err := s.pier.DownStreamContainerFile(vars["volumeID"], filepath.Join("/root/", fileLocation), w)
+		err := s.pier.DownStreamContainerFile(vars["volumeID"], filepath.Join("/root/volume/", fileLocation), w)
 		if err != nil {
 			Response{w}.ServerError("downloading volume files failed", err)
 		}
