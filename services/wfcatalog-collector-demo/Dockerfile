@@ -5,6 +5,13 @@ MAINTAINER Mathijs Koymans
 LABEL "eudat.gef.service.name"="WFCatalog Collector Demo"
 LABEL "eudat.gef.service.description"="GEF demo for seismic metadata extraction"
 LABEL "eudat.gef.service.version"="1.0.0"
+LABEL "eudat.gef.service.input.1.name"="Input Directory"
+LABEL "eudat.gef.service.input.1.path"="/usr/src/collector/wfcatalog/collector/archive"
+LABEL "eudat.gef.service.output.1.name"="Output Directory"
+LABEL "eudat.gef.service.output.1.path"="/dump"
+
+# Temporary solution
+RUN mkdir /dump
 
 RUN apt-get update
 
@@ -38,3 +45,7 @@ RUN git clone https://github.com/EIDA/wfcatalog.git
 # Copy WFCatalogCollector.py script & configation to app directory
 RUN cp /usr/src/collector/wfcatalog/collector/WFCatalogCollector.py /usr/src/collector/.
 RUN cp /usr/src/collector/wfcatalog/collector/config.json /usr/src/collector/.
+
+RUN rm -rf /usr/src/collector/wfcatalog/collector/archive/*
+
+CMD ["python", "/usr/src/collector/WFCatalogCollector.py", "--dir", "/usr/src/collector/wfcatalog/collector/archive"]
