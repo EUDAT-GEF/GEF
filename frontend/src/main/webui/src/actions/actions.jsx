@@ -171,6 +171,7 @@ function inspectVolumeError(errorMessage) {
 
 
 
+
 //TODO: catch seems to swallow all of the exceptions, not only the exceptions occurred in fetch
 //async actions
 //these do some extra async stuff before the real actions are dispatched
@@ -244,7 +245,6 @@ export function inspectVolume(volumeId) {
             dispatch(inspectVolumeEmpty());
         }
         resultPromise.then(response => {
-            //log('fetched volume content:', response.data);
             dispatch(inspectVolumeSuccess(response.data))
         }).catch(err => {
             Alert.error("Cannot fetch volume content information from the server.");

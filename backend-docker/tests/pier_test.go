@@ -6,7 +6,6 @@ import (
 
 	"github.com/EUDAT-GEF/GEF/backend-docker/def"
 	"github.com/EUDAT-GEF/GEF/backend-docker/pier"
-
 )
 
 const testPID = "11304/a3d012ca-4e23-425e-9e2a-1e6a195b966f"

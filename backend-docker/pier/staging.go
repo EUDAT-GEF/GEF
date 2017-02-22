@@ -16,10 +16,11 @@ import (
 
 // VolumeItem describes a folder content
 type VolumeItem struct {
-	Name       string `json:"name"`
-	Size	   int64 `json:"size"`
-	Modified   time.Time `json:"modified"`
-	IsFolder   bool `json:"isFolder"`
+	Name       string       `json:"name"`
+	Size       int64        `json:"size"`
+	Modified   time.Time    `json:"modified"`
+	IsFolder   bool         `json:"isFolder"`
+	Path       string       `json:"path"`
 	FolderTree []VolumeItem `json:"folderTree"`
 }
 
@@ -63,9 +64,9 @@ func (p *Pier) DownStreamContainerFile(volumeID string, fileLocation string, w h
 }
 
 // ListFiles exported
-func (p *Pier) ListFiles(volumeID VolumeID, filePath string) ([]VolumeItem, error)  {
+func (p *Pier) ListFiles(volumeID VolumeID, filePath string) ([]VolumeItem, error) {
 	var volumeFileList []VolumeItem
-	if (string(volumeID) == "") {
+	if string(volumeID) == "" {
 		return volumeFileList, def.Err(nil, "volume name has not been specified")
 	}
 
@@ -75,9 +76,7 @@ func (p *Pier) ListFiles(volumeID VolumeID, filePath string) ([]VolumeItem, erro
 	}
 
 	// Execute our image (it should produce a JSON file with the list of files)
-	containerID, consoleOutput, err := p.docker.StartImage(dckr.ImageID(volumeFileListName), []string{filePath}, volumesToMount)
-
-
+	containerID, consoleOutput, err := p.docker.StartImage(dckr.ImageID(volumeFileListName), []string{filePath, "r"}, volumesToMount)
 
 	if err != nil {
 		return volumeFileList, def.Err(err, "running image failed")

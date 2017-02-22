@@ -6,11 +6,9 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"encoding/json"
-	"github.com/gorilla/mux"
-
 	"github.com/EUDAT-GEF/GEF/backend-docker/def"
 	"github.com/EUDAT-GEF/GEF/backend-docker/pier"
+	"github.com/gorilla/mux"
 )
 
 const (
@@ -63,7 +61,7 @@ func NewServer(cfg def.ServerConfig, pier *pier.Pier, tmpDir string) (*Server, e
 		"GET /jobs":         server.listJobsHandler,
 		"GET /jobs/{jobID}": server.inspectJobHandler,
 
-		"GET /volumes/{volumeID}/{path:.*}":  server.volumeContentHandler,
+		"GET /volumes/{volumeID}/{path:.*}": server.volumeContentHandler,
 	}
 
 	router := mux.NewRouter()
@@ -226,28 +224,23 @@ func (s *Server) volumeContentHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	fileLocation := vars["path"]
 	_, hasContent := r.URL.Query()["content"]
-
-	slashIndex := strings.LastIndex(fileLocation, "/")
-	if slashIndex == -1 {
-		slashIndex = 0
-	}
 	fileName := filepath.Base(fileLocation)
 
 	if hasContent { // Download a file from a volume
-		err := s.pier.DownStreamContainerFile(vars["volumeID"], filepath.Join("/root/", fileLocation), w)
+		err := s.pier.DownStreamContainerFile(vars["volumeID"], filepath.Join("/root/volume/", fileLocation), w)
 		if err != nil {
 			Response{w}.ServerError("downloading volume files failed", err)
 		}
 
 		Response{w}.Header().Set("Content-Type", r.Header.Get("Content-Type"))
-		Response{w}.Header().Set("Content-Disposition", "attachment; filename=" + fileName)
+		Response{w}.Header().Set("Content-Disposition", "attachment; filename="+fileName)
 
 	} else { // Return of list of files in a specific location in a volume
 		volumeFiles, err := s.pier.ListFiles(pier.VolumeID(vars["volumeID"]), fileLocation)
 		if err != nil {
 			Response{w}.ServerError("streaming container files failed", err)
 		}
-		json.NewEncoder(w).Encode(volumeFiles)
+		Response{w}.Ok(jmap("volumeID", vars["volumeID"], "volumeContent", volumeFiles))
 	}
 }
 

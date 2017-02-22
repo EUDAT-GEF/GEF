@@ -64,6 +64,7 @@ function selectedVolume(state = SI([]), action) {
     }
 }
 
+
 const rootReducer = combineReducers({
     jobs,
     services,
