@@ -69,9 +69,7 @@ class FileTree extends React.Component {
         }
 
         if (this.state.folderOpen[file.path]) {
-            if (this.state.folderOpen[file.path]) {
-                isContentVisible = true
-            }
+            isContentVisible = true
         }
 
         for (var folderName in this.state.folderOpen) {
