@@ -37,6 +37,10 @@ class Job extends React.Component {
         this.props.actions.inspectVolume(this.props.job.OutputVolume)
     }
 
+    handleConsoleOutput() {
+
+    }
+
     componentDidMount() {
         //this.props.actions.inspectVolume(); // send an empty list of files when a new box is drown
     }
@@ -66,6 +70,12 @@ class Job extends React.Component {
                     <Col xs={12} sm={3} md={3} style={{fontWeight:700}}>Output Volume</Col>
                     <Col xs={12} sm={9} md={9} >
                         <button type="submit" className="btn btn-default" onClick={this.handleInspectOutputVolume.bind(this)}>Inspect</button>
+                    </Col>
+                </Row>
+                <Row style={{marginTop:'1em'}}>
+                    <Col xs={12} sm={3} md={3} style={{fontWeight:700}}>Console output</Col>
+                    <Col xs={12} sm={9} md={9} >
+                        <button type="submit" className="btn btn-default" onClick={this.handleConsoleOutput.bind(this)}>Show</button>
                     </Col>
                 </Row>
                 <FileTree fileList={this.props.selectedVolume} job={job}/>
