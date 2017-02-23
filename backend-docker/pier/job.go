@@ -24,8 +24,6 @@ type JobState struct {
 	Status string
 }
 
-
-
 // JobID exported
 type JobID string
 

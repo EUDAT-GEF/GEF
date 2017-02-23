@@ -16,7 +16,7 @@ type Pier struct {
 	docker   dckr.Client
 	services *ServiceList
 	jobs     *JobList
-	tasks	*TaskList
+	tasks    *TaskList
 	tmpDir   string
 }
 
@@ -34,7 +34,7 @@ func NewPier(cfgList []def.DockerConfig, tmpDir string) (*Pier, error) {
 		docker:   docker,
 		services: NewServiceList(),
 		jobs:     NewJobList(),
-		tasks:	NewTaskList(),
+		tasks:    NewTaskList(),
 		tmpDir:   tmpDir,
 	}
 
@@ -164,3 +164,14 @@ func (p *Pier) GetJob(jobID JobID) (Job, error) {
 	}
 	return job, nil
 }
+
+// GetTasks exported
+func (p *Pier) GetTask(jobID JobID) (Task, error) {
+	task, ok := p.tasks.get(jobID)
+
+	if !ok {
+		return task, def.Err(nil, "not found")
+	}
+	return task, nil
+}
+

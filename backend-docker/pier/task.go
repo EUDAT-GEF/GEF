@@ -7,8 +7,8 @@ import (
 
 // Task exported
 type Task struct {
-	JobID	JobID
-	Items   []TaskStatus
+	JobID JobID
+	Items []TaskStatus
 }
 
 // TaskStatus exported
@@ -30,6 +30,13 @@ func NewTaskList() *TaskList {
 	return &TaskList{
 		cache: make(map[JobID]Task),
 	}
+}
+
+func (taskList *TaskList) get(key JobID) (Task, bool) {
+	taskList.Lock()
+	defer taskList.Unlock()
+	task, ok := taskList.cache[key]
+	return task, ok
 }
 
 func (taskList *TaskList) addTask(jobID JobID, taskName string, taskError error, taskExitCode int, taskConsoleOutput *bytes.Buffer) {

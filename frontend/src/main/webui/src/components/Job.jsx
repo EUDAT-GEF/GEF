@@ -41,14 +41,8 @@ class Job extends React.Component {
 
     }
 
-    handleListItemSelection(volumeID) {
-        let currentVolume = this.state.currentVolume;
-        currentVolume["id"] = volumeID;
-        this.setState({currentVolume});
-    }
     componentDidMount() {
-        this.props.actions.inspectVolume(); // send an empty list of files when a new box is drown
-
+        this.props.actions.inspectVolume(); // send an empty volumeID when a new box is drown
     }
 
     render() {
