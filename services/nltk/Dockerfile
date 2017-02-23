@@ -2,8 +2,8 @@ FROM ubuntu:16.04
 
 MAINTAINER Alexandr Chernov <kstchernov@gmail.com>
 
-LABEL "eudat.gef.service.name"="NLTK"
-LABEL "eudat.gef.service.description"="NLTK is a leading platform for building Python programs to work with human language data"
+LABEL "eudat.gef.service.name"="NLTK POS-tagging"
+LABEL "eudat.gef.service.description"="Performs text segmentation (splits into sentences) and POS-tagging"
 LABEL "eudat.gef.service.version"="1.0"
 LABEL "eudat.gef.service.input.1.name"="Input Directory"
 LABEL "eudat.gef.service.input.1.path"="/root/input"
@@ -17,9 +17,10 @@ RUN pip install -U numpy
 
 RUN mkdir /root/input
 RUN mkdir /root/output
-#ADD nltk.py /root
-ADD test.py /root
-ADD test.csv /root
-RUN python -m nltk.downloader all
 
-CMD ["python", "/root/test.py"]
+ADD posTagger.py /root
+
+RUN python -m nltk.downloader punkt
+RUN python -m nltk.downloader averaged_perceptron_tagger
+
+CMD ["python", "/root/posTagger.py"]
