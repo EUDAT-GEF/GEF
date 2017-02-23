@@ -19,15 +19,12 @@ def main():
         print("Usage: {} PID-or-URL".format(sys.argv[0]))
         exit(1)
 
-    call(["ls", "-l", download_dir])
     kind, url = analyze_and_resolve(sys.argv[1])
     if kind == 'b2share_record':
         for f in list_b2share_record_files(url):
-            print(f)
             download_file(f['url'], local_filename=f['key'])
     else:
         download_file(url)
-    call(["ls", "-l", download_dir])
 
 
 
@@ -81,10 +78,19 @@ def list_b2share_record_files(url):
 
 
 def download_file(url, local_filename=None):
-    if not local_filename:
-        local_filename = url.split('/')[-1]
     r = requests.get(url, stream=True, verify=False)
-    with open(os.path.join(download_dir, local_filename), 'wb') as f:
+    disp = r.headers['content-disposition']
+    fname = re.findall("filename=(.+)", disp, flags=re.IGNORECASE)
+    if fname and fname[0]:
+        fname = fname[0]
+        fname = fname.strip('\'"')
+    else:
+        if local_filename:
+            fname = local_filename
+        else:
+            fname = url.split('/')[-1]
+    print('downloading', fname)
+    with open(os.path.join(download_dir, fname), 'wb') as f:
         for chunk in r.iter_content(chunk_size=1024):
             if chunk: # filter out keep-alive new chunks
                 f.write(chunk)
@@ -92,7 +98,7 @@ def download_file(url, local_filename=None):
 
 
 def error(msg):
-    println(msg)
+    print(msg)
     exit(1)
 
 
