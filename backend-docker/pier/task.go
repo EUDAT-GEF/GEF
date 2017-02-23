@@ -19,7 +19,7 @@ type TaskStatus struct {
 	ConsoleOutput *bytes.Buffer
 }
 
-// JobList is a shared structure that stores info about all jobs
+// TaskList is a shared structure that stores info about all containers related to jobs
 type TaskList struct {
 	sync.Mutex
 	cache map[JobID]Task

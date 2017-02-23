@@ -115,17 +115,18 @@ class FileTree extends React.Component {
     render() {
         if (this.props.selectedVolume.volumeID) {
             return (
-                <div style={{margin:'1em'}}>
-                    <ol className="list-unstyled fileList" style={{textAlign:'left', minHeight:'30em'}}>
-                        <li className="heading row" style={{padding:'0.5em 0'}}>
-                            <div className="col-sm-6" style={{fontWeight:'bold'}}>File Name</div>
-                            <div className="col-sm-3" style={{fontWeight:'bold'}}>Size</div>
-                            <div className="col-sm-3" style={{fontWeight:'bold'}}>Date</div>
+                <div style={{margin: '1em'}}>
+                    <ol className="list-unstyled fileList" style={{textAlign: 'left', minHeight: '30em'}}>
+                        <li className="heading row" style={{padding: '0.5em 0'}}>
+                            <div className="col-sm-6" style={{fontWeight: 'bold'}}>File Name</div>
+                            <div className="col-sm-3" style={{fontWeight: 'bold'}}>Size</div>
+                            <div className="col-sm-3" style={{fontWeight: 'bold'}}>Date</div>
                         </li>
                         {this.readVolumeContent(this.props.selectedVolume.volumeContent, 0, [])}
                     </ol>
                 </div>
             )
+
         }
         else {
             return (

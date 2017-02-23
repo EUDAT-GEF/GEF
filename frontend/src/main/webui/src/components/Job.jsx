@@ -41,14 +41,21 @@ class Job extends React.Component {
 
     }
 
+    handleListItemSelection(volumeID) {
+        let currentVolume = this.state.currentVolume;
+        currentVolume["id"] = volumeID;
+        this.setState({currentVolume});
+    }
     componentDidMount() {
-        //this.props.actions.inspectVolume(); // send an empty list of files when a new box is drown
+        this.props.actions.inspectVolume(); // send an empty list of files when a new box is drown
+
     }
 
     render() {
         let job = this.props.job;
         let service = this.props.service;
         let title = this.props.title;
+
         return (
             <div style={{border: "1px solid black"}}>
                 <h4> Selected job</h4>
