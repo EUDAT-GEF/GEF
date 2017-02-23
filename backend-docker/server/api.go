@@ -1,14 +1,15 @@
 package server
 
 import (
+	"github.com/EUDAT-GEF/GEF/backend-docker/def"
+	"github.com/EUDAT-GEF/GEF/backend-docker/pier"
+	"github.com/gorilla/mux"
 	"io"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
-	"github.com/EUDAT-GEF/GEF/backend-docker/def"
-	"github.com/EUDAT-GEF/GEF/backend-docker/pier"
-	"github.com/gorilla/mux"
+	"fmt"
 )
 
 const (
@@ -57,9 +58,10 @@ func NewServer(cfg def.ServerConfig, pier *pier.Pier, tmpDir string) (*Server, e
 		"GET /services":             server.listServicesHandler,
 		"GET /services/{serviceID}": server.inspectServiceHandler,
 
-		"POST /jobs":        server.executeServiceHandler,
-		"GET /jobs":         server.listJobsHandler,
-		"GET /jobs/{jobID}": server.inspectJobHandler,
+		"POST /jobs":                  server.executeServiceHandler,
+		"GET /jobs":                   server.listJobsHandler,
+		"GET /jobs/{jobID}":           server.inspectJobHandler,
+		"GET /jobs/{jobID}/{path:.*}": server.getJobTasks,
 
 		"GET /volumes/{volumeID}/{path:.*}": server.volumeContentHandler,
 	}
@@ -217,6 +219,18 @@ func (s *Server) inspectJobHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	Response{w}.Ok(jmap("Job", job))
+}
+
+func (s *Server) getJobTasks(w http.ResponseWriter, r *http.Request) {
+	logRequest(r)
+	fmt.Println("TASKS WILL BE HERE")
+	/*vars := mux.Vars(r)
+	job, err := s.pier.GetJob(pier.JobID(vars["jobID"]))
+	if err != nil {
+		Response{w}.ClientError("cannot get job", err)
+		return
+	}
+	Response{w}.Ok(jmap("Job", job))*/
 }
 
 func (s *Server) volumeContentHandler(w http.ResponseWriter, r *http.Request) {

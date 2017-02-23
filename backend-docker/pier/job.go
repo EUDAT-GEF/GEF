@@ -1,7 +1,6 @@
 package pier
 
 import (
-	"bytes"
 	"github.com/EUDAT-GEF/GEF/backend-docker/pier/internal/dckr"
 	"sort"
 	"sync"
@@ -17,21 +16,12 @@ type Job struct {
 	State        *JobState
 	InputVolume  VolumeID
 	OutputVolume VolumeID
-	Tasks        []TaskStatus
 }
 
 // JobState exported
 type JobState struct {
 	Error  error
 	Status string
-}
-
-// TaskStatus exported
-type TaskStatus struct {
-	Name          string
-	Error         error
-	ExitCode      int
-	ConsoleOutput *bytes.Buffer
 }
 
 // JobID exported
@@ -115,20 +105,5 @@ func (jobList *JobList) setOutputVolume(jobID JobID, outputVolume VolumeID) {
 	defer jobList.Unlock()
 	job := jobList.cache[jobID]
 	job.OutputVolume = outputVolume
-	jobList.cache[jobID] = job
-}
-
-func (jobList *JobList) addTask(jobID JobID, taskName string, taskError error, taskExitCode int, taskConsoleOutput *bytes.Buffer) {
-	jobList.Lock()
-	defer jobList.Unlock()
-	job := jobList.cache[jobID]
-
-	var newTask TaskStatus
-	newTask.Name = taskName
-	newTask.Error = taskError
-	newTask.ExitCode = taskExitCode
-	newTask.ConsoleOutput = taskConsoleOutput
-	job.Tasks = append(job.Tasks, newTask)
-
 	jobList.cache[jobID] = job
 }
