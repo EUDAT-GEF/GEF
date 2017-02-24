@@ -169,6 +169,33 @@ function inspectVolumeError(errorMessage) {
     }
 }
 
+function consoleOutputFetchStart() {
+    return {
+        type: actionTypes.CONSOLE_OUTPUT_FETCH_START
+    }
+}
+
+function consoleOutputFetchSuccess(data) {
+    return {
+        type: actionTypes.CONSOLE_OUTPUT_FETCH_SUCCESS,
+        data: data
+    }
+}
+
+function consoleOutputFetchEmpty() {
+    return {
+        type: actionTypes.CONSOLE_OUTPUT_FETCH_EMPTY,
+        data: []
+    }
+}
+
+function consoleOutputFetchError(errorMessage) {
+    return {
+        type: actionTypes.CONSOLE_OUTPUT_FETCH_ERROR,
+        errorMessage: errorMessage
+    }
+}
+
 
 
 
@@ -240,17 +267,38 @@ function fetchVolumes() {
 export function inspectVolume(volumeId) {
     return function (dispatch, getState) {
         dispatch(inspectVolumeStart());
-        const resultPromise = axios.get( apiNames.volumes + '/' + volumeId + "/");
-        if (volumeId == null) {
+
+        if (!volumeId) {
             dispatch(inspectVolumeEmpty());
+        } else {
+            const resultPromise = axios.get( apiNames.volumes + '/' + volumeId + "/");
+            resultPromise.then(response => {
+                dispatch(inspectVolumeSuccess(response.data))
+            }).catch(err => {
+                Alert.error("Cannot fetch volume content information from the server.");
+                log("A fetch error occurred");
+                dispatch(inspectVolumeError(err));
+            })
         }
-        resultPromise.then(response => {
-            dispatch(inspectVolumeSuccess(response.data))
-        }).catch(err => {
-            Alert.error("Cannot fetch volume content information from the server.");
-            log("A fetch error occurred");
-            dispatch(inspectVolumeError(err));
-        })
+    }
+}
+
+export function consoleOutputFetch(jobId) {
+    return function (dispatch, getState) {
+        dispatch(consoleOutputFetchStart());
+
+        if (!jobId) {
+            dispatch(consoleOutputFetchEmpty());
+        } else {
+            const resultPromise = axios.get( apiNames.jobs + '/' + jobId + "/output");
+            resultPromise.then(response => {
+                dispatch(consoleOutputFetchSuccess(response.data))
+            }).catch(err => {
+                Alert.error("Cannot fetch the console content.");
+                log("A fetch error occurred");
+                dispatch(consoleOutputFetchError(err));
+            })
+        }
     }
 }
 
@@ -333,11 +381,15 @@ export default {
     inspectVolumeStart,
     inspectVolumeSuccess,
     inspectVolumeError,
+    consoleOutputFetchStart,
+    consoleOutputFetchSuccess,
+    consoleOutputFetchError,
     fetchJobs,
     fetchServices,
     fetchService,
     fetchVolumes,
     inspectVolume,
+    consoleOutputFetch,
     showErrorMessageWithTimeout,
     hideErrorMessage,
     fileUploadStart,

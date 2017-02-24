@@ -26,6 +26,11 @@ type JobState struct {
 	Status string
 }
 
+// JobID exported
+type JobID string
+
+type jobArray []Job
+
 // TaskStatus exported
 type TaskStatus struct {
 	Name          string
@@ -34,10 +39,10 @@ type TaskStatus struct {
 	ConsoleOutput *bytes.Buffer
 }
 
-// JobID exported
-type JobID string
-
-type jobArray []Job
+type LatestOutput struct {
+	Name          string
+	ConsoleOutput string
+}
 
 func (jl jobArray) Len() int {
 	return len(jl)

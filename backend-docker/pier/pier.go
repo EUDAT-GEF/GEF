@@ -132,6 +132,7 @@ func (p *Pier) runJob(job *Job, service Service, inputPID string) {
 			dckr.VolBind{outputVolume.ID, service.Output[0].Path, false},
 		}
 		exitCode, consoleOutput, err := p.docker.ExecuteImage(dckr.ImageID(service.imageID), nil, binds, true)
+		//fmt.Println(consoleOutput)
 		p.jobs.addTask(job.ID, "Service execution", err, exitCode, consoleOutput)
 
 		log.Println("  job ended: ", exitCode, ", error: ", err)

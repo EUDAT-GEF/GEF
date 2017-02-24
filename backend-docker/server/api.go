@@ -1,14 +1,14 @@
 package server
 
 import (
+	"github.com/EUDAT-GEF/GEF/backend-docker/def"
+	"github.com/EUDAT-GEF/GEF/backend-docker/pier"
+	"github.com/gorilla/mux"
 	"io"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
-	"github.com/EUDAT-GEF/GEF/backend-docker/def"
-	"github.com/EUDAT-GEF/GEF/backend-docker/pier"
-	"github.com/gorilla/mux"
 )
 
 const (
@@ -57,9 +57,10 @@ func NewServer(cfg def.ServerConfig, pier *pier.Pier, tmpDir string) (*Server, e
 		"GET /services":             server.listServicesHandler,
 		"GET /services/{serviceID}": server.inspectServiceHandler,
 
-		"POST /jobs":        server.executeServiceHandler,
-		"GET /jobs":         server.listJobsHandler,
-		"GET /jobs/{jobID}": server.inspectJobHandler,
+		"POST /jobs":               server.executeServiceHandler,
+		"GET /jobs":                server.listJobsHandler,
+		"GET /jobs/{jobID}":        server.inspectJobHandler,
+		"GET /jobs/{jobID}/output": server.getJobTask,
 
 		"GET /volumes/{volumeID}/{path:.*}": server.volumeContentHandler,
 	}
@@ -217,6 +218,22 @@ func (s *Server) inspectJobHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	Response{w}.Ok(jmap("Job", job))
+}
+
+func (s *Server) getJobTask(w http.ResponseWriter, r *http.Request) {
+	logRequest(r)
+	vars := mux.Vars(r)
+	job, err := s.pier.GetJob(pier.JobID(vars["jobID"]))
+	if err != nil {
+		Response{w}.ClientError("cannot get task", err)
+		return
+	}
+	var latestOutput pier.LatestOutput
+	if len(job.Tasks) > 0 {
+		latestOutput.Name = job.Tasks[len(job.Tasks)-1].Name
+		latestOutput.ConsoleOutput = job.Tasks[len(job.Tasks)-1].ConsoleOutput.String()
+	}
+	Response{w}.Ok(jmap("ServiceExecution", latestOutput))
 }
 
 func (s *Server) volumeContentHandler(w http.ResponseWriter, r *http.Request) {

@@ -64,6 +64,19 @@ function selectedVolume(state = SI([]), action) {
     }
 }
 
+function task(state = SI([]), action) {
+    switch (action.type) {
+        case actionTypes.CONSOLE_OUTPUT_FETCH_SUCCESS:
+            return SI(action.data);
+        case actionTypes.CONSOLE_OUTPUT_FETCH_EMPTY:
+            return SI([]);
+        case actionTypes.CONSOLE_OUTPUT_FETCH_ERROR:
+            return SI([]);
+        default:
+            return state;
+    }
+}
+
 
 const rootReducer = combineReducers({
     jobs,
@@ -71,6 +84,7 @@ const rootReducer = combineReducers({
     volumes,
     selectedService,
     selectedVolume,
+    task,
     form: formReducer,
     routing: routerReducer
 });
