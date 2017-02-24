@@ -47,10 +47,7 @@ class Job extends React.Component {
     }
 
     tick() {
-        console.log("PRINT EVERY SECOND");
-        console.log(this.props);
         this.props.actions.fetchJobs();
-
     }
 
     componentDidMount() {
@@ -59,10 +56,6 @@ class Job extends React.Component {
         if (this.props.job.State.Code < 0) {
             stateUpdateTimer = setInterval(this.tick.bind(this), 1000);
         }
-    }
-
-    componentWillUnmount() {
-        //clearInterval(stateUpdateTimer);
     }
 
     render() {
