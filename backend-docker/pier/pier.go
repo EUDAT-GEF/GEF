@@ -16,7 +16,6 @@ type Pier struct {
 	docker   dckr.Client
 	services *ServiceList
 	jobs     *JobList
-	tasks    *TaskList
 	tmpDir   string
 }
 
@@ -34,7 +33,6 @@ func NewPier(cfgList []def.DockerConfig, tmpDir string) (*Pier, error) {
 		docker:   docker,
 		services: NewServiceList(),
 		jobs:     NewJobList(),
-		tasks:    NewTaskList(),
 		tmpDir:   tmpDir,
 	}
 
@@ -107,7 +105,7 @@ func (p *Pier) runJob(job *Job, service Service, inputPID string) {
 			dckr.VolBind{inputVolume.ID, "/volume", false},
 		}
 		exitCode, consoleOutput, err := p.docker.ExecuteImage(dckr.ImageID(stagingVolumeName), []string{inputPID}, binds, true)
-		p.tasks.addTask(job.ID, "Data staging", err, exitCode, consoleOutput)
+		p.jobs.addTask(job.ID, "Data staging", err, exitCode, consoleOutput)
 
 		log.Println("  staging ended: ", exitCode, ", error: ", err)
 		if err != nil {
@@ -135,7 +133,7 @@ func (p *Pier) runJob(job *Job, service Service, inputPID string) {
 		}
 		exitCode, consoleOutput, err := p.docker.ExecuteImage(dckr.ImageID(service.imageID), nil, binds, true)
 		//fmt.Println(consoleOutput)
-		p.tasks.addTask(job.ID, "Service execution", err, exitCode, consoleOutput)
+		p.jobs.addTask(job.ID, "Service execution", err, exitCode, consoleOutput)
 
 		log.Println("  job ended: ", exitCode, ", error: ", err)
 		if err != nil {
@@ -164,14 +162,4 @@ func (p *Pier) GetJob(jobID JobID) (Job, error) {
 		return job, def.Err(nil, "not found")
 	}
 	return job, nil
-}
-
-// GetTask exported
-func (p *Pier) GetTask(jobID JobID) (Task, error) {
-	task, ok := p.tasks.get(jobID)
-
-	if !ok {
-		return task, def.Err(nil, "not found")
-	}
-	return task, nil
 }

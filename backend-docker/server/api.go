@@ -223,15 +223,15 @@ func (s *Server) inspectJobHandler(w http.ResponseWriter, r *http.Request) {
 func (s *Server) getJobTask(w http.ResponseWriter, r *http.Request) {
 	logRequest(r)
 	vars := mux.Vars(r)
-	task, err := s.pier.GetTask(pier.JobID(vars["jobID"]))
+	job, err := s.pier.GetJob(pier.JobID(vars["jobID"]))
 	if err != nil {
 		Response{w}.ClientError("cannot get task", err)
 		return
 	}
 	var latestOutput pier.LatestOutput
-	if len(task.Items) > 0 {
-		latestOutput.Name = task.Items[len(task.Items)-1].Name
-		latestOutput.ConsoleOutput = task.Items[len(task.Items)-1].ConsoleOutput.String()
+	if len(job.Tasks) > 0 {
+		latestOutput.Name = job.Tasks[len(job.Tasks)-1].Name
+		latestOutput.ConsoleOutput = job.Tasks[len(job.Tasks)-1].ConsoleOutput.String()
 	}
 	Response{w}.Ok(jmap("ServiceExecution", latestOutput))
 }
