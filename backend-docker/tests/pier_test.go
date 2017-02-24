@@ -94,11 +94,10 @@ func TestExecution(t *testing.T) {
 	log.Println("job: ", job)
 	jobid := job.ID
 
-	for job.State.Status == "Created" {
+	for job.State.Code == -1 {
 		job, err = pier.GetJob(jobid)
 		checkMsg(t, err, "getting job failed")
 	}
-
 	expect(t, job.State.Error == nil, "job error")
 
 	files, err := pier.ListFiles(job.OutputVolume, "")

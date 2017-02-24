@@ -11,7 +11,7 @@ const Value = ({value}) => {
     if (typeof value === 'object') {
         toPairs(value).map(({k, v}) =>
             (
-                 <div><dt>{k}</dt><dd>{v}</dd></div>
+                <div><dt>{k}</dt><dd>{v}</dd></div>
             ))
     } else {
         return <div>{value}</div>;
@@ -25,7 +25,11 @@ const JobRow = ({tag, value, style}) => (
     </Row>
 );
 
+let stateUpdateTimer;
+
 class Job extends React.Component {
+
+
     constructor(props) {
         super(props);
     }
@@ -42,15 +46,25 @@ class Job extends React.Component {
         this.props.actions.consoleOutputFetch(this.props.job.ID)
     }
 
+    tick() {
+        this.props.actions.fetchJobs();
+    }
+
     componentDidMount() {
         this.props.actions.inspectVolume(); // send an empty volumeID when a new box is drown
         this.props.actions.consoleOutputFetch();
+        if (this.props.job.State.Code < 0) {
+            stateUpdateTimer = setInterval(this.tick.bind(this), 1000);
+        }
     }
 
     render() {
         let job = this.props.job;
         let service = this.props.service;
         let title = this.props.title;
+        if (job.State.Code > -1) {
+            clearInterval(stateUpdateTimer);
+        }
         return (
             <div style={{border: "1px solid black"}}>
                 <h4> Selected job</h4>

@@ -24,6 +24,7 @@ type Job struct {
 type JobState struct {
 	Error  error
 	Status string
+	Code int
 }
 
 // JobID exported
