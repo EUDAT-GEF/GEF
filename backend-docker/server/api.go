@@ -57,9 +57,9 @@ func NewServer(cfg def.ServerConfig, pier *pier.Pier, tmpDir string) (*Server, e
 		"GET /services":             server.listServicesHandler,
 		"GET /services/{serviceID}": server.inspectServiceHandler,
 
-		"POST /jobs":                  server.executeServiceHandler,
-		"GET /jobs":                   server.listJobsHandler,
-		"GET /jobs/{jobID}":           server.inspectJobHandler,
+		"POST /jobs":               server.executeServiceHandler,
+		"GET /jobs":                server.listJobsHandler,
+		"GET /jobs/{jobID}":        server.inspectJobHandler,
 		"GET /jobs/{jobID}/output": server.getJobTask,
 
 		"GET /volumes/{volumeID}/{path:.*}": server.volumeContentHandler,
@@ -229,11 +229,11 @@ func (s *Server) getJobTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var latestOutput pier.LatestOutput
-	if len(task.Items)>0 {
+	if len(task.Items) > 0 {
 		latestOutput.Name = task.Items[len(task.Items)-1].Name
 		latestOutput.ConsoleOutput = task.Items[len(task.Items)-1].ConsoleOutput.String()
 	}
-	Response{w}.Ok(jmap("Output", latestOutput))
+	Response{w}.Ok(jmap("ServiceExecution", latestOutput))
 }
 
 func (s *Server) volumeContentHandler(w http.ResponseWriter, r *http.Request) {

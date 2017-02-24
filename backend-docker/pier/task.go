@@ -54,7 +54,6 @@ func (taskList *TaskList) addTask(jobID JobID, taskName string, taskError error,
 	newTask.Error = taskError
 	newTask.ExitCode = taskExitCode
 	newTask.ConsoleOutput = taskConsoleOutput
-	//fmt.Println(taskConsoleOutput)
 	task.Items = append(task.Items, newTask)
 
 	taskList.cache[jobID] = task

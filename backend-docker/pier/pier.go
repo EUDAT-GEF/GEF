@@ -1,12 +1,12 @@
 package pier
 
 import (
+	"fmt"
 	"github.com/EUDAT-GEF/GEF/backend-docker/def"
 	"github.com/EUDAT-GEF/GEF/backend-docker/pier/internal/dckr"
 	"github.com/pborman/uuid"
 	"log"
 	"time"
-	"fmt"
 )
 
 const stagingVolumeName = "volume-stage-in"
@@ -175,4 +175,3 @@ func (p *Pier) GetTask(jobID JobID) (Task, error) {
 	}
 	return task, nil
 }
-

@@ -5,6 +5,7 @@ import { connect } from 'react-redux'
 import { bindActionCreators } from 'redux'
 import actions from '../actions/actions';
 import FileTree from './FileTree'
+import ConsoleOutput from './ConsoleOutput'
 
 const Value = ({value}) => {
     if (typeof value === 'object') {
@@ -43,13 +44,13 @@ class Job extends React.Component {
 
     componentDidMount() {
         this.props.actions.inspectVolume(); // send an empty volumeID when a new box is drown
+        this.props.actions.consoleOutputFetch();
     }
 
     render() {
         let job = this.props.job;
         let service = this.props.service;
         let title = this.props.title;
-
         return (
             <div style={{border: "1px solid black"}}>
                 <h4> Selected job</h4>
@@ -79,7 +80,8 @@ class Job extends React.Component {
                         <button type="submit" className="btn btn-default" onClick={this.handleConsoleOutput.bind(this)}>Show</button>
                     </Col>
                 </Row>
-                <FileTree fileList={this.props.selectedVolume} job={job}/>
+                <FileTree/>
+                <ConsoleOutput/>
             </div>
 
         )
