@@ -301,3 +301,9 @@ code {
 .fileList .file .btn.remove:hover {
   color: red;
 }
+
+/*** Scrollable modal window ***/
+.modal-content {
+    height:500px;
+    overflow:auto;
+}
