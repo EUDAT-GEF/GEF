@@ -19,6 +19,11 @@ type TaskStatus struct {
 	ConsoleOutput *bytes.Buffer
 }
 
+type LatestOutput struct {
+	Name          string
+	ConsoleOutput string
+}
+
 // TaskList is a shared structure that stores info about all containers related to jobs
 type TaskList struct {
 	sync.Mutex
@@ -49,6 +54,7 @@ func (taskList *TaskList) addTask(jobID JobID, taskName string, taskError error,
 	newTask.Error = taskError
 	newTask.ExitCode = taskExitCode
 	newTask.ConsoleOutput = taskConsoleOutput
+	//fmt.Println(taskConsoleOutput)
 	task.Items = append(task.Items, newTask)
 
 	taskList.cache[jobID] = task

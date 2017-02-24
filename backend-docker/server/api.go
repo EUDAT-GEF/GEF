@@ -9,7 +9,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"fmt"
 )
 
 const (
@@ -61,7 +60,7 @@ func NewServer(cfg def.ServerConfig, pier *pier.Pier, tmpDir string) (*Server, e
 		"POST /jobs":                  server.executeServiceHandler,
 		"GET /jobs":                   server.listJobsHandler,
 		"GET /jobs/{jobID}":           server.inspectJobHandler,
-		"GET /jobs/{jobID}/{path:.*}": server.getJobTasks,
+		"GET /jobs/{jobID}/output": server.getJobTask,
 
 		"GET /volumes/{volumeID}/{path:.*}": server.volumeContentHandler,
 	}
@@ -221,16 +220,20 @@ func (s *Server) inspectJobHandler(w http.ResponseWriter, r *http.Request) {
 	Response{w}.Ok(jmap("Job", job))
 }
 
-func (s *Server) getJobTasks(w http.ResponseWriter, r *http.Request) {
+func (s *Server) getJobTask(w http.ResponseWriter, r *http.Request) {
 	logRequest(r)
-	fmt.Println("TASKS WILL BE HERE")
-	/*vars := mux.Vars(r)
-	job, err := s.pier.GetJob(pier.JobID(vars["jobID"]))
+	vars := mux.Vars(r)
+	task, err := s.pier.GetTask(pier.JobID(vars["jobID"]))
 	if err != nil {
-		Response{w}.ClientError("cannot get job", err)
+		Response{w}.ClientError("cannot get task", err)
 		return
 	}
-	Response{w}.Ok(jmap("Job", job))*/
+	var latestOutput pier.LatestOutput
+	if len(task.Items)>0 {
+		latestOutput.Name = task.Items[len(task.Items)-1].Name
+		latestOutput.ConsoleOutput = task.Items[len(task.Items)-1].ConsoleOutput.String()
+	}
+	Response{w}.Ok(jmap("Output", latestOutput))
 }
 
 func (s *Server) volumeContentHandler(w http.ResponseWriter, r *http.Request) {

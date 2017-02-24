@@ -169,6 +169,33 @@ function inspectVolumeError(errorMessage) {
     }
 }
 
+function consoleOutputFetchStart() {
+    return {
+        type: actionTypes.CONSOLE_OUTPUT_FETCH_START
+    }
+}
+
+function consoleOutputFetchSuccess(data) {
+    return {
+        type: actionTypes.CONSOLE_OUTPUT_FETCH_SUCCESS,
+        data: data
+    }
+}
+
+function consoleOutputFetchEmpty() {
+    return {
+        type: actionTypes.CONSOLE_OUTPUT_FETCH_EMPTY,
+        data: []
+    }
+}
+
+function consoleOutputFetchError(errorMessage) {
+    return {
+        type: actionTypes.CONSOLE_OUTPUT_FETCH_ERROR,
+        errorMessage: errorMessage
+    }
+}
+
 
 
 
@@ -256,6 +283,25 @@ export function inspectVolume(volumeId) {
     }
 }
 
+export function consoleOutputFetch(jobId) {
+    return function (dispatch, getState) {
+        dispatch(consoleOutputFetchStart());
+
+        if (!jobId) {
+            dispatch(consoleOutputFetchEmpty());
+        } else {
+            const resultPromise = axios.get( apiNames.jobs + '/' + jobId + "/output");
+            resultPromise.then(response => {
+                dispatch(consoleOutputFetchSuccess(response.data))
+            }).catch(err => {
+                Alert.error("Cannot fetch the console content.");
+                log("A fetch error occurred");
+                dispatch(consoleOutputFetchError(err));
+            })
+        }
+    }
+}
+
 //this creates a new upload endpoint on the server,
 //the upload endpoint can be used for building services and volumes
 function getNewUploadEndpoint() {
@@ -335,11 +381,15 @@ export default {
     inspectVolumeStart,
     inspectVolumeSuccess,
     inspectVolumeError,
+    consoleOutputFetchStart,
+    consoleOutputFetchSuccess,
+    consoleOutputFetchError,
     fetchJobs,
     fetchServices,
     fetchService,
     fetchVolumes,
     inspectVolume,
+    consoleOutputFetch,
     showErrorMessageWithTimeout,
     hideErrorMessage,
     fileUploadStart,

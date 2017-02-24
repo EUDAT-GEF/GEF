@@ -1,12 +1,12 @@
 package pier
 
 import (
-	"fmt"
 	"github.com/EUDAT-GEF/GEF/backend-docker/def"
 	"github.com/EUDAT-GEF/GEF/backend-docker/pier/internal/dckr"
 	"github.com/pborman/uuid"
 	"log"
 	"time"
+	"fmt"
 )
 
 const stagingVolumeName = "volume-stage-in"
@@ -134,6 +134,7 @@ func (p *Pier) runJob(job *Job, service Service, inputPID string) {
 			dckr.VolBind{outputVolume.ID, service.Output[0].Path, false},
 		}
 		exitCode, consoleOutput, err := p.docker.ExecuteImage(dckr.ImageID(service.imageID), nil, binds, true)
+		//fmt.Println(consoleOutput)
 		p.tasks.addTask(job.ID, "Service execution", err, exitCode, consoleOutput)
 
 		log.Println("  job ended: ", exitCode, ", error: ", err)
@@ -165,7 +166,7 @@ func (p *Pier) GetJob(jobID JobID) (Job, error) {
 	return job, nil
 }
 
-// GetTasks exported
+// GetTask exported
 func (p *Pier) GetTask(jobID JobID) (Task, error) {
 	task, ok := p.tasks.get(jobID)
 

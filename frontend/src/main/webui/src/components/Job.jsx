@@ -38,7 +38,7 @@ class Job extends React.Component {
     }
 
     handleConsoleOutput() {
-
+        this.props.actions.consoleOutputFetch(this.props.job.ID)
     }
 
     componentDidMount() {
