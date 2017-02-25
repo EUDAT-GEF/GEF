@@ -6,6 +6,7 @@ import { bindActionCreators } from 'redux'
 import actions from '../actions/actions';
 import FileTree from './FileTree'
 import ConsoleOutput from './ConsoleOutput'
+import ModalWindow from './ModalWindow'
 
 const Value = ({value}) => {
     if (typeof value === 'object') {
@@ -28,8 +29,6 @@ const JobRow = ({tag, value, style}) => (
 let stateUpdateTimer;
 
 class Job extends React.Component {
-
-
     constructor(props) {
         super(props);
     }
@@ -50,12 +49,20 @@ class Job extends React.Component {
         this.props.actions.fetchJobs();
     }
 
+    handleClick(e) {
+        e.stopPropagation();
+    }
+
+
+
     componentDidMount() {
         this.props.actions.inspectVolume(); // send an empty volumeID when a new box is drown
         this.props.actions.consoleOutputFetch();
         if (this.props.job.State.Code < 0) {
             stateUpdateTimer = setInterval(this.tick.bind(this), 1000);
         }
+
+        //this.getDOMNode().modal({background: true, keyboard: true, show: false});
     }
 
     render() {
@@ -92,15 +99,16 @@ class Job extends React.Component {
                     <Col xs={12} sm={3} md={3} style={{fontWeight:700}}>Console output</Col>
                     <Col xs={12} sm={9} md={9} >
                         <button type="submit" className="btn btn-default" onClick={this.handleConsoleOutput.bind(this)}>Show</button>
+
                     </Col>
                 </Row>
                 <FileTree/>
                 <ConsoleOutput/>
+                <ModalWindow/>
             </div>
 
         )
     }
-
 }
 
 function mapStateToProps(state) {
