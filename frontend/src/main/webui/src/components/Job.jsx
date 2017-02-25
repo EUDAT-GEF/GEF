@@ -101,7 +101,6 @@ class Job extends React.Component {
         )
     }
 
-
     render() {
         let job = this.props.job;
         let service = this.props.service;
@@ -124,7 +123,7 @@ class Job extends React.Component {
                     </span>
                 )
             });
-            
+
         }
         if ((this.props.selectedVolume.volumeContent) && (this.state.buttonPressed > 0)) {
             if (this.state.buttonPressed == 1) {
@@ -168,9 +167,7 @@ class Job extends React.Component {
                         </div>
                     </Col>
                     <Col xs={12} sm={2} md={2}></Col>
-
                 </Row>
-
                 {this.renderModalWindow(modalTitle, modalBody)}
             </div>
 
