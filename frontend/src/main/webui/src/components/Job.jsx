@@ -43,14 +43,19 @@ class Job extends React.Component {
     }
 
     handleInspectInputVolume() {
-        this.props.actions.inspectVolume(this.props.job.InputVolume)
+        this.props.actions.inspectVolume();
+        this.props.actions.inspectVolume(this.props.job.InputVolume);
+        this.handleModalOpen();
     }
 
     handleInspectOutputVolume() {
-        this.props.actions.inspectVolume(this.props.job.OutputVolume)
+        this.props.actions.inspectVolume();
+        this.props.actions.inspectVolume(this.props.job.OutputVolume);
+        this.handleModalOpen();
     }
 
     handleConsoleOutput() {
+        this.props.actions.consoleOutputFetch();
         this.props.actions.consoleOutputFetch(this.props.job.ID)
         this.handleModalOpen();
     }
@@ -104,6 +109,10 @@ class Job extends React.Component {
             modalTitle = "Service container console output";
             modalBody = this.props.task.ServiceExecution.ConsoleOutput;
         }
+        if (this.props.selectedVolume.volumeContent) {
+            modalTitle = "Volume inspection";
+            modalBody = <FileTree/>
+        }
 
 
 
@@ -119,18 +128,6 @@ class Job extends React.Component {
                 <JobRow tag="Service Version" value={service ? service.Version : false}/>
                 <JobRow style={{marginTop:'1em'}} tag="Status" value={job.State.Status}/>
                 <JobRow style={{marginTop:'1em'}} tag="Error" value={job.State.Error ? job.State.Error : false}/>
-                <Row style={{marginTop:'1em'}}>
-                    <Col xs={12} sm={3} md={3} style={{fontWeight:700}}>Input Volume</Col>
-                    <Col xs={12} sm={9} md={9} >
-                        <button type="submit" className="btn btn-default" onClick={this.handleInspectInputVolume.bind(this)}>Inspect</button>
-                    </Col>
-                </Row>
-                <Row style={{marginTop:'1em'}}>
-                    <Col xs={12} sm={3} md={3} style={{fontWeight:700}}>Output Volume</Col>
-                    <Col xs={12} sm={9} md={9} >
-                        <button type="submit" className="btn btn-default" onClick={this.handleInspectOutputVolume.bind(this)}>Inspect</button>
-                    </Col>
-                </Row>
 
                 <Row style={{marginTop:'2em', marginBottom:'1em'}}>
                     <Col xs={12} sm={2} md={2}></Col>
@@ -141,11 +138,11 @@ class Job extends React.Component {
                                 <span className="glyphicon glyphicon-console" aria-hidden="true"></span> Console Output
                             </button>
 
-                            <button type="button" className="btn btn-default btn-lg">
+                            <button type="button" className="btn btn-default btn-lg" onClick={this.handleInspectInputVolume.bind(this)}>
                                 <span className="glyphicon glyphicon-arrow-down" aria-hidden="true"></span> Input Volume
                             </button>
 
-                            <button type="button" className="btn btn-default btn-lg">
+                            <button type="button" className="btn btn-default btn-lg" onClick={this.handleInspectOutputVolume.bind(this)}>
                                 <span className="glyphicon glyphicon-arrow-up" aria-hidden="true"></span> Output Volume
                             </button>
                         </div>
@@ -154,8 +151,6 @@ class Job extends React.Component {
                     <Col xs={12} sm={2} md={2}></Col>
 
                 </Row>
-
-                <FileTree/>
 
                 {this.renderModalWindow(modalTitle, modalBody)}
             </div>
