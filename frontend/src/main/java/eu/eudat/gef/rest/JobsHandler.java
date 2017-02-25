@@ -42,8 +42,12 @@ public class JobsHandler {
 	}
 
 	@GET
-	@Path("{jobID}")
-	public InputStream inspectJob(@PathParam("jobID") String jobID) throws Exception {
-		return rp.forward(apiUrl + "/" + jobID, request, response);
+	@Path("{jobID}/{path: .*}")
+	public InputStream inspectJob(@PathParam("jobID") String jobID, @PathParam("path") String path) throws Exception {
+		if (path == "") {
+		    return rp.forward(apiUrl + "/" + jobID, request, response);
+		} else {
+		    return rp.forward(apiUrl + "/" + jobID + "/" + path, request, response);
+		}
 	}
 }
