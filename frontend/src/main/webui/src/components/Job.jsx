@@ -31,6 +31,7 @@ class Job extends React.Component {
         super(props);
         this.state = {
             showModal: false,
+            buttonPressed: -1,
         };
     }
 
@@ -43,21 +44,27 @@ class Job extends React.Component {
     }
 
     handleInspectInputVolume() {
-        this.props.actions.inspectVolume();
-        this.props.actions.inspectVolume(this.props.job.InputVolume);
-        this.handleModalOpen();
+        if (this.props.job.State.Code > -1) {
+            this.setState({ buttonPressed: 1 });
+            this.props.actions.inspectVolume(this.props.job.InputVolume);
+            this.handleModalOpen();
+        }
     }
 
     handleInspectOutputVolume() {
-        this.props.actions.inspectVolume();
-        this.props.actions.inspectVolume(this.props.job.OutputVolume);
-        this.handleModalOpen();
+        if (this.props.job.State.Code > -1) {
+            this.setState({ buttonPressed: 2 });
+            this.props.actions.inspectVolume(this.props.job.OutputVolume);
+            this.handleModalOpen();
+        }
     }
 
     handleConsoleOutput() {
-        this.props.actions.consoleOutputFetch();
-        this.props.actions.consoleOutputFetch(this.props.job.ID)
-        this.handleModalOpen();
+        if (this.props.job.State.Code > -1) {
+            this.setState({ buttonPressed: 0 });
+            this.props.actions.consoleOutputFetch(this.props.job.ID)
+            this.handleModalOpen();
+        }
     }
 
     tick() {
@@ -76,7 +83,7 @@ class Job extends React.Component {
         }
     }
 
-    renderModalWindow(title, modalBody) {
+    renderModalWindow(title, body) {
         return (
             <div>
                 <Modal show={this.state.showModal} onHide={this.handleModalClose.bind(this)}>
@@ -84,7 +91,7 @@ class Job extends React.Component {
                         <Modal.Title>{title}</Modal.Title>
                     </Modal.Header>
                     <Modal.Body>
-                        {modalBody}
+                        {body}
                     </Modal.Body>
                     <Modal.Footer>
                         <Button onClick={this.handleModalClose.bind(this)}>Close</Button>
@@ -99,23 +106,35 @@ class Job extends React.Component {
         let job = this.props.job;
         let service = this.props.service;
         let title = this.props.title;
+        let buttonClass = "btn btn-default btn-lg disabled";
         if (job.State.Code > -1) {
             clearInterval(stateUpdateTimer);
+            buttonClass = "btn btn-default btn-lg";
         }
 
         let modalTitle= "";
         let modalBody= "";
-        if (this.props.task.ServiceExecution) {
+        if ((this.props.task.ServiceExecution) && (this.state.buttonPressed == 0)) {
             modalTitle = "Service container console output";
-            modalBody = this.props.task.ServiceExecution.ConsoleOutput;
+            modalBody = this.props.task.ServiceExecution.ConsoleOutput.split('\n').map(function(item, key) {
+                return (
+                    <span key={key}>
+                        {item}
+                        <br/>
+                    </span>
+                )
+            });
+            
         }
-        if (this.props.selectedVolume.volumeContent) {
-            modalTitle = "Volume inspection";
+        if ((this.props.selectedVolume.volumeContent) && (this.state.buttonPressed > 0)) {
+            if (this.state.buttonPressed == 1) {
+                modalTitle = "Input volume inspection";
+            } else {
+                modalTitle = "Output volume inspection";
+            }
+
             modalBody = <FileTree/>
         }
-
-
-
 
         return (
             <div style={{border: "1px solid black"}}>
@@ -133,19 +152,19 @@ class Job extends React.Component {
                     <Col xs={12} sm={2} md={2}></Col>
                     <Col xs={12} sm={8} md={8}>
                         <div className="text-center">
-                        <div className="btn-group" role="group" aria-label="toolbar">
-                            <button type="button" className="btn btn-default btn-lg" onClick={this.handleConsoleOutput.bind(this)}>
-                                <span className="glyphicon glyphicon-console" aria-hidden="true"></span> Console Output
-                            </button>
+                            <div className="btn-group" role="group" aria-label="toolbar">
+                                <button type="button" className={buttonClass} onClick={this.handleConsoleOutput.bind(this)}>
+                                    <span className="glyphicon glyphicon-console" aria-hidden="true"></span> Console Output
+                                </button>
 
-                            <button type="button" className="btn btn-default btn-lg" onClick={this.handleInspectInputVolume.bind(this)}>
-                                <span className="glyphicon glyphicon-arrow-down" aria-hidden="true"></span> Input Volume
-                            </button>
+                                <button type="button" className={buttonClass} onClick={this.handleInspectInputVolume.bind(this)}>
+                                    <span className="glyphicon glyphicon-arrow-down" aria-hidden="true"></span> Input Volume
+                                </button>
 
-                            <button type="button" className="btn btn-default btn-lg" onClick={this.handleInspectOutputVolume.bind(this)}>
-                                <span className="glyphicon glyphicon-arrow-up" aria-hidden="true"></span> Output Volume
-                            </button>
-                        </div>
+                                <button type="button" className={buttonClass} onClick={this.handleInspectOutputVolume.bind(this)}>
+                                    <span className="glyphicon glyphicon-arrow-up" aria-hidden="true"></span> Output Volume
+                                </button>
+                            </div>
                         </div>
                     </Col>
                     <Col xs={12} sm={2} md={2}></Col>
