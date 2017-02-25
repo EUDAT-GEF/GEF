@@ -1,5 +1,5 @@
 import React, {PropTypes} from 'react';
-import { Row, Col, Grid, Table, Popover, Tooltip, Button, Modal, OverlayTrigger } from 'react-bootstrap';
+import { Row, Col, Grid, Table, Button, Modal, OverlayTrigger } from 'react-bootstrap';
 import { toPairs } from '../utils/utils';
 import { connect } from 'react-redux'
 import { bindActionCreators } from 'redux'
@@ -22,25 +22,15 @@ class ModalWindow extends React.Component {
     }
 
     render() {
-        const popover = (
-            <Popover id="modal-popover" title="popover">
-                very popover. such engagement
-            </Popover>
-        );
-        const tooltip = (
-            <Tooltip id="modal-tooltip">
-                wow.
-            </Tooltip>
-        );
-        let modalConent = "";
-        if (this.props.task.ServiceExecution) {
-            modalConent = this.props.task.ServiceExecution.ConsoleOutput;
+
+        let modalBody = "";
+        let modalTitle = "";
+        if (this.props.modalBody) {
+            modalBody = this.props.modalBody;
         }
 
         return (
             <div>
-                <p>Click to get the full Modal experience!</p>
-
                 <Button
                     bsStyle="primary"
                     bsSize="large"
@@ -51,21 +41,14 @@ class ModalWindow extends React.Component {
 
                 <Modal show={this.state.showModal} onHide={this.close.bind(this)}>
                     <Modal.Header closeButton>
-                        <Modal.Title>Modal heading</Modal.Title>
+                        <Modal.Title>{modalTitle}</Modal.Title>
                     </Modal.Header>
                     <Modal.Body>
                         <h4>Text in a modal</h4>
                         <p>Duis mollis, est non commodo luctus, nisi erat porttitor ligula.</p>
 
-                        <h4>Popover in a modal</h4>
-                        <p>there is a <OverlayTrigger overlay={popover}><a href="#">popover</a></OverlayTrigger> here</p>
-
-                        <h4>Tooltips in a modal</h4>
-                        <p>there is a <OverlayTrigger overlay={tooltip}><a href="#">tooltip</a></OverlayTrigger> here</p>
-
                         <hr />
-                        {modalConent}
-
+                        {modalBody}
                     </Modal.Body>
                     <Modal.Footer>
                         <Button onClick={this.close.bind(this)}>Close</Button>
