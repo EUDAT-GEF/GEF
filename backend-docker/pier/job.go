@@ -40,6 +40,7 @@ type TaskStatus struct {
 	ConsoleOutput *bytes.Buffer
 }
 
+// LatestOutput used to serialize consoleoutput to json
 type LatestOutput struct {
 	Name          string
 	ConsoleOutput string

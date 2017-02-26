@@ -66,6 +66,15 @@ type VolBind struct {
 	IsReadOnly bool
 }
 
+// NewVolBind creates a new VolBind
+func NewVolBind(id VolumeID, mount string, readonly bool) VolBind {
+	return VolBind{
+		VolumeID:   id,
+		MountPoint: mount,
+		IsReadOnly: readonly,
+	}
+}
+
 // NewClientFirstOf returns a new docker client or an error
 func NewClientFirstOf(cfg []def.DockerConfig) (Client, error) {
 	var buf bytes.Buffer

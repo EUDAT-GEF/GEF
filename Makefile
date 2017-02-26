@@ -4,13 +4,21 @@ WEBUI = frontend/src/main/webui
 EPICPID = ../EpicPID
 INTERNALSERVICES = services/_internal
 
-build: dependencies
+build: dependencies webui frontend containers backend
+
+webui:
 	(cd $(WEBUI) && node_modules/webpack/bin/webpack.js -p)
+
+frontend:
 	(cd $(EPICPID) && mvn package install)
 	(cd frontend && mvn -q package)
+
+containers:
 	(cd $(INTERNALSERVICES)/volume-stage-in && docker build -t volume-stage-in .)
 	(cd $(INTERNALSERVICES)/volume-filelist && GOOS=linux GOARCH=amd64 go build && docker build -t volume-filelist .)
 	(cd $(INTERNALSERVICES)/copy-from-volume && docker build -t copy-from-volume .)
+
+backend:
 	$(GOPATH)/bin/golint ./...
 	go vet ./...
 	go test ./...
@@ -52,4 +60,4 @@ clean:
 	go clean ./...
 	(cd frontend && mvn -q clean)
 
-.PHONY: build dependencies webui_dev_server run_frontend run_backend clean
+.PHONY: build dependencies webui frontend backend webui_dev_server run_frontend run_backend clean

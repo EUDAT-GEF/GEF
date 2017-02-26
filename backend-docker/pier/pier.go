@@ -104,7 +104,7 @@ func (p *Pier) runJob(job *Job, service Service, inputPID string) {
 	{
 		p.jobs.setState(job.ID, JobState{nil, "Performing data staging", -1})
 		binds := []dckr.VolBind{
-			dckr.VolBind{inputVolume.ID, "/volume", false},
+			dckr.NewVolBind(inputVolume.ID, "/volume", false),
 		}
 		exitCode, consoleOutput, err := p.docker.ExecuteImage(dckr.ImageID(stagingVolumeName), []string{inputPID}, binds, true)
 		p.jobs.addTask(job.ID, "Data staging", err, exitCode, consoleOutput)
@@ -131,8 +131,8 @@ func (p *Pier) runJob(job *Job, service Service, inputPID string) {
 	{
 		p.jobs.setState(job.ID, JobState{nil, "Executing the service", -1})
 		binds := []dckr.VolBind{
-			dckr.VolBind{inputVolume.ID, service.Input[0].Path, true},
-			dckr.VolBind{outputVolume.ID, service.Output[0].Path, false},
+			dckr.NewVolBind(inputVolume.ID, service.Input[0].Path, true),
+			dckr.NewVolBind(outputVolume.ID, service.Output[0].Path, false),
 		}
 		exitCode, consoleOutput, err := p.docker.ExecuteImage(dckr.ImageID(service.imageID), nil, binds, true)
 		p.jobs.addTask(job.ID, "Service execution", err, exitCode, consoleOutput)

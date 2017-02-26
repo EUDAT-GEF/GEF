@@ -5,6 +5,7 @@ import (
 	"fmt"
 )
 
+// Error is the main error type
 type Error struct {
 	message string
 	cause   error
@@ -19,6 +20,7 @@ func (e Error) Error() string {
 	return b.String()
 }
 
+// Err fn creates a new Error from an optional existing cause
 func Err(cause error, format string, a ...interface{}) Error {
 	return Error{
 		fmt.Sprintf(format, a...),
