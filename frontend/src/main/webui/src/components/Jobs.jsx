@@ -8,7 +8,7 @@ const JobRow = ({job, title}) => (
     <LinkContainer to={`/jobs/${job.ID}`}>
         <Row>
             <Col xs={12} sm={4} md={4}>{title}</Col>
-            <Col xs={12} sm={4} md={4}>{job.Status}</Col>
+            <Col xs={12} sm={4} md={4}>{job.State.Status}</Col>
         </Row>
     </LinkContainer>
 );

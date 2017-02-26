@@ -136,41 +136,44 @@ class Job extends React.Component {
         }
 
         return (
-            <div style={{border: "1px solid black"}}>
-                <h4> Selected job</h4>
-                <JobRow tag="ID" value={job.ID}/>
-                <JobRow tag="Name" value={title}/>
-                <JobRow tag="Input" value={job.Input}/>
-                <JobRow tag="Service ID" value={job.ServiceID}/>
-                <JobRow tag="Service Description" value={service ? service.Description : false}/>
-                <JobRow tag="Service Version" value={service ? service.Version : false}/>
-                <JobRow style={{marginTop:'1em'}} tag="Status" value={job.State.Status}/>
-                <JobRow style={{marginTop:'1em'}} tag="Error" value={job.State.Error ? job.State.Error : false}/>
+            <div className="panel panel-default">
+                <div className="panel-body">
+                    <div style={{margin: "1em"}}>
+                        <h4> Selected job</h4>
+                        <JobRow tag="ID" value={job.ID}/>
+                        <JobRow tag="Name" value={title}/>
+                        <JobRow tag="Input" value={job.Input}/>
+                        <JobRow tag="Service ID" value={job.ServiceID}/>
+                        <JobRow tag="Service Description" value={service ? service.Description : false}/>
+                        <JobRow tag="Service Version" value={service ? service.Version : false}/>
+                        <JobRow style={{marginTop:'1em'}} tag="Status" value={job.State.Status}/>
+                        <JobRow style={{marginTop:'1em'}} tag="Error" value={job.State.Error ? job.State.Error : false}/>
 
-                <Row style={{marginTop:'2em', marginBottom:'1em'}}>
-                    <Col xs={12} sm={2} md={2}></Col>
-                    <Col xs={12} sm={8} md={8}>
-                        <div className="text-center">
-                            <div className="btn-group" role="group" aria-label="toolbar">
-                                <button type="button" className={buttonClass} onClick={this.handleConsoleOutput.bind(this)}>
-                                    <span className="glyphicon glyphicon-console" aria-hidden="true"></span> Console Output
-                                </button>
+                        <Row style={{marginTop:'2em', marginBottom:'1em'}}>
+                            <Col xs={12} sm={2} md={2}></Col>
+                            <Col xs={12} sm={8} md={8}>
+                                <div className="text-center">
+                                    <div className="btn-group" role="group" aria-label="toolbar">
+                                        <button type="button" className={buttonClass} onClick={this.handleConsoleOutput.bind(this)}>
+                                            <span className="glyphicon glyphicon-console" aria-hidden="true"></span> Console Output
+                                        </button>
 
-                                <button type="button" className={buttonClass} onClick={this.handleInspectInputVolume.bind(this)}>
-                                    <span className="glyphicon glyphicon-arrow-down" aria-hidden="true"></span> Input Volume
-                                </button>
+                                        <button type="button" className={buttonClass} onClick={this.handleInspectInputVolume.bind(this)}>
+                                            <span className="glyphicon glyphicon-arrow-down" aria-hidden="true"></span> Input Volume
+                                        </button>
 
-                                <button type="button" className={buttonClass} onClick={this.handleInspectOutputVolume.bind(this)}>
-                                    <span className="glyphicon glyphicon-arrow-up" aria-hidden="true"></span> Output Volume
-                                </button>
-                            </div>
-                        </div>
-                    </Col>
-                    <Col xs={12} sm={2} md={2}></Col>
-                </Row>
-                {this.renderModalWindow(modalTitle, modalBody)}
+                                        <button type="button" className={buttonClass} onClick={this.handleInspectOutputVolume.bind(this)}>
+                                            <span className="glyphicon glyphicon-arrow-up" aria-hidden="true"></span> Output Volume
+                                        </button>
+                                    </div>
+                                </div>
+                            </Col>
+                            <Col xs={12} sm={2} md={2}></Col>
+                        </Row>
+                        {this.renderModalWindow(modalTitle, modalBody)}
+                    </div>
+                </div>
             </div>
-
         )
     }
 }
