@@ -35,19 +35,16 @@ const JobCreatorForm = (props) => {
         <form onSubmit={handleSubmit}>
             <Row>
                 <Col xs={12} sm={3} md={3} style={{fontWeight:700}}>
-                    PID
+                    PID or URL
                 </Col>
                 <Col xs={12} sm={9} md={9} >
                     <div className="input-group">
-                        <Field name="pid" component="input" type="text" placeholder="PID"
-                               style={inputStyle}/>
+                        <Field name="pid" component="input" type="text" placeholder="Put your PID or URL"
+                               style={inputStyle} className="form-control"/>
+                        <span className="input-group-btn">
+                            <button type="submit" className="btn btn-default" onClick={handleSubmit} disabled={pristine || submitting}>Submit</button>
+                        </span>
                     </div>
-                </Col>
-            </Row>
-            <Row style={{marginTop:'1em'}}>
-                <Col xs={12} sm={3} md={3}/>
-                <Col xs={12} sm={9} md={9} >
-                    <button type="submit" className="btn btn-default" onClick={handleSubmit} disabled={pristine || submitting}>Submit</button>
                 </Col>
             </Row>
         </form>
@@ -73,15 +70,21 @@ class Service extends React.Component {
             log("selectedService:", this.props.selectedService);
             const {ID, Name, Description, Version} = this.props.selectedService.Service;
             return (
-                <div style={{border: "1px solid black"}}>
-                    <div style={{height: "1em"}}></div>
-                    {tagValueRow("Name", Name)}
-                    {tagValueRow("ID", ID)}
-                    {tagValueRow("Description", Description)}
-                    {tagValueRow("Version", Version)}
-                    <JobCreator handleSubmit={this.handleSubmit} service={this.props.selectedService.Service}/>
-                    <div style={{height: "1em"}}></div>
+
+                <div className="panel panel-default">
+                    <div className="panel-body">
+                        <div style={{margin: "1em"}}>
+                            <div style={{height: "1em"}}></div>
+                            {tagValueRow("Name", Name)}
+                            {tagValueRow("ID", ID)}
+                            {tagValueRow("Description", Description)}
+                            {tagValueRow("Version", Version)}
+                            <JobCreator handleSubmit={this.handleSubmit} service={this.props.selectedService.Service}/>
+                            <div style={{height: "1em"}}></div>
+                        </div>
+                    </div>
                 </div>
+
             )
         }
     }
