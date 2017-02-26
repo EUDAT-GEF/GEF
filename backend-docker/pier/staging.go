@@ -31,7 +31,7 @@ const copyFromVolumeName = "copy-from-volume"
 func (p *Pier) DownStreamContainerFile(volumeID string, fileLocation string, w http.ResponseWriter) error {
 	// Copy the file from the volume to a new container
 	binds := []dckr.VolBind{
-		dckr.VolBind{dckr.VolumeID(volumeID), "/root/volume", false},
+		dckr.NewVolBind(dckr.VolumeID(volumeID), "/root/volume", false),
 	}
 	containerID, _, err := p.docker.StartImage(dckr.ImageID(copyFromVolumeName), []string{filepath.Join("/root/volume/", fileLocation), "/root"}, binds)
 
@@ -72,7 +72,7 @@ func (p *Pier) ListFiles(volumeID VolumeID, filePath string) ([]VolumeItem, erro
 
 	// Bind the container with the volume
 	volumesToMount := []dckr.VolBind{
-		dckr.VolBind{dckr.VolumeID(volumeID), "/root/volume", false},
+		dckr.NewVolBind(dckr.VolumeID(volumeID), "/root/volume", false),
 	}
 
 	// Execute our image (it should produce a JSON file with the list of files)
