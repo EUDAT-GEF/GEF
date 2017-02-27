@@ -105,24 +105,17 @@ class Job extends React.Component {
         let job = this.props.job;
         let service = this.props.service;
         let title = this.props.title;
-        let buttonClass = "btn btn-default btn-lg disabled";
+        let buttonClass = "btn btn-default disabled";
         if (job.State.Code > -1) {
             clearInterval(stateUpdateTimer);
-            buttonClass = "btn btn-default btn-lg";
+            buttonClass = "btn btn-default";
         }
 
         let modalTitle= "";
         let modalBody= "";
         if ((this.props.task.ServiceExecution) && (this.state.buttonPressed == 0)) {
             modalTitle = "Service container console output";
-            modalBody = this.props.task.ServiceExecution.ConsoleOutput.split('\n').map(function(item, key) {
-                return (
-                    <span key={key}>
-                        {item}
-                        <br/>
-                    </span>
-                )
-            });
+            modalBody = <span><pre>{this.props.task.ServiceExecution.ConsoleOutput}</pre></span>
 
         }
         if ((this.props.selectedVolume.volumeContent) && (this.state.buttonPressed > 0)) {
