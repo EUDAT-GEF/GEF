@@ -307,3 +307,7 @@ code {
     height:500px;
     overflow:auto;
 }
+
+.statusMessage {
+    color: #F45D00;
+}

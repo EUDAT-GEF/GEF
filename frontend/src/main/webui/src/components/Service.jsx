@@ -42,7 +42,9 @@ const JobCreatorForm = (props) => {
                         <Field name="pid" component="input" type="text" placeholder="Put your PID or URL"
                                style={inputStyle} className="form-control"/>
                         <span className="input-group-btn">
-                            <button type="submit" className="btn btn-default" onClick={handleSubmit} disabled={pristine || submitting}>Submit</button>
+                            <button type="submit" className="btn btn-default" onClick={handleSubmit} disabled={pristine || submitting}>
+                                <span className="glyphicon glyphicon-play" aria-hidden="true"></span> Submit
+                            </button>
                         </span>
                     </div>
                 </Col>

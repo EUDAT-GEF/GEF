@@ -7,16 +7,16 @@ import Job from './Job'
 const JobRow = ({job, title}) => (
     <LinkContainer to={`/jobs/${job.ID}`}>
         <Row>
-            <Col xs={12} sm={4} md={4}>{title}</Col>
-            <Col xs={12} sm={4} md={4}>{job.State.Status}</Col>
+            <Col xs={12} sm={3} md={3}>{title}</Col>
+            <Col xs={12} sm={9} md={9}>{job.State.Status}</Col>
         </Row>
     </LinkContainer>
 );
 
 const Header = () => (
     <div className="row table-head">
-        <div className="col-xs-12 col-sm-4">Job</div>
-        <div className="col-xs-12 col-sm-4">Status</div>
+        <div className="col-xs-12 col-sm-3">Job</div>
+        <div className="col-xs-12 col-sm-9">Status</div>
     </div>
 );
 

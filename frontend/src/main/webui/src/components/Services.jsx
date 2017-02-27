@@ -7,8 +7,8 @@ import Service from './Service'
 const ServiceRow = ({service}) => (
     <LinkContainer to={`/services/${service.ID}`}>
         <Row style={{marginTop:'0.5em', marginBottom:'0.5em'}}>
-            <Col xs={12} sm={4} md={4}>{service.Name}</Col>
-            <Col xs={12} sm={4} md={4}>{service.Description}</Col>
+            <Col xs={12} sm={3} md={3}>{service.Name}</Col>
+            <Col xs={12} sm={9} md={9}>{service.Description}</Col>
         </Row>
     </LinkContainer>
 );
@@ -17,16 +17,16 @@ const ImageRow = ({image}) => {
     const style={color:'#aaa'}
     return (
         <Row style={{marginTop:'0.5em', marginBottom:'0.5em'}}>
-            <Col xs={12} sm={4} md={4} style={style}>{image.Name || image.RepoTag}</Col>
-            <Col xs={12} sm={4} md={4} style={style}>{image.Description}</Col>
+            <Col xs={12} sm={3} md={3} style={style}>{image.Name || image.RepoTag}</Col>
+            <Col xs={12} sm={9} md={9} style={style}>{image.Description}</Col>
         </Row>
     )
 };
 
 const Header = () => (
     <div className="row table-head">
-        <div className="col-xs-12 col-sm-4">Name</div>
-        <div className="col-xs-12 col-sm-4">Description</div>
+        <div className="col-xs-12 col-sm-3">Name</div>
+        <div className="col-xs-12 col-sm-9">Description</div>
     </div>
 );
 

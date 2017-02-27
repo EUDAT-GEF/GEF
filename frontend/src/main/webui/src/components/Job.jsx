@@ -17,10 +17,17 @@ const Value = ({value}) => {
     }
 };
 
-const JobRow = ({tag, value, style}) => (
-    <Row style={style}>
+const JobRow = ({tag, value}) => (
+    <Row>
         <Col xs={12} sm={3} md={3} style={{fontWeight:700}}>{tag}</Col>
-        <Col xs={12} sm={3} md={3} ><Value value={value}/></Col>
+        <Col xs={12} sm={9} md={9} ><Value value={value}/></Col>
+    </Row>
+);
+
+const JobStatusIndicator = ({tag, value}) => ( // this component will be augmented to display more advanced animation
+    <Row>
+        <Col xs={12} sm={3} md={3} style={{fontWeight:700}}>{tag}</Col>
+        <Col xs={12} sm={9} md={9} className="statusMessage"><Value value={value}/></Col>
     </Row>
 );
 
@@ -106,9 +113,21 @@ class Job extends React.Component {
         let service = this.props.service;
         let title = this.props.title;
         let buttonClass = "btn btn-default disabled";
+
+        if (!this.state.progressIndicator) {
+            this.state.progressIndicator = " ";
+        } else {
+            if (this.state.progressIndicator.length>4) {
+                this.state.progressIndicator = " ";
+            } else {
+                this.state.progressIndicator += ".";
+            }
+        }
+
         if (job.State.Code > -1) {
             clearInterval(stateUpdateTimer);
             buttonClass = "btn btn-default";
+            this.state.progressIndicator = "";
         }
 
         let modalTitle= "";
@@ -127,20 +146,23 @@ class Job extends React.Component {
 
             modalBody = <FileTree/>
         }
+        let errorMessage;
+        if (job.State.Error) {
+            errorMessage = <JobRow tag="Error" value={job.State.Error}/>
+        }
 
         return (
             <div className="panel panel-default">
                 <div className="panel-body">
                     <div style={{margin: "1em"}}>
-                        <h4> Selected job</h4>
                         <JobRow tag="ID" value={job.ID}/>
                         <JobRow tag="Name" value={title}/>
                         <JobRow tag="Input" value={job.Input}/>
                         <JobRow tag="Service ID" value={job.ServiceID}/>
                         <JobRow tag="Service Description" value={service ? service.Description : false}/>
                         <JobRow tag="Service Version" value={service ? service.Version : false}/>
-                        <JobRow style={{marginTop:'1em'}} tag="Status" value={job.State.Status}/>
-                        <JobRow style={{marginTop:'1em'}} tag="Error" value={job.State.Error ? job.State.Error : false}/>
+                        <JobStatusIndicator tag="Status" value={job.State.Status+this.state.progressIndicator}/>
+                        {errorMessage}
 
                         <Row style={{marginTop:'2em', marginBottom:'1em'}}>
                             <Col xs={12} sm={2} md={2}></Col>
