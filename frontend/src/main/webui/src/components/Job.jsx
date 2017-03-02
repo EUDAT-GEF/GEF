@@ -24,12 +24,17 @@ const JobRow = ({tag, value}) => (
     </Row>
 );
 
-const JobStatusIndicator = ({tag, value}) => ( // this component will be augmented to display more advanced animation
-    <Row>
-        <Col xs={12} sm={3} md={3} style={{fontWeight:700}}>{tag}</Col>
-        <Col xs={12} sm={9} md={9} className="statusMessage"><Value value={value}/></Col>
-    </Row>
-);
+const JobStatusIndicator = ({tag, value}) => {
+    const statusMessage = {
+        color: '#F45D00'
+    }
+    return (
+        <Row>
+            <Col xs={12} sm={3} md={3} style={{fontWeight: 700}}>{tag}</Col>
+            <Col xs={12} sm={9} md={9} style={statusMessage}><Value value={value}/></Col>
+        </Row>
+    )
+};
 
 let stateUpdateTimer;
 
@@ -67,15 +72,14 @@ class Job extends React.Component {
     }
 
     handleConsoleOutput() {
-        if (this.props.job.State.Code > -1) {
-            this.setState({ buttonPressed: 0 });
-            this.props.actions.consoleOutputFetch(this.props.job.ID)
-            this.handleModalOpen();
-        }
+        this.setState({ buttonPressed: 0 });
+        this.props.actions.consoleOutputFetch(this.props.job.ID);
+        this.handleModalOpen();
     }
 
     tick() {
         this.props.actions.fetchJobs();
+        this.props.actions.consoleOutputFetch(this.props.job.ID);
     }
 
     handleClick(e) {
@@ -135,8 +139,8 @@ class Job extends React.Component {
         if ((this.props.task.ServiceExecution) && (this.state.buttonPressed == 0)) {
             modalTitle = "Service container console output";
             modalBody = <span><pre>{this.props.task.ServiceExecution.ConsoleOutput}</pre></span>
-
         }
+
         if ((this.props.selectedVolume.volumeContent) && (this.state.buttonPressed > 0)) {
             if (this.state.buttonPressed == 1) {
                 modalTitle = "Input volume inspection";
@@ -169,7 +173,7 @@ class Job extends React.Component {
                             <Col xs={12} sm={8} md={8}>
                                 <div className="text-center">
                                     <div className="btn-group" role="group" aria-label="toolbar">
-                                        <button type="button" className={buttonClass} onClick={this.handleConsoleOutput.bind(this)}>
+                                        <button type="button" className="btn btn-default" onClick={this.handleConsoleOutput.bind(this)}>
                                             <span className="glyphicon glyphicon-console" aria-hidden="true"></span> Console Output
                                         </button>
 

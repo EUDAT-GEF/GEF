@@ -14,4 +14,9 @@ Installation
 - Go to the downloaded repository location: `cd $GOPATH/src/github.com/EUDAT-GEF/GEF`.
 - Build the project: `make build`.
 - Start the frontend and the backend in two separate terminal sessions: `make run_frontend` and `make run_backend`.
-- Go to `http://localhost:4042/gef`. The GEF UI should be online.
+- Go to `http://localhost:4042`. The GEF UI should be online.
+
+Docker Images
+-------------
+During the installation process several docker images will be created: they are necessary for the system to function
+properly, please do not remove them. 
