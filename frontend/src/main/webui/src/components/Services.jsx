@@ -1,5 +1,4 @@
 import React, {PropTypes} from 'react';
-import bows from 'bows';
 import {Row, Col} from 'react-bootstrap';
 import {LinkContainer} from 'react-router-bootstrap'
 import Service from './Service'
