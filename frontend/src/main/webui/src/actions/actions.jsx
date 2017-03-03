@@ -88,6 +88,26 @@ function jobListFetchError(errorMessage) {
     }
 }
 
+function jobRemovalStart() {
+    return {
+        type: actionTypes.JOB_REMOVAL_START
+    }
+}
+
+function jobRemovalSuccess(data) {
+    return {
+        type: actionTypes.JOB_REMOVAL_SUCCESS,
+        data: data
+    }
+}
+
+function jobRemovalError(errorMessage) {
+    return {
+        type: actionTypes.JOB_REMOVAL_ERROR,
+        errorMessage: errorMessage
+    }
+}
+
 function volumesFetchStart() {
     return {
         type: actionTypes.VOLUME_FETCH_START
@@ -213,6 +233,21 @@ function fetchJobs() {
             Alert.error("Cannot fetch job information from the server.");
             log("An fetch error occurred", err);
             dispatch(jobListFetchError(err));
+        })
+    }
+}
+
+function removeJob(jobID) {
+    return function (dispatch, getState)  {
+        dispatch(jobRemovalStart());
+        const resultPromise = axios.delete( apiNames.jobs + "/" + jobID);
+        resultPromise.then(response => {
+            log('removed job:', response.data);
+            dispatch(jobRemovalSuccess(response.data));
+        }).catch(err => {
+            Alert.error("Cannot remove the job.");
+            log("An error occurred during the job removal", err);
+            dispatch(jobRemovalError(err));
         })
     }
 }
@@ -375,6 +410,9 @@ export default {
     jobListFetchStart,
     jobListFetchSuccess,
     jobListFetchError,
+    jobRemovalStart,
+    jobRemovalSuccess,
+    jobRemovalError,
     volumesFetchStart,
     volumesFetchSuccess,
     volumesFetchError,
@@ -385,6 +423,7 @@ export default {
     consoleOutputFetchSuccess,
     consoleOutputFetchError,
     fetchJobs,
+    removeJob,
     fetchServices,
     fetchService,
     fetchVolumes,

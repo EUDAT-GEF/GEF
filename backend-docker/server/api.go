@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"fmt"
 )
 
 const (
@@ -60,6 +61,7 @@ func NewServer(cfg def.ServerConfig, pier *pier.Pier, tmpDir string) (*Server, e
 		"POST /jobs":               server.executeServiceHandler,
 		"GET /jobs":                server.listJobsHandler,
 		"GET /jobs/{jobID}":        server.inspectJobHandler,
+		"DELETE /jobs/{jobID}":     server.removeJobHandler,
 		"GET /jobs/{jobID}/output": server.getJobTask,
 
 		"GET /volumes/{volumeID}/{path:.*}": server.volumeContentHandler,
@@ -218,6 +220,20 @@ func (s *Server) inspectJobHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	Response{w}.Ok(jmap("Job", job))
+}
+
+func (s *Server) removeJobHandler(w http.ResponseWriter, r *http.Request) {
+	logRequest(r)
+	vars := mux.Vars(r)
+	fmt.Println("Removing a job")
+	jobID, err := s.pier.RemoveJob(pier.JobID(vars["jobID"]))
+	if err != nil {
+		Response{w}.ClientError(err.Error(), err)
+		return
+	}
+
+	fmt.Println(jobID)
+	Response{w}.Ok(jmap("JobID", jobID))
 }
 
 func (s *Server) getJobTask(w http.ResponseWriter, r *http.Request) {

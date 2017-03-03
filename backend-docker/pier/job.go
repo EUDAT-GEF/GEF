@@ -6,6 +6,7 @@ import (
 	"sort"
 	"sync"
 	"time"
+	"fmt"
 )
 
 // Job stores the information about a service execution
@@ -79,6 +80,34 @@ func (jobList *JobList) add(job Job) {
 	jobList.Lock()
 	defer jobList.Unlock()
 	jobList.cache[job.ID] = job
+}
+
+func (jobList *JobList) clear() {
+	jobList.Lock()
+	defer jobList.Unlock()
+	jobList = nil
+}
+
+func (jobList *JobList) remove(key JobID) {
+	jobList.Lock()
+	fmt.Println("Locked")
+	fmt.Println(jobList)
+	defer jobList.Unlock()
+
+
+	emptyJobList := NewJobList()
+	for _, job := range jobList.cache {
+		if job.ID != key {
+			emptyJobList.add(job)
+		}
+	}
+	jobList.clear()
+	jobList := emptyJobList
+
+
+	fmt.Println("Unlocked")
+	fmt.Println(jobList)
+
 }
 
 func (jobList *JobList) list() []Job {

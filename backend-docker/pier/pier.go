@@ -165,3 +165,30 @@ func (p *Pier) GetJob(jobID JobID) (Job, error) {
 	}
 	return job, nil
 }
+
+// RemoveJob exported
+func (p *Pier) RemoveJob(jobID JobID) (JobID, error) {
+	fmt.Println("Getting the job")
+	job, ok := p.jobs.get(jobID)
+	if !ok {
+		return jobID, def.Err(nil, "not found")
+	}
+	fmt.Println("The job was fetched")
+
+	// Removing volumes
+	err := p.docker.RemoveVolume(dckr.VolumeID(job.InputVolume))
+	if err != nil {
+		return jobID, def.Err(err, "Input volume is not set")
+	}
+	fmt.Println("Input volume was removed")
+	err = p.docker.RemoveVolume(dckr.VolumeID(job.OutputVolume))
+	if err != nil {
+		return jobID, def.Err(err, "Output volume is not set")
+	}
+	fmt.Println("Output volume was removed")
+
+	// Removing the job from the list
+	p.jobs.remove(jobID)
+	fmt.Println("The job was removed")
+	return jobID, nil
+}
