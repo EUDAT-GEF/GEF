@@ -264,9 +264,10 @@ code {
 
 
 /*** List of files from a volume ***/
-
 .fileList {
-  /*background-color: white;*/
+    height: auto;
+    max-height: 500px;
+    overflow: auto;
 }
 .fileList .fileHeader {
   margin: 0.5em 0px;
@@ -302,12 +303,13 @@ code {
   color: red;
 }
 
-/*** Scrollable modal window ***/
-.modal-content {
-    height:500px;
-    overflow:auto;
-}
-
-.statusMessage {
-    color: #F45D00;
-}
+/*** Scrollable console in a modal window ***/
+pre {
+    height: auto;
+    max-height: 500px;
+    overflow: auto;
+    background-color: #eeeeee;
+    word-break: normal !important;
+    word-wrap: normal !important;
+    white-space: pre !important;
+}​

@@ -2,7 +2,6 @@
  * Created by wqiu on 17/08/16.
  */
 import React, {PropTypes} from 'react';
-import axios from 'axios';
 import bows from 'bows';
 import {Row, Col, Grid} from 'react-bootstrap';
 import {Field, reduxForm} from 'redux-form';
