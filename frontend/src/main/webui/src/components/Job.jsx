@@ -25,34 +25,34 @@ const JobRow = ({tag, value}) => (
 );
 
 const JobStatusIndicator = ({code, tag, message}) => {
-    const inProgressMessage = {
+    const inProgressColor = {
         color: '#f45d00'
     }
-    const errorMessage = {
-        color: '#c73118'
+    const errorColor = {
+        color: '#ff0000'
     }
-    const successMessage = {
-        color: '#fca700'
+    const successColor = {
+        color: '#337ab7'
     }
     const progressAnimation = <img src="/images/progress-animation.gif" />;
     let currentProgress;
-    let statusMessage;
+    let messageColor;
 
     switch (code) {
         case 0:
-            statusMessage = successMessage;
+            messageColor = successColor;
             break;
         case 1:
-            statusMessage = errorMessage;
+            messageColor = errorColor;
             break;
         default:
             currentProgress = progressAnimation;
-            statusMessage = inProgressMessage;
+            messageColor = inProgressColor;
     }
     return (
         <Row>
             <Col xs={12} sm={3} md={3} style={{fontWeight: 700}}>{tag}</Col>
-            <Col xs={12} sm={9} md={9} style={statusMessage} className="progressIndicator">{currentProgress} {message}</Col>
+            <Col xs={12} sm={9} md={9} style={messageColor}>{currentProgress} {message}</Col>
         </Row>
     )
 };
