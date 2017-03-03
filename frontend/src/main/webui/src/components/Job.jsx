@@ -24,14 +24,35 @@ const JobRow = ({tag, value}) => (
     </Row>
 );
 
-const JobStatusIndicator = ({tag, value}) => {
-    const statusMessage = {
-        color: '#F45D00'
+const JobStatusIndicator = ({code, tag, message}) => {
+    const inProgressMessage = {
+        color: '#f45d00'
+    }
+    const errorMessage = {
+        color: '#c73118'
+    }
+    const successMessage = {
+        color: '#fca700'
+    }
+    const progressAnimation = <img src="/images/progress-animation.gif" />;
+    let currentProgress;
+    let statusMessage;
+
+    switch (code) {
+        case 0:
+            statusMessage = successMessage;
+            break;
+        case 1:
+            statusMessage = errorMessage;
+            break;
+        default:
+            currentProgress = progressAnimation;
+            statusMessage = inProgressMessage;
     }
     return (
         <Row>
             <Col xs={12} sm={3} md={3} style={{fontWeight: 700}}>{tag}</Col>
-            <Col xs={12} sm={9} md={9} style={statusMessage}><Value value={value}/></Col>
+            <Col xs={12} sm={9} md={9} style={statusMessage} className="progressIndicator">{currentProgress} {message}</Col>
         </Row>
     )
 };
@@ -165,7 +186,7 @@ class Job extends React.Component {
                         <JobRow tag="Service ID" value={job.ServiceID}/>
                         <JobRow tag="Service Description" value={service ? service.Description : false}/>
                         <JobRow tag="Service Version" value={service ? service.Version : false}/>
-                        <JobStatusIndicator tag="Status" value={job.State.Status+this.state.progressIndicator}/>
+                        <JobStatusIndicator code={job.State.Code} tag="Status" message={job.State.Status+this.state.progressIndicator}/>
                         {errorMessage}
 
                         <Row style={{marginTop:'2em', marginBottom:'1em'}}>

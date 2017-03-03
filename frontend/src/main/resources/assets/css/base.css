@@ -313,3 +313,11 @@ pre {
     word-wrap: normal !important;
     white-space: pre !important;
 }​
+
+.progressIndicator img {
+    float: left;
+}
+
+.progressIndicator {
+    float: right;
+}
