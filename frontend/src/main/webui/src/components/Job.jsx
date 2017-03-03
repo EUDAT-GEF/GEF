@@ -38,16 +38,13 @@ const JobStatusIndicator = ({code, tag, message}) => {
     let currentProgress;
     let messageColor;
 
-    switch (code) {
-        case (code<0):
-            currentProgress = progressAnimation;
-            messageColor = inProgressColor;
-            break;
-        case 0:
-            messageColor = successColor;
-            break;
-        default:
-            messageColor = errorColor;
+    if (code < 0) {
+        currentProgress = progressAnimation;
+        messageColor = inProgressColor;
+    } else if (code == 0) {
+        messageColor = successColor;
+    } else {
+        messageColor = errorColor;
     }
     return (
         <Row>
