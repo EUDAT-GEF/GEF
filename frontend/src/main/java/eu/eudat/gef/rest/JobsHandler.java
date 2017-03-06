@@ -51,7 +51,7 @@ public class JobsHandler {
 		}
 	}
 
-	@DELETE
+    @DELETE
     @Path("{jobID}")
     public InputStream removeJob(@PathParam("jobID") String jobID) throws Exception {
         return rp.forward(apiUrl + "/" + jobID, request, response);
