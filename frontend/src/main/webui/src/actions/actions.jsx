@@ -244,7 +244,7 @@ function removeJob(jobID) {
         resultPromise.then(response => {
             log('removed job:', response.data);
             dispatch(jobRemovalSuccess(response.data));
-            fetchJobs();
+            dispatch(fetchJobs());
         }).catch(err => {
             Alert.error("Cannot remove the job.");
             log("An error occurred during the job removal", err);
