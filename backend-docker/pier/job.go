@@ -82,7 +82,6 @@ func (jobList *JobList) add(job Job) {
 	jobList.cache[job.ID] = job
 }
 
-
 func (jobList *JobList) remove(key JobID) {
 	jobList.Lock()
 	defer jobList.Unlock()

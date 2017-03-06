@@ -96,9 +96,7 @@ class Job extends React.Component {
     }
 
     handleJobRemoval() {
-        //this.setState({ buttonPressed: 0 });
         this.props.actions.removeJob(this.props.job.ID);
-        //this.props.actions.fetchJobs();
     }
 
     tick() {

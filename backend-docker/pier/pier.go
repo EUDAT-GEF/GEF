@@ -185,7 +185,7 @@ func (p *Pier) RemoveJob(jobID JobID) (JobID, error) {
 
 	// Stopping the latest or the current task (if it is running)
 	if len(job.Tasks) > 0 {
-		p.docker.WaitContainer(job.Tasks[len(job.Tasks)-1].ContainerID, nil, true)
+		p.docker.RemoveContainer(string(job.Tasks[len(job.Tasks)-1].ContainerID))
 	}
 
 	// Removing the job from the list
