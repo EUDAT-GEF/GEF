@@ -104,4 +104,7 @@ func TestExecution(t *testing.T) {
 	checkMsg(t, err, "getting volume failed")
 
 	expect(t, len(files) == 1, "bad returned files")
+
+	_, err = pier.RemoveJob(jobid)
+	checkMsg(t, err, "removing job failed")
 }

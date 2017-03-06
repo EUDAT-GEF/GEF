@@ -318,7 +318,7 @@ func (c Client) StartImage(id ImageID, cmdArgs []string, binds []VolBind) (Conta
 
 	err = c.c.StartContainer(cont.ID, &hc)
 	if err != nil {
-		c.c.RemoveContainer(docker.RemoveContainerOptions{ID: cont.ID, Force: true})
+		c.RemoveContainer(cont.ID)
 		return ContainerID(""), &stdout, def.Err(err, "StartContainer failed")
 	}
 
@@ -335,13 +335,14 @@ func (w *WriteMonitor) Write(bs []byte) (int, error) {
 }
 
 // ExecuteImage takes a docker image, creates a container and executes it, and waits for it to end
-func (c Client) ExecuteImage(id ImageID, cmdArgs []string, binds []VolBind, removeOnExit bool) (int, *bytes.Buffer, error) {
+func (c Client) ExecuteImage(id ImageID, cmdArgs []string, binds []VolBind, removeOnExit bool) (ContainerID, int, *bytes.Buffer, error) {
 	containerID, consoleOutput, err := c.StartImage(id, cmdArgs, binds)
 	if err != nil {
-		return 0, consoleOutput, def.Err(err, "StartImage failed")
+		return containerID, 0, consoleOutput, def.Err(err, "StartImage failed")
 	}
 
-	return c.WaitContainer(containerID, consoleOutput, removeOnExit)
+	exitCode, consoleOutput, err := c.WaitContainer(containerID, consoleOutput, removeOnExit)
+	return containerID, exitCode, consoleOutput, err
 }
 
 // DeleteImage removes an image by ID
@@ -358,10 +359,15 @@ func (c Client) StartExistingContainer(contID string, binds []string) (Container
 
 	err := c.c.StartContainer(contID, &hc)
 	if err != nil {
-		c.c.RemoveContainer(docker.RemoveContainerOptions{ID: contID, Force: true})
+		c.RemoveContainer(contID)
 		return ContainerID(""), err
 	}
 	return ContainerID(contID), nil
+}
+
+// RemoveContainer
+func (c Client) RemoveContainer(containerID string) {
+	c.c.RemoveContainer(docker.RemoveContainerOptions{ID: containerID, Force: true})
 }
 
 // WaitContainer takes a docker container and waits for its finish.
@@ -370,7 +376,7 @@ func (c Client) WaitContainer(id ContainerID, consoleOutput *bytes.Buffer, remov
 	containerID := string(id)
 	exitCode, err := c.c.WaitContainer(containerID)
 	if removeOnExit {
-		c.c.RemoveContainer(docker.RemoveContainerOptions{ID: containerID, Force: true})
+		c.RemoveContainer(containerID)
 	}
 	return exitCode, consoleOutput, err
 }

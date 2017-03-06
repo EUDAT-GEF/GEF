@@ -17,7 +17,7 @@ type Job struct {
 	State        *JobState
 	InputVolume  VolumeID
 	OutputVolume VolumeID
-	Tasks        []TaskStatus
+	Tasks        []TaskInfo
 }
 
 // JobState exported
@@ -32,9 +32,10 @@ type JobID string
 
 type jobArray []Job
 
-// TaskStatus exported
-type TaskStatus struct {
+// TaskInfo exported
+type TaskInfo struct {
 	Name          string
+	ContainerID   dckr.ContainerID
 	Error         error
 	ExitCode      int
 	ConsoleOutput *bytes.Buffer
@@ -81,6 +82,12 @@ func (jobList *JobList) add(job Job) {
 	jobList.cache[job.ID] = job
 }
 
+func (jobList *JobList) remove(key JobID) {
+	jobList.Lock()
+	defer jobList.Unlock()
+	delete(jobList.cache, key)
+}
+
 func (jobList *JobList) list() []Job {
 	jobList.Lock()
 	defer jobList.Unlock()
@@ -125,13 +132,14 @@ func (jobList *JobList) setOutputVolume(jobID JobID, outputVolume VolumeID) {
 	jobList.cache[jobID] = job
 }
 
-func (jobList *JobList) addTask(jobID JobID, taskName string, taskError error, taskExitCode int, taskConsoleOutput *bytes.Buffer) {
+func (jobList *JobList) addTask(jobID JobID, taskName string, taskContainer dckr.ContainerID, taskError error, taskExitCode int, taskConsoleOutput *bytes.Buffer) {
 	jobList.Lock()
 	defer jobList.Unlock()
 	job := jobList.cache[jobID]
 
-	var newTask TaskStatus
+	var newTask TaskInfo
 	newTask.Name = taskName
+	newTask.ContainerID = taskContainer
 	newTask.Error = taskError
 	newTask.ExitCode = taskExitCode
 	newTask.ConsoleOutput = taskConsoleOutput

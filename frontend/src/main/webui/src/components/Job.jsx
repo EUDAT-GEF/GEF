@@ -95,6 +95,10 @@ class Job extends React.Component {
         this.handleModalOpen();
     }
 
+    handleJobRemoval() {
+        this.props.actions.removeJob(this.props.job.ID);
+    }
+
     tick() {
         this.props.actions.fetchJobs();
         this.props.actions.consoleOutputFetch(this.props.job.ID);
@@ -201,6 +205,12 @@ class Job extends React.Component {
 
                                         <button type="button" className={buttonClass} onClick={this.handleInspectOutputVolume.bind(this)}>
                                             <span className="glyphicon glyphicon-arrow-up" aria-hidden="true"></span> Output Volume
+                                        </button>
+                                        <button type="button" className={buttonClass} onClick={this.handleInspectOutputVolume.bind(this)}>
+                                            <span className="glyphicon glyphicon-pause" aria-hidden="true"></span> Pause the Job
+                                        </button>
+                                        <button type="button" className="btn btn-default" onClick={this.handleJobRemoval.bind(this)}>
+                                            <span className="glyphicon glyphicon-trash" aria-hidden="true"></span> Remove the Job
                                         </button>
                                     </div>
                                 </div>

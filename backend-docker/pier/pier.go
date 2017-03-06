@@ -106,8 +106,8 @@ func (p *Pier) runJob(job *Job, service Service, inputPID string) {
 		binds := []dckr.VolBind{
 			dckr.NewVolBind(inputVolume.ID, "/volume", false),
 		}
-		exitCode, consoleOutput, err := p.docker.ExecuteImage(dckr.ImageID(stagingVolumeName), []string{inputPID}, binds, true)
-		p.jobs.addTask(job.ID, "Data staging", err, exitCode, consoleOutput)
+		containerID, exitCode, consoleOutput, err := p.docker.ExecuteImage(dckr.ImageID(stagingVolumeName), []string{inputPID}, binds, true)
+		p.jobs.addTask(job.ID, "Data staging", containerID, err, exitCode, consoleOutput)
 
 		log.Println("  staging ended: ", exitCode, ", error: ", err)
 		if err != nil {
@@ -134,8 +134,8 @@ func (p *Pier) runJob(job *Job, service Service, inputPID string) {
 			dckr.NewVolBind(inputVolume.ID, service.Input[0].Path, true),
 			dckr.NewVolBind(outputVolume.ID, service.Output[0].Path, false),
 		}
-		exitCode, consoleOutput, err := p.docker.ExecuteImage(dckr.ImageID(service.imageID), nil, binds, true)
-		p.jobs.addTask(job.ID, "Service execution", err, exitCode, consoleOutput)
+		containerID, exitCode, consoleOutput, err := p.docker.ExecuteImage(dckr.ImageID(service.imageID), nil, binds, true)
+		p.jobs.addTask(job.ID, "Service execution", containerID, err, exitCode, consoleOutput)
 
 		log.Println("  job ended: ", exitCode, ", error: ", err)
 		if err != nil {
@@ -164,4 +164,31 @@ func (p *Pier) GetJob(jobID JobID) (Job, error) {
 		return job, def.Err(nil, "not found")
 	}
 	return job, nil
+}
+
+// RemoveJob exported
+func (p *Pier) RemoveJob(jobID JobID) (JobID, error) {
+	job, ok := p.jobs.get(jobID)
+	if !ok {
+		return jobID, def.Err(nil, "not found")
+	}
+
+	// Removing volumes
+	err := p.docker.RemoveVolume(dckr.VolumeID(job.InputVolume))
+	if err != nil {
+		return jobID, def.Err(err, "Input volume is not set")
+	}
+	err = p.docker.RemoveVolume(dckr.VolumeID(job.OutputVolume))
+	if err != nil {
+		return jobID, def.Err(err, "Output volume is not set")
+	}
+
+	// Stopping the latest or the current task (if it is running)
+	if len(job.Tasks) > 0 {
+		p.docker.RemoveContainer(string(job.Tasks[len(job.Tasks)-1].ContainerID))
+	}
+
+	// Removing the job from the list
+	p.jobs.remove(jobID)
+	return jobID, nil
 }
