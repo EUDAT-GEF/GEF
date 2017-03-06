@@ -9,7 +9,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"fmt"
 )
 
 const (
@@ -225,14 +224,11 @@ func (s *Server) inspectJobHandler(w http.ResponseWriter, r *http.Request) {
 func (s *Server) removeJobHandler(w http.ResponseWriter, r *http.Request) {
 	logRequest(r)
 	vars := mux.Vars(r)
-	fmt.Println("Removing a job")
 	jobID, err := s.pier.RemoveJob(pier.JobID(vars["jobID"]))
 	if err != nil {
 		Response{w}.ClientError(err.Error(), err)
 		return
 	}
-
-	fmt.Println(jobID)
 	Response{w}.Ok(jmap("JobID", jobID))
 }
 

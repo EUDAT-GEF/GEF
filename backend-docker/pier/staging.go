@@ -89,7 +89,7 @@ func (p *Pier) ListFiles(volumeID VolumeID, filePath string) ([]VolumeItem, erro
 	}
 
 	// Killing the container
-	_, _, err = p.docker.WaitContainer(containerID, consoleOutput, true)
+	_, _, _, err = p.docker.WaitContainer(containerID, consoleOutput, true)
 	if err != nil {
 		return volumeFileList, def.Err(err, "waiting for container to end failed")
 	}

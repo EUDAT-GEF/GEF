@@ -335,10 +335,10 @@ func (w *WriteMonitor) Write(bs []byte) (int, error) {
 }
 
 // ExecuteImage takes a docker image, creates a container and executes it, and waits for it to end
-func (c Client) ExecuteImage(id ImageID, cmdArgs []string, binds []VolBind, removeOnExit bool) (int, *bytes.Buffer, error) {
+func (c Client) ExecuteImage(id ImageID, cmdArgs []string, binds []VolBind, removeOnExit bool) (ContainerID, int, *bytes.Buffer, error) {
 	containerID, consoleOutput, err := c.StartImage(id, cmdArgs, binds)
 	if err != nil {
-		return 0, consoleOutput, def.Err(err, "StartImage failed")
+		return containerID, 0, consoleOutput, def.Err(err, "StartImage failed")
 	}
 
 	return c.WaitContainer(containerID, consoleOutput, removeOnExit)
@@ -366,13 +366,13 @@ func (c Client) StartExistingContainer(contID string, binds []string) (Container
 
 // WaitContainer takes a docker container and waits for its finish.
 // It returns the exit code of the container.
-func (c Client) WaitContainer(id ContainerID, consoleOutput *bytes.Buffer, removeOnExit bool) (int, *bytes.Buffer, error) {
+func (c Client) WaitContainer(id ContainerID, consoleOutput *bytes.Buffer, removeOnExit bool) (ContainerID, int, *bytes.Buffer, error) {
 	containerID := string(id)
 	exitCode, err := c.c.WaitContainer(containerID)
 	if removeOnExit {
 		c.c.RemoveContainer(docker.RemoveContainerOptions{ID: containerID, Force: true})
 	}
-	return exitCode, consoleOutput, err
+	return id, exitCode, consoleOutput, err
 }
 
 // ListContainers lists the docker images
