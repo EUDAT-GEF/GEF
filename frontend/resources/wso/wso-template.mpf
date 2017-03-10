@@ -1,0 +1,19 @@
+# the file system staging location (e.g. /tmp/wsostage1)
+INPARAM *StageDir="$StageDir"
+
+# the file input to the cmd script
+INPARAM *File1="$FileName"
+
+# other inputs to the cmd script
+INPARAM *Filter="$Filter"
+
+STAGEAREA $StageDir
+
+# files to stage in
+#STAGEIN $IrodsFilePathAndName
+
+# automatically delete the input file
+#CLEANOUT $FileName
+
+# all the output is supposed to go to the out directory
+STAGEOUT out

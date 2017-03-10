@@ -48,7 +48,7 @@ func NewServer(cfg def.ServerConfig, pier *pier.Pier, tmpDir string) (*Server, e
 	}
 
 	routes := map[string]func(http.ResponseWriter, *http.Request){
-		//"GET /":     server.infoHandler,
+		"GET /":     server.infoHandler,
 		"GET /info": server.infoHandler,
 
 		"POST /builds":           server.newBuildImageHandler,

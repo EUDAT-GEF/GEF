@@ -12,8 +12,5 @@
 		"Address": ":4142",
 		"ReadTimeoutSecs": 10,
 		"WriteTimeoutSecs": 10
-	},
-	"Frontend": {
-		"Address": ":4142"
 	}
 }
