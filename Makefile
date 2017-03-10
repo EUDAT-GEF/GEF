@@ -39,9 +39,6 @@ $(GOSRC)/pborman/uuid:
 webui_dev_server:
 	(cd $(WEBUI) && node_modules/webpack-dev-server/bin/webpack-dev-server.js --config webpack.config.devel.js)
 
-run_frontend:
-	(cd frontend && go run main.go)
-
 run_backend:
 	(cd backend-docker && go run main.go)
 
