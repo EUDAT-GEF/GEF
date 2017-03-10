@@ -1,6 +1,6 @@
 GOSRC = ./../..
 EUDATSRC = ./..
-WEBUI = frontend/src/main/webui
+WEBUI = frontend/webui
 EPICPID = ../EpicPID
 INTERNALSERVICES = services/_internal
 
@@ -49,9 +49,7 @@ webui_dev_server:
 	(cd $(WEBUI) && node_modules/webpack-dev-server/bin/webpack-dev-server.js --config webpack.config.devel.js)
 
 run_frontend:
-	@$(eval JAR = $(shell find frontend/target -iname 'GEF-*.jar'))
-	java -cp frontend/src/main/resources:$(JAR) eu.eudat.gef.app.GEF server frontend/gefconfig.yml
-	# @java -jar $(JAR) server gefconfig.yml
+	(cd frontend && go run main.go)
 
 run_backend:
 	(cd backend-docker && go run main.go)

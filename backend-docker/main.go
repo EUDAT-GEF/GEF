@@ -36,4 +36,6 @@ func main() {
 	if err != nil {
 		log.Fatal("FATAL: ", def.Err(err, "Cannot start API server"))
 	}
+
+
 }
