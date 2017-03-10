@@ -5,6 +5,7 @@ import (
 	"github.com/EUDAT-GEF/GEF/backend-docker/pier"
 	"github.com/gorilla/mux"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -67,15 +68,31 @@ func NewServer(cfg def.ServerConfig, pier *pier.Pier, tmpDir string) (*Server, e
 	}
 
 	router := mux.NewRouter()
-	apirouter := router.PathPrefix(apiRootPath).Subrouter()
 
+	apirouter := router.PathPrefix(apiRootPath).Subrouter()
 	for mp, handler := range routes {
 		methodPath := strings.SplitN(mp, " ", 2)
 		apirouter.HandleFunc(methodPath[1], handler).Methods(methodPath[0])
 	}
-	router.PathPrefix("/").Handler(http.FileServer(http.Dir("../frontend/resources/assets/")))
+
+	router.PathPrefix("/").Handler(http.FileServer(singlePageAppDir("../frontend/resources/assets/")))
+
 	server.Server.Handler = router
 	return server, nil
+}
+
+type singlePageAppDir string
+
+func (spad singlePageAppDir) Open(name string) (http.File, error) {
+	f, err := http.Dir(spad).Open(name)
+	if err != nil {
+		log.Printf("serve file error: %#v\n", err)
+		if _, isPathError := err.(*os.PathError); isPathError {
+			log.Printf("    serving index.html instead")
+			return http.Dir(spad).Open("/index.html")
+		}
+	}
+	return f, err
 }
 
 // Start starts a new http listener
