@@ -10,7 +10,6 @@ import (
 type Configuration struct {
 	Docker []DockerConfig
 	Server ServerConfig
-	Frontend FrontendConfig
 
 	// TmpDir is the directory to keep session files in
 	// If the path is relative, it will be used as a subfolder of the system temporary directory
@@ -29,10 +28,6 @@ type ServerConfig struct {
 	Address          string
 	ReadTimeoutSecs  int
 	WriteTimeoutSecs int
-}
-
-type FrontendConfig struct {
-	Address          string
 }
 
 func (c DockerConfig) String() string {
