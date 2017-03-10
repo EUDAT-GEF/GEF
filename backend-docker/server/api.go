@@ -73,7 +73,7 @@ func NewServer(cfg def.ServerConfig, pier *pier.Pier, tmpDir string) (*Server, e
 		methodPath := strings.SplitN(mp, " ", 2)
 		apirouter.HandleFunc(methodPath[1], handler).Methods(methodPath[0])
 	}
-
+	router.PathPrefix("/").Handler(http.FileServer(http.Dir("../frontend/resources/assets/")))
 	server.Server.Handler = router
 	return server, nil
 }
