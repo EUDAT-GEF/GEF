@@ -37,5 +37,4 @@ func main() {
 		log.Fatal("FATAL: ", def.Err(err, "Cannot start API server"))
 	}
 
-
 }
