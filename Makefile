@@ -1,17 +1,12 @@
 GOSRC = ./../..
 EUDATSRC = ./..
 WEBUI = frontend/webui
-EPICPID = ../EpicPID
 INTERNALSERVICES = services/_internal
 
 build: dependencies webui frontend containers backend
 
 webui:
 	(cd $(WEBUI) && node_modules/webpack/bin/webpack.js -p)
-
-frontend:
-	(cd $(EPICPID) && mvn package install)
-	(cd frontend && mvn -q package)
 
 containers:
 	(cd $(INTERNALSERVICES)/volume-stage-in && docker build -t volume-stage-in .)
@@ -24,7 +19,7 @@ backend:
 	go test ./...
 	go build ./...
 
-dependencies: $(WEBUI)/node_modules $(GOSRC)/golang/lint/golint $(GOSRC)/fsouza/go-dockerclient $(GOSRC)/gorilla/mux $(GOSRC)/pborman/uuid $(EUDATSRC)/EpicPID
+dependencies: $(WEBUI)/node_modules $(GOSRC)/golang/lint/golint $(GOSRC)/fsouza/go-dockerclient $(GOSRC)/gorilla/mux $(GOSRC)/pborman/uuid
 
 $(WEBUI)/node_modules:
 	(cd $(WEBUI) && npm install)
@@ -40,10 +35,6 @@ $(GOSRC)/gorilla/mux:
 
 $(GOSRC)/pborman/uuid:
 	go get -u github.com/pborman/uuid
-
-$(EUDATSRC)/EpicPID:
-	(cd $(EUDATSRC) && git clone https://github.com/EUDAT-GEF/EpicPID)
-	(cd $(EUDATSRC)/EpicPID && mvn package install)
 
 webui_dev_server:
 	(cd $(WEBUI) && node_modules/webpack-dev-server/bin/webpack-dev-server.js --config webpack.config.devel.js)
