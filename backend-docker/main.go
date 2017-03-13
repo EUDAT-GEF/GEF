@@ -26,6 +26,7 @@ func main() {
 		log.Fatal("FATAL: ", def.Err(err, "Cannot create Pier"))
 	}
 
+	server.InitEventSystem(config.EventSystem.Address)
 	server, err := server.NewServer(config.Server, p, config.TmpDir)
 	if err != nil {
 		log.Fatal("FATAL: ", def.Err(err, "Cannot create API server"))
@@ -36,5 +37,4 @@ func main() {
 	if err != nil {
 		log.Fatal("FATAL: ", def.Err(err, "Cannot start API server"))
 	}
-
 }

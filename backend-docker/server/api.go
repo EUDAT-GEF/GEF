@@ -1,18 +1,21 @@
 package server
 
 import (
-	"github.com/EUDAT-GEF/GEF/backend-docker/def"
-	"github.com/EUDAT-GEF/GEF/backend-docker/pier"
-	"github.com/gorilla/mux"
 	"io"
 	"log"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/EUDAT-GEF/GEF/backend-docker/def"
+	"github.com/EUDAT-GEF/GEF/backend-docker/pier"
+	"github.com/gorilla/mux"
 )
 
 const (
+	// ServiceName is used for HTTP API
+	ServiceName = "GEF"
 	// Version defines the api version
 	Version = "0.2.0"
 )
@@ -49,22 +52,22 @@ func NewServer(cfg def.ServerConfig, pier *pier.Pier, tmpDir string) (*Server, e
 	}
 
 	routes := map[string]func(http.ResponseWriter, *http.Request){
-		"GET /":     server.infoHandler,
-		"GET /info": server.infoHandler,
+		"GET /":     decorate("misc", server.infoHandler),
+		"GET /info": decorate("misc", server.infoHandler),
 
-		"POST /builds":           server.newBuildImageHandler,
-		"POST /builds/{buildID}": server.buildImageHandler,
+		"POST /builds":           decorate("service deployment", server.newBuildImageHandler),
+		"POST /builds/{buildID}": decorate("service deployment", server.buildImageHandler),
 
-		"GET /services":             server.listServicesHandler,
-		"GET /services/{serviceID}": server.inspectServiceHandler,
+		"GET /services":             decorate("service discovery", server.listServicesHandler),
+		"GET /services/{serviceID}": decorate("service discovery", server.inspectServiceHandler),
 
-		"POST /jobs":               server.executeServiceHandler,
-		"GET /jobs":                server.listJobsHandler,
-		"GET /jobs/{jobID}":        server.inspectJobHandler,
-		"DELETE /jobs/{jobID}":     server.removeJobHandler,
-		"GET /jobs/{jobID}/output": server.getJobTask,
+		"POST /jobs":               decorate("data analysis", server.executeServiceHandler),
+		"GET /jobs":                decorate("data discovery", server.listJobsHandler),
+		"GET /jobs/{jobID}":        decorate("data discovery", server.inspectJobHandler),
+		"DELETE /jobs/{jobID}":     decorate("data cleanup", server.removeJobHandler),
+		"GET /jobs/{jobID}/output": decorate("data retrieval", server.getJobTask),
 
-		"GET /volumes/{volumeID}/{path:.*}": server.volumeContentHandler,
+		"GET /volumes/{volumeID}/{path:.*}": decorate("data retrieval", server.volumeContentHandler),
 	}
 
 	router := mux.NewRouter()
@@ -79,6 +82,19 @@ func NewServer(cfg def.ServerConfig, pier *pier.Pier, tmpDir string) (*Server, e
 
 	server.Server.Handler = router
 	return server, nil
+}
+
+func decorate(actionType string, fn func(http.ResponseWriter, *http.Request)) func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		logRequest(r)
+		allow, closefn := signalEvent(actionType, r)
+		if !allow {
+			Response{w}.DirectiveError()
+		} else {
+			defer closefn()
+			fn(w, r)
+		}
+	}
 }
 
 type singlePageAppDir string
@@ -101,12 +117,10 @@ func (s *Server) Start() error {
 }
 
 func (s *Server) infoHandler(w http.ResponseWriter, r *http.Request) {
-	logRequest(r)
-	Response{w}.Ok(jmap("version", Version))
+	Response{w}.Ok(jmap("service", ServiceName, "version", Version))
 }
 
 func (s *Server) newBuildImageHandler(w http.ResponseWriter, r *http.Request) {
-	logRequest(r)
 	_, buildID, err := def.NewRandomTmpDir(s.tmpDir, buildsTmpDir)
 	if err != nil {
 		Response{w}.ServerError("cannot create tmp subdir", err)
@@ -117,7 +131,6 @@ func (s *Server) newBuildImageHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) buildImageHandler(w http.ResponseWriter, r *http.Request) {
-	logRequest(r)
 	vars := mux.Vars(r)
 	buildID := vars["buildID"]
 	buildDir := filepath.Join(s.tmpDir, buildsTmpDir, buildID)
@@ -164,13 +177,11 @@ func (s *Server) buildImageHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) listServicesHandler(w http.ResponseWriter, r *http.Request) {
-	logRequest(r)
 	services := s.pier.ListServices()
 	Response{w}.Ok(jmap("Services", services))
 }
 
 func (s *Server) inspectServiceHandler(w http.ResponseWriter, r *http.Request) {
-	logRequest(r)
 	vars := mux.Vars(r)
 	service, err := s.pier.GetService(pier.ServiceID(vars["serviceID"]))
 	if err != nil {
@@ -181,7 +192,6 @@ func (s *Server) inspectServiceHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) executeServiceHandler(w http.ResponseWriter, r *http.Request) {
-	logRequest(r)
 	serviceID := r.FormValue("serviceID")
 	if serviceID == "" {
 		vars := mux.Vars(r)
@@ -222,13 +232,11 @@ func (s *Server) executeServiceHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) listJobsHandler(w http.ResponseWriter, r *http.Request) {
-	logRequest(r)
 	jobs := s.pier.ListJobs()
 	Response{w}.Ok(jmap("Jobs", jobs))
 }
 
 func (s *Server) inspectJobHandler(w http.ResponseWriter, r *http.Request) {
-	logRequest(r)
 	vars := mux.Vars(r)
 	job, err := s.pier.GetJob(pier.JobID(vars["jobID"]))
 	if err != nil {
@@ -239,7 +247,6 @@ func (s *Server) inspectJobHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) removeJobHandler(w http.ResponseWriter, r *http.Request) {
-	logRequest(r)
 	vars := mux.Vars(r)
 	jobID, err := s.pier.RemoveJob(pier.JobID(vars["jobID"]))
 	if err != nil {
@@ -250,7 +257,6 @@ func (s *Server) removeJobHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) getJobTask(w http.ResponseWriter, r *http.Request) {
-	logRequest(r)
 	vars := mux.Vars(r)
 	job, err := s.pier.GetJob(pier.JobID(vars["jobID"]))
 	if err != nil {
@@ -266,7 +272,6 @@ func (s *Server) getJobTask(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) volumeContentHandler(w http.ResponseWriter, r *http.Request) {
-	logRequest(r)
 	vars := mux.Vars(r)
 	fileLocation := vars["path"]
 	_, hasContent := r.URL.Query()["content"]
@@ -291,7 +296,6 @@ func (s *Server) volumeContentHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) buildVolumeHandler(w http.ResponseWriter, r *http.Request) {
-	logRequest(r)
 	vars := mux.Vars(r)
 	buildID := vars["buildID"]
 	buildDir := filepath.Join(s.tmpDir, buildsTmpDir, buildID)
