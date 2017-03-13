@@ -7,6 +7,7 @@ import (
 	"github.com/pborman/uuid"
 	"log"
 	"time"
+	"github.com/EUDAT-GEF/GEF/backend-docker/pier/internal/db"
 )
 
 const stagingVolumeName = "volume-stage-in"
@@ -15,7 +16,7 @@ const stagingVolumeName = "volume-stage-in"
 type Pier struct {
 	docker   dckr.Client
 	services *ServiceList
-	jobs     *JobList
+	jobs     []db.Job
 	tmpDir   string
 }
 
@@ -23,8 +24,12 @@ type Pier struct {
 type VolumeID dckr.VolumeID
 
 // NewPier exported
-func NewPier(cfgList []def.DockerConfig, tmpDir string) (*Pier, error) {
+func NewPier(cfgList []def.DockerConfig, tmpDir string, dataBase *db.Db) (*Pier, error) {
 	docker, err := dckr.NewClientFirstOf(cfgList)
+
+
+	var j []db.Job
+	j, err = dataBase.ListJobs()
 	if err != nil {
 		return nil, def.Err(err, "Cannot create docker client")
 	}
@@ -32,7 +37,7 @@ func NewPier(cfgList []def.DockerConfig, tmpDir string) (*Pier, error) {
 	pier := Pier{
 		docker:   docker,
 		services: NewServiceList(),
-		jobs:     NewJobList(),
+		jobs:     j,
 		tmpDir:   tmpDir,
 	}
 
@@ -77,15 +82,16 @@ func (p *Pier) GetService(serviceID ServiceID) (Service, error) {
 }
 
 // RunService exported
-func (p *Pier) RunService(service Service, inputPID string) (Job, error) {
-	job := Job{
-		ID:        JobID(uuid.New()),
+func (p *Pier) RunService(service Service, inputPID string) (db.Job, error) {
+	job := db.Job{
+		ID:        db.JobID(uuid.New()),
 		ServiceID: service.ID,
 		Created:   time.Now(),
 		Input:     inputPID,
-		State:     &JobState{nil, "Created", -1},
+		State:     &db.JobState{nil, "Created", -1},
 	}
-	p.jobs.add(job)
+
+	db.add(job)
 
 	go p.runJob(&job, service, inputPID)
 

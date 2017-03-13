@@ -19,7 +19,7 @@ backend:
 	go test ./...
 	go build ./...
 
-dependencies: $(WEBUI)/node_modules $(GOSRC)/golang/lint/golint $(GOSRC)/fsouza/go-dockerclient $(GOSRC)/gorilla/mux $(GOSRC)/pborman/uuid
+dependencies: $(WEBUI)/node_modules $(GOSRC)/golang/lint/golint $(GOSRC)/fsouza/go-dockerclient $(GOSRC)/gorilla/mux $(GOSRC)/pborman/uuid $(GOSRC)/gopkg.in/gorp.v1 $(GOSRC)github.com/mattn/go-sqlite3
 
 $(WEBUI)/node_modules:
 	(cd $(WEBUI) && npm install)
@@ -35,6 +35,12 @@ $(GOSRC)/gorilla/mux:
 
 $(GOSRC)/pborman/uuid:
 	go get -u github.com/pborman/uuid
+
+$(GOSRC)/gopkg.in/gorp.v1:
+	go get -u gopkg.in/gorp.v1
+
+$(GOSRC)github.com/mattn/go-sqlite3:
+	go get -u github.com/mattn/go-sqlite3
 
 webui_dev_server:
 	(cd $(WEBUI) && node_modules/webpack-dev-server/bin/webpack-dev-server.js --config webpack.config.devel.js)

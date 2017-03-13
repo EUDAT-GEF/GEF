@@ -4,112 +4,194 @@ import (
 	"database/sql"
 	"gopkg.in/gorp.v1"
 	_ "github.com/mattn/go-sqlite3"
-	"log"
+
+	"github.com/EUDAT-GEF/GEF/backend-docker/pier/internal/dckr"
+	"bytes"
 	"time"
+	"sort"
 )
 
-func main() {
-	// initialize the DbMap
-	dbmap := initDb()
-	defer dbmap.Db.Close()
+type VolumeID dckr.VolumeID
 
-	// delete any existing rows
-	err := dbmap.TruncateTables()
-	checkErr(err, "TruncateTables failed")
+type Db struct {m gorp.DbMap}
 
-	// create two posts
-	p1 := newPost("Go 1.1 released!", "Lorem ipsum lorem ipsum")
-	p2 := newPost("Go 1.2 released!", "Lorem ipsum lorem ipsum")
-
-	// insert rows - auto increment PKs will be set properly after the insert
-	err = dbmap.Insert(&p1, &p2)
-	checkErr(err, "Insert failed")
-
-	// use convenience SelectInt
-	count, err := dbmap.SelectInt("select count(*) from posts")
-	checkErr(err, "select count(*) failed")
-	log.Println("Rows after inserting:", count)
-
-	// update a row
-	p2.Title = "Go 1.2 is better than ever"
-	count, err = dbmap.Update(&p2)
-	checkErr(err, "Update failed")
-	log.Println("Rows updated:", count)
-
-	// fetch one row - note use of "post_id" instead of "Id" since column is aliased
-	//
-	// Postgres users should use $1 instead of ? placeholders
-	// See 'Known Issues' below
-	//
-	err = dbmap.SelectOne(&p2, "select * from posts where post_id=?", p2.Id)
-	checkErr(err, "SelectOne failed")
-	log.Println("p2 row:", p2)
-
-	// fetch all rows
-	var posts []Post
-	_, err = dbmap.Select(&posts, "select * from posts order by post_id")
-	checkErr(err, "Select failed")
-	log.Println("All rows:")
-	for x, p := range posts {
-	log.Printf("    %d: %v\n", x, p)
-	}
-
-	// delete row by PK
-	count, err = dbmap.Delete(&p1)
-	checkErr(err, "Delete failed")
-	log.Println("Rows deleted:", count)
-
-	// delete row manually via Exec
-	_, err = dbmap.Exec("delete from posts where post_id=?", p2.Id)
-	checkErr(err, "Exec failed")
-
-	// confirm count is zero
-	count, err = dbmap.SelectInt("select count(*) from posts")
-	checkErr(err, "select count(*) failed")
-	log.Println("Row count - should be zero:", count)
-
-	log.Println("Done!")
+// Job stores the information about a service execution
+type Job struct {
+	ID           JobID
+	ServiceID    ServiceID
+	Input        string
+	Created      time.Time
+	State        *JobState
+	InputVolume  VolumeID
+	OutputVolume VolumeID
+	Tasks        []TaskInfo
 }
 
-type Post struct {
-	// db tag lets you specify the column name if it differs from the struct field
-	Id      int64  `db:"post_id"`
-	Created int64
-	Title   string `db:",size:50"`               // Column size set to 50
-	Body    string `db:"article_body,size:1024"` // Set both column name and size
+// JobState exported
+type JobState struct {
+	Error  error
+	Status string
+	Code   int
 }
 
-func newPost(title, body string) Post {
-	return Post{
-		Created: time.Now().UnixNano(),
-		Title:   title,
-		Body:    body,
-	}
+// JobID exported
+type JobID string
+
+type jobArray []Job
+
+// TaskInfo exported
+type TaskInfo struct {
+	Name          string
+	ContainerID   dckr.ContainerID
+	Error         error
+	ExitCode      int
+	ConsoleOutput *bytes.Buffer
 }
 
-func initDb() *gorp.DbMap {
-	// connect to db using standard Go database/sql API
-	// use whatever database/sql driver you wish
-	db, err := sql.Open("sqlite3", "/tmp/post_db.bin")
-	checkErr(err, "sql.Open failed")
-
-	// construct a gorp DbMap
-	dbmap := &gorp.DbMap{Db: db, Dialect: gorp.SqliteDialect{}}
-
-	// add a table, setting the table name to 'posts' and
-	// specifying that the Id property is an auto incrementing PK
-	dbmap.AddTableWithName(Post{}, "posts").SetKeys(true, "Id")
-
-	// create the table. in a production system you'd generally
-	// use a migration tool, or create the tables via scripts
-	err = dbmap.CreateTablesIfNotExists()
-	checkErr(err, "Create tables failed")
-
-	return dbmap
+// LatestOutput used to serialize consoleoutput to json
+type LatestOutput struct {
+	Name          string
+	ConsoleOutput string
 }
 
-func checkErr(err error, msg string) {
+// Bind describes the binding between an IOPort and a docker volume
+type Bind struct {
+	IOPort   IOPort
+	VolumeID dckr.VolumeID
+}
+
+// GefSrvLabelPrefix is the prefix identifying GEF related labels
+const GefSrvLabelPrefix = "eudat.gef.service."
+
+// Service describes metadata for a GEF service
+type Service struct {
+	ID          ServiceID
+	imageID     dckr.ImageID
+	Name        string
+	RepoTag     string
+	Description string
+	Version     string
+	Created     time.Time
+	Size        int64
+	Input       []IOPort
+	Output      []IOPort
+}
+
+// ServiceID exported
+type ServiceID string
+
+// IOPort is an i/o specification for a service
+// The service can only read data from volumes and write to a single volume
+// Path specifies where the volumes are mounted
+type IOPort struct {
+	ID   string
+	Name string
+	Path string
+}
+
+// InitDb exported
+func InitDb() (Db, error) {
+	dataBase, err := sql.Open("sqlite3", "/Users/achernov/job_db.bin")
+
+	/*if err != nil {
+		return nil, err
+	}*/
+
+	dataBaseMap := &gorp.DbMap{Db: dataBase, Dialect: gorp.SqliteDialect{}}
+	dataBaseMap.AddTableWithName(Job{}, "jobs").SetKeys(true, "ID")
+	dataBaseMap.AddTableWithName(Job{}, "services").SetKeys(true, "ID")
+	err = dataBaseMap.CreateTablesIfNotExists()
+
+	dbm := Db {m: *dataBaseMap}
+
+	return dbm, err
+}
+
+
+// Jobs
+
+func (d *Db) AddJob(job Job) error {
+	return d.m.Insert(&job)
+}
+
+func (d *Db) RemoveJob(jobID JobID) error {
+	_, err := d.m.Exec("delete from jobs where ID=?", jobID)
+	return err
+}
+
+// ListJobs exported
+func (d *Db) ListJobs() ([]Job, error) {
+	var jobs []Job
+	_, err := d.m.Select(&jobs, "select * from jobs order by ID")
+	return jobs, err
+}
+
+func (d *Db) GetJob(jobID JobID) (Job, error) {
+	var job Job
+	err := d.m.SelectOne(&job, "select * from jobs where ID=?", jobID)
+	return job, err
+}
+
+func (d *Db) SetJobState(jobID JobID, state JobState) error {
+	var job Job
+	err := d.m.SelectOne(&job, "select * from jobs where ID=?", jobID)
 	if err != nil {
-		log.Fatalln(msg, err)
+		job.State = &state
+		_, err = d.m.Update(&job)
 	}
+	return err
+}
+
+func (d *Db) SetJobInputVolume(jobID JobID, inputVolume VolumeID) error {
+	var job Job
+	err := d.m.SelectOne(&job, "select * from jobs where ID=?", jobID)
+	if err != nil {
+		job.InputVolume = inputVolume
+		_, err = d.m.Update(&job)
+	}
+	return err
+}
+
+func (d *Db) SetJobOutputVolume(jobID JobID, outputVolume VolumeID) error {
+	var job Job
+	err := d.m.SelectOne(&job, "select * from jobs where ID=?", jobID)
+	if err != nil {
+		job.OutputVolume = outputVolume
+		_, err = d.m.Update(&job)
+	}
+	return err
+}
+
+func (d *Db) AddJobTask(jobID JobID, taskName string, taskContainer dckr.ContainerID, taskError error, taskExitCode int, taskConsoleOutput *bytes.Buffer) error {
+	var job Job
+	err := d.m.SelectOne(&job, "select * from jobs where ID=?", jobID)
+	if err != nil {
+		var newTaskInfo TaskInfo
+		newTaskInfo.Name = taskName
+		newTaskInfo.ContainerID = taskContainer
+		newTaskInfo.Error = taskError
+		newTaskInfo.ExitCode = taskExitCode
+		newTaskInfo.ConsoleOutput = taskConsoleOutput
+		job.Tasks = append(job.Tasks, newTaskInfo)
+		_, err = d.m.Update(&job)
+	}
+	return err
+}
+
+// Services
+
+func (d *Db) AddService(service Service) error {
+	return d.m.Insert(&service)
+}
+
+func (d *Db) ListServices() ([]Service, error) {
+	var services []Service
+	_, err := d.m.Select(&services, "select * from services order by ID")
+	return services, err
+}
+
+func (d *Db) GetService(serviceID ServiceID) (Service, error) {
+	var service Service
+	err := d.m.SelectOne(&service, "select * from service where ID=?", serviceID)
+	return service, err
 }
