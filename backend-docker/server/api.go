@@ -148,7 +148,11 @@ func (s *Server) buildImageHandler(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) listServicesHandler(w http.ResponseWriter, r *http.Request) {
 	logRequest(r)
-	services := s.pier.ListServices()
+	services, err := s.pier.ListServices()
+	if err != nil {
+		Response{w}.ClientError("cannot get services", err)
+		return
+	}
 	Response{w}.Ok(jmap("Services", services))
 }
 
@@ -206,7 +210,11 @@ func (s *Server) executeServiceHandler(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) listJobsHandler(w http.ResponseWriter, r *http.Request) {
 	logRequest(r)
-	jobs := s.pier.ListJobs()
+	jobs, err := s.pier.ListJobs()
+	if err != nil {
+		Response{w}.ClientError("cannot get jobs", err)
+		return
+	}
 	Response{w}.Ok(jmap("Jobs", jobs))
 }
 
@@ -240,7 +248,7 @@ func (s *Server) getJobTask(w http.ResponseWriter, r *http.Request) {
 		Response{w}.ClientError("cannot get task", err)
 		return
 	}
-	var latestOutput pier.LatestOutput
+	var latestOutput LatestOutput
 	if len(job.Tasks) > 0 {
 		latestOutput.Name = job.Tasks[len(job.Tasks)-1].Name
 		latestOutput.ConsoleOutput = job.Tasks[len(job.Tasks)-1].ConsoleOutput.String()

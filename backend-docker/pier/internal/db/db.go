@@ -8,7 +8,11 @@ import (
 	"github.com/EUDAT-GEF/GEF/backend-docker/pier/internal/dckr"
 	"bytes"
 	"time"
-	"sort"
+	"github.com/pborman/uuid"
+	"strings"
+	"log"
+	"fmt"
+	"strconv"
 )
 
 type VolumeID dckr.VolumeID
@@ -66,7 +70,7 @@ const GefSrvLabelPrefix = "eudat.gef.service."
 // Service describes metadata for a GEF service
 type Service struct {
 	ID          ServiceID
-	imageID     dckr.ImageID
+	ImageID     dckr.ImageID
 	Name        string
 	RepoTag     string
 	Description string
@@ -194,4 +198,85 @@ func (d *Db) GetService(serviceID ServiceID) (Service, error) {
 	var service Service
 	err := d.m.SelectOne(&service, "select * from service where ID=?", serviceID)
 	return service, err
+}
+
+
+
+
+func (d *Db) NewServiceFromImage(image dckr.Image) Service {
+	srv := Service{
+		ID:      ServiceID(uuid.New()),
+		ImageID: image.ID,
+		RepoTag: image.RepoTag,
+		Created: image.Created,
+		Size:    image.Size,
+	}
+
+	for k, v := range image.Labels {
+		if !strings.HasPrefix(k, GefSrvLabelPrefix) {
+			continue
+		}
+		k = k[len(GefSrvLabelPrefix):]
+		ks := strings.Split(k, ".")
+		if len(ks) == 0 {
+			continue
+		}
+		switch ks[0] {
+		case "name":
+			srv.Name = v
+		case "description":
+			srv.Description = v
+		case "version":
+			srv.Version = v
+		case "input":
+			addVecValue(&srv.Input, ks[1:], v)
+		case "output":
+			addVecValue(&srv.Output, ks[1:], v)
+		default:
+			log.Println("Unknown GEF service label: ", k, "=", v)
+		}
+	}
+
+	{
+		in := make([]IOPort, 0, len(srv.Input))
+		for _, p := range srv.Input {
+			if p.Path != "" {
+				p.ID = fmt.Sprintf("input%d", len(in))
+				in = append(in, p)
+			}
+		}
+		srv.Input = in
+	}
+	{
+		out := make([]IOPort, 0, len(srv.Output))
+		for _, p := range srv.Output {
+			if p.Path != "" {
+				p.ID = fmt.Sprintf("output%d", len(out))
+				out = append(out, p)
+			}
+		}
+		srv.Output = out
+	}
+
+	return srv
+}
+
+func addVecValue(vec *[]IOPort, ks []string, value string) {
+	if len(ks) < 2 {
+		log.Println("ERROR: GEF service label I/O key error (need 'port number . key name')", ks)
+		return
+	}
+	id, err := strconv.ParseUint(ks[0], 10, 8)
+	if err != nil {
+		log.Println("ERROR: GEF service label: expecting integer argument for IOPort, instead got: ", ks)
+	}
+	for len(*vec) < int(id)+1 {
+		*vec = append(*vec, IOPort{})
+	}
+	switch ks[1] {
+	case "name":
+		(*vec)[id].Name = value
+	case "path":
+		(*vec)[id].Path = value
+	}
 }
