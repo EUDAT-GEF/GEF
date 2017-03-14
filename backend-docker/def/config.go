@@ -8,8 +8,9 @@ import (
 
 // Configuration keeps the configs for the entire application
 type Configuration struct {
-	Docker []DockerConfig
-	Server ServerConfig
+	Docker      []DockerConfig
+	Server      ServerConfig
+	EventSystem EventSystemConfig
 
 	// TmpDir is the directory to keep session files in
 	// If the path is relative, it will be used as a subfolder of the system temporary directory
@@ -28,6 +29,11 @@ type ServerConfig struct {
 	Address          string
 	ReadTimeoutSecs  int
 	WriteTimeoutSecs int
+}
+
+// EventSystemConfig keeps the configuration options needed to make an EventSystem
+type EventSystemConfig struct {
+	Address string
 }
 
 func (c DockerConfig) String() string {

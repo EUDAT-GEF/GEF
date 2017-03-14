@@ -11,6 +11,7 @@ import (
 func checkMsg(t *testing.T, err error, msg string) {
 	if err != nil {
 		t.Error(msg, caller())
+		t.Error(err)
 		t.FailNow()
 	}
 }
