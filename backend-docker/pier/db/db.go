@@ -17,7 +17,7 @@ import (
 
 type VolumeID dckr.VolumeID
 
-type Db struct {m gorp.DbMap}
+type Db struct {gorp.DbMap}
 
 // Job stores the information about a service execution
 type Job struct {
@@ -74,7 +74,7 @@ type Service struct {
 	Name        string
 	RepoTag     string
 	Description string
-	Version     string
+	Version1     string
 	Created     time.Time
 	Size        int64
 	Input       []IOPort
@@ -100,75 +100,78 @@ func InitDb() (Db, error) {
 	/*if err != nil {
 		return nil, err
 	}*/
+	// delete any existing rows
+
 
 	dataBaseMap := &gorp.DbMap{Db: dataBase, Dialect: gorp.SqliteDialect{}}
-	dataBaseMap.AddTableWithName(Job{}, "jobs").SetKeys(true, "ID")
-	dataBaseMap.AddTableWithName(Job{}, "services").SetKeys(true, "ID")
+	dataBaseMap.AddTableWithName(Job{}, "jobs")
+	dataBaseMap.AddTableWithName(Service{}, "services").SetKeys(false, "ID")
 	err = dataBaseMap.CreateTablesIfNotExists()
 
-	dbm := Db {m: *dataBaseMap}
+	dbm := Db{*dataBaseMap}
 
 	return dbm, err
 }
 
 
+
 // Jobs
 
 func (d *Db) AddJob(job Job) error {
-	return d.m.Insert(&job)
+	return d.Insert(&job)
 }
 
 func (d *Db) RemoveJob(jobID JobID) error {
-	_, err := d.m.Exec("delete from jobs where ID=?", jobID)
+	_, err := d.Exec("delete from jobs where ID=?", jobID)
 	return err
 }
 
 // ListJobs exported
 func (d *Db) ListJobs() ([]Job, error) {
 	var jobs []Job
-	_, err := d.m.Select(&jobs, "select * from jobs order by ID")
+	_, err := d.Select(&jobs, "select * from jobs order by ID")
 	return jobs, err
 }
 
 func (d *Db) GetJob(jobID JobID) (Job, error) {
 	var job Job
-	err := d.m.SelectOne(&job, "select * from jobs where ID=?", jobID)
+	err := d.SelectOne(&job, "select * from jobs where ID=?", jobID)
 	return job, err
 }
 
 func (d *Db) SetJobState(jobID JobID, state JobState) error {
 	var job Job
-	err := d.m.SelectOne(&job, "select * from jobs where ID=?", jobID)
+	err := d.SelectOne(&job, "select * from jobs where ID=?", jobID)
 	if err != nil {
 		job.State = &state
-		_, err = d.m.Update(&job)
+		_, err = d.Update(&job)
 	}
 	return err
 }
 
 func (d *Db) SetJobInputVolume(jobID JobID, inputVolume VolumeID) error {
 	var job Job
-	err := d.m.SelectOne(&job, "select * from jobs where ID=?", jobID)
+	err := d.SelectOne(&job, "select * from jobs where ID=?", jobID)
 	if err != nil {
 		job.InputVolume = inputVolume
-		_, err = d.m.Update(&job)
+		_, err = d.Update(&job)
 	}
 	return err
 }
 
 func (d *Db) SetJobOutputVolume(jobID JobID, outputVolume VolumeID) error {
 	var job Job
-	err := d.m.SelectOne(&job, "select * from jobs where ID=?", jobID)
+	err := d.SelectOne(&job, "select * from jobs where ID=?", jobID)
 	if err != nil {
 		job.OutputVolume = outputVolume
-		_, err = d.m.Update(&job)
+		_, err = d.Update(&job)
 	}
 	return err
 }
 
 func (d *Db) AddJobTask(jobID JobID, taskName string, taskContainer dckr.ContainerID, taskError error, taskExitCode int, taskConsoleOutput *bytes.Buffer) error {
 	var job Job
-	err := d.m.SelectOne(&job, "select * from jobs where ID=?", jobID)
+	err := d.SelectOne(&job, "select * from jobs where ID=?", jobID)
 	if err != nil {
 		var newTaskInfo TaskInfo
 		newTaskInfo.Name = taskName
@@ -177,7 +180,7 @@ func (d *Db) AddJobTask(jobID JobID, taskName string, taskContainer dckr.Contain
 		newTaskInfo.ExitCode = taskExitCode
 		newTaskInfo.ConsoleOutput = taskConsoleOutput
 		job.Tasks = append(job.Tasks, newTaskInfo)
-		_, err = d.m.Update(&job)
+		_, err = d.Update(&job)
 	}
 	return err
 }
@@ -185,18 +188,19 @@ func (d *Db) AddJobTask(jobID JobID, taskName string, taskContainer dckr.Contain
 // Services
 
 func (d *Db) AddService(service Service) error {
-	return d.m.Insert(&service)
+	return d.Insert(&service)
 }
 
 func (d *Db) ListServices() ([]Service, error) {
 	var services []Service
-	_, err := d.m.Select(&services, "select * from services order by ID")
+	_, err := d.Select(&services, "select * from services order by ID")
+	fmt.Println(services)
 	return services, err
 }
 
 func (d *Db) GetService(serviceID ServiceID) (Service, error) {
 	var service Service
-	err := d.m.SelectOne(&service, "select * from service where ID=?", serviceID)
+	err := d.SelectOne(&service, "select * from services where ID=?", serviceID)
 	return service, err
 }
 
@@ -227,7 +231,7 @@ func (d *Db) NewServiceFromImage(image dckr.Image) Service {
 		case "description":
 			srv.Description = v
 		case "version":
-			srv.Version = v
+			srv.Version1 = v
 		case "input":
 			addVecValue(&srv.Input, ks[1:], v)
 		case "output":

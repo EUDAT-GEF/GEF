@@ -8,7 +8,10 @@ import (
 	"github.com/EUDAT-GEF/GEF/backend-docker/pier"
 	"github.com/EUDAT-GEF/GEF/backend-docker/server"
 
+	"github.com/EUDAT-GEF/GEF/backend-docker/pier/db"
 
+
+	"os"
 )
 
 var configFilePath = "config.json"
@@ -24,13 +27,18 @@ func main() {
 	}
 
 	d, err := db.InitDb()
+	d.TraceOn("[gorp]", log.New(os.Stdout, "myapp:", log.Lmicroseconds))
 	if err != nil {
 		log.Fatal("FATAL: ", def.Err(err, "Cannot initialize the database engine"))
 	}
+	//defer d.Db.Close()
 	defer d.Db.Close()
 
+
+
 	var p *pier.Pier
-	p, err = pier.NewPier(config.Docker, config.TmpDir, d)
+	p, err = pier.NewPier(config.Docker, config.TmpDir, &d)
+	p.PopulateServiceTable()
 	if err != nil {
 		log.Fatal("FATAL: ", def.Err(err, "Cannot create Pier"))
 	}

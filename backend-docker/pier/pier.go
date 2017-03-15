@@ -7,10 +7,14 @@ import (
 	"github.com/pborman/uuid"
 	"log"
 	"time"
-	"github.com/EUDAT-GEF/GEF/backend-docker/pier/internal/db"
+	"github.com/EUDAT-GEF/GEF/backend-docker/pier/db"
+	"io/ioutil"
+	"path/filepath"
+	"os"
 )
 
 const stagingVolumeName = "volume-stage-in"
+const servicesFolder = "../services/"
 
 // Pier is a master struct for gef-docker abstractions
 type Pier struct {
@@ -24,20 +28,24 @@ type Pier struct {
 // VolumeID exported
 type VolumeID dckr.VolumeID
 
+
+
 // NewPier exported
 func NewPier(cfgList []def.DockerConfig, tmpDir string, dataBase *db.Db) (*Pier, error) {
 	docker, err := dckr.NewClientFirstOf(cfgList)
 
 	var allServices []db.Service
 	var allJobs []db.Job
-	allServices, err = dataBase.ListServices()
+
+
+	/*allServices, err = dataBase.ListServices()
 	if err != nil {
 		return nil, def.Err(err, "Cannot retrieve a list of services")
 	}
 	allJobs, err = dataBase.ListJobs()
 	if err != nil {
 		return nil, def.Err(err, "Cannot retrieve a list of jobs")
-	}
+	}*/
 	if err != nil {
 		return nil, def.Err(err, "Cannot create docker client")
 	}
@@ -51,17 +59,22 @@ func NewPier(cfgList []def.DockerConfig, tmpDir string, dataBase *db.Db) (*Pier,
 	}
 
 	// Populate the list of services
+	// Populate the list of services
 	/*images, err := docker.ListImages()
 	if err != nil {
 		log.Println(def.Err(err, "Error while initializing services"))
 	} else {
 		for _, img := range images {
-			err = dataBase.AddService(dataBase.NewServiceFromImage(img))
-			if err != nil {
-				return nil, def.Err(err, "Cannot retrieve a list of services")
-			}
+			pier.services.add(newServiceFromImage(img))
 		}
 	}*/
+
+
+
+
+
+
+
 
 	return &pier, nil
 }
@@ -172,21 +185,6 @@ func (p *Pier) runJob(job *db.Job, service db.Service, inputPID string) {
 	p.dataBase.SetJobState(job.ID, db.JobState{nil, "Ended successfully", 0})
 }
 
-// ListJobs exported
-func (p *Pier) ListJobs() ([]db.Job, error) {
-	return p.dataBase.ListJobs()
-}
-
-// GetJob exported
-func (p *Pier) GetJob(jobID db.JobID) (db.Job, error) {
-	job, err := p.dataBase.GetJob(jobID)
-
-	if err != nil {
-		return job, def.Err(nil, "not found")
-	}
-	return job, nil
-}
-
 // RemoveJob exported
 func (p *Pier) RemoveJob(jobID db.JobID) (db.JobID, error) {
 	job, err := p.dataBase.GetJob(jobID)
@@ -212,4 +210,56 @@ func (p *Pier) RemoveJob(jobID db.JobID) (db.JobID, error) {
 	// Removing the job from the list
 	p.dataBase.RemoveJob(jobID)
 	return jobID, nil
+}
+
+// ListJobs exported
+func (p *Pier) ListJobs() ([]db.Job, error) {
+	return p.dataBase.ListJobs()
+}
+
+// GetJob exported
+func (p *Pier) GetJob(jobID db.JobID) (db.Job, error) {
+	job, err := p.dataBase.GetJob(jobID)
+	if err != nil {
+		return job, def.Err(nil, "not found")
+	}
+	return job, nil
+}
+
+func (p *Pier) PopulateServiceTable() error {
+	log.Println("Reading folder with Dockerfiles for serices: " + servicesFolder)
+	doesExist := true
+	_, err := os.Stat(servicesFolder)
+	if os.IsNotExist(err) {
+		doesExist = false
+	}
+	if doesExist {
+		files, _ := ioutil.ReadDir(servicesFolder)
+		for _, f := range files {
+			if f.IsDir() {
+				log.Print("Opening folder: " + f.Name() + " - ")
+				img, err := p.docker.BuildImage(filepath.Join(servicesFolder, f.Name()))
+				if err != nil {
+					log.Print("failed to create a service")
+				} else {
+					log.Print("OK")
+					fmt.Println(p.dataBase.NewServiceFromImage(img))
+					error := p.dataBase.AddService(p.dataBase.NewServiceFromImage(img))
+					if error != nil {
+						log.Print(error)
+					}
+				}
+			}
+		}
+	}
+	//p.dataBase.AddService(db.Service{})
+	var allServices []db.Service
+	allServices, err = p.dataBase.ListServices()
+	if err != nil {
+		return def.Err(err, "Cannot retrieve a list of services")
+	} else {
+		p.services = allServices
+	}
+
+	return nil
 }

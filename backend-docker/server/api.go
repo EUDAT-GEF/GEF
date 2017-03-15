@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"github.com/EUDAT-GEF/GEF/backend-docker/pier/db"
 )
 
 const (
@@ -159,7 +160,8 @@ func (s *Server) listServicesHandler(w http.ResponseWriter, r *http.Request) {
 func (s *Server) inspectServiceHandler(w http.ResponseWriter, r *http.Request) {
 	logRequest(r)
 	vars := mux.Vars(r)
-	service, err := s.pier.GetService(pier.ServiceID(vars["serviceID"]))
+
+	service, err := s.pier.GetService(db.ServiceID(vars["serviceID"]))
 	if err != nil {
 		Response{w}.ClientError("cannot get service", err)
 		return
@@ -192,7 +194,7 @@ func (s *Server) executeServiceHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	service, err := s.pier.GetService(pier.ServiceID(serviceID))
+	service, err := s.pier.GetService(db.ServiceID(serviceID))
 	if err != nil {
 		Response{w}.ClientError("cannot get service", err)
 		return
@@ -221,7 +223,7 @@ func (s *Server) listJobsHandler(w http.ResponseWriter, r *http.Request) {
 func (s *Server) inspectJobHandler(w http.ResponseWriter, r *http.Request) {
 	logRequest(r)
 	vars := mux.Vars(r)
-	job, err := s.pier.GetJob(pier.JobID(vars["jobID"]))
+	job, err := s.pier.GetJob(db.JobID(vars["jobID"]))
 	if err != nil {
 		Response{w}.ClientError("cannot get job", err)
 		return
@@ -232,7 +234,7 @@ func (s *Server) inspectJobHandler(w http.ResponseWriter, r *http.Request) {
 func (s *Server) removeJobHandler(w http.ResponseWriter, r *http.Request) {
 	logRequest(r)
 	vars := mux.Vars(r)
-	jobID, err := s.pier.RemoveJob(pier.JobID(vars["jobID"]))
+	jobID, err := s.pier.RemoveJob(db.JobID(vars["jobID"]))
 	if err != nil {
 		Response{w}.ClientError(err.Error(), err)
 		return
@@ -243,12 +245,12 @@ func (s *Server) removeJobHandler(w http.ResponseWriter, r *http.Request) {
 func (s *Server) getJobTask(w http.ResponseWriter, r *http.Request) {
 	logRequest(r)
 	vars := mux.Vars(r)
-	job, err := s.pier.GetJob(pier.JobID(vars["jobID"]))
+	job, err := s.pier.GetJob(db.JobID(vars["jobID"]))
 	if err != nil {
 		Response{w}.ClientError("cannot get task", err)
 		return
 	}
-	var latestOutput LatestOutput
+	var latestOutput db.LatestOutput
 	if len(job.Tasks) > 0 {
 		latestOutput.Name = job.Tasks[len(job.Tasks)-1].Name
 		latestOutput.ConsoleOutput = job.Tasks[len(job.Tasks)-1].ConsoleOutput.String()

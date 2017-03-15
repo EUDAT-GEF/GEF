@@ -23,16 +23,6 @@ _testmain.go
 *.test
 *.prof
 
-# Java/Maven
-frontend/target
-frontend/lib
-frontend/classes
-frontend/checkouts
-dependency-reduced-pom.xml
-pom.xml.asc
-*.jar
-*.class
-
 # Sublime
 *.sublime-workspace
 *.sublime-project
@@ -50,4 +40,4 @@ pom.xml.asc
 node_modules
 gef-bundle.js
 gef-bundle.js.map
-frontend/src/main/resources/assets/lib/
+services/_internal/volume-filelist/volume-filelist
