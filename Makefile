@@ -45,11 +45,7 @@ $(GOSRC)github.com/mattn/go-sqlite3:
 webui_dev_server:
 	(cd $(WEBUI) && node_modules/webpack-dev-server/bin/webpack-dev-server.js --config webpack.config.devel.js)
 
-run_backend:
+run_gef:
 	(cd backend-docker && go run main.go)
-
-clean:
-	go clean ./...
-	(cd frontend && mvn -q clean)
 
 .PHONY: build dependencies webui frontend backend webui_dev_server run_frontend run_backend clean

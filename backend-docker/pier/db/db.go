@@ -2,22 +2,23 @@ package db
 
 import (
 	"database/sql"
-	"gopkg.in/gorp.v1"
 	_ "github.com/mattn/go-sqlite3"
+	"gopkg.in/gorp.v1"
 
-	"github.com/EUDAT-GEF/GEF/backend-docker/pier/internal/dckr"
 	"bytes"
-	"time"
-	"github.com/pborman/uuid"
-	"strings"
-	"log"
 	"fmt"
+	"github.com/EUDAT-GEF/GEF/backend-docker/pier/internal/dckr"
+	"github.com/pborman/uuid"
+	"log"
+
 	"strconv"
+	"strings"
+	"time"
 )
 
 type VolumeID dckr.VolumeID
 
-type Db struct {gorp.DbMap}
+type Db struct{ gorp.DbMap }
 
 // Job stores the information about a service execution
 type Job struct {
@@ -28,7 +29,18 @@ type Job struct {
 	State        *JobState
 	InputVolume  VolumeID
 	OutputVolume VolumeID
-	Tasks        []TaskInfo
+	Tasks        []Task
+}
+
+type JobTable struct {
+	ID           JobID
+	ServiceID    ServiceID
+	Input        string
+	Created      time.Time
+	State        *JobState
+	InputVolume  VolumeID
+	OutputVolume VolumeID
+	Revision     int
 }
 
 // JobState exported
@@ -43,8 +55,9 @@ type JobID string
 
 type jobArray []Job
 
-// TaskInfo exported
-type TaskInfo struct {
+// Task contains tasks related to a specific job
+type Task struct {
+	ID            string
 	Name          string
 	ContainerID   dckr.ContainerID
 	Error         error
@@ -52,7 +65,19 @@ type TaskInfo struct {
 	ConsoleOutput *bytes.Buffer
 }
 
-// LatestOutput used to serialize consoleoutput to json
+// TaskTable is used for the SQL database
+type TaskTable struct {
+	ID            string
+	Name          string
+	ContainerID   dckr.ContainerID
+	Error         error
+	ExitCode      int
+	ConsoleOutput *bytes.Buffer
+	Revision      int
+	JobID         JobID
+}
+
+// LatestOutput used to serialize console output to json
 type LatestOutput struct {
 	Name          string
 	ConsoleOutput string
@@ -66,6 +91,7 @@ type Bind struct {
 
 // GefSrvLabelPrefix is the prefix identifying GEF related labels
 const GefSrvLabelPrefix = "eudat.gef.service."
+const GorpVersionColumn = "Revision"
 
 // Service describes metadata for a GEF service
 type Service struct {
@@ -74,11 +100,24 @@ type Service struct {
 	Name        string
 	RepoTag     string
 	Description string
-	Version1     string
+	Version     string
 	Created     time.Time
 	Size        int64
 	Input       []IOPort
 	Output      []IOPort
+}
+
+// ServiceTable is used for the SQL database
+type ServiceTable struct {
+	ID          ServiceID
+	ImageID     dckr.ImageID
+	Name        string
+	RepoTag     string
+	Description string
+	Version     string
+	Revision    int
+	Created     time.Time
+	Size        int64
 }
 
 // ServiceID exported
@@ -93,55 +132,118 @@ type IOPort struct {
 	Path string
 }
 
-// InitDb exported
-func InitDb() (Db, error) {
-	dataBase, err := sql.Open("sqlite3", "/Users/achernov/job_db.bin")
-
-	/*if err != nil {
-		return nil, err
-	}*/
-	// delete any existing rows
-
-
-	dataBaseMap := &gorp.DbMap{Db: dataBase, Dialect: gorp.SqliteDialect{}}
-	dataBaseMap.AddTableWithName(Job{}, "jobs")
-	dataBaseMap.AddTableWithName(Service{}, "services").SetKeys(false, "ID")
-	err = dataBaseMap.CreateTablesIfNotExists()
-
-	dbm := Db{*dataBaseMap}
-
-	return dbm, err
+// IOPortTable is used for the SQL database
+type IOPortTable struct {
+	ID        string
+	Name      string
+	Path      string
+	IsInput   bool
+	Revision  int
+	ServiceID ServiceID
 }
 
+// InitDb exported
+func InitDb() (Db, error) {
+	var dataBaseHandler Db
+	dataBase, err := sql.Open("sqlite3", "/Users/achernov/job_db.bin")
 
+	if err != nil {
+		return dataBaseHandler, err
+	}
+
+	dataBaseMap := &gorp.DbMap{Db: dataBase, Dialect: gorp.SqliteDialect{}}
+	dataBaseMap.AddTableWithName(JobTable{}, "Jobs").SetKeys(false, "ID").SetVersionCol(GorpVersionColumn)
+	dataBaseMap.AddTableWithName(TaskTable{}, "Tasks").SetKeys(false, "ID").SetVersionCol(GorpVersionColumn)
+	dataBaseMap.AddTableWithName(ServiceTable{}, "Services").SetKeys(false, "ID").SetVersionCol(GorpVersionColumn)
+	dataBaseMap.AddTableWithName(IOPortTable{}, "IOPorts").SetKeys(false, "ID").SetVersionCol(GorpVersionColumn)
+	err = dataBaseMap.CreateTablesIfNotExists()
+
+	dataBaseHandler = Db{*dataBaseMap}
+
+	return dataBaseHandler, err
+}
 
 // Jobs
 
 func (d *Db) AddJob(job Job) error {
-	return d.Insert(&job)
+	storedJob := d.MapJSON2StoredJob(job)
+	return d.Insert(&storedJob)
 }
 
 func (d *Db) RemoveJob(jobID JobID) error {
-	_, err := d.Exec("delete from jobs where ID=?", jobID)
+	_, err := d.Exec("DELETE FROM Tasks WHERE jobID=?", jobID)
+	if err == nil {
+		_, err = d.Exec("DELETE FROM Jobs WHERE ID=?", jobID)
+	}
 	return err
+}
+
+func (d *Db) RemoveTask(taskID string) error {
+	_, err := d.Exec("DELETE FROM Tasks WHERE ID=?", taskID)
+	return err
+}
+
+func (d *Db) MapStoredJob2JSON(jobID JobID, storedJob JobTable) (Job, error) {
+	var job Job
+	var linkedTasks []Task
+	_, err := d.Select(&linkedTasks, "SELECT * FROM Tasks WHERE JobID=?", jobID)
+	job.ID = storedJob.ID
+	job.ServiceID = storedJob.ServiceID
+	job.Input = storedJob.Input
+	job.Created = storedJob.Created
+	job.State = storedJob.State
+	job.InputVolume = storedJob.InputVolume
+	job.OutputVolume = storedJob.OutputVolume
+	job.Tasks = linkedTasks
+	return job, err
+}
+
+func (d *Db) MapJSON2StoredJob(job Job) JobTable {
+	var storedJob JobTable
+	storedJob.ID = job.ID
+	storedJob.ServiceID = job.ServiceID
+	storedJob.Input = job.Input
+	storedJob.Created = job.Created
+	storedJob.State = job.State
+	storedJob.InputVolume = job.InputVolume
+	storedJob.OutputVolume = job.OutputVolume
+	return storedJob
 }
 
 // ListJobs exported
 func (d *Db) ListJobs() ([]Job, error) {
 	var jobs []Job
-	_, err := d.Select(&jobs, "select * from jobs order by ID")
+	var jobsFromTable []JobTable
+	_, err := d.Select(&jobsFromTable, "SELECT * FROM Jobs ORDER BY Job.ID")
+	if err == nil {
+		for _, j := range jobsFromTable {
+			var curJob Job
+			curJob, err = d.MapStoredJob2JSON(j.ID, j)
+			if err == nil {
+				jobs = append(jobs, curJob)
+			} else {
+				break
+			}
+		}
+
+	}
 	return jobs, err
 }
 
 func (d *Db) GetJob(jobID JobID) (Job, error) {
 	var job Job
-	err := d.SelectOne(&job, "select * from jobs where ID=?", jobID)
+	var jobFromTable JobTable
+	err := d.SelectOne(&jobFromTable, "SELECT * FROM jobs WHERE ID=?", jobID)
+	if err == nil {
+		job, err = d.MapStoredJob2JSON(jobFromTable.ID, jobFromTable)
+	}
+
 	return job, err
 }
 
 func (d *Db) SetJobState(jobID JobID, state JobState) error {
 	var job Job
-	err := d.SelectOne(&job, "select * from jobs where ID=?", jobID)
+	err := d.SelectOne(&job, "SELECT * FROM jobs WHERE ID=?", jobID)
 	if err != nil {
 		job.State = &state
 		_, err = d.Update(&job)
@@ -151,7 +253,7 @@ func (d *Db) SetJobState(jobID JobID, state JobState) error {
 
 func (d *Db) SetJobInputVolume(jobID JobID, inputVolume VolumeID) error {
 	var job Job
-	err := d.SelectOne(&job, "select * from jobs where ID=?", jobID)
+	err := d.SelectOne(&job, "SELECT * FROM jobs WHERE ID=?", jobID)
 	if err != nil {
 		job.InputVolume = inputVolume
 		_, err = d.Update(&job)
@@ -161,7 +263,7 @@ func (d *Db) SetJobInputVolume(jobID JobID, inputVolume VolumeID) error {
 
 func (d *Db) SetJobOutputVolume(jobID JobID, outputVolume VolumeID) error {
 	var job Job
-	err := d.SelectOne(&job, "select * from jobs where ID=?", jobID)
+	err := d.SelectOne(&job, "SELECT * from jobs WHERE ID=?", jobID)
 	if err != nil {
 		job.OutputVolume = outputVolume
 		_, err = d.Update(&job)
@@ -170,42 +272,112 @@ func (d *Db) SetJobOutputVolume(jobID JobID, outputVolume VolumeID) error {
 }
 
 func (d *Db) AddJobTask(jobID JobID, taskName string, taskContainer dckr.ContainerID, taskError error, taskExitCode int, taskConsoleOutput *bytes.Buffer) error {
-	var job Job
-	err := d.SelectOne(&job, "select * from jobs where ID=?", jobID)
-	if err != nil {
-		var newTaskInfo TaskInfo
-		newTaskInfo.Name = taskName
-		newTaskInfo.ContainerID = taskContainer
-		newTaskInfo.Error = taskError
-		newTaskInfo.ExitCode = taskExitCode
-		newTaskInfo.ConsoleOutput = taskConsoleOutput
-		job.Tasks = append(job.Tasks, newTaskInfo)
-		_, err = d.Update(&job)
-	}
+	var newTask TaskTable
+	newTask.Name = taskName
+	newTask.ContainerID = taskContainer
+	newTask.Error = taskError
+	newTask.ExitCode = taskExitCode
+	newTask.ConsoleOutput = taskConsoleOutput
+	newTask.JobID = jobID
+	err := d.Insert(&newTask)
 	return err
 }
 
 // Services
 
+func (d *Db) MapStoredService2JSON(serviceID ServiceID, storedService ServiceTable) (Service, error) {
+	var service Service
+	var storedInputPorts []IOPortTable
+	var storedOutputPorts []IOPortTable
+	var inputPorts []IOPort
+	var outputPorts []IOPort
+
+	_, err := d.Select(&storedInputPorts, "SELECT * FROM IOPorts WHERE ServiceID=?", serviceID, " AND IsInput=?", true)
+	if err == nil {
+		for _, i := range storedInputPorts {
+			var curInput IOPort
+			curInput.ID = i.ID
+			curInput.Name = i.Name
+			curInput.Path = i.Path
+
+			inputPorts = append(inputPorts, curInput)
+		}
+	}
+	_, err = d.Select(&storedOutputPorts, "SELECT * FROM IOPorts WHERE ServiceID=?", serviceID, " AND IsInput=?", false)
+	if err == nil {
+		for _, o := range storedOutputPorts {
+			var curOutput IOPort
+			curOutput.ID = o.ID
+			curOutput.Name = o.Name
+			curOutput.Path = o.Path
+
+			outputPorts = append(inputPorts, curOutput)
+		}
+	}
+
+	service.ID = storedService.ID
+	service.ImageID = storedService.ImageID
+	service.Name = storedService.Name
+	service.RepoTag = storedService.RepoTag
+	service.Description = storedService.Description
+	service.Version = storedService.Version
+	service.Created = storedService.Created
+	service.Size = storedService.Size
+	service.Input = inputPorts
+	service.Output = outputPorts
+
+	return service, err
+}
+
+func (d *Db) MapJSON2StoredService(service Service) ServiceTable {
+	var storedService ServiceTable
+	storedService.ID = service.ID
+	storedService.ImageID = service.ImageID
+	storedService.Name = service.Name
+	storedService.RepoTag = service.RepoTag
+	storedService.Description = service.Description
+	storedService.Version = service.Version
+	storedService.Created = service.Created
+	storedService.Size = service.Size
+	return storedService
+}
+
 func (d *Db) AddService(service Service) error {
-	return d.Insert(&service)
+	storedService := d.MapJSON2StoredService(service)
+	return d.Insert(&storedService)
 }
 
 func (d *Db) ListServices() ([]Service, error) {
 	var services []Service
-	_, err := d.Select(&services, "select * from services order by ID")
-	fmt.Println(services)
+	var servicesFromTable []ServiceTable
+	_, err := d.Select(&servicesFromTable, "SELECT * FROM services ORDER BY ID")
+	if err == nil {
+		for _, s := range servicesFromTable {
+			var curService Service
+			curService, err = d.MapStoredService2JSON(s.ID, s)
+			if err == nil {
+				services = append(services, curService)
+			} else {
+				break
+			}
+		}
+
+	}
+
 	return services, err
 }
 
 func (d *Db) GetService(serviceID ServiceID) (Service, error) {
 	var service Service
-	err := d.SelectOne(&service, "select * from services where ID=?", serviceID)
+	var serviceFromTable ServiceTable
+	err := d.SelectOne(&serviceFromTable, "SELECT * FROM services WHERE ID=?", serviceID)
+
+	if err == nil {
+		service, err = d.MapStoredService2JSON(serviceFromTable.ID, serviceFromTable)
+	}
+
 	return service, err
 }
-
-
-
 
 func (d *Db) NewServiceFromImage(image dckr.Image) Service {
 	srv := Service{
@@ -231,7 +403,7 @@ func (d *Db) NewServiceFromImage(image dckr.Image) Service {
 		case "description":
 			srv.Description = v
 		case "version":
-			srv.Version1 = v
+			srv.Version = v
 		case "input":
 			addVecValue(&srv.Input, ks[1:], v)
 		case "output":

@@ -3,14 +3,14 @@ package pier
 import (
 	"fmt"
 	"github.com/EUDAT-GEF/GEF/backend-docker/def"
+	"github.com/EUDAT-GEF/GEF/backend-docker/pier/db"
 	"github.com/EUDAT-GEF/GEF/backend-docker/pier/internal/dckr"
 	"github.com/pborman/uuid"
-	"log"
-	"time"
-	"github.com/EUDAT-GEF/GEF/backend-docker/pier/db"
 	"io/ioutil"
-	"path/filepath"
+	"log"
 	"os"
+	"path/filepath"
+	"time"
 )
 
 const stagingVolumeName = "volume-stage-in"
@@ -28,15 +28,12 @@ type Pier struct {
 // VolumeID exported
 type VolumeID dckr.VolumeID
 
-
-
 // NewPier exported
 func NewPier(cfgList []def.DockerConfig, tmpDir string, dataBase *db.Db) (*Pier, error) {
 	docker, err := dckr.NewClientFirstOf(cfgList)
 
 	var allServices []db.Service
 	var allJobs []db.Job
-
 
 	/*allServices, err = dataBase.ListServices()
 	if err != nil {
@@ -68,13 +65,6 @@ func NewPier(cfgList []def.DockerConfig, tmpDir string, dataBase *db.Db) (*Pier,
 			pier.services.add(newServiceFromImage(img))
 		}
 	}*/
-
-
-
-
-
-
-
 
 	return &pier, nil
 }

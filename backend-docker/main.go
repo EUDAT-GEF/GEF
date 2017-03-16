@@ -10,7 +10,6 @@ import (
 
 	"github.com/EUDAT-GEF/GEF/backend-docker/pier/db"
 
-
 	"os"
 )
 
@@ -34,17 +33,12 @@ func main() {
 	//defer d.Db.Close()
 	defer d.Db.Close()
 
-
-
 	var p *pier.Pier
 	p, err = pier.NewPier(config.Docker, config.TmpDir, &d)
 	p.PopulateServiceTable()
 	if err != nil {
 		log.Fatal("FATAL: ", def.Err(err, "Cannot create Pier"))
 	}
-
-
-
 
 	server, err := server.NewServer(config.Server, p, config.TmpDir)
 	if err != nil {
