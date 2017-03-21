@@ -270,7 +270,7 @@ func (d *Db) GetJob(jobID JobID) (Job, error) {
 func (d *Db) SetJobState(jobID JobID, state JobState) error {
 	var storedJob JobTable
 	err := d.SelectOne(&storedJob, "SELECT * FROM jobs WHERE ID=?", jobID)
-	if err != nil {
+	if err == nil {
 		storedJob.Error = state.Error
 		storedJob.Status = state.Status
 		storedJob.Code = state.Code
@@ -282,7 +282,7 @@ func (d *Db) SetJobState(jobID JobID, state JobState) error {
 func (d *Db) SetJobInputVolume(jobID JobID, inputVolume VolumeID) error {
 	var storedJob JobTable
 	err := d.SelectOne(&storedJob, "SELECT * FROM jobs WHERE ID=?", jobID)
-	if err != nil {
+	if err == nil {
 		storedJob.InputVolume = string(inputVolume)
 		_, err = d.Update(&storedJob)
 	}
@@ -292,7 +292,7 @@ func (d *Db) SetJobInputVolume(jobID JobID, inputVolume VolumeID) error {
 func (d *Db) SetJobOutputVolume(jobID JobID, outputVolume VolumeID) error {
 	var storedJob JobTable
 	err := d.SelectOne(&storedJob, "SELECT * from jobs WHERE ID=?", jobID)
-	if err != nil {
+	if err == nil {
 		storedJob.OutputVolume = string(outputVolume)
 		_, err = d.Update(&storedJob)
 	}
