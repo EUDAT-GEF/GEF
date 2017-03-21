@@ -12,6 +12,24 @@ import (
 	"time"
 )
 
+type myResponseWriter struct {
+	w    http.ResponseWriter
+	code int
+}
+
+func (w myResponseWriter) Header() http.Header {
+	return w.w.Header()
+}
+func (w myResponseWriter) Write(data []byte) (int, error) {
+	return w.w.Write(data)
+}
+func (w myResponseWriter) WriteHeader(code int) {
+	w.code = code
+	w.w.WriteHeader(code)
+}
+
+type handlerfn func(http.ResponseWriter, *http.Request)
+
 func decorate(actionType string, fn func(http.ResponseWriter, *http.Request)) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		logRequest(r)
@@ -19,8 +37,9 @@ func decorate(actionType string, fn func(http.ResponseWriter, *http.Request)) fu
 		if !allow {
 			Response{w}.DirectiveError()
 		} else {
-			defer closefn()
-			fn(w, r)
+			writer := myResponseWriter{w, 0}
+			defer closefn(writer)
+			fn(writer, r)
 		}
 	}
 }
@@ -36,6 +55,7 @@ type eventPayload struct {
 	Event       event                  `json:"event"`
 	User        user                   `json:"user"`
 	Resource    resource               `json:"resource"`
+	Response    response               `json:"response,omitempty"`
 	Environment map[string]interface{} `json:"environment"`
 }
 
@@ -56,6 +76,10 @@ type resource struct {
 	Method string `json:"method"` // "POST",
 }
 
+type response struct {
+	Code int `json:"code"`
+}
+
 // InitEventSystem initializes the event system, or disables it if the address
 // is empty
 func InitEventSystem(address string) {
@@ -71,7 +95,7 @@ func InitEventSystem(address string) {
 	}
 }
 
-func (es eventSystem) dispatch(action string, r *http.Request, preceding bool) bool {
+func (es eventSystem) dispatch(action string, r *http.Request, preceding bool, statusCode int) bool {
 	if es.address == "" {
 		return true
 	}
@@ -92,6 +116,11 @@ func (es eventSystem) dispatch(action string, r *http.Request, preceding bool) b
 			Method: r.Method,
 		},
 		Environment: map[string]interface{}{},
+	}
+	if !preceding {
+		payload.Response = response{
+			Code: statusCode,
+		}
 	}
 	json, err := json.Marshal(payload)
 	if err != nil {
@@ -116,12 +145,12 @@ func (es eventSystem) dispatch(action string, r *http.Request, preceding bool) b
 	return true
 }
 
-func signalEvent(action string, r *http.Request) (allow bool, closefn func()) {
-	fn := func() {}
-	ret := eventSys.dispatch(action, r, true)
+func signalEvent(action string, r *http.Request) (allow bool, closefn func(myResponseWriter)) {
+	fn := func(w myResponseWriter) {}
+	ret := eventSys.dispatch(action, r, true, 0)
 	if ret {
-		fn = func() {
-			eventSys.dispatch(action, r, false)
+		fn = func(w myResponseWriter) {
+			eventSys.dispatch(action, r, false, w.code)
 		}
 	}
 	return ret, fn
