@@ -12,6 +12,7 @@ import (
 	"github.com/EUDAT-GEF/GEF/backend-docker/def"
 	"github.com/EUDAT-GEF/GEF/backend-docker/pier/internal/dckr"
 	"path/filepath"
+	"github.com/EUDAT-GEF/GEF/backend-docker/pier/db"
 )
 
 // VolumeItem describes a folder content
@@ -64,7 +65,7 @@ func (p *Pier) DownStreamContainerFile(volumeID string, fileLocation string, w h
 }
 
 // ListFiles exported
-func (p *Pier) ListFiles(volumeID VolumeID, filePath string) ([]VolumeItem, error) {
+func (p *Pier) ListFiles(volumeID db.VolumeID, filePath string) ([]VolumeItem, error) {
 	var volumeFileList []VolumeItem
 	if string(volumeID) == "" {
 		return volumeFileList, def.Err(nil, "volume name has not been specified")

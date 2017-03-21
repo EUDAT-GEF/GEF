@@ -26,7 +26,7 @@ func main() {
 	}
 
 	d, err := db.InitDb()
-	d.TraceOn("[gorp]", log.New(os.Stdout, "myapp:", log.Lmicroseconds))
+	d.TraceOn("[GORP]", log.New(os.Stdout, "GEF:", log.Lmicroseconds))
 	if err != nil {
 		log.Fatal("FATAL: ", def.Err(err, "Cannot initialize the database engine"))
 	}

@@ -253,7 +253,7 @@ func (s *Server) getJobTask(w http.ResponseWriter, r *http.Request) {
 	var latestOutput db.LatestOutput
 	if len(job.Tasks) > 0 {
 		latestOutput.Name = job.Tasks[len(job.Tasks)-1].Name
-		latestOutput.ConsoleOutput = job.Tasks[len(job.Tasks)-1].ConsoleOutput.String()
+		latestOutput.ConsoleOutput = job.Tasks[len(job.Tasks)-1].ConsoleOutput
 	}
 	Response{w}.Ok(jmap("ServiceExecution", latestOutput))
 }
@@ -275,7 +275,7 @@ func (s *Server) volumeContentHandler(w http.ResponseWriter, r *http.Request) {
 		Response{w}.Header().Set("Content-Disposition", "attachment; filename="+fileName)
 
 	} else { // Return of list of files in a specific location in a volume
-		volumeFiles, err := s.pier.ListFiles(pier.VolumeID(vars["volumeID"]), fileLocation)
+		volumeFiles, err := s.pier.ListFiles(db.VolumeID(vars["volumeID"]), fileLocation)
 		if err != nil {
 			Response{w}.ServerError("streaming container files failed", err)
 		}

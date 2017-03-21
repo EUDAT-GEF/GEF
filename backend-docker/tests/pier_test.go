@@ -6,6 +6,7 @@ import (
 
 	"github.com/EUDAT-GEF/GEF/backend-docker/def"
 	"github.com/EUDAT-GEF/GEF/backend-docker/pier"
+	"github.com/EUDAT-GEF/GEF/backend-docker/pier/db"
 )
 
 const testPID = "11304/a3d012ca-4e23-425e-9e2a-1e6a195b966f"
@@ -17,17 +18,20 @@ func TestClient(t *testing.T) {
 	config, err := def.ReadConfigFile(configFilePath)
 	checkMsg(t, err, "reading config files")
 
-	pier, err := pier.NewPier(config.Docker, config.TmpDir)
-	checkMsg(t, err, "creating new pier")
 
-	before := pier.ListServices()
+	d, err := db.InitDb()
+	pier, err := pier.NewPier(config.Docker, config.TmpDir, &d)
+	checkMsg(t, err, "creating new pier")
+	defer d.Db.Close()
+
+	before, err := pier.ListServices()
 	checkMsg(t, err, "listing services failed")
 
 	service, err := pier.BuildService("./docker_test")
 	checkMsg(t, err, "build service failed")
 	log.Println("built service:", service)
 
-	after := pier.ListServices()
+	after, err := pier.ListServices()
 	checkMsg(t, err, "listing services failed")
 
 	errstr := "Cannot find new service in list"
@@ -52,7 +56,7 @@ func TestClient(t *testing.T) {
 	checkMsg(t, err, "running service failed")
 	log.Println("job: ", job)
 
-	jobList := pier.ListJobs()
+	jobList, err := pier.ListJobs()
 	if len(jobList) == 0 {
 		t.Error("cannot find any job")
 		t.FailNow()
@@ -81,8 +85,10 @@ func TestExecution(t *testing.T) {
 	config, err := def.ReadConfigFile(configFilePath)
 	checkMsg(t, err, "reading config files")
 
-	pier, err := pier.NewPier(config.Docker, config.TmpDir)
+	d, err := db.InitDb()
+	pier, err := pier.NewPier(config.Docker, config.TmpDir, &d)
 	checkMsg(t, err, "creating new pier")
+	defer d.Db.Close()
 
 	service, err := pier.BuildService("./clone_test")
 	checkMsg(t, err, "build service failed")
@@ -98,7 +104,7 @@ func TestExecution(t *testing.T) {
 		job, err = pier.GetJob(jobid)
 		checkMsg(t, err, "getting job failed")
 	}
-	expect(t, job.State.Error == nil, "job error")
+	expect(t, job.State.Error == "", "job error")
 
 	files, err := pier.ListFiles(job.OutputVolume, "")
 	checkMsg(t, err, "getting volume failed")

@@ -26,7 +26,7 @@ type Pier struct {
 }
 
 // VolumeID exported
-type VolumeID dckr.VolumeID
+//type VolumeID dckr.VolumeID
 
 // NewPier exported
 func NewPier(cfgList []def.DockerConfig, tmpDir string, dataBase *db.Db) (*Pier, error) {
@@ -106,7 +106,7 @@ func (p *Pier) RunService(service db.Service, inputPID string) (db.Job, error) {
 		ServiceID: service.ID,
 		Created:   time.Now(),
 		Input:     inputPID,
-		State:     &db.JobState{nil, "Created", -1},
+		State:     &db.JobState{"", "Created", -1},
 	}
 
 	err := p.dataBase.AddJob(job)
@@ -117,62 +117,72 @@ func (p *Pier) RunService(service db.Service, inputPID string) (db.Job, error) {
 }
 
 func (p *Pier) runJob(job *db.Job, service db.Service, inputPID string) {
-	p.dataBase.SetJobState(job.ID, db.JobState{nil, "Creating a new input volume", -1})
+	p.dataBase.SetJobState(job.ID, db.JobState{"", "Creating a new input volume", -1})
 	inputVolume, err := p.docker.NewVolume()
 	if err != nil {
-		p.dataBase.SetJobState(job.ID, db.JobState{def.Err(err, "Error while creating new input volume"), "Error", 1})
+		p.dataBase.SetJobState(job.ID, db.JobState{"Error while creating new input volume", "Error", 1})
 		return
 	}
 	log.Println("new input volume created: ", inputVolume)
 	p.dataBase.SetJobInputVolume(job.ID, db.VolumeID(inputVolume.ID))
 	{
-		p.dataBase.SetJobState(job.ID, db.JobState{nil, "Performing data staging", -1})
+		p.dataBase.SetJobState(job.ID, db.JobState{"", "Performing data staging", -1})
 		binds := []dckr.VolBind{
 			dckr.NewVolBind(inputVolume.ID, "/volume", false),
 		}
 		containerID, exitCode, consoleOutput, err := p.docker.ExecuteImage(dckr.ImageID(stagingVolumeName), []string{inputPID}, binds, true)
-		p.dataBase.AddJobTask(job.ID, "Data staging", containerID, err, exitCode, consoleOutput)
+		errMsg := ""
+		if err != nil {
+			errMsg = err.Error()
+		}
+		p.dataBase.AddJobTask(job.ID, "Data staging", containerID, errMsg, exitCode, consoleOutput)
+		//fmt.Println(containerID, consoleOutput)
 
 		log.Println("  staging ended: ", exitCode, ", error: ", err)
 		if err != nil {
-			p.dataBase.SetJobState(job.ID, db.JobState{def.Err(err, "Data staging failed"), "Error", 1})
+			p.dataBase.SetJobState(job.ID, db.JobState{"Data staging failed", "Error", 1})
 			return
 		}
 		if exitCode != 0 {
 			msg := fmt.Sprintf("Data staging failed (exitCode = %v)", exitCode)
-			p.dataBase.SetJobState(job.ID, db.JobState{nil, msg, 1})
+			p.dataBase.SetJobState(job.ID, db.JobState{"", msg, 1})
 			return
 		}
 	}
-	p.dataBase.SetJobState(job.ID, db.JobState{nil, "Creating a new output volume", -1})
+	p.dataBase.SetJobState(job.ID, db.JobState{"", "Creating a new output volume", -1})
 	outputVolume, err := p.docker.NewVolume()
 	if err != nil {
-		p.dataBase.SetJobState(job.ID, db.JobState{def.Err(err, "Error while creating new output volume"), "Error", 1})
+		p.dataBase.SetJobState(job.ID, db.JobState{"Error while creating new output volume", "Error", 1})
 		return
 	}
 	log.Println("new output volume created: ", outputVolume)
 	p.dataBase.SetJobOutputVolume(job.ID, db.VolumeID(outputVolume.ID))
 	{
-		p.dataBase.SetJobState(job.ID, db.JobState{nil, "Executing the service", -1})
+		p.dataBase.SetJobState(job.ID, db.JobState{"", "Executing the service", -1})
 		binds := []dckr.VolBind{
 			dckr.NewVolBind(inputVolume.ID, service.Input[0].Path, true),
 			dckr.NewVolBind(outputVolume.ID, service.Output[0].Path, false),
 		}
 		containerID, exitCode, consoleOutput, err := p.docker.ExecuteImage(dckr.ImageID(service.ImageID), nil, binds, true)
-		p.dataBase.AddJobTask(job.ID, "Service execution", containerID, err, exitCode, consoleOutput)
+		errMsg := ""
+		if err != nil {
+			errMsg = err.Error()
+		}
+		p.dataBase.AddJobTask(job.ID, "Service execution", containerID, errMsg, exitCode, consoleOutput)
+		//fmt.Println(containerID, consoleOutput)
 
 		log.Println("  job ended: ", exitCode, ", error: ", err)
 		if err != nil {
-			p.dataBase.SetJobState(job.ID, db.JobState{def.Err(err, "Service failed"), "Error", 1})
+			p.dataBase.SetJobState(job.ID, db.JobState{"Service failed", "Error", 1})
 			return
 		}
 		if exitCode != 0 {
 			msg := fmt.Sprintf("Service failed (exitCode = %v)", exitCode)
-			p.dataBase.SetJobState(job.ID, db.JobState{nil, msg, 1})
+			p.dataBase.SetJobState(job.ID, db.JobState{"", msg, 1})
 			return
 		}
 	}
-	p.dataBase.SetJobState(job.ID, db.JobState{nil, "Ended successfully", 0})
+	p.dataBase.SetJobState(job.ID, db.JobState{"", "Ended successfully", 0})
 }
 
 // RemoveJob exported
