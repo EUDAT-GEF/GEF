@@ -3,48 +3,20 @@ package db
 import (
 	"bytes"
 	"database/sql"
-	"fmt"
+	"time"
+
 	"github.com/EUDAT-GEF/GEF/backend-docker/pier/internal/dckr"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/pborman/uuid"
 	"gopkg.in/gorp.v1"
-	"log"
-	"strconv"
-	"strings"
-	"time"
 )
 
 const GefSrvLabelPrefix = "eudat.gef.service." // GefSrvLabelPrefix is the prefix identifying GEF related labels
 const GorpVersionColumn = "Revision"           // Column in a table used to keep an internal version number of GORP
 const SQLiteDataBasePath = "gef_db.bin"
 
-// VolumeID contains a docker volume ID
-type VolumeID dckr.VolumeID
-
 // Db is used to keep DbMap
 type Db struct{ gorp.DbMap }
-
-// Job stores the information about a service execution (used to serialize JSON)
-type Job struct {
-	ID           JobID
-	ServiceID    ServiceID
-	Input        string
-	Created      time.Time
-	State        *JobState
-	InputVolume  VolumeID
-	OutputVolume VolumeID
-	Tasks        []Task
-}
-
-// JobState keeps information about a job state
-type JobState struct {
-	Error  string
-	Status string
-	Code   int
-}
-
-// JobID exported
-type JobID string
 
 // JobTable stores the information about a service execution (used to store data in a database)
 type JobTable struct {
@@ -60,16 +32,6 @@ type JobTable struct {
 	Revision     int
 }
 
-// Task contains tasks related to a specific job (used to serialize JSON)
-type Task struct {
-	ID            string
-	Name          string
-	ContainerID   dckr.ContainerID
-	Error         string
-	ExitCode      int
-	ConsoleOutput string
-}
-
 // TaskTable contains tasks related to a specific job (used to store data in a database)
 type TaskTable struct {
 	ID            string
@@ -80,32 +42,6 @@ type TaskTable struct {
 	ConsoleOutput string
 	Revision      int
 	JobID         string
-}
-
-// LatestOutput used to serialize console output to JSON
-type LatestOutput struct {
-	Name          string
-	ConsoleOutput string
-}
-
-// Bind describes the binding between an IOPort and a docker volume
-type Bind struct {
-	IOPort   IOPort
-	VolumeID dckr.VolumeID
-}
-
-// Service describes metadata for a GEF service (used to serialize JSON)
-type Service struct {
-	ID          ServiceID
-	ImageID     dckr.ImageID
-	Name        string
-	RepoTag     string
-	Description string
-	Version     string
-	Created     time.Time
-	Size        int64
-	Input       []IOPort
-	Output      []IOPort
 }
 
 // ServiceTable describes metadata for a GEF service (used to store data in a database)
@@ -121,18 +57,6 @@ type ServiceTable struct {
 	Size        int64
 }
 
-// ServiceID exported
-type ServiceID string
-
-// IOPort is an i/o specification for a service
-// The service can only read data from volumes and write to a single volume
-// Path specifies where the volumes are mounted
-type IOPort struct {
-	ID   string
-	Name string
-	Path string
-}
-
 // IOPortTable is used to store data in a database
 type IOPortTable struct {
 	ID        string
@@ -145,10 +69,9 @@ type IOPortTable struct {
 
 // InitDb initializes the database engine
 func InitDb() (Db, error) {
-	var dataBaseHandler Db
 	dataBase, err := sql.Open("sqlite3", SQLiteDataBasePath)
 	if err != nil {
-		return dataBaseHandler, err
+		return Db{}, err
 	}
 	// For each table GORP has a special field to keep information about data version
 	dataBaseMap := &gorp.DbMap{Db: dataBase, Dialect: gorp.SqliteDialect{}}
@@ -157,22 +80,23 @@ func InitDb() (Db, error) {
 	dataBaseMap.AddTableWithName(ServiceTable{}, "Services").SetKeys(false, "ID").SetVersionCol(GorpVersionColumn)
 	dataBaseMap.AddTableWithName(IOPortTable{}, "IOPorts").SetVersionCol(GorpVersionColumn)
 	err = dataBaseMap.CreateTablesIfNotExists()
-	dataBaseHandler = Db{*dataBaseMap}
-	return dataBaseHandler, err
+	return Db{*dataBaseMap}, err
 }
 
 // AddJob adds a job to the database
 func (d *Db) AddJob(job Job) error {
-	storedJob := d.MapJSON2StoredJob(job)
+	storedJob := d.job2JobTable(job)
 	return d.Insert(&storedJob)
 }
 
 // RemoveJob removes a job and all corresponding tasks from the database
-func (d *Db) RemoveJob(jobID JobID) error {
-	_, err := d.Exec("DELETE FROM Tasks WHERE jobID=?", string(jobID))
-	if err == nil {
-		_, err = d.Exec("DELETE FROM Jobs WHERE ID=?", string(jobID))
+func (d *Db) RemoveJob(id JobID) error {
+	_, err := d.Exec("DELETE FROM Tasks WHERE jobID=?", string(id))
+	if err != nil {
+		return err
 	}
+
+	_, err = d.Exec("DELETE FROM Jobs WHERE ID=?", string(id))
 	return err
 }
 
@@ -183,24 +107,26 @@ func (d *Db) RemoveJobTask(taskID string) error {
 }
 
 // MapStoredJob2JSON performs mapping of the database job table to its JSON representation
-func (d *Db) MapStoredJob2JSON(jobID JobID, storedJob JobTable) (Job, error) {
+func (d *Db) jobTable2Job(storedJob JobTable) (Job, error) {
 	var job Job
 	var jobState JobState
 	var linkedTasks []Task
 	var storedTasks []TaskTable
-	_, err := d.Select(&storedTasks, "SELECT * FROM Tasks WHERE JobID=?", string(jobID))
-	if err == nil {
-		for _, t := range storedTasks {
-			var curTask Task
-			curTask.Error = t.Error
-			curTask.ConsoleOutput = t.ConsoleOutput
-			curTask.ContainerID = dckr.ContainerID(t.ContainerID)
-			curTask.ExitCode = t.ExitCode
-			curTask.ID = t.ID
-			curTask.Name = t.Name
+	_, err := d.Select(&storedTasks, "SELECT * FROM Tasks WHERE JobID=?", storedJob.ID)
+	if err != nil {
+		return job, err
+	}
 
-			linkedTasks = append(linkedTasks, curTask)
-		}
+	for _, t := range storedTasks {
+		var curTask Task
+		curTask.Error = t.Error
+		curTask.ConsoleOutput = t.ConsoleOutput
+		curTask.ContainerID = dckr.ContainerID(t.ContainerID)
+		curTask.ExitCode = t.ExitCode
+		curTask.ID = t.ID
+		curTask.Name = t.Name
+
+		linkedTasks = append(linkedTasks, curTask)
 	}
 
 	jobState.Error = storedJob.Error
@@ -219,7 +145,7 @@ func (d *Db) MapStoredJob2JSON(jobID JobID, storedJob JobTable) (Job, error) {
 }
 
 // MapJSON2StoredJob performs mapping of the job JSON representation to its database representation
-func (d *Db) MapJSON2StoredJob(job Job) JobTable {
+func (d *Db) job2JobTable(job Job) JobTable {
 	var storedJob JobTable
 	storedJob.ID = string(job.ID)
 	storedJob.ServiceID = string(job.ServiceID)
@@ -238,69 +164,78 @@ func (d *Db) ListJobs() ([]Job, error) {
 	var jobs []Job
 	var jobsFromTable []JobTable
 	_, err := d.Select(&jobsFromTable, "SELECT * FROM Jobs ORDER BY ID")
-	if err == nil {
-		for _, j := range jobsFromTable {
-			var curJob Job
-			curJob, err = d.MapStoredJob2JSON(JobID(j.ID), j)
-			if err == nil {
-				jobs = append(jobs, curJob)
-			} else {
-				break
-			}
-		}
+	if err != nil {
+		return jobs, err
 	}
+
+	for _, j := range jobsFromTable {
+		var curJob Job
+		curJob, err = d.jobTable2Job(j)
+		if err != nil {
+			return jobs, err
+		}
+		jobs = append(jobs, curJob)
+	}
+
 	return jobs, err
 }
 
 // GetJob returns a JSON ready representation of a job
-func (d *Db) GetJob(jobID JobID) (Job, error) {
+func (d *Db) GetJob(id JobID) (Job, error) {
 	var job Job
 	var jobFromTable JobTable
-	err := d.SelectOne(&jobFromTable, "SELECT * FROM jobs WHERE ID=?", string(jobID))
-	if err == nil {
-		job, err = d.MapStoredJob2JSON(JobID(jobFromTable.ID), jobFromTable)
+	err := d.SelectOne(&jobFromTable, "SELECT * FROM jobs WHERE ID=?", string(id))
+	if err != nil {
+		return job, err
 	}
 
+	job, err = d.jobTable2Job(jobFromTable)
 	return job, err
 }
 
 // SetJobState sets a job state
-func (d *Db) SetJobState(jobID JobID, state JobState) error {
+func (d *Db) SetJobState(id JobID, state JobState) error {
 	var storedJob JobTable
-	err := d.SelectOne(&storedJob, "SELECT * FROM jobs WHERE ID=?", string(jobID))
-	if err == nil {
-		storedJob.Error = state.Error
-		storedJob.Status = state.Status
-		storedJob.Code = state.Code
-		_, err = d.Update(&storedJob)
+	err := d.SelectOne(&storedJob, "SELECT * FROM jobs WHERE ID=?", string(id))
+	if err != nil {
+		return err
 	}
+
+	storedJob.Error = state.Error
+	storedJob.Status = state.Status
+	storedJob.Code = state.Code
+	_, err = d.Update(&storedJob)
 	return err
 }
 
 // SetJobInputVolume sets a job input volume
-func (d *Db) SetJobInputVolume(jobID JobID, inputVolume VolumeID) error {
+func (d *Db) SetJobInputVolume(id JobID, inputVolume VolumeID) error {
 	var storedJob JobTable
-	err := d.SelectOne(&storedJob, "SELECT * FROM jobs WHERE ID=?", string(jobID))
-	if err == nil {
-		storedJob.InputVolume = string(inputVolume)
-		_, err = d.Update(&storedJob)
+	err := d.SelectOne(&storedJob, "SELECT * FROM jobs WHERE ID=?", string(id))
+	if err != nil {
+		return err
 	}
+
+	storedJob.InputVolume = string(inputVolume)
+	_, err = d.Update(&storedJob)
 	return err
 }
 
 // SetJobOutputVolume sets a job output volume
-func (d *Db) SetJobOutputVolume(jobID JobID, outputVolume VolumeID) error {
+func (d *Db) SetJobOutputVolume(id JobID, outputVolume VolumeID) error {
 	var storedJob JobTable
-	err := d.SelectOne(&storedJob, "SELECT * from jobs WHERE ID=?", string(jobID))
-	if err == nil {
-		storedJob.OutputVolume = string(outputVolume)
-		_, err = d.Update(&storedJob)
+	err := d.SelectOne(&storedJob, "SELECT * from jobs WHERE ID=?", string(id))
+	if err != nil {
+		return err
 	}
+
+	storedJob.OutputVolume = string(outputVolume)
+	_, err = d.Update(&storedJob)
 	return err
 }
 
 // AddJobTask adds a task to a job
-func (d *Db) AddJobTask(jobID JobID, taskName string, taskContainer dckr.ContainerID, taskError string, taskExitCode int, taskConsoleOutput *bytes.Buffer) error {
+func (d *Db) AddJobTask(id JobID, taskName string, taskContainer dckr.ContainerID, taskError string, taskExitCode int, taskConsoleOutput *bytes.Buffer) error {
 	var newTask TaskTable
 	newTask.ID = uuid.New()
 	newTask.Name = taskName
@@ -308,39 +243,44 @@ func (d *Db) AddJobTask(jobID JobID, taskName string, taskContainer dckr.Contain
 	newTask.Error = taskError
 	newTask.ExitCode = taskExitCode
 	newTask.ConsoleOutput = taskConsoleOutput.String()
-	newTask.JobID = string(jobID)
+	newTask.JobID = string(id)
 	return d.Insert(&newTask)
 }
 
 // MapStoredService2JSON performs mapping of the database service table to its JSON representation
-func (d *Db) MapStoredService2JSON(serviceID ServiceID, storedService ServiceTable) (Service, error) {
+func (d *Db) serviceTable2Service(storedService ServiceTable) (Service, error) {
 	var service Service
 	var storedInputPorts []IOPortTable
 	var storedOutputPorts []IOPortTable
 	var inputPorts []IOPort
 	var outputPorts []IOPort
 
-	_, err := d.Select(&storedInputPorts, "SELECT * FROM IOPorts WHERE IsInput=1 AND ServiceID=?", string(serviceID))
-	if err == nil {
-		for _, i := range storedInputPorts {
-			var curInput IOPort
-			curInput.ID = i.ID
-			curInput.Name = i.Name
-			curInput.Path = i.Path
-
-			inputPorts = append(inputPorts, curInput)
-		}
+	_, err := d.Select(&storedInputPorts, "SELECT * FROM IOPorts WHERE IsInput=1 AND ServiceID=?", storedService.ID)
+	if err != nil {
+		return service, err
 	}
-	_, err = d.Select(&storedOutputPorts, "SELECT * FROM IOPorts WHERE IsInput=0 AND ServiceID=?", string(serviceID))
-	if err == nil {
-		for _, o := range storedOutputPorts {
-			var curOutput IOPort
-			curOutput.ID = o.ID
-			curOutput.Name = o.Name
-			curOutput.Path = o.Path
 
-			outputPorts = append(outputPorts, curOutput)
-		}
+	for _, i := range storedInputPorts {
+		var curInput IOPort
+		curInput.ID = i.ID
+		curInput.Name = i.Name
+		curInput.Path = i.Path
+
+		inputPorts = append(inputPorts, curInput)
+	}
+
+	_, err = d.Select(&storedOutputPorts, "SELECT * FROM IOPorts WHERE IsInput=0 AND ServiceID=?", storedService.ID)
+	if err != nil {
+		return service, err
+	}
+
+	for _, o := range storedOutputPorts {
+		var curOutput IOPort
+		curOutput.ID = o.ID
+		curOutput.Name = o.Name
+		curOutput.Path = o.Path
+
+		outputPorts = append(outputPorts, curOutput)
 	}
 
 	service.ID = ServiceID(storedService.ID)
@@ -359,7 +299,7 @@ func (d *Db) MapStoredService2JSON(serviceID ServiceID, storedService ServiceTab
 }
 
 // MapJSON2StoredService performs mapping of the service JSON representation to its database representation
-func (d *Db) MapJSON2StoredService(service Service) ServiceTable {
+func (d *Db) service2ServiceTable(service Service) ServiceTable {
 	var storedService ServiceTable
 	storedService.ID = string(service.ID)
 	storedService.ImageID = string(service.ImageID)
@@ -384,24 +324,22 @@ func (d *Db) AddIOPort(service Service) error {
 		curInputPort.ServiceID = string(service.ID)
 		err = d.Insert(&curInputPort)
 		if err != nil {
-			break
-		}
-	}
-	if err == nil {
-		for _, p := range service.Output {
-			var curOutputPort IOPortTable
-			curOutputPort.Path = p.Path
-			curOutputPort.Name = p.Name
-			curOutputPort.ID = p.ID
-			curOutputPort.IsInput = false
-			curOutputPort.ServiceID = string(service.ID)
-			err = d.Insert(&curOutputPort)
-			if err != nil {
-				break
-			}
+			return err
 		}
 	}
 
+	for _, p := range service.Output {
+		var curOutputPort IOPortTable
+		curOutputPort.Path = p.Path
+		curOutputPort.Name = p.Name
+		curOutputPort.ID = p.ID
+		curOutputPort.IsInput = false
+		curOutputPort.ServiceID = string(service.ID)
+		err = d.Insert(&curOutputPort)
+		if err != nil {
+			return err
+		}
+	}
 	return err
 }
 
@@ -411,28 +349,37 @@ func (d *Db) AddService(service Service) error {
 	// If it does, we remove it and add a new one
 	var servicesFromTable []ServiceTable
 	_, err := d.Select(&servicesFromTable, "SELECT * FROM services WHERE Name=?", service.Name)
+	if err != nil {
+		return err
+	}
+
 	if len(servicesFromTable) > 0 {
 		for _, s := range servicesFromTable {
 			err = d.RemoveService(ServiceID(s.ID))
-		}
-	}
-	if err == nil {
-		err = d.AddIOPort(service)
-		if err == nil {
-			storedService := d.MapJSON2StoredService(service)
-			err = d.Insert(&storedService)
+			if err != nil {
+				return err
+			}
 		}
 	}
 
+	err = d.AddIOPort(service)
+	if err != nil {
+		return err
+	}
+
+	storedService := d.service2ServiceTable(service)
+	err = d.Insert(&storedService)
 	return err
 }
 
 // RemoveService removes a service and the corresponding IOPorts from the database
-func (d *Db) RemoveService(serviceID ServiceID) error {
-	_, err := d.Exec("DELETE FROM IOPorts WHERE ServiceID=?", string(serviceID))
-	if err == nil {
-		_, err = d.Exec("DELETE FROM services WHERE ID=?", string(serviceID))
+func (d *Db) RemoveService(id ServiceID) error {
+	_, err := d.Exec("DELETE FROM IOPorts WHERE ServiceID=?", string(id))
+	if err != nil {
+		return err
 	}
+
+	_, err = d.Exec("DELETE FROM services WHERE ID=?", string(id))
 	return err
 }
 
@@ -441,111 +388,30 @@ func (d *Db) ListServices() ([]Service, error) {
 	var services []Service
 	var servicesFromTable []ServiceTable
 	_, err := d.Select(&servicesFromTable, "SELECT * FROM services ORDER BY ID")
-	if err == nil {
-		for _, s := range servicesFromTable {
-			var curService Service
-			curService, err = d.MapStoredService2JSON(ServiceID(s.ID), s)
-			if err == nil {
-				services = append(services, curService)
-			} else {
-				break
-			}
-		}
-
+	if err != nil {
+		return services, err
 	}
 
+	for _, s := range servicesFromTable {
+		var curService Service
+		curService, err = d.serviceTable2Service(s)
+		if err != nil {
+			return services, err
+		}
+		services = append(services, curService)
+	}
 	return services, err
 }
 
 // GetService returns a service ready to be converted into JSON
-func (d *Db) GetService(serviceID ServiceID) (Service, error) {
+func (d *Db) GetService(id ServiceID) (Service, error) {
 	var service Service
 	var serviceFromTable ServiceTable
-	err := d.SelectOne(&serviceFromTable, "SELECT * FROM services WHERE ID=?", string(serviceID))
-
-	if err == nil {
-		service, err = d.MapStoredService2JSON(ServiceID(serviceFromTable.ID), serviceFromTable)
-	}
-
-	return service, err
-}
-
-// NewServiceFromImage extracts metadata and creates a valid GEF service
-func (d *Db) NewServiceFromImage(image dckr.Image) Service {
-	srv := Service{
-		ID:      ServiceID(uuid.New()),
-		ImageID: image.ID,
-		RepoTag: image.RepoTag,
-		Created: image.Created,
-		Size:    image.Size,
-	}
-
-	for k, v := range image.Labels {
-		if !strings.HasPrefix(k, GefSrvLabelPrefix) {
-			continue
-		}
-		k = k[len(GefSrvLabelPrefix):]
-		ks := strings.Split(k, ".")
-		if len(ks) == 0 {
-			continue
-		}
-		switch ks[0] {
-		case "name":
-			srv.Name = v
-		case "description":
-			srv.Description = v
-		case "version":
-			srv.Version = v
-		case "input":
-			addVecValue(&srv.Input, ks[1:], v)
-		case "output":
-			addVecValue(&srv.Output, ks[1:], v)
-		default:
-			log.Println("Unknown GEF service label: ", k, "=", v)
-		}
-	}
-
-	{
-		in := make([]IOPort, 0, len(srv.Input))
-		for _, p := range srv.Input {
-			if p.Path != "" {
-				p.ID = fmt.Sprintf("input%d", len(in))
-				in = append(in, p)
-			}
-		}
-		srv.Input = in
-	}
-	{
-		out := make([]IOPort, 0, len(srv.Output))
-		for _, p := range srv.Output {
-			if p.Path != "" {
-				p.ID = fmt.Sprintf("output%d", len(out))
-				out = append(out, p)
-			}
-		}
-		srv.Output = out
-	}
-
-	return srv
-}
-
-// addVecValue is used by the NewServiceFromImage
-func addVecValue(vec *[]IOPort, ks []string, value string) {
-	if len(ks) < 2 {
-		log.Println("ERROR: GEF service label I/O key error (need 'port number . key name')", ks)
-		return
-	}
-	id, err := strconv.ParseUint(ks[0], 10, 8)
+	err := d.SelectOne(&serviceFromTable, "SELECT * FROM services WHERE ID=?", string(id))
 	if err != nil {
-		log.Println("ERROR: GEF service label: expecting integer argument for IOPort, instead got: ", ks)
+		return service, err
 	}
-	for len(*vec) < int(id)+1 {
-		*vec = append(*vec, IOPort{})
-	}
-	switch ks[1] {
-	case "name":
-		(*vec)[id].Name = value
-	case "path":
-		(*vec)[id].Path = value
-	}
+
+	service, err = d.serviceTable2Service(serviceFromTable)
+	return service, err
 }

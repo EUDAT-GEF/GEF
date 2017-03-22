@@ -8,10 +8,11 @@ import (
 	"net/http"
 	"time"
 
+	"path/filepath"
+
 	"github.com/EUDAT-GEF/GEF/backend-docker/def"
 	"github.com/EUDAT-GEF/GEF/backend-docker/pier/db"
 	"github.com/EUDAT-GEF/GEF/backend-docker/pier/internal/dckr"
-	"path/filepath"
 )
 
 // VolumeItem describes a folder content

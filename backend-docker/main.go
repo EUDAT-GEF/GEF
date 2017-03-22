@@ -2,11 +2,12 @@ package main
 
 import (
 	"flag"
+	"log"
+
 	"github.com/EUDAT-GEF/GEF/backend-docker/def"
 	"github.com/EUDAT-GEF/GEF/backend-docker/pier"
 	"github.com/EUDAT-GEF/GEF/backend-docker/pier/db"
 	"github.com/EUDAT-GEF/GEF/backend-docker/server"
-	"log"
 )
 
 var configFilePath = "config.json"
