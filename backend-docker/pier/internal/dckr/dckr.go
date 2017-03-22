@@ -252,6 +252,7 @@ func (c *Client) BuildImage(dirpath string) (Image, error) {
 	if err != nil && img.ID == "" {
 		err = errors.New("unknown docker failure")
 	}
+
 	return c.InspectImage(img.ID)
 }
 

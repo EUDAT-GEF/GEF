@@ -41,3 +41,4 @@ node_modules
 gef-bundle.js
 gef-bundle.js.map
 services/_internal/volume-filelist/volume-filelist
+backend-docker/gef_db.bin

@@ -282,11 +282,3 @@ func (s *Server) volumeContentHandler(w http.ResponseWriter, r *http.Request) {
 		Response{w}.Ok(jmap("volumeID", vars["volumeID"], "volumeContent", volumeFiles))
 	}
 }
-
-func (s *Server) buildVolumeHandler(w http.ResponseWriter, r *http.Request) {
-	logRequest(r)
-	vars := mux.Vars(r)
-	buildID := vars["buildID"]
-	buildDir := filepath.Join(s.tmpDir, buildsTmpDir, buildID)
-	s.pier.BuildVolume(buildDir)
-}

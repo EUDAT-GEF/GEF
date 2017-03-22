@@ -25,9 +25,6 @@ type Pier struct {
 	tmpDir   string
 }
 
-// VolumeID exported
-//type VolumeID dckr.VolumeID
-
 // NewPier exported
 func NewPier(cfgList []def.DockerConfig, tmpDir string, dataBase *db.Db) (*Pier, error) {
 	docker, err := dckr.NewClientFirstOf(cfgList)
@@ -35,14 +32,6 @@ func NewPier(cfgList []def.DockerConfig, tmpDir string, dataBase *db.Db) (*Pier,
 	var allServices []db.Service
 	var allJobs []db.Job
 
-	/*allServices, err = dataBase.ListServices()
-	if err != nil {
-		return nil, def.Err(err, "Cannot retrieve a list of services")
-	}
-	allJobs, err = dataBase.ListJobs()
-	if err != nil {
-		return nil, def.Err(err, "Cannot retrieve a list of jobs")
-	}*/
 	if err != nil {
 		return nil, def.Err(err, "Cannot create docker client")
 	}
@@ -55,21 +44,10 @@ func NewPier(cfgList []def.DockerConfig, tmpDir string, dataBase *db.Db) (*Pier,
 		tmpDir:   tmpDir,
 	}
 
-	// Populate the list of services
-	// Populate the list of services
-	/*images, err := docker.ListImages()
-	if err != nil {
-		log.Println(def.Err(err, "Error while initializing services"))
-	} else {
-		for _, img := range images {
-			pier.services.add(newServiceFromImage(img))
-		}
-	}*/
-
 	return &pier, nil
 }
 
-// BuildService exported
+// BuildService builds a services based on the content of the provided folder
 func (p *Pier) BuildService(buildDir string) (db.Service, error) {
 	image, err := p.docker.BuildImage(buildDir)
 	if err != nil {
@@ -85,12 +63,12 @@ func (p *Pier) BuildService(buildDir string) (db.Service, error) {
 	return service, nil
 }
 
-// ListServices exported
+// ListServices lists all existing services
 func (p *Pier) ListServices() ([]db.Service, error) {
 	return p.dataBase.ListServices()
 }
 
-// GetService exported
+// GetService returns a service by ID
 func (p *Pier) GetService(serviceID db.ServiceID) (db.Service, error) {
 	service, err := p.dataBase.GetService(serviceID)
 	if err != nil {
@@ -116,6 +94,7 @@ func (p *Pier) RunService(service db.Service, inputPID string) (db.Job, error) {
 	return job, err
 }
 
+// runJob runs a job
 func (p *Pier) runJob(job *db.Job, service db.Service, inputPID string) {
 	p.dataBase.SetJobState(job.ID, db.JobState{"", "Creating a new input volume", -1})
 	inputVolume, err := p.docker.NewVolume()
@@ -185,7 +164,7 @@ func (p *Pier) runJob(job *db.Job, service db.Service, inputPID string) {
 	p.dataBase.SetJobState(job.ID, db.JobState{"", "Ended successfully", 0})
 }
 
-// RemoveJob exported
+// RemoveJob removes a job by ID
 func (p *Pier) RemoveJob(jobID db.JobID) (db.JobID, error) {
 	job, err := p.dataBase.GetJob(jobID)
 	if err != nil {
@@ -212,12 +191,12 @@ func (p *Pier) RemoveJob(jobID db.JobID) (db.JobID, error) {
 	return jobID, nil
 }
 
-// ListJobs exported
+// ListJobs lists all existing jobs
 func (p *Pier) ListJobs() ([]db.Job, error) {
 	return p.dataBase.ListJobs()
 }
 
-// GetJob exported
+// GetJob returns a job by ID
 func (p *Pier) GetJob(jobID db.JobID) (db.Job, error) {
 	job, err := p.dataBase.GetJob(jobID)
 	if err != nil {
@@ -226,6 +205,8 @@ func (p *Pier) GetJob(jobID db.JobID) (db.Job, error) {
 	return job, nil
 }
 
+// PopulateServiceTable reads the "services" folder, builds images, and adds all the necessary information
+// to the database
 func (p *Pier) PopulateServiceTable() error {
 	log.Println("Reading folder with Dockerfiles for serices: " + servicesFolder)
 	doesExist := true
@@ -237,13 +218,13 @@ func (p *Pier) PopulateServiceTable() error {
 		files, _ := ioutil.ReadDir(servicesFolder)
 		for _, f := range files {
 			if f.IsDir() {
-				log.Print("Opening folder: " + f.Name() + " - ")
+				log.Print("Opening folder: " + f.Name())
 				img, err := p.docker.BuildImage(filepath.Join(servicesFolder, f.Name()))
+
 				if err != nil {
 					log.Print("failed to create a service")
 				} else {
-					log.Print("OK")
-					fmt.Println(p.dataBase.NewServiceFromImage(img))
+					log.Print("service has been created")
 					error := p.dataBase.AddService(p.dataBase.NewServiceFromImage(img))
 					if error != nil {
 						log.Print(error)
@@ -252,7 +233,7 @@ func (p *Pier) PopulateServiceTable() error {
 			}
 		}
 	}
-	//p.dataBase.AddService(db.Service{})
+
 	var allServices []db.Service
 	allServices, err = p.dataBase.ListServices()
 	if err != nil {
@@ -260,6 +241,5 @@ func (p *Pier) PopulateServiceTable() error {
 	} else {
 		p.services = allServices
 	}
-
 	return nil
 }
