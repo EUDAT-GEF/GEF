@@ -20,3 +20,7 @@ Docker Images
 -------------
 During the installation process several docker images will be created: they are necessary for the system to function
 properly, please do not remove them. 
+
+Database
+-------------
+The GEF is using an SQLite database to store the data. Theoretically it can be any other SQL database 
