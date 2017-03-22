@@ -10,6 +10,7 @@ import (
 
 	"github.com/EUDAT-GEF/GEF/backend-docker/def"
 	"github.com/EUDAT-GEF/GEF/backend-docker/pier"
+	"github.com/EUDAT-GEF/GEF/backend-docker/pier/db"
 	"github.com/EUDAT-GEF/GEF/backend-docker/server"
 )
 
@@ -17,9 +18,12 @@ func TestServer(t *testing.T) {
 	config, err := def.ReadConfigFile(configFilePath)
 	checkMsg(t, err, "reading config files")
 
+	d, err := db.InitDb()
+
 	var p *pier.Pier
-	p, err = pier.NewPier(config.Docker, config.TmpDir)
+	p, err = pier.NewPier(config.Docker, config.TmpDir, &d)
 	checkMsg(t, err, "creating new pier")
+	defer d.Db.Close()
 
 	var srv *httptest.Server
 	{
