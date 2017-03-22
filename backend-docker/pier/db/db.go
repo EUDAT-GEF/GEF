@@ -106,7 +106,7 @@ func (d *Db) RemoveJobTask(taskID string) error {
 	return err
 }
 
-// MapStoredJob2JSON performs mapping of the database job table to its JSON representation
+// jobTable2Job performs mapping of the database job table to its JSON representation
 func (d *Db) jobTable2Job(storedJob JobTable) (Job, error) {
 	var job Job
 	var jobState JobState
@@ -144,7 +144,7 @@ func (d *Db) jobTable2Job(storedJob JobTable) (Job, error) {
 	return job, err
 }
 
-// MapJSON2StoredJob performs mapping of the job JSON representation to its database representation
+// job2JobTable performs mapping of the job JSON representation to its database representation
 func (d *Db) job2JobTable(job Job) JobTable {
 	var storedJob JobTable
 	storedJob.ID = string(job.ID)
@@ -247,7 +247,7 @@ func (d *Db) AddJobTask(id JobID, taskName string, taskContainer dckr.ContainerI
 	return d.Insert(&newTask)
 }
 
-// MapStoredService2JSON performs mapping of the database service table to its JSON representation
+// serviceTable2Service performs mapping of the database service table to its JSON representation
 func (d *Db) serviceTable2Service(storedService ServiceTable) (Service, error) {
 	var service Service
 	var storedInputPorts []IOPortTable
@@ -298,7 +298,7 @@ func (d *Db) serviceTable2Service(storedService ServiceTable) (Service, error) {
 	return service, err
 }
 
-// MapJSON2StoredService performs mapping of the service JSON representation to its database representation
+// service2ServiceTable performs mapping of the service JSON representation to its database representation
 func (d *Db) service2ServiceTable(service Service) ServiceTable {
 	var storedService ServiceTable
 	storedService.ID = string(service.ID)
