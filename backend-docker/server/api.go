@@ -10,6 +10,7 @@ import (
 
 	"github.com/EUDAT-GEF/GEF/backend-docker/def"
 	"github.com/EUDAT-GEF/GEF/backend-docker/pier"
+	"github.com/EUDAT-GEF/GEF/backend-docker/pier/db"
 	"github.com/gorilla/mux"
 )
 
@@ -177,13 +178,18 @@ func (s *Server) buildImageHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) listServicesHandler(w http.ResponseWriter, r *http.Request) {
-	services := s.pier.ListServices()
+	services, err := s.pier.ListServices()
+	if err != nil {
+		Response{w}.ClientError("cannot get services", err)
+		return
+	}
 	Response{w}.Ok(jmap("Services", services))
 }
 
 func (s *Server) inspectServiceHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	service, err := s.pier.GetService(pier.ServiceID(vars["serviceID"]))
+
+	service, err := s.pier.GetService(db.ServiceID(vars["serviceID"]))
 	if err != nil {
 		Response{w}.ClientError("cannot get service", err)
 		return
@@ -215,7 +221,7 @@ func (s *Server) executeServiceHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	service, err := s.pier.GetService(pier.ServiceID(serviceID))
+	service, err := s.pier.GetService(db.ServiceID(serviceID))
 	if err != nil {
 		Response{w}.ClientError("cannot get service", err)
 		return
@@ -232,13 +238,17 @@ func (s *Server) executeServiceHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) listJobsHandler(w http.ResponseWriter, r *http.Request) {
-	jobs := s.pier.ListJobs()
+	jobs, err := s.pier.ListJobs()
+	if err != nil {
+		Response{w}.ClientError("cannot get jobs", err)
+		return
+	}
 	Response{w}.Ok(jmap("Jobs", jobs))
 }
 
 func (s *Server) inspectJobHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	job, err := s.pier.GetJob(pier.JobID(vars["jobID"]))
+	job, err := s.pier.GetJob(db.JobID(vars["jobID"]))
 	if err != nil {
 		Response{w}.ClientError("cannot get job", err)
 		return
@@ -248,7 +258,7 @@ func (s *Server) inspectJobHandler(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) removeJobHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	jobID, err := s.pier.RemoveJob(pier.JobID(vars["jobID"]))
+	jobID, err := s.pier.RemoveJob(db.JobID(vars["jobID"]))
 	if err != nil {
 		Response{w}.ClientError(err.Error(), err)
 		return
@@ -258,15 +268,15 @@ func (s *Server) removeJobHandler(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) getJobTask(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	job, err := s.pier.GetJob(pier.JobID(vars["jobID"]))
+	job, err := s.pier.GetJob(db.JobID(vars["jobID"]))
 	if err != nil {
 		Response{w}.ClientError("cannot get task", err)
 		return
 	}
-	var latestOutput pier.LatestOutput
+	var latestOutput db.LatestOutput
 	if len(job.Tasks) > 0 {
 		latestOutput.Name = job.Tasks[len(job.Tasks)-1].Name
-		latestOutput.ConsoleOutput = job.Tasks[len(job.Tasks)-1].ConsoleOutput.String()
+		latestOutput.ConsoleOutput = job.Tasks[len(job.Tasks)-1].ConsoleOutput
 	}
 	Response{w}.Ok(jmap("ServiceExecution", latestOutput))
 }
@@ -287,17 +297,10 @@ func (s *Server) volumeContentHandler(w http.ResponseWriter, r *http.Request) {
 		Response{w}.Header().Set("Content-Disposition", "attachment; filename="+fileName)
 
 	} else { // Return of list of files in a specific location in a volume
-		volumeFiles, err := s.pier.ListFiles(pier.VolumeID(vars["volumeID"]), fileLocation)
+		volumeFiles, err := s.pier.ListFiles(db.VolumeID(vars["volumeID"]), fileLocation)
 		if err != nil {
 			Response{w}.ServerError("streaming container files failed", err)
 		}
 		Response{w}.Ok(jmap("volumeID", vars["volumeID"], "volumeContent", volumeFiles))
 	}
-}
-
-func (s *Server) buildVolumeHandler(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	buildID := vars["buildID"]
-	buildDir := filepath.Join(s.tmpDir, buildsTmpDir, buildID)
-	s.pier.BuildVolume(buildDir)
 }
