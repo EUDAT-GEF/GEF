@@ -1,13 +1,13 @@
 package db
 
 import (
-	"database/sql"
-	_ "github.com/mattn/go-sqlite3"
-	"gopkg.in/gorp.v1"
 	"bytes"
+	"database/sql"
 	"fmt"
 	"github.com/EUDAT-GEF/GEF/backend-docker/pier/internal/dckr"
+	_ "github.com/mattn/go-sqlite3"
 	"github.com/pborman/uuid"
+	"gopkg.in/gorp.v1"
 	"log"
 	"strconv"
 	"strings"
@@ -169,9 +169,9 @@ func (d *Db) AddJob(job Job) error {
 
 // RemoveJob removes a job and all corresponding tasks from the database
 func (d *Db) RemoveJob(jobID JobID) error {
-	_, err := d.Exec("DELETE FROM Tasks WHERE jobID=?", jobID)
+	_, err := d.Exec("DELETE FROM Tasks WHERE jobID=?", string(jobID))
 	if err == nil {
-		_, err = d.Exec("DELETE FROM Jobs WHERE ID=?", jobID)
+		_, err = d.Exec("DELETE FROM Jobs WHERE ID=?", string(jobID))
 	}
 	return err
 }
@@ -429,9 +429,9 @@ func (d *Db) AddService(service Service) error {
 
 // RemoveService removes a service and the corresponding IOPorts from the database
 func (d *Db) RemoveService(serviceID ServiceID) error {
-	_, err := d.Exec("DELETE FROM IOPorts WHERE ServiceID=?", serviceID)
+	_, err := d.Exec("DELETE FROM IOPorts WHERE ServiceID=?", string(serviceID))
 	if err == nil {
-		_, err = d.Exec("DELETE FROM services WHERE ID=?", serviceID)
+		_, err = d.Exec("DELETE FROM services WHERE ID=?", string(serviceID))
 	}
 	return err
 }

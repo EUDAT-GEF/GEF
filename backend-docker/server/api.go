@@ -10,7 +10,7 @@ import (
 
 	"github.com/EUDAT-GEF/GEF/backend-docker/def"
 	"github.com/EUDAT-GEF/GEF/backend-docker/pier"
-  "github.com/EUDAT-GEF/GEF/backend-docker/pier/db"
+	"github.com/EUDAT-GEF/GEF/backend-docker/pier/db"
 	"github.com/gorilla/mux"
 )
 
