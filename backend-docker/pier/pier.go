@@ -25,6 +25,7 @@ type Pier struct {
 	tmpDir   string
 }
 
+
 // NewPier exported
 func NewPier(cfgList []def.DockerConfig, tmpDir string, dataBase *db.Db) (*Pier, error) {
 	docker, err := dckr.NewClientFirstOf(cfgList)

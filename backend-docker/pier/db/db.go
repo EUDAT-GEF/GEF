@@ -256,7 +256,7 @@ func (d *Db) ListJobs() ([]Job, error) {
 func (d *Db) GetJob(jobID JobID) (Job, error) {
 	var job Job
 	var jobFromTable JobTable
-	err := d.SelectOne(&jobFromTable, "SELECT * FROM jobs WHERE ID=?", jobID)
+	err := d.SelectOne(&jobFromTable, "SELECT * FROM jobs WHERE ID=?", string(jobID))
 	if err == nil {
 		job, err = d.MapStoredJob2JSON(JobID(jobFromTable.ID), jobFromTable)
 	}
@@ -267,7 +267,7 @@ func (d *Db) GetJob(jobID JobID) (Job, error) {
 // SetJobState sets a job state
 func (d *Db) SetJobState(jobID JobID, state JobState) error {
 	var storedJob JobTable
-	err := d.SelectOne(&storedJob, "SELECT * FROM jobs WHERE ID=?", jobID)
+	err := d.SelectOne(&storedJob, "SELECT * FROM jobs WHERE ID=?", string(jobID))
 	if err == nil {
 		storedJob.Error = state.Error
 		storedJob.Status = state.Status
@@ -280,7 +280,7 @@ func (d *Db) SetJobState(jobID JobID, state JobState) error {
 // SetJobInputVolume sets a job input volume
 func (d *Db) SetJobInputVolume(jobID JobID, inputVolume VolumeID) error {
 	var storedJob JobTable
-	err := d.SelectOne(&storedJob, "SELECT * FROM jobs WHERE ID=?", jobID)
+	err := d.SelectOne(&storedJob, "SELECT * FROM jobs WHERE ID=?", string(jobID))
 	if err == nil {
 		storedJob.InputVolume = string(inputVolume)
 		_, err = d.Update(&storedJob)
@@ -291,7 +291,7 @@ func (d *Db) SetJobInputVolume(jobID JobID, inputVolume VolumeID) error {
 // SetJobOutputVolume sets a job output volume
 func (d *Db) SetJobOutputVolume(jobID JobID, outputVolume VolumeID) error {
 	var storedJob JobTable
-	err := d.SelectOne(&storedJob, "SELECT * from jobs WHERE ID=?", jobID)
+	err := d.SelectOne(&storedJob, "SELECT * from jobs WHERE ID=?", string(jobID))
 	if err == nil {
 		storedJob.OutputVolume = string(outputVolume)
 		_, err = d.Update(&storedJob)
@@ -320,7 +320,7 @@ func (d *Db) MapStoredService2JSON(serviceID ServiceID, storedService ServiceTab
 	var inputPorts []IOPort
 	var outputPorts []IOPort
 
-	_, err := d.Select(&storedInputPorts, "SELECT * FROM IOPorts WHERE IsInput=1 AND ServiceID=?", serviceID)
+	_, err := d.Select(&storedInputPorts, "SELECT * FROM IOPorts WHERE IsInput=1 AND ServiceID=?", string(serviceID))
 	if err == nil {
 		for _, i := range storedInputPorts {
 			var curInput IOPort
@@ -331,7 +331,7 @@ func (d *Db) MapStoredService2JSON(serviceID ServiceID, storedService ServiceTab
 			inputPorts = append(inputPorts, curInput)
 		}
 	}
-	_, err = d.Select(&storedOutputPorts, "SELECT * FROM IOPorts WHERE IsInput=0 AND ServiceID=?", serviceID)
+	_, err = d.Select(&storedOutputPorts, "SELECT * FROM IOPorts WHERE IsInput=0 AND ServiceID=?", string(serviceID))
 	if err == nil {
 		for _, o := range storedOutputPorts {
 			var curOutput IOPort
@@ -461,7 +461,7 @@ func (d *Db) ListServices() ([]Service, error) {
 func (d *Db) GetService(serviceID ServiceID) (Service, error) {
 	var service Service
 	var serviceFromTable ServiceTable
-	err := d.SelectOne(&serviceFromTable, "SELECT * FROM services WHERE ID=?", serviceID)
+	err := d.SelectOne(&serviceFromTable, "SELECT * FROM services WHERE ID=?", string(serviceID))
 
 	if err == nil {
 		service, err = d.MapStoredService2JSON(ServiceID(serviceFromTable.ID), serviceFromTable)
