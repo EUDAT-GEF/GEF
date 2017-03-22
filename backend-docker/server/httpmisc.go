@@ -29,6 +29,13 @@ func (w Response) ClientError(message string, err error) {
 	http.Error(w, str, 400)
 }
 
+// DirectiveError sets a 403 error
+func (w Response) DirectiveError() {
+	str := fmt.Sprintf("    API denied by directive ERROR\n")
+	log.Println(str)
+	http.Error(w, str, 403)
+}
+
 // ServerError sets a 500/server error
 func (w Response) ServerError(message string, err error) {
 	str := fmt.Sprintf("    API Server ERROR: %s\n\t%s", message, err.Error())
