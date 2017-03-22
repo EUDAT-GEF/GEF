@@ -2,179 +2,171 @@ package pier
 
 import (
 	"fmt"
+	"io/ioutil"
+	"log"
+	"os"
+	"path/filepath"
+	"time"
+
 	"github.com/EUDAT-GEF/GEF/backend-docker/def"
+	"github.com/EUDAT-GEF/GEF/backend-docker/pier/db"
 	"github.com/EUDAT-GEF/GEF/backend-docker/pier/internal/dckr"
 	"github.com/pborman/uuid"
-	"log"
-	"time"
 )
 
 const stagingVolumeName = "volume-stage-in"
+const servicesFolder = "../services/"
 
 // Pier is a master struct for gef-docker abstractions
 type Pier struct {
 	docker   dckr.Client
-	services *ServiceList
-	jobs     *JobList
+	db       *db.Db
+
 	tmpDir   string
 }
 
-// VolumeID exported
-type VolumeID dckr.VolumeID
-
 // NewPier exported
-func NewPier(cfgList []def.DockerConfig, tmpDir string) (*Pier, error) {
+func NewPier(cfgList []def.DockerConfig, tmpDir string, dataBase *db.Db) (*Pier, error) {
 	docker, err := dckr.NewClientFirstOf(cfgList)
+
 	if err != nil {
 		return nil, def.Err(err, "Cannot create docker client")
 	}
 
 	pier := Pier{
 		docker:   docker,
-		services: NewServiceList(),
-		jobs:     NewJobList(),
+		db:       dataBase,
 		tmpDir:   tmpDir,
 	}
-
-	// Populate the list of services
-	images, err := docker.ListImages()
-	if err != nil {
-		log.Println(def.Err(err, "Error while initializing services"))
-	} else {
-		for _, img := range images {
-			pier.services.add(newServiceFromImage(img))
-		}
-	}
-
 	return &pier, nil
 }
 
-// BuildService exported
-func (p *Pier) BuildService(buildDir string) (Service, error) {
+// BuildService builds a services based on the content of the provided folder
+func (p *Pier) BuildService(buildDir string) (db.Service, error) {
 	image, err := p.docker.BuildImage(buildDir)
 	if err != nil {
-		return Service{}, def.Err(err, "docker BuildImage failed")
+		return db.Service{}, def.Err(err, "docker BuildImage failed")
 	}
 
-	service := newServiceFromImage(image)
-	p.services.add(service)
+	service := p.db.NewServiceFromImage(image)
+	err = p.db.AddService(service)
+	if err != nil {
+		return db.Service{}, def.Err(err, "could not add a new service to the database")
+	}
 
 	return service, nil
 }
 
-// ListServices exported
-func (p *Pier) ListServices() []Service {
-	return p.services.list()
+// ListServices lists all existing services
+func (p *Pier) ListServices() ([]db.Service, error) {
+	return p.db.ListServices()
 }
 
-// GetService exported
-func (p *Pier) GetService(serviceID ServiceID) (Service, error) {
-	service, ok := p.services.get(serviceID)
-	if !ok {
+// GetService returns a service by ID
+func (p *Pier) GetService(serviceID db.ServiceID) (db.Service, error) {
+	service, err := p.db.GetService(serviceID)
+	if err != nil {
 		return service, def.Err(nil, "not found")
 	}
 	return service, nil
 }
 
 // RunService exported
-func (p *Pier) RunService(service Service, inputPID string) (Job, error) {
-	job := Job{
-		ID:        JobID(uuid.New()),
+func (p *Pier) RunService(service db.Service, inputPID string) (db.Job, error) {
+	job := db.Job{
+		ID:        db.JobID(uuid.New()),
 		ServiceID: service.ID,
 		Created:   time.Now(),
 		Input:     inputPID,
-		State:     &JobState{nil, "Created", -1},
+		State:     &db.JobState{"", "Created", -1},
 	}
-	p.jobs.add(job)
+
+	err := p.db.AddJob(job)
 
 	go p.runJob(&job, service, inputPID)
 
-	return job, nil
+	return job, err
 }
 
-func (p *Pier) runJob(job *Job, service Service, inputPID string) {
-	p.jobs.setState(job.ID, JobState{nil, "Creating a new input volume", -1})
+// runJob runs a job
+func (p *Pier) runJob(job *db.Job, service db.Service, inputPID string) {
+	p.db.SetJobState(job.ID, db.JobState{"", "Creating a new input volume", -1})
 	inputVolume, err := p.docker.NewVolume()
 	if err != nil {
-		p.jobs.setState(job.ID, JobState{def.Err(err, "Error while creating new input volume"), "Error", 1})
+		p.db.SetJobState(job.ID, db.JobState{"Error while creating new input volume", "Error", 1})
 		return
 	}
 	log.Println("new input volume created: ", inputVolume)
-	p.jobs.setInputVolume(job.ID, VolumeID(inputVolume.ID))
+	p.db.SetJobInputVolume(job.ID, db.VolumeID(inputVolume.ID))
 	{
-		p.jobs.setState(job.ID, JobState{nil, "Performing data staging", -1})
+		p.db.SetJobState(job.ID, db.JobState{"", "Performing data staging", -1})
 		binds := []dckr.VolBind{
 			dckr.NewVolBind(inputVolume.ID, "/volume", false),
 		}
 		containerID, exitCode, consoleOutput, err := p.docker.ExecuteImage(dckr.ImageID(stagingVolumeName), []string{inputPID}, binds, true)
-		p.jobs.addTask(job.ID, "Data staging", containerID, err, exitCode, consoleOutput)
+		errMsg := ""
+		if err != nil {
+			errMsg = err.Error()
+		}
+		p.db.AddJobTask(job.ID, "Data staging", containerID, errMsg, exitCode, consoleOutput)
+		//fmt.Println(containerID, consoleOutput)
 
 		log.Println("  staging ended: ", exitCode, ", error: ", err)
 		if err != nil {
-			p.jobs.setState(job.ID, JobState{def.Err(err, "Data staging failed"), "Error", 1})
+			p.db.SetJobState(job.ID, db.JobState{"Data staging failed", "Error", 1})
 			return
 		}
 		if exitCode != 0 {
 			msg := fmt.Sprintf("Data staging failed (exitCode = %v)", exitCode)
-			p.jobs.setState(job.ID, JobState{nil, msg, 1})
+			p.db.SetJobState(job.ID, db.JobState{"", msg, 1})
 			return
 		}
 	}
-	p.jobs.setState(job.ID, JobState{nil, "Creating a new output volume", -1})
+	p.db.SetJobState(job.ID, db.JobState{"", "Creating a new output volume", -1})
 	outputVolume, err := p.docker.NewVolume()
 	if err != nil {
-		p.jobs.setState(job.ID, JobState{def.Err(err, "Error while creating new output volume"), "Error", 1})
+		p.db.SetJobState(job.ID, db.JobState{"Error while creating new output volume", "Error", 1})
 		return
 	}
 	log.Println("new output volume created: ", outputVolume)
-	p.jobs.setOutputVolume(job.ID, VolumeID(outputVolume.ID))
+	p.db.SetJobOutputVolume(job.ID, db.VolumeID(outputVolume.ID))
 	{
-		p.jobs.setState(job.ID, JobState{nil, "Executing the service", -1})
+		p.db.SetJobState(job.ID, db.JobState{"", "Executing the service", -1})
 		binds := []dckr.VolBind{
 			dckr.NewVolBind(inputVolume.ID, service.Input[0].Path, true),
 			dckr.NewVolBind(outputVolume.ID, service.Output[0].Path, false),
 		}
-		containerID, exitCode, consoleOutput, err := p.docker.ExecuteImage(dckr.ImageID(service.imageID), nil, binds, true)
-		p.jobs.addTask(job.ID, "Service execution", containerID, err, exitCode, consoleOutput)
+		containerID, exitCode, consoleOutput, err := p.docker.ExecuteImage(dckr.ImageID(service.ImageID), nil, binds, true)
+		errMsg := ""
+		if err != nil {
+			errMsg = err.Error()
+		}
+		p.db.AddJobTask(job.ID, "Service execution", containerID, errMsg, exitCode, consoleOutput)
+		//fmt.Println(containerID, consoleOutput)
 
 		log.Println("  job ended: ", exitCode, ", error: ", err)
 		if err != nil {
-			p.jobs.setState(job.ID, JobState{def.Err(err, "Service failed"), "Error", 1})
+			p.db.SetJobState(job.ID, db.JobState{"Service failed", "Error", 1})
 			return
 		}
 		if exitCode != 0 {
 			msg := fmt.Sprintf("Service failed (exitCode = %v)", exitCode)
-			p.jobs.setState(job.ID, JobState{nil, msg, 1})
+			p.db.SetJobState(job.ID, db.JobState{"", msg, 1})
 			return
 		}
 	}
-	p.jobs.setState(job.ID, JobState{nil, "Ended successfully", 0})
+	p.db.SetJobState(job.ID, db.JobState{"", "Ended successfully", 0})
 }
 
-// ListJobs exported
-func (p *Pier) ListJobs() []Job {
-	return p.jobs.list()
-}
-
-// GetJob exported
-func (p *Pier) GetJob(jobID JobID) (Job, error) {
-	job, ok := p.jobs.get(jobID)
-
-	if !ok {
-		return job, def.Err(nil, "not found")
-	}
-	return job, nil
-}
-
-// RemoveJob exported
-func (p *Pier) RemoveJob(jobID JobID) (JobID, error) {
-	job, ok := p.jobs.get(jobID)
-	if !ok {
+// RemoveJob removes a job by ID
+func (p *Pier) RemoveJob(jobID db.JobID) (db.JobID, error) {
+	job, err := p.db.GetJob(jobID)
+	if err != nil {
 		return jobID, def.Err(nil, "not found")
 	}
 
 	// Removing volumes
-	err := p.docker.RemoveVolume(dckr.VolumeID(job.InputVolume))
+	err = p.docker.RemoveVolume(dckr.VolumeID(job.InputVolume))
 	if err != nil {
 		return jobID, def.Err(err, "Input volume is not set")
 	}
@@ -189,6 +181,52 @@ func (p *Pier) RemoveJob(jobID JobID) (JobID, error) {
 	}
 
 	// Removing the job from the list
-	p.jobs.remove(jobID)
+	p.db.RemoveJob(jobID)
 	return jobID, nil
+}
+
+// ListJobs lists all existing jobs
+func (p *Pier) ListJobs() ([]db.Job, error) {
+	return p.db.ListJobs()
+}
+
+// GetJob returns a job by ID
+func (p *Pier) GetJob(jobID db.JobID) (db.Job, error) {
+	job, err := p.db.GetJob(jobID)
+	if err != nil {
+		return job, def.Err(nil, "not found")
+	}
+	return job, nil
+}
+
+// PopulateServiceTable reads the "services" folder, builds images, and adds all the necessary information
+// to the database
+func (p *Pier) PopulateServiceTable() error {
+	log.Println("Reading folder with Dockerfiles for serices: " + servicesFolder)
+	doesExist := true
+	_, err := os.Stat(servicesFolder)
+	if os.IsNotExist(err) {
+		doesExist = false
+	}
+	if doesExist {
+		files, _ := ioutil.ReadDir(servicesFolder)
+		for _, f := range files {
+			if f.IsDir() {
+				log.Print("Opening folder: " + f.Name())
+				img, err := p.docker.BuildImage(filepath.Join(servicesFolder, f.Name()))
+
+				if err != nil {
+					log.Print("failed to create a service")
+				} else {
+					log.Print("service has been created")
+					error := p.db.AddService(p.db.NewServiceFromImage(img))
+					if error != nil {
+						log.Print(error)
+					}
+				}
+			}
+		}
+	}
+
+	return nil
 }

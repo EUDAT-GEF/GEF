@@ -8,15 +8,19 @@ The EUDAT Generic Execution Framework.
 Installation
 ------------
 
-- Make sure you have `go 1.8` (the language tools)  and `docker` installed on your machine.
+- Make sure you have `go 1.8` (the language tools), `docker`, and `npm` installed on your machine.
 - Set a GOPATH, e.g.: `export GOPATH=/Users/myself/Projects/Go`.
 - Use `go get` to clone the GEF repository: `go get -u github.com/EUDAT-GEF/GEF`.
 - Go to the downloaded repository location: `cd $GOPATH/src/github.com/EUDAT-GEF/GEF`.
 - Build the project: `make build`.
-- Start the frontend and the backend in two separate terminal sessions: `make run_backend`.
+- Start the system: `make run_gef`.
 - Go to `http://localhost:4142`. The GEF UI should be online.
 
 Docker Images
 -------------
 During the installation process several docker images will be created: they are necessary for the system to function
 properly, please do not remove them. 
+
+Database
+-------------
+The GEF is using an SQLite database to store the data. Theoretically it can be any other SQL database 

@@ -1,26 +1,26 @@
-package pier
+package db
 
 import (
 	"fmt"
 	"log"
-	"sort"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
-	"github.com/pborman/uuid"
-
 	"github.com/EUDAT-GEF/GEF/backend-docker/pier/internal/dckr"
+	"github.com/pborman/uuid"
 )
 
-// GefSrvLabelPrefix is the prefix identifying GEF related labels
-const GefSrvLabelPrefix = "eudat.gef.service."
+// Bind describes the binding between an IOPort and a docker volume
+type Bind struct {
+	IOPort   IOPort
+	VolumeID dckr.VolumeID
+}
 
-// Service describes metadata for a GEF service
+// Service describes metadata for a GEF service (used to serialize JSON)
 type Service struct {
 	ID          ServiceID
-	imageID     dckr.ImageID
+	ImageID     dckr.ImageID
 	Name        string
 	RepoTag     string
 	Description string
@@ -43,65 +43,11 @@ type IOPort struct {
 	Path string
 }
 
-type srvArray []Service
-
-func (sl srvArray) Len() int {
-	return len(sl)
-}
-func (sl srvArray) Swap(i, j int) {
-	sl[i], sl[j] = sl[j], sl[i]
-}
-func (sl srvArray) Less(i, j int) bool {
-	return sl[i].Created.After(sl[j].Created)
-}
-
-// ServiceList is a shared structure that stores info about all services
-type ServiceList struct {
-	sync.Mutex
-	cache map[ServiceID]Service
-}
-
-// NewServiceList exportedk
-func NewServiceList() *ServiceList {
-	return &ServiceList{
-		cache: make(map[ServiceID]Service),
-	}
-}
-
-func (serviceList *ServiceList) add(service Service) {
-	serviceList.Lock()
-	defer serviceList.Unlock()
-	serviceList.cache[service.ID] = service
-}
-
-func (serviceList *ServiceList) list() []Service {
-	serviceList.Lock()
-	defer serviceList.Unlock()
-	all := make([]Service, len(serviceList.cache), len(serviceList.cache))
-	i := 0
-	for _, service := range serviceList.cache {
-		all[i] = service
-		i++
-	}
-	sort.Sort(srvArray(all))
-
-	return all
-}
-
-func (serviceList *ServiceList) get(key ServiceID) (Service, bool) {
-	serviceList.Lock()
-	defer serviceList.Unlock()
-	service, ok := serviceList.cache[key]
-	return service, ok
-
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-func newServiceFromImage(image dckr.Image) Service {
+// NewServiceFromImage extracts metadata and creates a valid GEF service
+func (d *Db) NewServiceFromImage(image dckr.Image) Service {
 	srv := Service{
 		ID:      ServiceID(uuid.New()),
-		imageID: image.ID,
+		ImageID: image.ID,
 		RepoTag: image.RepoTag,
 		Created: image.Created,
 		Size:    image.Size,
@@ -156,6 +102,7 @@ func newServiceFromImage(image dckr.Image) Service {
 	return srv
 }
 
+// addVecValue is used by the NewServiceFromImage
 func addVecValue(vec *[]IOPort, ks []string, value string) {
 	if len(ks) < 2 {
 		log.Println("ERROR: GEF service label I/O key error (need 'port number . key name')", ks)
