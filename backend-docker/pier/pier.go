@@ -21,17 +21,13 @@ const servicesFolder = "../services/"
 type Pier struct {
 	docker   dckr.Client
 	db       *db.Db
-	services []db.Service
-	jobs     []db.Job
+
 	tmpDir   string
 }
 
 // NewPier exported
 func NewPier(cfgList []def.DockerConfig, tmpDir string, dataBase *db.Db) (*Pier, error) {
 	docker, err := dckr.NewClientFirstOf(cfgList)
-
-	var allServices []db.Service
-	var allJobs []db.Job
 
 	if err != nil {
 		return nil, def.Err(err, "Cannot create docker client")
@@ -40,11 +36,8 @@ func NewPier(cfgList []def.DockerConfig, tmpDir string, dataBase *db.Db) (*Pier,
 	pier := Pier{
 		docker:   docker,
 		db:       dataBase,
-		services: allServices,
-		jobs:     allJobs,
 		tmpDir:   tmpDir,
 	}
-
 	return &pier, nil
 }
 
@@ -235,12 +228,5 @@ func (p *Pier) PopulateServiceTable() error {
 		}
 	}
 
-	var allServices []db.Service
-	allServices, err = p.db.ListServices()
-	if err != nil {
-		return def.Err(err, "Cannot retrieve a list of services")
-	} else {
-		p.services = allServices
-	}
 	return nil
 }
