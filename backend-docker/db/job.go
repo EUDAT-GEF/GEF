@@ -29,11 +29,14 @@ type JobID string
 // VolumeID contains a docker volume ID
 type VolumeID string
 
+// ContainerID exported
+type ContainerID string
+
 // Task contains tasks related to a specific job (used to serialize JSON)
 type Task struct {
 	ID            string
 	Name          string
-	ContainerID   string
+	ContainerID   ContainerID
 	Error         string
 	ExitCode      int
 	ConsoleOutput string

@@ -16,6 +16,7 @@ const SQLiteDataBasePath = "gef_db.bin"
 // Db is used to keep DbMap
 type Db struct{ gorp.DbMap }
 
+
 // JobTable stores the information about a service execution (used to store data in a database)
 type JobTable struct {
 	ID           string
@@ -119,7 +120,7 @@ func (d *Db) jobTable2Job(storedJob JobTable) (Job, error) {
 		var curTask Task
 		curTask.Error = t.Error
 		curTask.ConsoleOutput = t.ConsoleOutput
-		curTask.ContainerID = string(t.ContainerID)
+		curTask.ContainerID = ContainerID(t.ContainerID)
 		curTask.ExitCode = t.ExitCode
 		curTask.ID = t.ID
 		curTask.Name = t.Name
@@ -282,7 +283,7 @@ func (d *Db) serviceTable2Service(storedService ServiceTable) (Service, error) {
 	}
 
 	service.ID = ServiceID(storedService.ID)
-	service.ImageID = string(storedService.ImageID)
+	service.ImageID = ImageID(storedService.ImageID)
 	service.Name = storedService.Name
 	service.RepoTag = storedService.RepoTag
 	service.Description = storedService.Description

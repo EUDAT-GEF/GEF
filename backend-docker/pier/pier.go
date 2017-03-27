@@ -210,7 +210,7 @@ func (p *Pier) PopulateServiceTable() error {
 func NewServiceFromImage(image dckr.Image) db.Service {
 	srv := db.Service{
 		ID:      db.ServiceID(uuid.New()),
-		ImageID: string(image.ID),
+		ImageID: db.ImageID(image.ID),
 		RepoTag: image.RepoTag,
 		Created: image.Created,
 		Size:    image.Size,

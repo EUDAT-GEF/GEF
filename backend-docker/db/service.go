@@ -13,7 +13,7 @@ type Bind struct {
 // Service describes metadata for a GEF service (used to serialize JSON)
 type Service struct {
 	ID          ServiceID
-	ImageID     string
+	ImageID     ImageID
 	Name        string
 	RepoTag     string
 	Description string
@@ -26,6 +26,9 @@ type Service struct {
 
 // ServiceID exported
 type ServiceID string
+
+// ImageID exported
+type ImageID string
 
 // IOPort is an i/o specification for a service
 // The service can only read data from volumes and write to a single volume
