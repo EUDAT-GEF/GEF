@@ -8,21 +8,24 @@ import (
 	"path/filepath"
 	"time"
 
+	"strconv"
+	"strings"
+
+	"github.com/EUDAT-GEF/GEF/backend-docker/db"
 	"github.com/EUDAT-GEF/GEF/backend-docker/def"
-	"github.com/EUDAT-GEF/GEF/backend-docker/pier/db"
 	"github.com/EUDAT-GEF/GEF/backend-docker/pier/internal/dckr"
 	"github.com/pborman/uuid"
 )
 
+const GefSrvLabelPrefix = "eudat.gef.service." // GefSrvLabelPrefix is the prefix identifying GEF related labels
 const stagingVolumeName = "volume-stage-in"
 const servicesFolder = "../services/"
 
 // Pier is a master struct for gef-docker abstractions
 type Pier struct {
-	docker   dckr.Client
-	db       *db.Db
-
-	tmpDir   string
+	docker dckr.Client
+	db     *db.Db
+	tmpDir string
 }
 
 // NewPier exported
@@ -34,9 +37,9 @@ func NewPier(cfgList []def.DockerConfig, tmpDir string, dataBase *db.Db) (*Pier,
 	}
 
 	pier := Pier{
-		docker:   docker,
-		db:       dataBase,
-		tmpDir:   tmpDir,
+		docker: docker,
+		db:     dataBase,
+		tmpDir: tmpDir,
 	}
 	return &pier, nil
 }
@@ -48,26 +51,12 @@ func (p *Pier) BuildService(buildDir string) (db.Service, error) {
 		return db.Service{}, def.Err(err, "docker BuildImage failed")
 	}
 
-	service := p.db.NewServiceFromImage(image)
+	service := NewServiceFromImage(image)
 	err = p.db.AddService(service)
 	if err != nil {
 		return db.Service{}, def.Err(err, "could not add a new service to the database")
 	}
 
-	return service, nil
-}
-
-// ListServices lists all existing services
-func (p *Pier) ListServices() ([]db.Service, error) {
-	return p.db.ListServices()
-}
-
-// GetService returns a service by ID
-func (p *Pier) GetService(serviceID db.ServiceID) (db.Service, error) {
-	service, err := p.db.GetService(serviceID)
-	if err != nil {
-		return service, def.Err(nil, "not found")
-	}
 	return service, nil
 }
 
@@ -108,7 +97,7 @@ func (p *Pier) runJob(job *db.Job, service db.Service, inputPID string) {
 		if err != nil {
 			errMsg = err.Error()
 		}
-		p.db.AddJobTask(job.ID, "Data staging", containerID, errMsg, exitCode, consoleOutput)
+		p.db.AddJobTask(job.ID, "Data staging", string(containerID), errMsg, exitCode, consoleOutput)
 		//fmt.Println(containerID, consoleOutput)
 
 		log.Println("  staging ended: ", exitCode, ", error: ", err)
@@ -141,7 +130,7 @@ func (p *Pier) runJob(job *db.Job, service db.Service, inputPID string) {
 		if err != nil {
 			errMsg = err.Error()
 		}
-		p.db.AddJobTask(job.ID, "Service execution", containerID, errMsg, exitCode, consoleOutput)
+		p.db.AddJobTask(job.ID, "Service execution", string(containerID), errMsg, exitCode, consoleOutput)
 		//fmt.Println(containerID, consoleOutput)
 
 		log.Println("  job ended: ", exitCode, ", error: ", err)
@@ -159,20 +148,20 @@ func (p *Pier) runJob(job *db.Job, service db.Service, inputPID string) {
 }
 
 // RemoveJob removes a job by ID
-func (p *Pier) RemoveJob(jobID db.JobID) (db.JobID, error) {
+func (p *Pier) RemoveJob(jobID db.JobID) (db.Job, error) {
 	job, err := p.db.GetJob(jobID)
 	if err != nil {
-		return jobID, def.Err(nil, "not found")
+		return job, def.Err(nil, "not found")
 	}
 
 	// Removing volumes
 	err = p.docker.RemoveVolume(dckr.VolumeID(job.InputVolume))
 	if err != nil {
-		return jobID, def.Err(err, "Input volume is not set")
+		return job, def.Err(err, "Input volume is not set")
 	}
 	err = p.docker.RemoveVolume(dckr.VolumeID(job.OutputVolume))
 	if err != nil {
-		return jobID, def.Err(err, "Output volume is not set")
+		return job, def.Err(err, "Output volume is not set")
 	}
 
 	// Stopping the latest or the current task (if it is running)
@@ -182,20 +171,6 @@ func (p *Pier) RemoveJob(jobID db.JobID) (db.JobID, error) {
 
 	// Removing the job from the list
 	p.db.RemoveJob(jobID)
-	return jobID, nil
-}
-
-// ListJobs lists all existing jobs
-func (p *Pier) ListJobs() ([]db.Job, error) {
-	return p.db.ListJobs()
-}
-
-// GetJob returns a job by ID
-func (p *Pier) GetJob(jobID db.JobID) (db.Job, error) {
-	job, err := p.db.GetJob(jobID)
-	if err != nil {
-		return job, def.Err(nil, "not found")
-	}
 	return job, nil
 }
 
@@ -219,7 +194,7 @@ func (p *Pier) PopulateServiceTable() error {
 					log.Print("failed to create a service")
 				} else {
 					log.Print("service has been created")
-					error := p.db.AddService(p.db.NewServiceFromImage(img))
+					error := p.db.AddService(NewServiceFromImage(img))
 					if error != nil {
 						log.Print(error)
 					}
@@ -229,4 +204,84 @@ func (p *Pier) PopulateServiceTable() error {
 	}
 
 	return nil
+}
+
+// NewServiceFromImage extracts metadata and creates a valid GEF service
+func NewServiceFromImage(image dckr.Image) db.Service {
+	srv := db.Service{
+		ID:      db.ServiceID(uuid.New()),
+		ImageID: db.ImageID(image.ID),
+		RepoTag: image.RepoTag,
+		Created: image.Created,
+		Size:    image.Size,
+	}
+
+	for k, v := range image.Labels {
+		if !strings.HasPrefix(k, GefSrvLabelPrefix) {
+			continue
+		}
+		k = k[len(GefSrvLabelPrefix):]
+		ks := strings.Split(k, ".")
+		if len(ks) == 0 {
+			continue
+		}
+		switch ks[0] {
+		case "name":
+			srv.Name = v
+		case "description":
+			srv.Description = v
+		case "version":
+			srv.Version = v
+		case "input":
+			addVecValue(&srv.Input, ks[1:], v)
+		case "output":
+			addVecValue(&srv.Output, ks[1:], v)
+		default:
+			log.Println("Unknown GEF service label: ", k, "=", v)
+		}
+	}
+
+	{
+		in := make([]db.IOPort, 0, len(srv.Input))
+		for _, p := range srv.Input {
+			if p.Path != "" {
+				p.ID = fmt.Sprintf("input%d", len(in))
+				in = append(in, p)
+			}
+		}
+		srv.Input = in
+	}
+	{
+		out := make([]db.IOPort, 0, len(srv.Output))
+		for _, p := range srv.Output {
+			if p.Path != "" {
+				p.ID = fmt.Sprintf("output%d", len(out))
+				out = append(out, p)
+			}
+		}
+		srv.Output = out
+	}
+
+	return srv
+}
+
+// addVecValue is used by the NewServiceFromImage
+func addVecValue(vec *[]db.IOPort, ks []string, value string) {
+	if len(ks) < 2 {
+		log.Println("ERROR: GEF service label I/O key error (need 'port number . key name')", ks)
+		return
+	}
+	id, err := strconv.ParseUint(ks[0], 10, 8)
+	if err != nil {
+		log.Println("ERROR: GEF service label: expecting integer argument for IOPort, instead got: ", ks)
+	}
+	for len(*vec) < int(id)+1 {
+		*vec = append(*vec, db.IOPort{})
+	}
+	switch ks[1] {
+	case "name":
+		(*vec)[id].Name = value
+	case "path":
+		(*vec)[id].Path = value
+	}
 }

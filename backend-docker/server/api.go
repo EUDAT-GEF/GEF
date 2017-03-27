@@ -8,9 +8,9 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/EUDAT-GEF/GEF/backend-docker/db"
 	"github.com/EUDAT-GEF/GEF/backend-docker/def"
 	"github.com/EUDAT-GEF/GEF/backend-docker/pier"
-	"github.com/EUDAT-GEF/GEF/backend-docker/pier/db"
 	"github.com/gorilla/mux"
 )
 
@@ -32,10 +32,11 @@ type Server struct {
 	Server http.Server
 	pier   *pier.Pier
 	tmpDir string
+	db     *db.Db
 }
 
 // NewServer creates a new Server
-func NewServer(cfg def.ServerConfig, pier *pier.Pier, tmpDir string) (*Server, error) {
+func NewServer(cfg def.ServerConfig, pier *pier.Pier, tmpDir string, database *db.Db) (*Server, error) {
 	tmpDir, err := def.MakeTmpDir(tmpDir)
 	if err != nil {
 		return nil, def.Err(err, "creating temporary directory failed")
@@ -50,6 +51,7 @@ func NewServer(cfg def.ServerConfig, pier *pier.Pier, tmpDir string) (*Server, e
 		},
 		pier:   pier,
 		tmpDir: tmpDir,
+		db:     database,
 	}
 
 	routes := map[string]func(http.ResponseWriter, *http.Request){
@@ -178,7 +180,7 @@ func (s *Server) buildImageHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) listServicesHandler(w http.ResponseWriter, r *http.Request) {
-	services, err := s.pier.ListServices()
+	services, err := s.db.ListServices()
 	if err != nil {
 		Response{w}.ClientError("cannot get services", err)
 		return
@@ -189,7 +191,7 @@ func (s *Server) listServicesHandler(w http.ResponseWriter, r *http.Request) {
 func (s *Server) inspectServiceHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
-	service, err := s.pier.GetService(db.ServiceID(vars["serviceID"]))
+	service, err := s.db.GetService(db.ServiceID(vars["serviceID"]))
 	if err != nil {
 		Response{w}.ClientError("cannot get service", err)
 		return
@@ -221,7 +223,7 @@ func (s *Server) executeServiceHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	service, err := s.pier.GetService(db.ServiceID(serviceID))
+	service, err := s.db.GetService(db.ServiceID(serviceID))
 	if err != nil {
 		Response{w}.ClientError("cannot get service", err)
 		return
@@ -238,7 +240,8 @@ func (s *Server) executeServiceHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) listJobsHandler(w http.ResponseWriter, r *http.Request) {
-	jobs, err := s.pier.ListJobs()
+	jobs, err := s.db.ListJobs()
+
 	if err != nil {
 		Response{w}.ClientError("cannot get jobs", err)
 		return
@@ -248,7 +251,7 @@ func (s *Server) listJobsHandler(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) inspectJobHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	job, err := s.pier.GetJob(db.JobID(vars["jobID"]))
+	job, err := s.db.GetJob(db.JobID(vars["jobID"]))
 	if err != nil {
 		Response{w}.ClientError("cannot get job", err)
 		return
@@ -258,17 +261,23 @@ func (s *Server) inspectJobHandler(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) removeJobHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	jobID, err := s.pier.RemoveJob(db.JobID(vars["jobID"]))
+	job, err := s.db.GetJob(db.JobID(vars["jobID"]))
 	if err != nil {
 		Response{w}.ClientError(err.Error(), err)
 		return
 	}
-	Response{w}.Ok(jmap("JobID", jobID))
+
+	err = s.db.RemoveJob(db.JobID(vars["jobID"]))
+	if err != nil {
+		Response{w}.ClientError(err.Error(), err)
+		return
+	}
+	Response{w}.Ok(jmap("Job", job))
 }
 
 func (s *Server) getJobTask(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	job, err := s.pier.GetJob(db.JobID(vars["jobID"]))
+	job, err := s.db.GetJob(db.JobID(vars["jobID"]))
 	if err != nil {
 		Response{w}.ClientError("cannot get task", err)
 		return

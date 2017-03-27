@@ -8,9 +8,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/EUDAT-GEF/GEF/backend-docker/db"
 	"github.com/EUDAT-GEF/GEF/backend-docker/def"
 	"github.com/EUDAT-GEF/GEF/backend-docker/pier"
-	"github.com/EUDAT-GEF/GEF/backend-docker/pier/db"
 	"github.com/EUDAT-GEF/GEF/backend-docker/server"
 )
 
@@ -27,7 +27,7 @@ func TestServer(t *testing.T) {
 
 	var srv *httptest.Server
 	{
-		s, err := server.NewServer(config.Server, p, config.TmpDir)
+		s, err := server.NewServer(config.Server, p, config.TmpDir, &d)
 		checkMsg(t, err, "creating api server")
 		srv = httptest.NewServer(s.Server.Handler)
 	}
@@ -69,13 +69,4 @@ func checkRunRequest(t *testing.T, method string, url string, expectedCode int) 
 		fmt.Sprintf("unexpected http request status code: %d instead of %d",
 			res.StatusCode, expectedCode))
 	return res
-}
-
-func isInSlice(a string, list []string) bool {
-	for _, b := range list {
-		if b == a {
-			return true
-		}
-	}
-	return false
 }

@@ -2,8 +2,6 @@ package db
 
 import (
 	"time"
-
-	"github.com/EUDAT-GEF/GEF/backend-docker/pier/internal/dckr"
 )
 
 // Job stores the information about a service execution (used to serialize JSON)
@@ -29,13 +27,16 @@ type JobState struct {
 type JobID string
 
 // VolumeID contains a docker volume ID
-type VolumeID dckr.VolumeID
+type VolumeID string
+
+// ContainerID exported
+type ContainerID string
 
 // Task contains tasks related to a specific job (used to serialize JSON)
 type Task struct {
 	ID            string
 	Name          string
-	ContainerID   dckr.ContainerID
+	ContainerID   ContainerID
 	Error         string
 	ExitCode      int
 	ConsoleOutput string
