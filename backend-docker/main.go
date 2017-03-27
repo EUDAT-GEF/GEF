@@ -4,9 +4,9 @@ import (
 	"flag"
 	"log"
 
+	"github.com/EUDAT-GEF/GEF/backend-docker/db"
 	"github.com/EUDAT-GEF/GEF/backend-docker/def"
 	"github.com/EUDAT-GEF/GEF/backend-docker/pier"
-	"github.com/EUDAT-GEF/GEF/backend-docker/pier/db"
 	"github.com/EUDAT-GEF/GEF/backend-docker/server"
 )
 
@@ -37,7 +37,7 @@ func main() {
 	}
 
 	server.InitEventSystem(config.EventSystem.Address)
-	server, err := server.NewServer(config.Server, p, config.TmpDir)
+	server, err := server.NewServer(config.Server, p, config.TmpDir, &d)
 	if err != nil {
 		log.Fatal("FATAL: ", def.Err(err, "Cannot create API server"))
 	}

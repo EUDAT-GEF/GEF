@@ -4,9 +4,9 @@ import (
 	"log"
 	"testing"
 
+	"github.com/EUDAT-GEF/GEF/backend-docker/db"
 	"github.com/EUDAT-GEF/GEF/backend-docker/def"
 	"github.com/EUDAT-GEF/GEF/backend-docker/pier"
-	"github.com/EUDAT-GEF/GEF/backend-docker/pier/db"
 )
 
 const testPID = "11304/a3d012ca-4e23-425e-9e2a-1e6a195b966f"
@@ -18,19 +18,19 @@ func TestClient(t *testing.T) {
 	config, err := def.ReadConfigFile(configFilePath)
 	checkMsg(t, err, "reading config files")
 
-	d, err := db.InitDb()
-	pier, err := pier.NewPier(config.Docker, config.TmpDir, &d)
+	db, err := db.InitDb()
+	pier, err := pier.NewPier(config.Docker, config.TmpDir, &db)
 	checkMsg(t, err, "creating new pier")
-	defer d.Db.Close()
+	defer db.Db.Close()
 
-	before, err := pier.ListServices()
+	before, err := db.ListServices()
 	checkMsg(t, err, "listing services failed")
 
 	service, err := pier.BuildService("./docker_test")
 	checkMsg(t, err, "build service failed")
 	log.Println("built service:", service)
 
-	after, err := pier.ListServices()
+	after, err := db.ListServices()
 	checkMsg(t, err, "listing services failed")
 
 	errstr := "Cannot find new service in list"
@@ -55,7 +55,7 @@ func TestClient(t *testing.T) {
 	checkMsg(t, err, "running service failed")
 	log.Println("job: ", job)
 
-	jobList, err := pier.ListJobs()
+	jobList, err := db.ListJobs()
 	if len(jobList) == 0 {
 		t.Error("cannot find any job")
 		t.FailNow()
@@ -72,7 +72,7 @@ func TestClient(t *testing.T) {
 		t.FailNow()
 	}
 
-	j, err := pier.GetJob(job.ID)
+	j, err := db.GetJob(job.ID)
 	checkMsg(t, err, "getting job failed")
 	if j.ID != job.ID {
 		t.Error("job retrieval based on id failure")
@@ -84,10 +84,10 @@ func TestExecution(t *testing.T) {
 	config, err := def.ReadConfigFile(configFilePath)
 	checkMsg(t, err, "reading config files")
 
-	d, err := db.InitDb()
-	pier, err := pier.NewPier(config.Docker, config.TmpDir, &d)
+	db, err := db.InitDb()
+	pier, err := pier.NewPier(config.Docker, config.TmpDir, &db)
 	checkMsg(t, err, "creating new pier")
-	defer d.Db.Close()
+	defer db.Db.Close()
 
 	service, err := pier.BuildService("./clone_test")
 	checkMsg(t, err, "build service failed")
@@ -100,7 +100,7 @@ func TestExecution(t *testing.T) {
 	jobid := job.ID
 
 	for job.State.Code == -1 {
-		job, err = pier.GetJob(jobid)
+		job, err = db.GetJob(jobid)
 		checkMsg(t, err, "getting job failed")
 	}
 	expect(t, job.State.Error == "", "job error")

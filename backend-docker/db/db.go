@@ -5,14 +5,12 @@ import (
 	"database/sql"
 	"time"
 
-	"github.com/EUDAT-GEF/GEF/backend-docker/pier/internal/dckr"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/pborman/uuid"
 	"gopkg.in/gorp.v1"
 )
 
-const GefSrvLabelPrefix = "eudat.gef.service." // GefSrvLabelPrefix is the prefix identifying GEF related labels
-const GorpVersionColumn = "Revision"           // Column in a table used to keep an internal version number of GORP
+const GorpVersionColumn = "Revision" // Column in a table used to keep an internal version number of GORP
 const SQLiteDataBasePath = "gef_db.bin"
 
 // Db is used to keep DbMap
@@ -121,7 +119,7 @@ func (d *Db) jobTable2Job(storedJob JobTable) (Job, error) {
 		var curTask Task
 		curTask.Error = t.Error
 		curTask.ConsoleOutput = t.ConsoleOutput
-		curTask.ContainerID = dckr.ContainerID(t.ContainerID)
+		curTask.ContainerID = string(t.ContainerID)
 		curTask.ExitCode = t.ExitCode
 		curTask.ID = t.ID
 		curTask.Name = t.Name
@@ -235,7 +233,7 @@ func (d *Db) SetJobOutputVolume(id JobID, outputVolume VolumeID) error {
 }
 
 // AddJobTask adds a task to a job
-func (d *Db) AddJobTask(id JobID, taskName string, taskContainer dckr.ContainerID, taskError string, taskExitCode int, taskConsoleOutput *bytes.Buffer) error {
+func (d *Db) AddJobTask(id JobID, taskName string, taskContainer string, taskError string, taskExitCode int, taskConsoleOutput *bytes.Buffer) error {
 	var newTask TaskTable
 	newTask.ID = uuid.New()
 	newTask.Name = taskName
@@ -284,7 +282,7 @@ func (d *Db) serviceTable2Service(storedService ServiceTable) (Service, error) {
 	}
 
 	service.ID = ServiceID(storedService.ID)
-	service.ImageID = dckr.ImageID(storedService.ImageID)
+	service.ImageID = string(storedService.ImageID)
 	service.Name = storedService.Name
 	service.RepoTag = storedService.RepoTag
 	service.Description = storedService.Description
