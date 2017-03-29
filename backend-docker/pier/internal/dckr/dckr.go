@@ -520,3 +520,16 @@ func (c Client) UploadFile2Container(containerID, srcPath string, dstPath string
 	err = c.c.UploadToContainer(containerID, opts)
 	return err
 }
+
+
+func (c *Client) LoadImageFromTar(imageid string) error {
+	tar, err := os.Open("~/image2.tar")
+	if err != nil {
+		return err
+	}
+	opts := docker.LoadImageOptions{InputStream: tar}
+	if err = c.c.LoadImage(opts); err != nil {
+		return err
+	}
+	return nil
+}

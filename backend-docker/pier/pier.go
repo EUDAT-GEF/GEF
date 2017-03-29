@@ -41,6 +41,8 @@ func NewPier(cfgList []def.DockerConfig, tmpDir string, dataBase *db.Db) (*Pier,
 		db:     dataBase,
 		tmpDir: tmpDir,
 	}
+
+	//docker.LoadImageFromTar("sdsdsd")
 	return &pier, nil
 }
 
