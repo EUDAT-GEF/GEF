@@ -12,6 +12,7 @@ import (
 	"github.com/EUDAT-GEF/GEF/backend-docker/def"
 	"github.com/EUDAT-GEF/GEF/backend-docker/pier"
 	"github.com/gorilla/mux"
+	"fmt"
 )
 
 const (
@@ -152,6 +153,7 @@ func (s *Server) buildImageHandler(w http.ResponseWriter, r *http.Request) {
 		if part.FileName() == "" {
 			continue
 		}
+		fmt.Println(part.FileName())
 		dst, err := os.Create(filepath.Join(buildDir, part.FileName()))
 		if err != nil {
 			Response{w}.ServerError("while creating file to save file part ", err)
