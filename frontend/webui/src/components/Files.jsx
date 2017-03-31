@@ -23,6 +23,7 @@ class Files extends React.Component {
             autoProcessQueue: false,
             uploadMultiple: true,
             parallelUploads: 999,
+            maxFilesize: 4000,
             previewTemplate: ReactDOMServer.renderToStaticMarkup(
                 <div className="dz-preview dz-file-preview">
                     <div className="dz-filename"><span data-dz-name="true"></span></div>

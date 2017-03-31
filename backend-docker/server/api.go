@@ -144,6 +144,10 @@ func (s *Server) buildImageHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var service db.Service
+
+	foundImageFileName := ""
+	tarFileFound := false
 	for {
 		part, err := mr.NextPart()
 		if err == io.EOF {
@@ -164,17 +168,35 @@ func (s *Server) buildImageHandler(w http.ResponseWriter, r *http.Request) {
 			Response{w}.ServerError("while dumping file part ", err)
 			return
 		}
+
+		if strings.HasSuffix(strings.ToLower(part.FileName()), ".tar") || strings.HasSuffix(strings.ToLower(part.FileName()), ".tar.gz") {
+			tarFileFound = true
+			foundImageFileName = part.FileName()
+			break
+		}
 	}
 
-	if _, err := os.Stat(filepath.Join(buildDir, "Dockerfile")); os.IsNotExist(err) {
-		Response{w}.ServerError("no Dockerfile to build new image ", err)
-		return
-	}
+	if tarFileFound {
+		log.Println("Docker image file has been detected, trying to import")
+		log.Println(filepath.Join(buildDir, foundImageFileName))
+		service, err = s.pier.ImportImage(filepath.Join(buildDir, foundImageFileName))
+		if err != nil {
+			Response{w}.ServerError("while importing a Docker image file ", err)
+			return
+		}
 
-	service, err := s.pier.BuildService(buildDir)
-	if err != nil {
-		Response{w}.ServerError("build service failed: ", err)
-		return
+		log.Println("Docker image has been imported")
+	} else {
+		if _, err := os.Stat(filepath.Join(buildDir, "Dockerfile")); os.IsNotExist(err) {
+			Response{w}.ServerError("no Dockerfile to build new image ", err)
+			return
+		}
+
+		service, err = s.pier.BuildService(buildDir)
+		if err != nil {
+			Response{w}.ServerError("build service failed: ", err)
+			return
+		}
 	}
 
 	Response{w}.Ok(jmap("Service", service))

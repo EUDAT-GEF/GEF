@@ -42,7 +42,6 @@ func NewPier(cfgList []def.DockerConfig, tmpDir string, dataBase *db.Db) (*Pier,
 		tmpDir: tmpDir,
 	}
 
-	//docker.LoadImageFromTar("sdsdsd")
 	return &pier, nil
 }
 
@@ -81,6 +80,7 @@ func (p *Pier) RunService(service db.Service, inputPID string) (db.Job, error) {
 
 // runJob runs a job
 func (p *Pier) runJob(job *db.Job, service db.Service, inputPID string) {
+
 	p.db.SetJobState(job.ID, db.JobState{"", "Creating a new input volume", -1})
 	inputVolume, err := p.docker.NewVolume()
 	if err != nil {
@@ -206,6 +206,26 @@ func (p *Pier) PopulateServiceTable() error {
 	}
 
 	return nil
+}
+
+func (p *Pier) ImportImage(imageFilePath string) (db.Service, error) {
+	imageID, err := p.docker.ImportImageFromTar(imageFilePath)
+	if err != nil {
+		return db.Service{}, def.Err(err, "docker ImportImage failed")
+	}
+
+	image, err := p.docker.InspectImage(imageID)
+	if err != nil {
+		return db.Service{}, err
+	}
+
+	service := NewServiceFromImage(image)
+	err = p.db.AddService(service)
+	if err != nil {
+		return db.Service{}, def.Err(err, "could not add a new service to the database")
+	}
+
+	return service, nil
 }
 
 // NewServiceFromImage extracts metadata and creates a valid GEF service

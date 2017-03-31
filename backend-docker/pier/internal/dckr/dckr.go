@@ -16,6 +16,7 @@ import (
 	docker "github.com/fsouza/go-dockerclient"
 
 	"github.com/EUDAT-GEF/GEF/backend-docker/def"
+	"encoding/json"
 )
 
 const (
@@ -521,15 +522,83 @@ func (c Client) UploadFile2Container(containerID, srcPath string, dstPath string
 	return err
 }
 
+func ExtractRepoNameAndTagFromTar(imageFilePath string) (string, string, error) {
+	type Manifest struct {
+		Config string
+		RepoTags []string
+		Layers []string
+	}
 
-func (c *Client) LoadImageFromTar(imageid string) error {
-	tar, err := os.Open("~/image2.tar")
+	var repoName string
+	var tag string
+
+	tarImage, err := os.Open(imageFilePath)
 	if err != nil {
-		return err
+		return repoName, tag, err
 	}
-	opts := docker.LoadImageOptions{InputStream: tar}
-	if err = c.c.LoadImage(opts); err != nil {
-		return err
+
+	tarBallReader := tar.NewReader(tarImage)
+	for {
+		hdr, err := tarBallReader.Next()
+		if err == io.EOF {
+			// end of tar archive
+			break
+		}
+		if err != nil {
+			return repoName, tag, def.Err(err, "reading tarball failed")
+		}
+
+		if strings.ToLower(hdr.Name) == "manifest.json" {
+			var manifestContent []Manifest
+			buf := new(bytes.Buffer)
+			buf.ReadFrom(tarBallReader)
+
+			err = json.Unmarshal(buf.Bytes(), &manifestContent)
+			if err != nil {
+				if err != nil {
+					return repoName, tag, def.Err(err, "cannot read manifest.json from the image")
+				}
+			}
+
+			for  _, value := range manifestContent {
+				for  i, tag := range value.RepoTags {
+					if i == 0 {
+						repoNameAndTag := strings.Split(tag, ":")
+						if len(repoNameAndTag)>1 {
+							repoName = repoNameAndTag[0]
+							tag = repoNameAndTag[1]
+							return repoName, tag, nil
+						}
+					}
+				}
+			}
+		}
 	}
-	return nil
+
+	return repoName, tag, def.Err(err, "could not retrieve image information")
+}
+
+func (c *Client) ImportImageFromTar(imageFilePath string) (ImageID, error) {
+	var buf bytes.Buffer
+	var id ImageID
+
+	repoName, tag, err := ExtractRepoNameAndTagFromTar(imageFilePath)
+	if err != nil {
+		return id, err
+	}
+
+	opts := docker.ImportImageOptions{
+		Source:       imageFilePath,
+		Repository:   repoName,
+		Tag:          tag,
+		OutputStream: &buf,
+	}
+
+	if err := c.c.ImportImage(opts); err != nil {
+		return id, err
+	}
+
+	id = stringToImageID(buf.String())
+
+	return id, nil
 }

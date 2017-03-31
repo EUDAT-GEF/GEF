@@ -16,7 +16,6 @@ const SQLiteDataBasePath = "gef_db.bin"
 // Db is used to keep DbMap
 type Db struct{ gorp.DbMap }
 
-
 // JobTable stores the information about a service execution (used to store data in a database)
 type JobTable struct {
 	ID           string
