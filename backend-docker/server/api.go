@@ -148,6 +148,7 @@ func (s *Server) buildImageHandler(w http.ResponseWriter, r *http.Request) {
 
 	foundImageFileName := ""
 	tarFileFound := false
+	dockerFileFound := false
 	for {
 		part, err := mr.NextPart()
 		if err == io.EOF {
@@ -172,21 +173,16 @@ func (s *Server) buildImageHandler(w http.ResponseWriter, r *http.Request) {
 		if strings.HasSuffix(strings.ToLower(part.FileName()), ".tar") || strings.HasSuffix(strings.ToLower(part.FileName()), ".tar.gz") {
 			tarFileFound = true
 			foundImageFileName = part.FileName()
-			break
 		}
+
+		if strings.ToLower(part.FileName()) == "dockerfile" {
+			dockerFileFound = true
+		}
+
 	}
 
-	if tarFileFound {
-		log.Println("Docker image file has been detected, trying to import")
-		log.Println(filepath.Join(buildDir, foundImageFileName))
-		service, err = s.pier.ImportImage(filepath.Join(buildDir, foundImageFileName))
-		if err != nil {
-			Response{w}.ServerError("while importing a Docker image file ", err)
-			return
-		}
-
-		log.Println("Docker image has been imported")
-	} else {
+	// Building an image from a Dockerfile
+	if dockerFileFound {
 		if _, err := os.Stat(filepath.Join(buildDir, "Dockerfile")); os.IsNotExist(err) {
 			Response{w}.ServerError("no Dockerfile to build new image ", err)
 			return
@@ -195,6 +191,22 @@ func (s *Server) buildImageHandler(w http.ResponseWriter, r *http.Request) {
 		service, err = s.pier.BuildService(buildDir)
 		if err != nil {
 			Response{w}.ServerError("build service failed: ", err)
+			return
+		}
+	} else {
+		// Importing an existing image from a tar archive
+		if tarFileFound {
+			log.Println("Docker image file has been detected, trying to import")
+			log.Println(filepath.Join(buildDir, foundImageFileName))
+			service, err = s.pier.ImportImage(filepath.Join(buildDir, foundImageFileName))
+			if err != nil {
+				Response{w}.ServerError("while importing a Docker image file ", err)
+				return
+			}
+
+			log.Println("Docker image has been imported")
+		} else {
+			Response{w}.ServerNewError("there is neither Dockerfile nor Tar archive")
 			return
 		}
 	}

@@ -2,6 +2,7 @@ GOSRC = ./../..
 EUDATSRC = ./..
 WEBUI = frontend/webui
 INTERNALSERVICES = services/_internal
+GOFLAGS=-ldflags -s
 
 build: dependencies webui frontend containers backend
 
@@ -10,14 +11,14 @@ webui:
 
 containers:
 	(cd $(INTERNALSERVICES)/volume-stage-in && docker build -t volume-stage-in .)
-	(cd $(INTERNALSERVICES)/volume-filelist && GOOS=linux GOARCH=amd64 go build -ldflags -s && docker build -t volume-filelist .)
+	(cd $(INTERNALSERVICES)/volume-filelist && GOOS=linux GOARCH=amd64 go build $(GOFLAGS) && docker build -t volume-filelist .)
 	(cd $(INTERNALSERVICES)/copy-from-volume && docker build -t copy-from-volume .)
 
 backend:
 	$(GOPATH)/bin/golint ./...
 	go vet ./...
-	go test -ldflags -s ./...
-	go build -ldflags -s ./...
+	go test $(GOFLAGS) ./...
+	go build $(GOFLAGS) ./...
 
 dependencies: $(WEBUI)/node_modules $(GOSRC)/golang/lint/golint $(GOSRC)/fsouza/go-dockerclient $(GOSRC)/gorilla/mux $(GOSRC)/pborman/uuid $(GOSRC)/gopkg.in/gorp.v1 $(GOSRC)github.com/mattn/go-sqlite3
 
@@ -46,6 +47,6 @@ webui_dev_server:
 	(cd $(WEBUI) && node_modules/webpack-dev-server/bin/webpack-dev-server.js --config webpack.config.devel.js)
 
 run_gef:
-	(cd backend-docker && go run -ldflags -s main.go)
+	(cd backend-docker && go run $(GOFLAGS) main.go)
 
 .PHONY: build dependencies webui frontend backend webui_dev_server run_frontend run_backend clean
