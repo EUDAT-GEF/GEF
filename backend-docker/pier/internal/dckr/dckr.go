@@ -15,6 +15,8 @@ import (
 
 	docker "github.com/fsouza/go-dockerclient"
 
+	"encoding/json"
+
 	"github.com/EUDAT-GEF/GEF/backend-docker/def"
 )
 
@@ -519,4 +521,86 @@ func (c Client) UploadFile2Container(containerID, srcPath string, dstPath string
 
 	err = c.c.UploadToContainer(containerID, opts)
 	return err
+}
+
+func ExtractImageIDFromTar(imageFilePath string) (string, error) {
+	type Manifest struct {
+		Config   string
+		RepoTags []string
+		Layers   []string
+	}
+
+	var foundID string
+
+	tarImage, err := os.Open(imageFilePath)
+	if err != nil {
+		return foundID, err
+	}
+
+	tarBallReader := tar.NewReader(tarImage)
+	for {
+		hdr, err := tarBallReader.Next()
+		if err == io.EOF {
+			// end of tar archive
+			break
+		}
+		if err != nil {
+			return foundID, def.Err(err, "reading tarball failed")
+		}
+
+		if strings.ToLower(hdr.Name) == "manifest.json" {
+			var manifestContent []Manifest
+			buf := new(bytes.Buffer)
+			buf.ReadFrom(tarBallReader)
+
+			err = json.Unmarshal(buf.Bytes(), &manifestContent)
+			if err != nil {
+				if err != nil {
+					return foundID, def.Err(err, "cannot read manifest.json from the image")
+				}
+			}
+
+			for _, value := range manifestContent {
+				foundID := strings.Replace(value.Config, ".json", "", 1)
+				if len(foundID) > 1 {
+					return foundID, nil
+				}
+			}
+		}
+	}
+
+	return foundID, def.Err(err, "could not retrieve image information")
+}
+
+func (c *Client) ImportImageFromTar(imageFilePath string) (ImageID, error) {
+	var id string
+
+	id, err := ExtractImageIDFromTar(imageFilePath)
+	if err != nil {
+		return ImageID(id), err
+	}
+
+	tar, err := os.Open(imageFilePath)
+	if err != nil {
+		return ImageID(id), err
+	}
+	defer tar.Close()
+
+	opts := docker.LoadImageOptions{
+		InputStream: tar,
+	}
+
+	err = c.c.LoadImage(opts)
+
+	return ImageID(id), err
+}
+
+func (c *Client) TagImage(id string, repo string, tag string) error {
+	opts := docker.TagImageOptions{
+		Repo:  repo,
+		Tag:   tag,
+		Force: true,
+	}
+
+	return c.c.TagImage(id, opts)
 }

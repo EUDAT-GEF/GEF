@@ -144,6 +144,11 @@ func (s *Server) buildImageHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var service db.Service
+
+	foundImageFileName := ""
+	tarFileFound := false
+	dockerFileFound := false
 	for {
 		part, err := mr.NextPart()
 		if err == io.EOF {
@@ -152,6 +157,7 @@ func (s *Server) buildImageHandler(w http.ResponseWriter, r *http.Request) {
 		if part.FileName() == "" {
 			continue
 		}
+
 		dst, err := os.Create(filepath.Join(buildDir, part.FileName()))
 		if err != nil {
 			Response{w}.ServerError("while creating file to save file part ", err)
@@ -163,17 +169,46 @@ func (s *Server) buildImageHandler(w http.ResponseWriter, r *http.Request) {
 			Response{w}.ServerError("while dumping file part ", err)
 			return
 		}
+
+		if strings.HasSuffix(strings.ToLower(part.FileName()), ".tar") || strings.HasSuffix(strings.ToLower(part.FileName()), ".tar.gz") {
+			tarFileFound = true
+			foundImageFileName = part.FileName()
+		}
+
+		if strings.ToLower(part.FileName()) == "dockerfile" {
+			dockerFileFound = true
+		}
+
 	}
 
-	if _, err := os.Stat(filepath.Join(buildDir, "Dockerfile")); os.IsNotExist(err) {
-		Response{w}.ServerError("no Dockerfile to build new image ", err)
-		return
-	}
+	// Building an image from a Dockerfile
+	if dockerFileFound {
+		if _, err := os.Stat(filepath.Join(buildDir, "Dockerfile")); os.IsNotExist(err) {
+			Response{w}.ServerError("no Dockerfile to build new image ", err)
+			return
+		}
 
-	service, err := s.pier.BuildService(buildDir)
-	if err != nil {
-		Response{w}.ServerError("build service failed: ", err)
-		return
+		service, err = s.pier.BuildService(buildDir)
+		if err != nil {
+			Response{w}.ServerError("build service failed: ", err)
+			return
+		}
+	} else {
+		// Importing an existing image from a tar archive
+		if tarFileFound {
+			log.Println("Docker image file has been detected, trying to import")
+			log.Println(filepath.Join(buildDir, foundImageFileName))
+			service, err = s.pier.ImportImage(filepath.Join(buildDir, foundImageFileName))
+			if err != nil {
+				Response{w}.ServerError("while importing a Docker image file ", err)
+				return
+			}
+
+			log.Println("Docker image has been imported")
+		} else {
+			Response{w}.ServerNewError("there is neither Dockerfile nor Tar archive")
+			return
+		}
 	}
 
 	Response{w}.Ok(jmap("Service", service))

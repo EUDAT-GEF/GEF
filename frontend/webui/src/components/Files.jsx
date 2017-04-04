@@ -16,10 +16,14 @@ class Files extends React.Component {
     constructor(props) {
         super(props);
 
+       
+
         this.djsConfig = {
             addRemoveLinks: true,
             autoProcessQueue: false,
             uploadMultiple: true,
+            parallelUploads: 999,
+            maxFilesize: 4000,
             previewTemplate: ReactDOMServer.renderToStaticMarkup(
                 <div className="dz-preview dz-file-preview">
                     <div className="dz-filename"><span data-dz-name="true"></span></div>
