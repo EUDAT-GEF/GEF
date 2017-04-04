@@ -100,7 +100,6 @@ func (p *Pier) runJob(job *db.Job, service db.Service, inputPID string) {
 			errMsg = err.Error()
 		}
 		p.db.AddJobTask(job.ID, "Data staging", string(containerID), errMsg, exitCode, consoleOutput)
-		//fmt.Println(containerID, consoleOutput)
 
 		log.Println("  staging ended: ", exitCode, ", error: ", err)
 		if err != nil {
@@ -133,7 +132,6 @@ func (p *Pier) runJob(job *db.Job, service db.Service, inputPID string) {
 			errMsg = err.Error()
 		}
 		p.db.AddJobTask(job.ID, "Service execution", string(containerID), errMsg, exitCode, consoleOutput)
-		//fmt.Println(containerID, consoleOutput)
 
 		log.Println("  job ended: ", exitCode, ", error: ", err)
 		if err != nil {
@@ -193,18 +191,28 @@ func (p *Pier) PopulateServiceTable() error {
 				img, err := p.docker.BuildImage(filepath.Join(servicesFolder, f.Name()))
 
 				if err != nil {
-					log.Print("failed to create a service")
+					log.Print("failed to create a service: ", err)
 				} else {
 					log.Print("service has been created")
-					error := p.db.AddService(NewServiceFromImage(img))
-					if error != nil {
-						log.Print(error)
+
+					err = p.docker.TagImage(string(img.ID), f.Name(), "latest")
+					if err != nil {
+						log.Print("could not tag the service")
+					}
+
+					img, err = p.docker.InspectImage(img.ID)
+					if err != nil {
+						log.Print("failed to inspect the image: ", err)
+					}
+
+					err = p.db.AddService(NewServiceFromImage(img))
+					if err != nil {
+						log.Print("failed to add the service to the database: ", err)
 					}
 				}
 			}
 		}
 	}
-
 	return nil
 }
 
@@ -215,6 +223,7 @@ func (p *Pier) ImportImage(imageFilePath string) (db.Service, error) {
 	}
 
 	image, err := p.docker.InspectImage(imageID)
+
 	if err != nil {
 		return db.Service{}, err
 	}

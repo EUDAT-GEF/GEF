@@ -30,31 +30,37 @@ class Jobs extends React.Component {
     }
 
     render() {
-        return (
-            <div>
-                <h3>Browse Jobs</h3>
-                <h4>All jobs</h4>
-                <Header/>
-                { this.props.jobs.map((job) => {
-                    let service = null;
-                    for (var i = 0; i < this.props.services.length; ++i) {
-                        if (job.ServiceID == this.props.services[i].ID) {
-                            service = this.props.services[i];
-                            break;
+        if (this.props.jobs) {
+            return (
+                <div>
+                    <h3>Browse Jobs</h3>
+                    <h4>All jobs</h4>
+                    <Header/>
+                    { this.props.jobs.map((job) => {
+                        let service = null;
+                        for (var i = 0; i < this.props.services.length; ++i) {
+                            if (job.ServiceID == this.props.services[i].ID) {
+                                service = this.props.services[i];
+                                break;
+                            }
                         }
-                    }
-                    const serviceName = (service && service.Name && service.Name.length) ? service.Name :
-                        (service && service.ID && service.ID.length) ? service.ID : "unknown service";
-                    const title = "Job from " + serviceName;
+                        const serviceName = (service && service.Name && service.Name.length) ? service.Name :
+                            (service && service.ID && service.ID.length) ? service.ID : "unknown service";
+                        const title = "Job from " + serviceName;
 
-                    if (job.ID === this.props.params.id) {
-                        return <Job key={job.ID} job={job} service={service} title={title}/>
-                    } else {
-                        return <JobRow key={job.ID} job={job} title={title}/>
-                    }
-                })}
-            </div>
-        );
+                        if (job.ID === this.props.params.id) {
+                            return <Job key={job.ID} job={job} service={service} title={title}/>
+                        } else {
+                            return <JobRow key={job.ID} job={job} title={title}/>
+                        }
+                    })}
+                </div>
+            );
+        } else {
+            return (
+                <div><h4>No jobs found</h4></div>
+            )
+        }
     }
 }
 

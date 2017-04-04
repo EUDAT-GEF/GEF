@@ -15,8 +15,9 @@ import (
 
 	docker "github.com/fsouza/go-dockerclient"
 
-	"github.com/EUDAT-GEF/GEF/backend-docker/def"
 	"encoding/json"
+
+	"github.com/EUDAT-GEF/GEF/backend-docker/def"
 )
 
 const (
@@ -522,19 +523,18 @@ func (c Client) UploadFile2Container(containerID, srcPath string, dstPath string
 	return err
 }
 
-func ExtractRepoNameAndTagFromTar(imageFilePath string) (string, string, error) {
+func ExtractImageIDFromTar(imageFilePath string) (string, error) {
 	type Manifest struct {
-		Config string
+		Config   string
 		RepoTags []string
-		Layers []string
+		Layers   []string
 	}
 
-	var repoName string
-	var tag string
+	var foundID string
 
 	tarImage, err := os.Open(imageFilePath)
 	if err != nil {
-		return repoName, tag, err
+		return foundID, err
 	}
 
 	tarBallReader := tar.NewReader(tarImage)
@@ -545,7 +545,7 @@ func ExtractRepoNameAndTagFromTar(imageFilePath string) (string, string, error) 
 			break
 		}
 		if err != nil {
-			return repoName, tag, def.Err(err, "reading tarball failed")
+			return foundID, def.Err(err, "reading tarball failed")
 		}
 
 		if strings.ToLower(hdr.Name) == "manifest.json" {
@@ -556,49 +556,51 @@ func ExtractRepoNameAndTagFromTar(imageFilePath string) (string, string, error) 
 			err = json.Unmarshal(buf.Bytes(), &manifestContent)
 			if err != nil {
 				if err != nil {
-					return repoName, tag, def.Err(err, "cannot read manifest.json from the image")
+					return foundID, def.Err(err, "cannot read manifest.json from the image")
 				}
 			}
 
-			for  _, value := range manifestContent {
-				for  i, tag := range value.RepoTags {
-					if i == 0 {
-						repoNameAndTag := strings.Split(tag, ":")
-						if len(repoNameAndTag)>1 {
-							repoName = repoNameAndTag[0]
-							tag = repoNameAndTag[1]
-							return repoName, tag, nil
-						}
-					}
+			for _, value := range manifestContent {
+				foundID := strings.Replace(value.Config, ".json", "", 1)
+				if len(foundID) > 1 {
+					return foundID, nil
 				}
 			}
 		}
 	}
 
-	return repoName, tag, def.Err(err, "could not retrieve image information")
+	return foundID, def.Err(err, "could not retrieve image information")
 }
 
 func (c *Client) ImportImageFromTar(imageFilePath string) (ImageID, error) {
-	var buf bytes.Buffer
-	var id ImageID
+	var id string
 
-	repoName, tag, err := ExtractRepoNameAndTagFromTar(imageFilePath)
+	id, err := ExtractImageIDFromTar(imageFilePath)
 	if err != nil {
-		return id, err
+		return ImageID(id), err
 	}
 
-	opts := docker.ImportImageOptions{
-		Source:       imageFilePath,
-		Repository:   repoName,
-		Tag:          tag,
-		OutputStream: &buf,
+	tar, err := os.Open(imageFilePath)
+	if err != nil {
+		return ImageID(id), err
+	}
+	defer tar.Close()
+
+	opts := docker.LoadImageOptions{
+		InputStream: tar,
 	}
 
-	if err := c.c.ImportImage(opts); err != nil {
-		return id, err
+	err = c.c.LoadImage(opts)
+
+	return ImageID(id), err
+}
+
+func (c *Client) TagImage(id string, repo string, tag string) error {
+	opts := docker.TagImageOptions{
+		Repo:  repo,
+		Tag:   tag,
+		Force: true,
 	}
 
-	id = stringToImageID(buf.String())
-
-	return id, nil
+	return c.c.TagImage(id, opts)
 }

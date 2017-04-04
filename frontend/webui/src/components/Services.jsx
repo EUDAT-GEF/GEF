@@ -41,27 +41,35 @@ class Services extends React.Component {
     }
 
     render() {
-        console.log("The id of selected service is:", this.props.params.id);
+        if (this.props.services) {
+            return (
+                <div>
+                    <h3>Browse Services</h3>
+                    <h4>All Services</h4>
+                    <Header/>
+                    { this.props.services.map((service) => {
+                        if (service.ID === this.props.params.id) {
+                            return <Service key={service.ID} service={service} fetchService={this.fetchService}
+                                            selectedService={this.props.selectedService}
+                                            handleSubmit={this.handleSubmit} volumes={this.props.volumes}/>;
+                        } else {
+                            const isGef = service.Input && service.Output;
+                            return isGef ? <ServiceRow key={service.ID} service={service}/> : false;
+                        }
+                    })}
+                    { this.props.services.map((service) => {
+                        const isGef = service.Input && service.Output;
+                        return isGef ? false : <ImageRow key={service.ID} image={service}/>;
+                    })}
+                </div>
+            )
+        }
+        else {
+            return (
+                <div><h4>No services found</h4></div>
+            )
+        }
 
-        return (
-            <div>
-                <h3>Browse Services</h3>
-                <h4>All Services</h4>
-                <Header/>
-                { this.props.services.map((service) => {
-                    if (service.ID === this.props.params.id) {
-                        return <Service key={service.ID} service={service} fetchService={this.fetchService} selectedService={this.props.selectedService} handleSubmit={this.handleSubmit} volumes={this.props.volumes}/>;
-                    } else {
-                        const isGef = service.Input.length > 0 && service.Output.length > 0;
-                        return isGef ? <ServiceRow key={service.ID} service={service} /> : false;
-                    }
-                })}
-                { this.props.services.map((service) => {
-                    const isGef = service.Input.length > 0 && service.Output.length > 0;
-                    return isGef ? false : <ImageRow key={service.ID} image={service} />;
-                })}
-            </div>
-        );
     }
 
 }
