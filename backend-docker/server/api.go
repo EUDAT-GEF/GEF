@@ -63,6 +63,7 @@ func NewServer(cfg def.ServerConfig, pier *pier.Pier, tmpDir string, database *d
 
 		"GET /services":             decorate("service discovery", server.listServicesHandler),
 		"GET /services/{serviceID}": decorate("service discovery", server.inspectServiceHandler),
+		"POST /services/{serviceID}": decorate("service modification", server.editServiceHandler),
 
 		"POST /jobs":               decorate("data analysis", server.executeServiceHandler),
 		"GET /jobs":                decorate("data discovery", server.listJobsHandler),
@@ -233,6 +234,19 @@ func (s *Server) inspectServiceHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	Response{w}.Ok(jmap("Service", service))
 }
+
+func (s *Server) editServiceHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+
+	service, err := s.db.GetService(db.ServiceID(vars["serviceID"]))
+	if err != nil {
+		Response{w}.ClientError("cannot get service", err)
+		return
+	}
+	Response{w}.Ok(jmap("Service", service))
+}
+
+
 
 func (s *Server) executeServiceHandler(w http.ResponseWriter, r *http.Request) {
 	serviceID := r.FormValue("serviceID")
