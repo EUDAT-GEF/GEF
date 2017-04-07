@@ -1,6 +1,5 @@
 import Services from '../components/Services';
 import actions from '../actions/actions';
-import bows from 'bows';
 
 import {connect} from 'react-redux';
 
@@ -22,11 +21,21 @@ const mapDispatchToProps = (dispatch) => {
             const action = actions.fetchService(serviceID);
             dispatch(action);
         },
+        handleUpdate: (e) => {
+            e.preventDefault();
+            console.log("UPDATE PRESSED");
+            //console.log(changedService);
+            //console.log(state.services);
+           // var changedService = {};
+            const action = actions.handleUpdateService();
+            dispatch(action);
+        },
         handleSubmit: (e) => {
             e.preventDefault();
             const action = actions.handleSubmitJob();
             dispatch(action);
-        }
+        },
+
     };
 };
 

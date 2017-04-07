@@ -68,6 +68,26 @@ function serviceFetchError(errorMessage) {
     }
 }
 
+function serviceUpdateStart() {
+    return {
+        type: actionTypes.SERVICE_UPDATE_START
+    }
+}
+
+function serviceUpdateSuccess(service) {
+    return {
+        type: actionTypes.SERVICE_UPDATE_SUCCESS,
+        service: service
+    }
+}
+
+function serviceUpdateError(errorMessage) {
+    return {
+        type: actionTypes.SERVICE_UPDATE_ERROR,
+        errorMessage: errorMessage
+    }
+}
+
 function jobListFetchStart() {
     return {
         type: actionTypes.JOB_LIST_FETCH_START
@@ -285,6 +305,8 @@ function fetchService(serviceID) {
     }
 }
 
+
+
 function fetchVolumes() {
     return function (dispatch, getState) {
         dispatch(volumesFetchStart());
@@ -368,6 +390,41 @@ function fetchJobById(jobId) {
         })
     }
 }
+function handleUpdateService() {
+    //let srv = {"text": "works"};
+    console.log("CHANGED SERVICE");
+
+
+
+    return function (dispatch, getState) {
+
+
+        const selectedService = getState().selectedService;
+        const serviceEdit = getState().form.ServiceEdit;
+        log("selectedService", selectedService);
+        var fd = new FormData();
+        console.log(serviceEdit);
+        console.log(getState());
+        console.log(getState().form);
+
+        fd.append("serviceID", selectedService.Service.ID);
+        toPairs(serviceEdit.values).forEach(([k, v]) => fd.append(k, v));
+
+
+        console.log(fd);
+
+        dispatch(serviceUpdateStart());
+        const resultPromise = axios.put( apiNames.services, fd);
+        resultPromise.then(response => {
+            log('updated service:', response.data);
+            dispatch(serviceUpdateSuccess(response.data));
+        }).catch(err => {
+            Alert.error("Cannot update the service.");
+            log("An update error occurred");
+            dispatch(serviceUpdateError(err));
+        })
+    }
+}
 
 function handleSubmitJob() {
     return function (dispatch, getState) {
@@ -408,6 +465,11 @@ export default {
     serviceFetchStart,
     serviceFetchSuccess,
     serviceFetchError,
+
+    serviceUpdateStart,
+    serviceUpdateSuccess,
+    serviceUpdateError,
+
     jobListFetchStart,
     jobListFetchSuccess,
     jobListFetchError,
@@ -427,6 +489,7 @@ export default {
     removeJob,
     fetchServices,
     fetchService,
+    handleUpdateService,
     fetchVolumes,
     inspectVolume,
     consoleOutputFetch,

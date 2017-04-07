@@ -2,13 +2,11 @@
  * Created by wqiu on 17/08/16.
  */
 import React, {PropTypes} from 'react';
-import bows from 'bows';
-import { Row, Col, Grid, Table, Button, Modal, OverlayTrigger, FormGroup, ControlLabel, FormControl,  } from 'react-bootstrap';
+import { Row, Col, Grid, Table, Button, Modal, OverlayTrigger, FormGroup, ControlLabel } from 'react-bootstrap';
 import {Field, reduxForm} from 'redux-form';
+
 // this is a detailed view of a service, user will be able to execute service in this view
 
-
-const log = bows("Service");
 
 const tagValueRow  = (tag, value) => (
     <Row>
@@ -55,190 +53,167 @@ const JobCreatorForm = (props) => {
 const JobCreator = reduxForm({form: 'JobCreator'} )(JobCreatorForm);
 
 
-const IOTable = ({service}) => {
+
+
+const InputTable = ({service}) => {
+    let inCounter = 0;
     return (
         <Table responsive>
+            <thead>
+            <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Path</th>
+                <th></th>
+            </tr>
+            </thead>
             <tbody>
-                { service.Input.map((src) => {
-                    return (
-                        <tr>
-                            <td>1</td>
-                            <td>{src.Name}</td>
-                            <td>{src.Path}</td>
-                            <td>
-                                <Button type="submit" bsStyle="primary" bsSize="xsmall">
-                                    <span className="glyphicon glyphicon-remove" aria-hidden="true"></span> Remove
-                                </Button>
-                            </td>
-                        </tr>
-                    )
+            { service.Input.map((src) => {
+                inCounter++;
+                return (
+                    <tr key={"src-"+inCounter+"-"+service.ID}>
+                        <td>{src.ID}</td>
+                        <td>{src.Name}</td>
+                        <td>{src.Path}</td>
+                        <td>
+                            <Button type="submit" bsStyle="primary" bsSize="xsmall">
+                                <span className="glyphicon glyphicon-remove" aria-hidden="true"></span> Remove
+                            </Button>
+                        </td>
+                    </tr>
+                )
 
-                })}
+            })}
 
             </tbody>
         </Table>
     )
 };
 
+const OutputTable = ({service}) => {
+    let outCounter = 0;
+    return (
+        <Table responsive>
+            <thead>
+            <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Path</th>
+                <th></th>
+            </tr>
+            </thead>
+            <tbody>
+            { service.Output.map((out) => {
+                outCounter++;
+                return (
+                    <tr key={"out-"+outCounter+"-"+service.ID}>
+                        <td>{out.ID}</td>
+                        <td>{out.Name}</td>
+                        <td>{out.Path}</td>
+                        <td>
+                            <Button type="submit" bsStyle="primary" bsSize="xsmall">
+                                <span className="glyphicon glyphicon-remove" aria-hidden="true"></span> Remove
+                            </Button>
+                        </td>
+                    </tr>
+                )
+
+            })}
+
+            </tbody>
+        </Table>
+    )
+};
+
+
+
 const ServiceEditForm = (props) => {
-    const { handleSubmit, pristine, reset, submitting, service } = props;
+    const { handleUpdate, service } = props;
 
     return (
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleUpdate}>
             <Row>
                 <Col xs={12} sm={12} md={12} >
 
-                    <FormGroup controlId="srvName">
+                    <FormGroup controlId="serviceNameGroup">
                         <ControlLabel>Name</ControlLabel>
-                        <FormControl type="text" value={props.service.Name}/>
+                        <Field name="serviceName" component="input" type="text" className="form-control"/>
                     </FormGroup>
-                    <FormGroup controlId="srvDescription">
+                    <FormGroup controlId="serviceDescriptionGroup">
                         <ControlLabel>Description</ControlLabel>
-                        <FormControl componentClass="textarea" value={props.service.Description}/>
+                        <div>
+                            <Field name="serviceDescription" component="textarea" placeholder="Describe what the service does"/>
+                        </div>
                     </FormGroup>
-                    <FormGroup controlId="srvVersion">
+                    <FormGroup controlId="serviceVersionGroup">
                         <ControlLabel>Version</ControlLabel>
-                        <FormControl type="text" value={props.service.Version}/>
+                        <Field name="serviceVersion" component="input" type="text" placeholder="Version of the service" className="form-control"/>
                     </FormGroup>
 
                     <FormGroup>
                         <ControlLabel>Inputs</ControlLabel>
                         <div className="input-group">
                             <span className="input-group-addon">Name</span>
-                            <FormControl type="text" placeholder="Name"/>
+                            <Field name="inputSourceName" component="input" type="text" placeholder="Any name"
+                                   className="form-control"/>
                             <span className="input-group-addon">Path</span>
-                            <FormControl type="text" placeholder="Path"/>
-
+                            <Field name="inputSourcePath" component="input" type="text" placeholder="Path in the container"
+                                   className="form-control"/>
                             <span className="input-group-btn">
-                                <button type="submit" className="btn btn-default">
+                                <Button type="submit" className="btn btn-default">
                                     <span className="glyphicon glyphicon-plus" aria-hidden="true"></span> Add
-                                </button>
+                                </Button>
                             </span>
                         </div>
-
-                        <IOTable service={props.service}/>
-
-                        <Table responsive>
-                            <tbody>
-                            <tr>
-                                <td>1</td>
-                                <td>Input 1</td>
-                                <td>Input 1</td>
-                                <td>
-                                    <Button type="submit" bsStyle="primary" bsSize="xsmall">
-                                        <span className="glyphicon glyphicon-remove" aria-hidden="true"></span> Remove
-                                    </Button>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>2</td>
-                                <td>Input 2</td>
-                                <td>Input 2</td>
-                                <td>
-                                    <Button type="submit" bsStyle="primary" bsSize="xsmall">
-                                        <span className="glyphicon glyphicon-remove" aria-hidden="true"></span> Remove
-                                    </Button>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>3</td>
-                                <td>Input 3</td>
-                                <td>Input 3</td>
-                                <td>
-                                    <Button type="submit" bsStyle="primary" bsSize="xsmall">
-                                        <span className="glyphicon glyphicon-remove" aria-hidden="true"></span> Remove
-                                    </Button>
-                                </td>
-                            </tr>
-
-                            </tbody>
-                        </Table>
-
-
+                        <InputTable key={"in-"+service.ID} service={service}/>
                     </FormGroup>
-
-
-
-
 
                     <FormGroup>
                         <ControlLabel>Outputs</ControlLabel>
                         <div className="input-group">
                             <span className="input-group-addon">Name</span>
-                            <FormControl type="text" placeholder="Name"/>
+                            <Field name="outputSourceName" component="input" type="text" placeholder="Any name"
+                                   className="form-control"/>
                             <span className="input-group-addon">Path</span>
-                            <FormControl type="text" placeholder="Path"/>
-
+                            <Field name="outputSourcePath" component="input" type="text" placeholder="Path in the container"
+                                   className="form-control"/>
                             <span className="input-group-btn">
-                                <button type="submit" className="btn btn-default">
+                                <Button type="submit" className="btn btn-default">
                                     <span className="glyphicon glyphicon-plus" aria-hidden="true"></span> Add
-                                </button>
+                                </Button>
                             </span>
                         </div>
-
-
-
-                        <Table responsive>
-                            <tbody>
-                            <tr>
-                                <td>1</td>
-                                <td>Input 1</td>
-                                <td>Input 1</td>
-                                <td>
-                                    <Button type="submit" bsStyle="primary" bsSize="xsmall">
-                                        <span className="glyphicon glyphicon-remove" aria-hidden="true"></span> Remove
-                                    </Button>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>2</td>
-                                <td>Input 2</td>
-                                <td>Input 2</td>
-                                <td>
-                                    <Button type="submit" bsStyle="primary" bsSize="xsmall">
-                                        <span className="glyphicon glyphicon-remove" aria-hidden="true"></span> Remove
-                                    </Button>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>3</td>
-                                <td>Input 3</td>
-                                <td>Input 3</td>
-                                <td>
-                                    <Button type="submit" bsStyle="primary" bsSize="xsmall">
-                                        <span className="glyphicon glyphicon-remove" aria-hidden="true"></span> Remove
-                                    </Button>
-                                </td>
-                            </tr>
-
-                            </tbody>
-                        </Table>
-
-
+                        <OutputTable key={"out-"+service.ID} service={service}/>
                     </FormGroup>
 
-
-                    <Button type="submit" className="btn btn-primary" onClick={handleSubmit}>
+                    <Button type="submit" className="btn btn-primary" onClick={handleUpdate}>
                         <span className="glyphicon glyphicon-floppy-disk" aria-hidden="true"></span> Save
                     </Button>
 
-
                 </Col>
             </Row>
-
         </form>
     )
 };
 
 const ServiceEdit = reduxForm({form: 'ServiceEdit'} )(ServiceEditForm);
 
+
+
+
+
 class Service extends React.Component {
+
+
+
     constructor(props) {
         super(props);
         this.handleSubmit = this.props.handleSubmit.bind(this);
+        this.handleUpdate = this.props.handleUpdate.bind(this);
 
         this.state = {
             showModal: false,
+            changedService: this.props.selectedService.Service,
         };
     }
 
@@ -255,20 +230,26 @@ class Service extends React.Component {
         this.props.fetchService(this.props.service.ID);
     }
 
-    renderModalWindow(curService) {
+    renderModalWindow(inService) {
+        let initialServiceValues = {
+            serviceName: inService.Name,
+            serviceDescription: inService.Description,
+            serviceVersion: inService.Version,
+            serviceVersion: inService.Version,
+
+        };
+
         return (
             <div>
                 <Modal show={this.state.showModal} onHide={this.handleModalClose.bind(this)}>
                     <Modal.Header closeButton>
-                        <Modal.Title>{curService.Name}</Modal.Title>
+                        <Modal.Title>{inService.Name}</Modal.Title>
                     </Modal.Header>
                     <Modal.Body>
-                        <ServiceEdit handleSubmit={this.handleSubmit} service={this.props.selectedService.Service}/>
-
-
+                        <ServiceEdit handleUpdate={this.handleUpdate} service={inService} initialValues={initialServiceValues}/>
                     </Modal.Body>
                     <Modal.Footer>
-                        <Button onClick={this.handleModalClose.bind(this)}>Save</Button>
+                        <Button className="btn btn-primary" onClick={this.handleUpdate}>Save</Button>
                         <Button onClick={this.handleModalClose.bind(this)}>Close</Button>
                     </Modal.Footer>
                 </Modal>
@@ -277,10 +258,16 @@ class Service extends React.Component {
     }
 
     render() {
+
+
+
+
+
+
+
         if(! this.props.selectedService.Service) {
             return (<div>loading</div>)
         } else {
-            log("selectedService:", this.props.selectedService);
             const {ID, Name, Description, Version} = this.props.selectedService.Service;
             return (
 
@@ -308,12 +295,12 @@ class Service extends React.Component {
     }
 }
 
-
 Service.propTypes = {
     service: PropTypes.object.isRequired,
     fetchService: PropTypes.func.isRequired,
     selectedService: PropTypes.object.isRequired,
     handleSubmit: PropTypes.func.isRequired,
+    handleUpdate: PropTypes.func.isRequired,
     volumes: PropTypes.array.isRequired,
 };
 

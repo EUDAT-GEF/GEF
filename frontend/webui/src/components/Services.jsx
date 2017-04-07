@@ -34,6 +34,7 @@ class Services extends React.Component {
         super(props);
         this.fetchService = this.props.fetchService.bind(this);
         this.handleSubmit = this.props.handleSubmit.bind(this);
+        this.handleUpdate = this.props.handleUpdate.bind(this);
     }
 
     componentDidMount() {
@@ -51,7 +52,8 @@ class Services extends React.Component {
                         if (service.ID === this.props.params.id) {
                             return <Service key={service.ID} service={service} fetchService={this.fetchService}
                                             selectedService={this.props.selectedService}
-                                            handleSubmit={this.handleSubmit} volumes={this.props.volumes}/>;
+                                            handleSubmit={this.handleSubmit}
+                                            handleUpdate={this.handleUpdate} volumes={this.props.volumes}/>;
                         } else {
                             const isGef = service.Input && service.Output;
                             return isGef ? <ServiceRow key={service.ID} service={service}/> : false;
@@ -80,6 +82,7 @@ Services.propTypes = {
     services: PropTypes.array.isRequired,
     selectedService: PropTypes.object.isRequired,
     handleSubmit: PropTypes.func.isRequired,
+    handleUpdate: PropTypes.func.isRequired,
     volumes: PropTypes.array.isRequired,
 };
 

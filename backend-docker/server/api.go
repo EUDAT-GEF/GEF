@@ -12,6 +12,7 @@ import (
 	"github.com/EUDAT-GEF/GEF/backend-docker/def"
 	"github.com/EUDAT-GEF/GEF/backend-docker/pier"
 	"github.com/gorilla/mux"
+	"encoding/json"
 )
 
 const (
@@ -63,7 +64,7 @@ func NewServer(cfg def.ServerConfig, pier *pier.Pier, tmpDir string, database *d
 
 		"GET /services":             decorate("service discovery", server.listServicesHandler),
 		"GET /services/{serviceID}": decorate("service discovery", server.inspectServiceHandler),
-		"POST /services/{serviceID}": decorate("service modification", server.editServiceHandler),
+		"PUT /services": decorate("service modification", server.editServiceHandler),
 
 		"POST /jobs":               decorate("data analysis", server.executeServiceHandler),
 		"GET /jobs":                decorate("data discovery", server.listJobsHandler),
@@ -236,13 +237,34 @@ func (s *Server) inspectServiceHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) editServiceHandler(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
+	log.Println("Editing a service ****************************")
 
-	service, err := s.db.GetService(db.ServiceID(vars["serviceID"]))
+
+
+	decoder := json.NewDecoder(r.Body)
+	var service db.Service
+	err := decoder.Decode(&service)
 	if err != nil {
 		Response{w}.ClientError("cannot get service", err)
 		return
 	}
+	defer r.Body.Close()
+
+	log.Println("***************")
+	log.Println(service)
+
+	err = s.db.RemoveService(service.ID)
+	if err != nil {
+		Response{w}.ClientError("cannot remove service", err)
+		return
+	}
+
+	err = s.db.AddService(service)
+	if err != nil {
+		Response{w}.ClientError("cannot add service", err)
+		return
+	}
+
 	Response{w}.Ok(jmap("Service", service))
 }
 
