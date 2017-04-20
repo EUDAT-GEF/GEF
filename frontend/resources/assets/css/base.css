@@ -66,6 +66,7 @@ input, select, textarea {
 	-o-transition: all 0.30s ease-in-out;
 	outline: none;
 	border: 1px solid #ccc;
+    width: 100%;
 }
 input:focus, select:focus, textarea:focus, button:focus, a:focus {
   box-shadow: 0 0 10px #F45D00 !important;

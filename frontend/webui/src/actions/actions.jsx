@@ -236,6 +236,26 @@ function consoleOutputFetchError(errorMessage) {
     }
 }
 
+function outputAddStart() {
+    return {
+        type: actionTypes.OUTPUT_ADD_START
+    }
+}
+
+function outputAddSuccess(data) {
+    return {
+        type: actionTypes.OUTPUT_ADD_SUCCESS,
+        data: data
+    }
+}
+
+function outputAddError(errorMessage) {
+    return {
+        type: actionTypes.OUTPUT_ADD_ERROR,
+        errorMessage: errorMessage
+    }
+}
+
 
 
 
@@ -402,19 +422,26 @@ function handleUpdateService() {
         const selectedService = getState().selectedService;
         const serviceEdit = getState().form.ServiceEdit;
         log("selectedService", selectedService);
+
         var fd = new FormData();
-        console.log(serviceEdit);
-        console.log(getState());
-        console.log(getState().form);
+        console.log(selectedService);
+        //console.log(getState());
+        //console.log(getState().form);
 
         fd.append("serviceID", selectedService.Service.ID);
-        toPairs(serviceEdit.values).forEach(([k, v]) => fd.append(k, v));
+        //console.log(fd);
+        toPairs(serviceEdit.values).forEach(
+            ([k, v]) => fd.append(k, v)
+
+        );
+        //toPairs(serviceEdit.values).forEach(([k, v]) => console.log(k, v));
 
 
-        console.log(fd);
+
 
         dispatch(serviceUpdateStart());
         const resultPromise = axios.put( apiNames.services, fd);
+        console.log(fd);
         resultPromise.then(response => {
             log('updated service:', response.data);
             dispatch(serviceUpdateSuccess(response.data));
@@ -447,6 +474,28 @@ function handleSubmitJob() {
     }
 }
 
+
+function addOutput(serviceOutputs, newOutput) {
+    return function (dispatch, getState)  {
+        dispatch(outputAddStart());
+        let outputs = [];
+        serviceOutputs.map((out) => {
+            outputs.push(out);
+        });
+        outputs.push(newOutput);
+        dispatch(outputAddSuccess(outputs));
+
+
+        /*resultPromise.then(response => {
+            log('fetched jobs:', response.data.Jobs);
+            dispatch(jobListFetchSuccess(response.data.Jobs));
+        }).catch(err => {
+            Alert.error("Cannot fetch job information from the server.");
+            log("An fetch error occurred", err);
+            dispatch(jobListFetchError(err));
+        })*/
+    }
+}
 
 function showErrorMessageWithTimeout(id, timeout) {
 
@@ -485,6 +534,11 @@ export default {
     consoleOutputFetchStart,
     consoleOutputFetchSuccess,
     consoleOutputFetchError,
+
+    outputAddStart,
+    outputAddSuccess,
+    outputAddError,
+
     fetchJobs,
     removeJob,
     fetchServices,
@@ -500,5 +554,6 @@ export default {
     fileUploadError,
     getNewUploadEndpoint,
     handleSubmitJob,
+    addOutput,
 
 };

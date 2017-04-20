@@ -3,7 +3,10 @@
  */
 import React, {PropTypes} from 'react';
 import { Row, Col, Grid, Table, Button, Modal, OverlayTrigger, FormGroup, ControlLabel } from 'react-bootstrap';
-import {Field, reduxForm} from 'redux-form';
+import {Field, FieldArray, reduxForm} from 'redux-form';
+import actions from '../actions/actions';
+import { connect } from 'react-redux';
+import { bindActionCreators } from 'redux';
 
 // this is a detailed view of a service, user will be able to execute service in this view
 
@@ -91,8 +94,38 @@ const InputTable = ({service}) => {
 };
 
 const OutputTable = ({service}) => {
+
     let outCounter = 0;
+    let outputs = [];
+    service.Output.map((out, index) => {
+        outputs.push(out);
+    });
+    //outputs.push({});
+
+    const IOTableRow = ({out, index}) => {
+        return (
+            <tr>
+                <td>{out.ID}</td>
+                <td>{out.Name}</td>
+                <td>{out.Path}</td>
+                <td>
+                    <Button type="submit" bsStyle="primary" bsSize="xsmall" onClick={() => outputs.push({})}>
+                        <span className="glyphicon glyphicon-remove" aria-hidden="true"></span> Remove
+                    </Button>
+                </td>
+            </tr>
+        )
+    };
+
+
+
+
+
+
+
+
     return (
+
         <Table responsive>
             <thead>
             <tr>
@@ -103,33 +136,27 @@ const OutputTable = ({service}) => {
             </tr>
             </thead>
             <tbody>
-            { service.Output.map((out) => {
+
+            { service.Output.map((out, index) => {
                 outCounter++;
                 return (
-                    <tr key={"out-"+outCounter+"-"+service.ID}>
-                        <td>{out.ID}</td>
-                        <td>{out.Name}</td>
-                        <td>{out.Path}</td>
-                        <td>
-                            <Button type="submit" bsStyle="primary" bsSize="xsmall">
-                                <span className="glyphicon glyphicon-remove" aria-hidden="true"></span> Remove
-                            </Button>
-                        </td>
-                    </tr>
+                    <FieldArray name={`${out}.ID`} component={IOTableRow} out={out}/>
                 )
-
             })}
 
             </tbody>
         </Table>
+
     )
 };
 
 
 
+
+
 const ServiceEditForm = (props) => {
     const { handleUpdate, service } = props;
-
+    
     return (
         <form onSubmit={handleUpdate}>
             <Row>
@@ -171,6 +198,9 @@ const ServiceEditForm = (props) => {
                     <FormGroup>
                         <ControlLabel>Outputs</ControlLabel>
                         <div className="input-group">
+
+
+
                             <span className="input-group-addon">Name</span>
                             <Field name="outputSourceName" component="input" type="text" placeholder="Any name"
                                    className="form-control"/>
@@ -184,6 +214,11 @@ const ServiceEditForm = (props) => {
                             </span>
                         </div>
                         <OutputTable key={"out-"+service.ID} service={service}/>
+
+
+                        <Field name="outputHidden[0]" component="hidden" type="text"/>
+                        <Field name="outputHidden[1]" component="hidden" type="text"/>
+                        <Field name="outputHidden[2]" component="hidden" type="text"/>
                     </FormGroup>
 
                     <Button type="submit" className="btn btn-primary" onClick={handleUpdate}>
@@ -196,7 +231,23 @@ const ServiceEditForm = (props) => {
     )
 };
 
-const ServiceEdit = reduxForm({form: 'ServiceEdit'} )(ServiceEditForm);
+const validate = values => {
+    const errors = {}
+    const requiredFields = [ 'serviceName', 'serviceDescription', 'serviceVersion' ]
+    requiredFields.forEach(field => {
+        if (!values[ field ]) {
+            errors[ field ] = 'Required'
+        }
+    })
+    /*if (values.email && !/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$/i.test(values.email)) {
+        errors.email = 'Invalid email address'
+    }*/
+    console.log(errors);
+    return errors
+}
+
+
+const ServiceEdit = reduxForm({form: 'ServiceEdit', validate} )(ServiceEditForm);
 
 
 
@@ -235,8 +286,7 @@ class Service extends React.Component {
             serviceName: inService.Name,
             serviceDescription: inService.Description,
             serviceVersion: inService.Version,
-            serviceVersion: inService.Version,
-
+            outputHidden: ["sometext", "another text", "third text"],
         };
 
         return (
@@ -250,6 +300,7 @@ class Service extends React.Component {
                     </Modal.Body>
                     <Modal.Footer>
                         <Button className="btn btn-primary" onClick={this.handleUpdate}>Save</Button>
+                        <Button className="btn btn-primary" onClick={this.props.actions.addOutput(this.props.service.Output, {})}>Add output</Button>
                         <Button onClick={this.handleModalClose.bind(this)}>Close</Button>
                     </Modal.Footer>
                 </Modal>
@@ -295,6 +346,16 @@ class Service extends React.Component {
     }
 }
 
+function mapStateToProps(state) {
+    return state
+}
+
+function mapDispatchToProps(dispatch) {
+    return {
+        actions: bindActionCreators(actions, dispatch)
+    }
+}
+
 Service.propTypes = {
     service: PropTypes.object.isRequired,
     fetchService: PropTypes.func.isRequired,
@@ -305,3 +366,4 @@ Service.propTypes = {
 };
 
 export default Service;
+//export default connect(mapStateToProps, mapDispatchToProps)(Service);
