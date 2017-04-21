@@ -238,22 +238,21 @@ func (s *Server) inspectServiceHandler(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) editServiceHandler(w http.ResponseWriter, r *http.Request) {
 	log.Println("Editing a service ****************************")
-	log.Println(r.FormValue("serviceName"))
+	/*log.Println(r.FormValue("serviceName"))
 	log.Println(r.FormValue("outputHidden"))
-	var arr []string
+
 
 	for key, values := range r.PostForm {
-		//log.Println(key)
-		//log.Println(values)
-		if key == "outputHidden" {
-			arr = values
-
-		}
+		log.Println(key)
+		log.Println(values)
+		if *
 	}
-	log.Println(arr)
-	log.Println(arr[0])
 
 
+
+
+	log.Println(r.FormValue("outputHidden")[0])
+	log.Println(len(r.FormValue("outputHidden")))*/
 
 
 
@@ -268,6 +267,7 @@ func (s *Server) editServiceHandler(w http.ResponseWriter, r *http.Request) {
 
 	log.Println("***************")
 	log.Println(service)
+	log.Println(service.ID)
 
 	err = s.db.RemoveService(service.ID)
 	if err != nil {

@@ -423,25 +423,35 @@ function handleUpdateService() {
         const serviceEdit = getState().form.ServiceEdit;
         log("selectedService", selectedService);
 
-        var fd = new FormData();
-        console.log(selectedService);
-        //console.log(getState());
-        //console.log(getState().form);
 
-        fd.append("serviceID", selectedService.Service.ID);
-        //console.log(fd);
-        toPairs(serviceEdit.values).forEach(
-            ([k, v]) => fd.append(k, v)
 
-        );
-        //toPairs(serviceEdit.values).forEach(([k, v]) => console.log(k, v));
 
+        let inputPorts = selectedService.Service.Input;
+        let outputPorts = selectedService.Service.Output;
+
+        if ((serviceEdit.values.inputSourceName.length>0) && (serviceEdit.values.inputSourcePath.length>0)) {
+
+        }
+
+
+        let outputObject =  {
+            'Created': selectedService.Service.Created,
+            'Description': serviceEdit.values.serviceDescription,
+            'ID': selectedService.Service.ID,
+            'ImageID': selectedService.Service.ImageID,
+            'Input': inputPorts,
+            'Name': serviceEdit.values.serviceName,
+            'Output': outputPorts,
+            'RepoTag': selectedService.Service.RepoTag,
+            'Size': selectedService.Service.Size,
+            'Version': serviceEdit.values.serviceVersion
+        };
 
 
 
         dispatch(serviceUpdateStart());
-        const resultPromise = axios.put( apiNames.services, fd);
-        console.log(fd);
+        const resultPromise = axios.put( apiNames.services, outputObject);
+
         resultPromise.then(response => {
             log('updated service:', response.data);
             dispatch(serviceUpdateSuccess(response.data));
@@ -475,15 +485,45 @@ function handleSubmitJob() {
 }
 
 
-function addOutput(serviceOutputs, newOutput) {
+function addOutput() {
     return function (dispatch, getState)  {
         dispatch(outputAddStart());
         let outputs = [];
+        let serviceOutputs = [];
+        let newOutput = {};
+
         serviceOutputs.map((out) => {
             outputs.push(out);
         });
         outputs.push(newOutput);
-        dispatch(outputAddSuccess(outputs));
+
+
+
+        const selectedService = getState().selectedService;
+        const serviceEdit = getState().form.ServiceEdit;
+        log("selectedService", selectedService);
+
+        let outputObject = {'selectedService': {
+            'Service': {
+                'Created': selectedService.Service.Created,
+                'Description': serviceEdit.values.serviceDescription,
+                'ID': selectedService.Service.ID,
+                'ImageID': selectedService.Service.ImageID,
+                'Input': [],
+                'Name': serviceEdit.values.serviceName,
+                'Output': [],
+                'RepoTag': selectedService.Service.RepoTag,
+                'Size': selectedService.Service.Size,
+                'Version': serviceEdit.values.serviceVersion
+            }
+
+        }};
+
+
+
+
+
+        dispatch(outputAddSuccess(outputObject));
 
 
         /*resultPromise.then(response => {

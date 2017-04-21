@@ -23,11 +23,12 @@ const mapDispatchToProps = (dispatch) => {
         },
         handleUpdate: (e) => {
             e.preventDefault();
-            console.log("UPDATE PRESSED");
-            //console.log(changedService);
-            //console.log(state.services);
-           // var changedService = {};
             const action = actions.handleUpdateService();
+            dispatch(action);
+        },
+        handleAddOutput: (e) => {
+            e.preventDefault();
+            const action = actions.addOutput();
             dispatch(action);
         },
         handleSubmit: (e) => {

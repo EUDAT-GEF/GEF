@@ -4,9 +4,7 @@
 import React, {PropTypes} from 'react';
 import { Row, Col, Grid, Table, Button, Modal, OverlayTrigger, FormGroup, ControlLabel } from 'react-bootstrap';
 import {Field, FieldArray, reduxForm} from 'redux-form';
-import actions from '../actions/actions';
-import { connect } from 'react-redux';
-import { bindActionCreators } from 'redux';
+import validate from './ServiceMetadataValidator'
 
 // this is a detailed view of a service, user will be able to execute service in this view
 
@@ -155,10 +153,10 @@ const OutputTable = ({service}) => {
 
 
 const ServiceEditForm = (props) => {
-    const { handleUpdate, service } = props;
+    const { handleUpdate, handleAddOutput, service } = props;
     
     return (
-        <form onSubmit={handleUpdate}>
+        <form>
             <Row>
                 <Col xs={12} sm={12} md={12} >
 
@@ -208,7 +206,7 @@ const ServiceEditForm = (props) => {
                             <Field name="outputSourcePath" component="input" type="text" placeholder="Path in the container"
                                    className="form-control"/>
                             <span className="input-group-btn">
-                                <Button type="submit" className="btn btn-default">
+                                <Button type="submit" className="btn btn-default" onClick={handleAddOutput}>
                                     <span className="glyphicon glyphicon-plus" aria-hidden="true"></span> Add
                                 </Button>
                             </span>
@@ -225,13 +223,17 @@ const ServiceEditForm = (props) => {
                         <span className="glyphicon glyphicon-floppy-disk" aria-hidden="true"></span> Save
                     </Button>
 
+
+
+
+
                 </Col>
             </Row>
         </form>
     )
 };
 
-const validate = values => {
+/*const validate = values => {
     const errors = {}
     const requiredFields = [ 'serviceName', 'serviceDescription', 'serviceVersion' ]
     requiredFields.forEach(field => {
@@ -241,10 +243,10 @@ const validate = values => {
     })
     /*if (values.email && !/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$/i.test(values.email)) {
         errors.email = 'Invalid email address'
-    }*/
+    }
     console.log(errors);
     return errors
-}
+}*/
 
 
 const ServiceEdit = reduxForm({form: 'ServiceEdit', validate} )(ServiceEditForm);
@@ -261,6 +263,7 @@ class Service extends React.Component {
         super(props);
         this.handleSubmit = this.props.handleSubmit.bind(this);
         this.handleUpdate = this.props.handleUpdate.bind(this);
+        this.handleAddOutput = this.props.handleAddOutput.bind(this);
 
         this.state = {
             showModal: false,
@@ -296,11 +299,11 @@ class Service extends React.Component {
                         <Modal.Title>{inService.Name}</Modal.Title>
                     </Modal.Header>
                     <Modal.Body>
-                        <ServiceEdit handleUpdate={this.handleUpdate} service={inService} initialValues={initialServiceValues}/>
+                        <ServiceEdit handleUpdate={this.handleUpdate} handleAddOutput={this.handleAddOutput} service={inService} initialValues={initialServiceValues}/>
                     </Modal.Body>
                     <Modal.Footer>
                         <Button className="btn btn-primary" onClick={this.handleUpdate}>Save</Button>
-                        <Button className="btn btn-primary" onClick={this.props.actions.addOutput(this.props.service.Output, {})}>Add output</Button>
+                        <Button className="btn btn-primary" onClick={this.handleAddOutput}>Add output</Button>
                         <Button onClick={this.handleModalClose.bind(this)}>Close</Button>
                     </Modal.Footer>
                 </Modal>
@@ -346,24 +349,14 @@ class Service extends React.Component {
     }
 }
 
-function mapStateToProps(state) {
-    return state
-}
-
-function mapDispatchToProps(dispatch) {
-    return {
-        actions: bindActionCreators(actions, dispatch)
-    }
-}
-
 Service.propTypes = {
     service: PropTypes.object.isRequired,
     fetchService: PropTypes.func.isRequired,
     selectedService: PropTypes.object.isRequired,
     handleSubmit: PropTypes.func.isRequired,
     handleUpdate: PropTypes.func.isRequired,
+    handleAddOutput: PropTypes.func.isRequired,
     volumes: PropTypes.array.isRequired,
 };
 
 export default Service;
-//export default connect(mapStateToProps, mapDispatchToProps)(Service);
