@@ -3,7 +3,7 @@ const validate = values => {
     if(!values.serviceName) {
         errors.serviceName = 'Required'
     }
-    if (!values.members || !values.members.length) {
+    /*if (!values.members || !values.members.length) {
         errors.members = { _error: 'At least one member must be entered' }
     } else {
         const membersArrayErrors = []
@@ -40,7 +40,7 @@ const validate = values => {
         if(membersArrayErrors.length) {
             errors.members = membersArrayErrors
         }
-    }
+    }*/
     return errors
 }
 

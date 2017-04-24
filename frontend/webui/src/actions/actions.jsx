@@ -488,6 +488,9 @@ function handleSubmitJob() {
 function addOutput() {
     return function (dispatch, getState)  {
         dispatch(outputAddStart());
+        console.log(getState().currentService);
+
+
         let outputs = [];
         let serviceOutputs = [];
         let newOutput = {};

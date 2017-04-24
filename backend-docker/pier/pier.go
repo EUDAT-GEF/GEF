@@ -20,6 +20,7 @@ import (
 const GefSrvLabelPrefix = "eudat.gef.service." // GefSrvLabelPrefix is the prefix identifying GEF related labels
 const stagingVolumeName = "volume-stage-in"
 const servicesFolder = "../services/"
+const internalServicesFolder = "_internal"
 
 // Pier is a master struct for gef-docker abstractions
 type Pier struct {
@@ -174,21 +175,19 @@ func (p *Pier) RemoveJob(jobID db.JobID) (db.Job, error) {
 	return job, nil
 }
 
-// PopulateServiceTable reads the "services" folder, builds images, and adds all the necessary information
-// to the database
-func (p *Pier) PopulateServiceTable() error {
-	log.Println("Reading folder with Dockerfiles for serices: " + servicesFolder)
+// buildServicesFromFolder builds an image from the specified folder and assigns a tag to it based on the corresponding folder name
+func (p *Pier) buildServicesFromFolder(inputFolder string) error {
 	doesExist := true
-	_, err := os.Stat(servicesFolder)
+	_, err := os.Stat(inputFolder)
 	if os.IsNotExist(err) {
 		doesExist = false
 	}
 	if doesExist {
-		files, _ := ioutil.ReadDir(servicesFolder)
+		files, _ := ioutil.ReadDir(inputFolder)
 		for _, f := range files {
-			if f.IsDir() {
+			if f.IsDir() && f.Name()!=internalServicesFolder {
 				log.Print("Opening folder: " + f.Name())
-				img, err := p.docker.BuildImage(filepath.Join(servicesFolder, f.Name()))
+				img, err := p.docker.BuildImage(filepath.Join(inputFolder, f.Name()))
 
 				if err != nil {
 					log.Print("failed to create a service: ", err)
@@ -214,6 +213,19 @@ func (p *Pier) PopulateServiceTable() error {
 		}
 	}
 	return nil
+}
+
+// PopulateServiceTable reads the "services" folder, builds images, and adds all the necessary information
+// to the database
+func (p *Pier) PopulateServiceTable() error {
+	log.Println("Reading the folder with Dockerfiles for internal services: " + filepath.Join(servicesFolder, internalServicesFolder))
+	err := p.buildServicesFromFolder(filepath.Join(servicesFolder, internalServicesFolder))
+	if err != nil {
+		return err
+	}
+	log.Println("Reading the folder with Dockerfiles for demo services: " + servicesFolder)
+	err = p.buildServicesFromFolder(servicesFolder)
+	return err
 }
 
 func (p *Pier) ImportImage(imageFilePath string) (db.Service, error) {
