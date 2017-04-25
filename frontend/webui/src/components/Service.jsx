@@ -4,7 +4,6 @@
 import React, {PropTypes} from 'react';
 import { Row, Col, Grid, Table, Button, Modal, OverlayTrigger, FormGroup, ControlLabel } from 'react-bootstrap';
 import {Field, FieldArray, reduxForm, initialize} from 'redux-form';
-import validate from './ServiceMetadataValidator'
 
 // this is a detailed view of a service, user will be able to execute service in this view
 
@@ -175,7 +174,7 @@ const OutputTable = ({service}) => {
 
 
 const ServiceEditForm = (props) => {
-    const { handleUpdate, handleAddInput, handleAddOutput, service } = props;
+    const { handleUpdate, handleAddIO, service } = props;
 
     return (
         <form>
@@ -207,7 +206,7 @@ const ServiceEditForm = (props) => {
                             <Field name="inputSourcePath" component="input" type="text" placeholder="Path in the container"
                                    className="form-control"/>
                             <span className="input-group-btn">
-                                <Button type="submit" className="btn btn-default" onClick={handleAddInput}>
+                                <Button type="submit" className="btn btn-default" onClick={(evt) => handleAddIO(true, evt)}>
                                     <span className="glyphicon glyphicon-plus" aria-hidden="true"></span> Add
                                 </Button>
                             </span>
@@ -228,7 +227,7 @@ const ServiceEditForm = (props) => {
                             <Field name="outputSourcePath" component="input" type="text" placeholder="Path in the container"
                                    className="form-control"/>
                             <span className="input-group-btn">
-                                <Button type="submit" className="btn btn-default" onClick={handleAddOutput}>
+                                <Button type="submit" className="btn btn-default" onClick={(evt) => handleAddIO(false, evt)}>
                                     <span className="glyphicon glyphicon-plus" aria-hidden="true"></span> Add
                                 </Button>
                             </span>
@@ -272,18 +271,20 @@ class Service extends React.Component {
         super(props);
         this.handleSubmit = this.props.handleSubmit.bind(this);
         this.handleUpdate = this.props.handleUpdate.bind(this);
-        this.handleAddOutput = this.props.handleAddOutput.bind(this);
-        this.handleAddInput = this.props.handleAddInput.bind(this);
+        this.handleAddIO = this.props.handleAddIO.bind(this);
+
 
         this.state = {
             showModal: false,
             currentService: {},
             //currentOutputs: [],
         };
+        //this.changedService = this.state.currentService;
     }
 
-    handleAddInput() {
 
+    handleAddInput(e) {
+        e.preventDefault();
         let newInput = [];
         this.state.currentService.Input.map((input, index) => {
             newInput.push(input);
@@ -305,7 +306,7 @@ class Service extends React.Component {
             'ImageID': this.state.currentService.ImageID,
             'Input': newInput,
             'Name': this.state.currentService.serviceName,
-            'Output': newOutput,
+            'Output': this.state.currentService.Input,
             'RepoTag': this.state.currentService.RepoTag,
             'Size': this.state.currentService.Size,
             'Version': this.state.currentService.serviceVersion
@@ -313,7 +314,10 @@ class Service extends React.Component {
 
         //oldService.push({});
         this.setState({ currentService: outputObject });
+        //this.changedService = this.state.currentService;
     }
+
+
 
     handleModalClose() {
         this.setState({ showModal: false });
@@ -322,11 +326,6 @@ class Service extends React.Component {
 
     handleModalOpen() {
         this.setState({showModal: true});
-        /*let serviceOutputs = [];
-        this.props.service.Output.map((out, index) => {
-            serviceOutputs.push(out);
-        }*/
-
     }
 
 
@@ -352,7 +351,7 @@ class Service extends React.Component {
                         <Modal.Title>{inService.Name}</Modal.Title>
                     </Modal.Header>
                     <Modal.Body>
-                        <ServiceEdit handleUpdate={this.handleUpdate} handleAddIntput={this.handleAddIntput} handleAddOutput={this.handleAddOutput} service={this.state.currentService} initialValues={initialServiceValues}/>
+                        <ServiceEdit handleUpdate={this.handleUpdate} service={this.props.selectedService.Service} initialValues={initialServiceValues} handleAddIO={this.handleAddIO.bind(this)}/>
                     </Modal.Body>
                     <Modal.Footer>
                         <Button className="btn btn-primary" onClick={this.handleUpdate}>Save</Button>
@@ -376,6 +375,7 @@ class Service extends React.Component {
             return (<div>loading</div>)
         } else {
             const {ID, Name, Description, Version} = this.props.selectedService.Service;
+
             return (
 
                 <div className="panel panel-default">
@@ -406,9 +406,10 @@ Service.propTypes = {
     service: PropTypes.object.isRequired,
     fetchService: PropTypes.func.isRequired,
     selectedService: PropTypes.object.isRequired,
+
     handleSubmit: PropTypes.func.isRequired,
     handleUpdate: PropTypes.func.isRequired,
-    handleAddOutput: PropTypes.func.isRequired,
+    handleAddIO: PropTypes.func.isRequired,
     volumes: PropTypes.array.isRequired,
 };
 

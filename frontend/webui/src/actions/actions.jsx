@@ -236,22 +236,22 @@ function consoleOutputFetchError(errorMessage) {
     }
 }
 
-function outputAddStart() {
+function ioAddStart() {
     return {
-        type: actionTypes.OUTPUT_ADD_START
+        type: actionTypes.IO_ADD_START
     }
 }
 
-function outputAddSuccess(data) {
+function ioAddSuccess(data) {
     return {
-        type: actionTypes.OUTPUT_ADD_SUCCESS,
+        type: actionTypes.IO_ADD_SUCCESS,
         data: data
     }
 }
 
-function outputAddError(errorMessage) {
+function ioAddError(errorMessage) {
     return {
-        type: actionTypes.OUTPUT_ADD_ERROR,
+        type: actionTypes.IO_ADD_ERROR,
         errorMessage: errorMessage
     }
 }
@@ -454,7 +454,9 @@ function handleUpdateService() {
 
         resultPromise.then(response => {
             log('updated service:', response.data);
-            dispatch(serviceUpdateSuccess(response.data));
+
+            dispatch(serviceFetchSuccess(response.data));
+            //dispatch(serviceUpdateSuccess(response.data));
         }).catch(err => {
             Alert.error("Cannot update the service.");
             log("An update error occurred");
@@ -485,58 +487,83 @@ function handleSubmitJob() {
 }
 
 
-function addOutput() {
+function addIOPort(isInput) {
     return function (dispatch, getState)  {
-        dispatch(outputAddStart());
-        console.log(getState().currentService);
-
-
-        let outputs = [];
-        let serviceOutputs = [];
-        let newOutput = {};
-
-        serviceOutputs.map((out) => {
-            outputs.push(out);
-        });
-        outputs.push(newOutput);
-
-
 
         const selectedService = getState().selectedService;
         const serviceEdit = getState().form.ServiceEdit;
-        log("selectedService", selectedService);
 
-        let outputObject = {'selectedService': {
-            'Service': {
-                'Created': selectedService.Service.Created,
-                'Description': serviceEdit.values.serviceDescription,
-                'ID': selectedService.Service.ID,
-                'ImageID': selectedService.Service.ImageID,
-                'Input': [],
-                'Name': serviceEdit.values.serviceName,
-                'Output': [],
-                'RepoTag': selectedService.Service.RepoTag,
-                'Size': selectedService.Service.Size,
-                'Version': serviceEdit.values.serviceVersion
+        dispatch(ioAddStart());
+
+
+        let inputs = [];
+        let newInput = {};
+        let outputs = [];
+        let newOutput = {};
+
+
+
+        selectedService.Service.Input.map((input) => {
+            inputs.push(input);
+        });
+
+        selectedService.Service.Output.map((out) => {
+            outputs.push(out);
+        });
+
+        if (isInput) {
+
+            newInput.ID = "input" + selectedService.Service.Input.length;
+            newInput.Name = serviceEdit.values.inputSourceName;
+            newInput.Path = serviceEdit.values.inputSourcePath;
+            if ((!newInput.Name) && (!newInput.Path)){
+                Alert.error("Input name and path cannot be empty");
+                log("An update error occurred");
+                dispatch(ioAddError());
             }
+            inputs.push(newInput);
+        } else {
+            newOutput.ID = "output" + selectedService.Service.Output.length;
+            newOutput.Name = serviceEdit.values.outputSourceName;
+            newOutput.Path = serviceEdit.values.outputSourcePath;
+            outputs.push(newOutput);
+        }
 
-        }};
+
+        let outputObject = {
+            'Created': selectedService.Service.Created,
+            'Description': selectedService.Service.Description,
+            'ID': selectedService.Service.ID,
+            'ImageID': selectedService.Service.ImageID,
+            'Input': inputs,
+            'Name': selectedService.Service.Name,
+            'Output': outputs,
+            'RepoTag': selectedService.Service.RepoTag,
+            'Size': selectedService.Service.Size,
+            'Version': selectedService.Service.Version
+        };
 
 
 
 
 
-        dispatch(outputAddSuccess(outputObject));
+        dispatch(ioAddSuccess(outputObject));
 
 
-        /*resultPromise.then(response => {
-            log('fetched jobs:', response.data.Jobs);
-            dispatch(jobListFetchSuccess(response.data.Jobs));
+
+        dispatch(serviceUpdateStart());
+        const resultPromise = axios.put( apiNames.services, outputObject);
+
+        resultPromise.then(response => {
+            log('updated service:', response.data);
+            dispatch(serviceFetchSuccess(response.data));
+            //dispatch(serviceUpdateSuccess(response.data));
         }).catch(err => {
-            Alert.error("Cannot fetch job information from the server.");
-            log("An fetch error occurred", err);
-            dispatch(jobListFetchError(err));
-        })*/
+            Alert.error("Cannot update the service.");
+            log("An update error occurred");
+            dispatch(serviceUpdateError(err));
+        })
+
     }
 }
 
@@ -578,9 +605,9 @@ export default {
     consoleOutputFetchSuccess,
     consoleOutputFetchError,
 
-    outputAddStart,
-    outputAddSuccess,
-    outputAddError,
+    ioAddStart,
+    ioAddSuccess,
+    ioAddError,
 
     fetchJobs,
     removeJob,
@@ -597,6 +624,6 @@ export default {
     fileUploadError,
     getNewUploadEndpoint,
     handleSubmitJob,
-    addOutput,
+    addIOPort,
 
 };
