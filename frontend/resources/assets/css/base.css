@@ -1,71 +1,130 @@
 @font-face {
-  font-family: 'Raleway';
-  font-style: normal;
-  font-weight: 400;
-  src: local('Raleway'), url(../fonts/Raleway.woff2) format('woff2'), url(../fonts/Raleway.woff) format('woff');
+    font-family: 'Raleway';
+    font-style: normal;
+    font-weight: 400;
+    src: local('Raleway'), url(../fonts/Raleway.woff2) format('woff2'), url(../fonts/Raleway.woff) format('woff');
 }
 
 @font-face {
-  font-family: 'Raleway';
-  font-style: normal;
-  font-weight: 500;
-  src: local('Raleway Medium'), local('Raleway-Medium'), url(../fonts/Raleway_medium.woff2) format('woff2'), url(../fonts/Raleway_medium.woff) format('woff');
+    font-family: 'Raleway';
+    font-style: normal;
+    font-weight: 500;
+    src: local('Raleway Medium'), local('Raleway-Medium'), url(../fonts/Raleway_medium.woff2) format('woff2'), url(../fonts/Raleway_medium.woff) format('woff');
 }
 
 @font-face {
-  font-family: 'Raleway';
-  font-style: normal;
-  font-weight: 600;
-  src: local('Raleway SemiBold'), local('Raleway-SemiBold'), url(../fonts/Raleway_semibold.woff2) format('woff2'), url(../fonts/Raleway_semibold.woff) format('woff');
+    font-family: 'Raleway';
+    font-style: normal;
+    font-weight: 600;
+    src: local('Raleway SemiBold'), local('Raleway-SemiBold'), url(../fonts/Raleway_semibold.woff2) format('woff2'), url(../fonts/Raleway_semibold.woff) format('woff');
 }
 
 @font-face {
-  font-family: 'Raleway';
-  font-style: normal;
-  font-weight: 700;
-  src: local('Raleway Bold'), local('Raleway-Bold'), url(../fonts/Raleway_bold.woff2) format('woff2'), url(../fonts/Raleway_bold.woff) format('woff');
+    font-family: 'Raleway';
+    font-style: normal;
+    font-weight: 700;
+    src: local('Raleway Bold'), local('Raleway-Bold'), url(../fonts/Raleway_bold.woff2) format('woff2'), url(../fonts/Raleway_bold.woff) format('woff');
 }
 
 /*** STRUCTURE LAYOUT ***/
-html,body{height:100%;margin:0; color: #333;font-family: 'Raleway', sans-serif;}
-#header-top {background: #F45D00;padding: 5px 0;}
-#header-top a {color: #FFFFFF;}
-#header {padding: 1% 0;background: #FFFFFF url("../images/img_header.png") no-repeat top right;}
-footer {background: #F7F3E9 url("../images/color-line.jpg") repeat-x top left;padding: 20px 10px 0px 10px;font-size: 12px;}
+html,body {
+    height:100%;
+    margin:0;
+    color: #333;
+    font-family: 'Raleway',
+    sans-serif;
+}
+#header-top {
+    background: #F45D00;
+    padding: 5px 0;
+}
+#header-top a {
+    color: #FFFFFF;
+}
+#header {
+    padding: 1% 0;
+    background: #FFFFFF url("../images/img_header.png") no-repeat top right;
+}
+footer {
+    background: #F7F3E9 url("../images/color-line.jpg") repeat-x top left;
+    padding: 20px 10px 0px 10px;font-size: 12px;
+}
 
 /*** GENERAL STYLE ELEMENTS ***/
-h1 {font-weight: 600;}
-a {color: #F45D00;text-decoration: none;}
-a:hover {text-decoration: none;}
+h1 {
+    font-weight: 600;
+}
+a {
+    color: #F45D00;
+    text-decoration: none;
+}
+a:hover {
+    text-decoration: none;
+}
 
 /**** NAVBAR ***/
-.navbar-default {background-color: transparent !important;border: 0 !important; /*margin-top: 30px;*/}
-.navbar-default .navbar-nav > li > a {color: #333333;font-weight: 500;font-size: 16px;}
-.navbar-default .navbar-nav > li > a:hover {color: #F45D00;font-weight: 500;font-size: 16px;}
-.navbar-default .navbar-collapse, .navbar-default .navbar-form {border:0;}
-.navbar-form {float: none !important;}
-.navbar-footer {background-color: transparent !important;border: 0 !important;}
-.navbar-footer ul li a {background-color: transparent !important;color: #666; }
-.navbar-footer ul li a:hover {color: #333;}
+.navbar-default {
+    background-color: transparent !important;
+    border: 0 !important;
+}
+.navbar-default .navbar-nav > li > a {
+    color: #333333;
+    font-weight: 500;
+    font-size: 16px;
+}
+.navbar-default .navbar-nav > li > a:hover {
+    color: #F45D00;
+    font-weight: 500;
+    font-size: 16px;
+}
+.navbar-default .navbar-collapse, .navbar-default .navbar-form {
+    border:0;
+}
+.navbar-form {
+    float: none !important;
+}
+.navbar-footer {
+    background-color: transparent !important;
+    border: 0 !important;
+}
+.navbar-footer ul li a {
+    background-color: transparent !important;
+    color: #666;
+}
+.navbar-footer ul li a:hover {
+    color: #333;
+}
 
-#searchform-input-group {padding: 8px 0;}
-#search-box-main .navbar {margin: 20px 0;}
+#searchform-input-group {
+    padding: 8px 0;
+}
+#search-box-main .navbar {
+    margin: 20px 0;
+}
 
 /*** OLD CSS STYLE ***/
-.right-not-rounded {border-bottom-right-radius: 0;border-top-right-radius: 0;}
-.left-not-rounded {border-bottom-left-radius: 0;border-top-left-radius: 0;}
-.no-padding {padding: 0;}
+.right-not-rounded {
+    border-bottom-right-radius: 0;
+    border-top-right-radius: 0;
+}
+.left-not-rounded {
+    border-bottom-left-radius: 0;
+    border-top-left-radius: 0;
+}
+.no-padding {
+    padding: 0;
+}
 
 
 /*** GENERALS ***/
 
 input, select, textarea {
-	-webkit-transition: all 0.30s ease-in-out;
-	-moz-transition: all 0.30s ease-in-out;
-	-ms-transition: all 0.30s ease-in-out;
-	-o-transition: all 0.30s ease-in-out;
-	outline: none;
-	border: 1px solid #ccc;
+    -webkit-transition: all 0.30s ease-in-out;
+    -moz-transition: all 0.30s ease-in-out;
+    -ms-transition: all 0.30s ease-in-out;
+    -o-transition: all 0.30s ease-in-out;
+    outline: none;
+    border: 1px solid #ccc;
     width: 100%;
 }
 input:focus, select:focus, textarea:focus, button:focus, a:focus {
@@ -105,10 +164,10 @@ input:focus, select:focus, textarea:focus, button:focus, a:focus {
 
 /*** Pages: Datasets, Workflows, Jobs; ***/
 
-.table-head{
-  line-height: 30px;
-  border-bottom: 1px solid #ddd;
-  font-weight: bold;
+.table-head {
+    line-height: 30px;
+    border-bottom: 1px solid #ddd;
+    font-weight: bold;
 }
 
 .dataset-page .dataset-table {
@@ -117,122 +176,116 @@ input:focus, select:focus, textarea:focus, button:focus, a:focus {
 }
 
 .dataset-page .dataset-table .row {
-  line-height: 30px;
-  border-bottom: 1px solid #ddd;
+    line-height: 30px;
+    border-bottom: 1px solid #ddd;
 }
 
 .dataset-page .dataset-table .row:hover {
-  background-color: #ececec;
+    background-color: #ececec;
 }
-
 
 .services-table {
-  font-family: Monaco, "Lucida Console", monospace;
-  font-size: 13px;
+    font-family: Monaco, "Lucida Console", monospace;
+    font-size: 13px;
 }
 .services-table .row {
-  line-height: 30px;
-  border-bottom: 1px solid #ddd;
+    line-height: 30px;
+    border-bottom: 1px solid #ddd;
 }
 
 .services-table .row:hover {
-  background-color: #ececec;
+    background-color: #ececec;
 }
 
 .jobs-table {
-  font-family: Monaco, "Lucida Console", monospace;
-  font-size: 13px;
+    font-family: Monaco, "Lucida Console", monospace;
+    font-size: 13px;
 }
 .jobs-table .row {
-  line-height: 30px;
-  border-bottom: 1px solid #ddd;
+    line-height: 30px;
+    border-bottom: 1px solid #ddd;
 }
 
 .jobs-table .row:hover {
-  background-color: #ececec;
+    background-color: #ececec;
 }
 
 
 /*** error ***/
-
 .errorDiv {
-	position: relative;
-	height: 10px;
-	text-align: center;
+    position: relative;
+    height: 10px;
+    text-align: center;
 }
 
 .errorRow {
-	position: absolute;
-	width: 100%;
-	text-align: center;
-  z-index: 100;
+    position: absolute;
+    width: 100%;
+    text-align: center;
+    z-index: 100;
 }
 
 .errorRow div div * {
-	color: #fff;
-	border-radius: 4px;
-	text-align: center;
-	margin: 0 auto;
-  padding: 10px;
-  background-color: hsla(10, 100%, 50%, 0.75);
+    color: #fff;
+    border-radius: 4px;
+    text-align: center;
+    margin: 0 auto;
+    padding: 10px;
+    background-color: hsla(10, 100%, 50%, 0.75);
 }
 
 .errorRow .errorMessage {
-	margin: 2px 0;
+    margin: 2px 0;
 }
 
 /*** transitions css ***/
-
 .fade-enter {
-  opacity: 0.01;
-  transition: all .2s ease-in;
+    opacity: 0.01;
+    transition: all .2s ease-in;
 }
 .fade-enter.fade-enter-active {
-  opacity: 1;
+    opacity: 1;
 }
 .fade-leave {
-  opacity: 1;
-  transition: all .2s ease-in;
+    opacity: 1;
+    transition: all .2s ease-in;
 }
 .fade-leave.fade-leave-active {
-  opacity: 0.01;
+    opacity: 0.01;
 }
-
 
 .error-enter {
-  opacity: 0.01;
-  transition: all .2s ease-in;
+    opacity: 0.01;
+    transition: all .2s ease-in;
 }
 .error-enter.error-enter-active {
-  opacity: 1;
+    opacity: 1;
 }
 .error-leave {
-  opacity: 1;
-  transition: all .2s ease-in;
+    opacity: 1;
+    transition: all .2s ease-in;
 }
 .error-leave.error-leave-active {
-  opacity: 0.01;
+    opacity: 0.01;
 }
-
 
 .display-enter {
-  opacity: 0.01;
-  transition: all 2s ease-in;
+    opacity: 0.01;
+    transition: all 2s ease-in;
 }
 .display-enter.display-enter-active {
-  opacity: 1;
+    opacity: 1;
 }
 .display-leave {
-  opacity: 1;
-  transition: all 2s ease-in;
+    opacity: 1;
+    transition: all 2s ease-in;
 }
 .display-leave.display-leave-active {
-  opacity: 0.01;
+    opacity: 0.01;
 }
 
 
 /*** file uploads ***/
-
 .btn-file {
     position: relative;
     overflow: hidden;
@@ -254,15 +307,14 @@ input:focus, select:focus, textarea:focus, button:focus, a:focus {
 }
 
 code {
-	background-color: #f8f8f8;
-	border: 1px solid #ddd;
-	border-radius: 3px;
-	font-family: "Bitstream Vera Sans Mono", Consolas, Courier, monospace;
-	font-size: 12px;
-	margin: 0 2px;
-	padding: 0px 5px;
+    background-color: #f8f8f8;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+    font-family: "Bitstream Vera Sans Mono", Consolas, Courier, monospace;
+    font-size: 12px;
+    margin: 0 2px;
+    padding: 0px 5px;
 }
-
 
 /*** List of files from a volume ***/
 .fileList {
@@ -271,37 +323,37 @@ code {
     overflow: auto;
 }
 .fileList .fileHeader {
-  margin: 0.5em 0px;
-  padding: 0.5em 0;
-  border-bottom: 1px solid #ddd;
+    margin: 0.5em 0px;
+    padding: 0.5em 0;
+    border-bottom: 1px solid #ddd;
 }
 .fileList .fileHeader *{
-  font-weight: bold;
+    font-weight: bold;
 }
 .fileList .file {
-  padding: 0.5em 0;
-  word-wrap: break-word;
+    padding: 0.5em 0;
+    word-wrap: break-word;
 }
 .fileList .file .details{
-  overflow-x: auto;
+    overflow-x: auto;
 }
 .fileList .file:nth-child(odd) {
-  background-color: #f4f4f4;
+    background-color: #f4f4f4;
 }
 .fileList .file:nth-child(even) {
-  background-color: #fafafa;
+    background-color: #fafafa;
 }
 .fileList .file:hover {
-  background-color: #fff;
+    background-color: #fff;
 }
 .fileList .file .btn.remove {
-  float: right;
-  color: #F45D00;
-  border: none;
-  background-color: transparent;
+    float: right;
+    color: #F45D00;
+    border: none;
+    background-color: transparent;
 }
 .fileList .file .btn.remove:hover {
-  color: red;
+    color: red;
 }
 
 /*** Scrollable console in a modal window ***/
@@ -313,14 +365,13 @@ pre {
     word-break: normal !important;
     word-wrap: normal !important;
     white-space: pre !important;
-}​
-
-/*** Metadata editing modal window ***/
-.metadata-modal{
-     display: block !important;
 }
 
-.metadata-modal-body{
+/*** Metadata editing modal window ***/
+.metadata-modal {
+  display: block !important;
+}
+.metadata-modal-body {
     height: 600px;
     overflow-y: auto;
 }

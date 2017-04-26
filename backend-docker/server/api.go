@@ -64,7 +64,7 @@ func NewServer(cfg def.ServerConfig, pier *pier.Pier, tmpDir string, database *d
 
 		"GET /services":             decorate("service discovery", server.listServicesHandler),
 		"GET /services/{serviceID}": decorate("service discovery", server.inspectServiceHandler),
-		"PUT /services":             decorate("service modification", server.editServiceHandler),
+		"PUT /services/{serviceID}": decorate("service modification", server.editServiceHandler),
 
 		"POST /jobs":               decorate("data analysis", server.executeServiceHandler),
 		"GET /jobs":                decorate("data discovery", server.listJobsHandler),
@@ -237,14 +237,20 @@ func (s *Server) inspectServiceHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) editServiceHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
 	decoder := json.NewDecoder(r.Body)
 	var service db.Service
 	err := decoder.Decode(&service)
 	if err != nil {
-		Response{w}.ClientError("cannot get service", err)
+		Response{w}.ClientError("cannot get service from JSON", err)
 		return
 	}
 	defer r.Body.Close()
+
+	if vars["serviceID"] != string(service.ID) {
+		Response{w}.ServerNewError("update service: ID mismatch")
+		return
+	}
 
 	err = s.db.RemoveService(service.ID)
 	if err != nil {

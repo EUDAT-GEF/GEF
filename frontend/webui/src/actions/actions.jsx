@@ -450,7 +450,7 @@ function handleUpdateService() {
         };
 
         dispatch(serviceUpdateStart());
-        const resultPromise = axios.put( apiNames.services, outputObject);
+        const resultPromise = axios.put(apiNames.services + '/' + selectedService.Service.ID, outputObject);
 
         resultPromise.then(response => {
             log('updated service:', response.data);
@@ -545,7 +545,7 @@ function addIOPort(isInput) {
         if ((inputs.length>0) && (outputs.length>0)) {
             dispatch(ioAddSuccess(outputObject));
             dispatch(serviceUpdateStart());
-            const resultPromise = axios.put(apiNames.services, outputObject);
+            const resultPromise = axios.put(apiNames.services + '/' + selectedService.Service.ID, outputObject);
 
             resultPromise.then(response => {
                 log('updated service:', response.data);
@@ -599,7 +599,7 @@ function removeIOPort(isInput, removeIndex) {
 
         dispatch(ioRemoveSuccess(outputObject));
         dispatch(serviceUpdateStart());
-        const resultPromise = axios.put(apiNames.services, outputObject);
+        const resultPromise = axios.put(apiNames.services + '/' + selectedService.Service.ID, outputObject);
 
         resultPromise.then(response => {
             log('updated service:', response.data);

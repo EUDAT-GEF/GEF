@@ -177,37 +177,35 @@ func (p *Pier) RemoveJob(jobID db.JobID) (db.Job, error) {
 
 // buildServicesFromFolder builds an image from the specified folder and assigns a tag to it based on the corresponding folder name
 func (p *Pier) buildServicesFromFolder(inputFolder string) error {
-	doesExist := true
 	_, err := os.Stat(inputFolder)
 	if os.IsNotExist(err) {
-		doesExist = false
+		return nil
 	}
-	if doesExist {
-		files, _ := ioutil.ReadDir(inputFolder)
-		for _, f := range files {
-			if f.IsDir() && f.Name() != internalServicesFolder {
-				log.Print("Opening folder: " + f.Name())
-				img, err := p.docker.BuildImage(filepath.Join(inputFolder, f.Name()))
 
+	files, _ := ioutil.ReadDir(inputFolder)
+	for _, f := range files {
+		if f.IsDir() && f.Name() != internalServicesFolder {
+			log.Print("Opening folder: " + f.Name())
+			img, err := p.docker.BuildImage(filepath.Join(inputFolder, f.Name()))
+
+			if err != nil {
+				log.Print("failed to create a service: ", err)
+			} else {
+				log.Print("service has been created")
+
+				err = p.docker.TagImage(string(img.ID), f.Name(), "latest")
 				if err != nil {
-					log.Print("failed to create a service: ", err)
-				} else {
-					log.Print("service has been created")
+					log.Print("could not tag the service")
+				}
 
-					err = p.docker.TagImage(string(img.ID), f.Name(), "latest")
-					if err != nil {
-						log.Print("could not tag the service")
-					}
+				img, err = p.docker.InspectImage(img.ID)
+				if err != nil {
+					log.Print("failed to inspect the image: ", err)
+				}
 
-					img, err = p.docker.InspectImage(img.ID)
-					if err != nil {
-						log.Print("failed to inspect the image: ", err)
-					}
-
-					err = p.db.AddService(NewServiceFromImage(img))
-					if err != nil {
-						log.Print("failed to add the service to the database: ", err)
-					}
+				err = p.db.AddService(NewServiceFromImage(img))
+				if err != nil {
+					log.Print("failed to add the service to the database: ", err)
 				}
 			}
 		}
