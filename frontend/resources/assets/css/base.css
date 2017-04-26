@@ -315,7 +315,7 @@ pre {
     white-space: pre !important;
 }​
 
-
+/*** Metadata editing modal window ***/
 .metadata-modal{
      display: block !important;
 }

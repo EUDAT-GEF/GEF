@@ -4,11 +4,7 @@
 import React, {PropTypes} from 'react';
 import { Row, Col, Grid, Table, Button, Modal, OverlayTrigger, FormGroup, ControlLabel } from 'react-bootstrap';
 import {Field, FieldArray, reduxForm, initialize} from 'redux-form';
-
 // this is a detailed view of a service, user will be able to execute service in this view
-
-
-
 
 const renderField = ({ input, label, type, meta: { touched, error } }) => (
     <div className="form-group has-error has-feedback">
@@ -66,17 +62,12 @@ const JobCreatorForm = (props) => {
 
 const JobCreator = reduxForm({form: 'JobCreator'} )(JobCreatorForm);
 
-
-
-
 const InputTable = ({service, handleRemoveIO}) => {
-
     let inCounter = -1;
     let inputs = [];
     service.Input.map((input) => {
         inputs.push(input);
     });
-
     const IOTableRow = ({input, index}) => {
         return (
             <tr>
@@ -93,7 +84,6 @@ const InputTable = ({service, handleRemoveIO}) => {
     };
 
     return (
-
         <Table responsive>
             <thead>
             <tr>
@@ -104,17 +94,14 @@ const InputTable = ({service, handleRemoveIO}) => {
             </tr>
             </thead>
             <tbody>
-
             { service.Input.map((input) => {
                 inCounter++;
                 return (
                     <FieldArray name={`${input}.ID`} component={IOTableRow} input={input} key={`${input}.ID` + inCounter} index={inCounter}/>
                 )
             })}
-
             </tbody>
         </Table>
-
     )
 };
 
@@ -142,7 +129,6 @@ const OutputTable = ({service, handleRemoveIO}) => {
     };
 
     return (
-
         <Table responsive>
             <thead>
             <tr>
@@ -153,26 +139,20 @@ const OutputTable = ({service, handleRemoveIO}) => {
             </tr>
             </thead>
             <tbody>
-
             { service.Output.map((out) => {
                 outCounter++;
                 return (
                     <FieldArray name={`${out}.ID`} component={IOTableRow} out={out} key={`${out}.ID` + outCounter} index={outCounter}/>
                 )
             })}
-
             </tbody>
         </Table>
-
     )
 };
 
 
-
-
-
 const ServiceEditForm = (props) => {
-    const { handleUpdate, handleAddIO, handleRemoveIO, service } = props;
+    const {handleAddIO, handleRemoveIO, service } = props;
 
     return (
         <form>
@@ -215,9 +195,6 @@ const ServiceEditForm = (props) => {
                     <FormGroup>
                         <ControlLabel>Outputs</ControlLabel>
                         <div className="input-group">
-
-
-
                             <span className="input-group-addon">Name</span>
                             <Field name="outputSourceName" component="input" type="text" placeholder="Any name"
                                    className="form-control"/>
@@ -239,12 +216,7 @@ const ServiceEditForm = (props) => {
     )
 };
 
-
 const ServiceEdit = reduxForm({form: 'ServiceEdit'})(ServiceEditForm);
-
-
-
-
 
 class Service extends React.Component {
     constructor(props) {
@@ -259,7 +231,6 @@ class Service extends React.Component {
         };
     }
 
-
     handleModalClose() {
         this.setState({ showModal: false });
     }
@@ -271,7 +242,6 @@ class Service extends React.Component {
     componentDidMount() {
         this.props.fetchService(this.props.service.ID);
     }
-
 
     render() {
         if(! this.props.selectedService.Service) {
@@ -309,7 +279,7 @@ class Service extends React.Component {
                                 <Modal.Title>{this.props.selectedService.Service.Name}</Modal.Title>
                             </Modal.Header>
                             <Modal.Body className="metadata-modal-body">
-                                <ServiceEdit handleUpdate={this.handleUpdate} service={this.props.selectedService.Service} initialValues={initialServiceValues} handleAddIO={this.handleAddIO.bind(this)} handleRemoveIO={this.handleRemoveIO.bind(this)}/>
+                                <ServiceEdit initialValues={initialServiceValues} service={this.props.selectedService.Service} handleAddIO={this.handleAddIO.bind(this)} handleRemoveIO={this.handleRemoveIO.bind(this)}/>
                             </Modal.Body>
                             <Modal.Footer>
                                 <Button className="btn btn-primary" onClick={this.handleUpdate}>Save</Button>

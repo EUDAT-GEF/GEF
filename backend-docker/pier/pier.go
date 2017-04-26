@@ -185,7 +185,7 @@ func (p *Pier) buildServicesFromFolder(inputFolder string) error {
 	if doesExist {
 		files, _ := ioutil.ReadDir(inputFolder)
 		for _, f := range files {
-			if f.IsDir() && f.Name()!=internalServicesFolder {
+			if f.IsDir() && f.Name() != internalServicesFolder {
 				log.Print("Opening folder: " + f.Name())
 				img, err := p.docker.BuildImage(filepath.Join(inputFolder, f.Name()))
 

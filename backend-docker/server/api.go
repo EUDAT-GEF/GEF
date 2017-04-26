@@ -8,11 +8,11 @@ import (
 	"path/filepath"
 	"strings"
 
+	"encoding/json"
 	"github.com/EUDAT-GEF/GEF/backend-docker/db"
 	"github.com/EUDAT-GEF/GEF/backend-docker/def"
 	"github.com/EUDAT-GEF/GEF/backend-docker/pier"
 	"github.com/gorilla/mux"
-	"encoding/json"
 )
 
 const (
@@ -64,7 +64,7 @@ func NewServer(cfg def.ServerConfig, pier *pier.Pier, tmpDir string, database *d
 
 		"GET /services":             decorate("service discovery", server.listServicesHandler),
 		"GET /services/{serviceID}": decorate("service discovery", server.inspectServiceHandler),
-		"PUT /services": decorate("service modification", server.editServiceHandler),
+		"PUT /services":             decorate("service modification", server.editServiceHandler),
 
 		"POST /jobs":               decorate("data analysis", server.executeServiceHandler),
 		"GET /jobs":                decorate("data discovery", server.listJobsHandler),
@@ -260,8 +260,6 @@ func (s *Server) editServiceHandler(w http.ResponseWriter, r *http.Request) {
 
 	Response{w}.Ok(jmap("Service", service))
 }
-
-
 
 func (s *Server) executeServiceHandler(w http.ResponseWriter, r *http.Request) {
 	serviceID := r.FormValue("serviceID")

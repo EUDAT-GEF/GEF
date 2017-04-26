@@ -456,8 +456,8 @@ function handleUpdateService() {
             log('updated service:', response.data);
             Alert.info("Service metadata has been successfully updated");
             dispatch(serviceFetchSuccess(response.data));
+            dispatch(serviceUpdateSuccess(response.data));
             fetchServices();
-            //dispatch(serviceUpdateSuccess(response.data));
         }).catch(err => {
             Alert.error("Cannot update the service.");
             log("An update error occurred");
@@ -499,7 +499,6 @@ function addIOPort(isInput) {
         let outputs = [];
         let newOutput = {};
 
-
         if (isInput) {
             newInput.ID = "input" + selectedService.Service.Input.length;
             newInput.Name = serviceEdit.values.inputSourceName;
@@ -530,7 +529,6 @@ function addIOPort(isInput) {
             inputs = selectedService.Service.Input;
         }
 
-
         let outputObject = {
             'Created': selectedService.Service.Created,
             'Description': selectedService.Service.Description,
@@ -552,19 +550,15 @@ function addIOPort(isInput) {
             resultPromise.then(response => {
                 log('updated service:', response.data);
                 dispatch(serviceFetchSuccess(response.data));
-                //dispatch(serviceUpdateSuccess(response.data));
+                dispatch(serviceUpdateSuccess(response.data));
             }).catch(err => {
                 Alert.error("Cannot update the service.");
                 log("An update error occurred");
                 dispatch(serviceUpdateError(err));
             })
         }
-
     }
 }
-
-
-
 
 function removeIOPort(isInput, removeIndex) {
     console.log("Remove", isInput, removeIndex);
@@ -591,7 +585,6 @@ function removeIOPort(isInput, removeIndex) {
             inputs = selectedService.Service.Input;
         }
 
-
         let outputObject = {
             'Created': selectedService.Service.Created,
             'Description': selectedService.Service.Description,
@@ -605,7 +598,6 @@ function removeIOPort(isInput, removeIndex) {
             'Version': selectedService.Service.Version
         };
 
-
         dispatch(ioRemoveSuccess(outputObject));
         dispatch(serviceUpdateStart());
         const resultPromise = axios.put(apiNames.services, outputObject);
@@ -613,21 +605,14 @@ function removeIOPort(isInput, removeIndex) {
         resultPromise.then(response => {
             log('updated service:', response.data);
             dispatch(serviceFetchSuccess(response.data));
-            //dispatch(serviceUpdateSuccess(response.data));
+            dispatch(serviceUpdateSuccess(response.data));
         }).catch(err => {
             Alert.error("Cannot update the service.");
             log("An update error occurred");
             dispatch(serviceUpdateError(err));
         })
-
-
     }
 }
-
-
-
-
-
 
 function showErrorMessageWithTimeout(id, timeout) {
 
