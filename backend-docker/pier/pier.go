@@ -20,6 +20,7 @@ import (
 const GefSrvLabelPrefix = "eudat.gef.service." // GefSrvLabelPrefix is the prefix identifying GEF related labels
 const stagingVolumeName = "volume-stage-in"
 const servicesFolder = "../services/"
+const internalServicesFolder = "_internal"
 
 // Pier is a master struct for gef-docker abstractions
 type Pier struct {
@@ -174,46 +175,55 @@ func (p *Pier) RemoveJob(jobID db.JobID) (db.Job, error) {
 	return job, nil
 }
 
-// PopulateServiceTable reads the "services" folder, builds images, and adds all the necessary information
-// to the database
-func (p *Pier) PopulateServiceTable() error {
-	log.Println("Reading folder with Dockerfiles for serices: " + servicesFolder)
-	doesExist := true
-	_, err := os.Stat(servicesFolder)
+// buildServicesFromFolder builds an image from the specified folder and assigns a tag to it based on the corresponding folder name
+func (p *Pier) buildServicesFromFolder(inputFolder string) error {
+	_, err := os.Stat(inputFolder)
 	if os.IsNotExist(err) {
-		doesExist = false
+		return nil
 	}
-	if doesExist {
-		files, _ := ioutil.ReadDir(servicesFolder)
-		for _, f := range files {
-			if f.IsDir() {
-				log.Print("Opening folder: " + f.Name())
-				img, err := p.docker.BuildImage(filepath.Join(servicesFolder, f.Name()))
 
+	files, _ := ioutil.ReadDir(inputFolder)
+	for _, f := range files {
+		if f.IsDir() && f.Name() != internalServicesFolder {
+			log.Print("Opening folder: " + f.Name())
+			img, err := p.docker.BuildImage(filepath.Join(inputFolder, f.Name()))
+
+			if err != nil {
+				log.Print("failed to create a service: ", err)
+			} else {
+				log.Print("service has been created")
+
+				err = p.docker.TagImage(string(img.ID), f.Name(), "latest")
 				if err != nil {
-					log.Print("failed to create a service: ", err)
-				} else {
-					log.Print("service has been created")
+					log.Print("could not tag the service")
+				}
 
-					err = p.docker.TagImage(string(img.ID), f.Name(), "latest")
-					if err != nil {
-						log.Print("could not tag the service")
-					}
+				img, err = p.docker.InspectImage(img.ID)
+				if err != nil {
+					log.Print("failed to inspect the image: ", err)
+				}
 
-					img, err = p.docker.InspectImage(img.ID)
-					if err != nil {
-						log.Print("failed to inspect the image: ", err)
-					}
-
-					err = p.db.AddService(NewServiceFromImage(img))
-					if err != nil {
-						log.Print("failed to add the service to the database: ", err)
-					}
+				err = p.db.AddService(NewServiceFromImage(img))
+				if err != nil {
+					log.Print("failed to add the service to the database: ", err)
 				}
 			}
 		}
 	}
 	return nil
+}
+
+// PopulateServiceTable reads the "services" folder, builds images, and adds all the necessary information
+// to the database
+func (p *Pier) PopulateServiceTable() error {
+	log.Println("Reading the folder with Dockerfiles for internal services: " + filepath.Join(servicesFolder, internalServicesFolder))
+	err := p.buildServicesFromFolder(filepath.Join(servicesFolder, internalServicesFolder))
+	if err != nil {
+		return err
+	}
+	log.Println("Reading the folder with Dockerfiles for demo services: " + servicesFolder)
+	err = p.buildServicesFromFolder(servicesFolder)
+	return err
 }
 
 func (p *Pier) ImportImage(imageFilePath string) (db.Service, error) {

@@ -2,13 +2,21 @@
  * Created by wqiu on 17/08/16.
  */
 import React, {PropTypes} from 'react';
-import bows from 'bows';
-import {Row, Col, Grid} from 'react-bootstrap';
-import {Field, reduxForm} from 'redux-form';
+import { Row, Col, Grid, Table, Button, Modal, OverlayTrigger, FormGroup, ControlLabel } from 'react-bootstrap';
+import {Field, FieldArray, reduxForm, initialize} from 'redux-form';
 // this is a detailed view of a service, user will be able to execute service in this view
 
+const renderField = ({ input, label, type, meta: { touched, error } }) => (
+    <div className="form-group has-error has-feedback">
+        <div>
+            <input {...input} placeholder={label} type={type}/>
+            {touched && error && <span>{error}</span>}
+        </div>
+    </div>
+)
 
-const log = bows("Service");
+
+
 
 const tagValueRow  = (tag, value) => (
     <Row>
@@ -54,10 +62,181 @@ const JobCreatorForm = (props) => {
 
 const JobCreator = reduxForm({form: 'JobCreator'} )(JobCreatorForm);
 
+const InputTable = ({service, handleRemoveIO}) => {
+    let inCounter = -1;
+    let inputs = [];
+    service.Input.map((input) => {
+        inputs.push(input);
+    });
+    const IOTableRow = ({input, index}) => {
+        return (
+            <tr>
+                <td>{input.ID}</td>
+                <td>{input.Name}</td>
+                <td>{input.Path}</td>
+                <td>
+                    <Button type="submit" bsStyle="primary" bsSize="xsmall" onClick={(evt) => handleRemoveIO(true, index, evt)}>
+                        <span className="glyphicon glyphicon-remove" aria-hidden="true"></span> Remove
+                    </Button>
+                </td>
+            </tr>
+        )
+    };
+
+    return (
+        <Table responsive>
+            <thead>
+            <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Path</th>
+                <th></th>
+            </tr>
+            </thead>
+            <tbody>
+            { service.Input.map((input) => {
+                inCounter++;
+                return (
+                    <FieldArray name={`${input}.ID`} component={IOTableRow} input={input} key={`${input}.ID` + inCounter} index={inCounter}/>
+                )
+            })}
+            </tbody>
+        </Table>
+    )
+};
+
+const OutputTable = ({service, handleRemoveIO}) => {
+
+    let outCounter = -1;
+    let outputs = [];
+    service.Output.map((out) => {
+        outputs.push(out);
+    });
+
+    const IOTableRow = ({out, index}) => {
+        return (
+            <tr>
+                <td>{out.ID}</td>
+                <td>{out.Name}</td>
+                <td>{out.Path}</td>
+                <td>
+                    <Button type="submit" bsStyle="primary" bsSize="xsmall" onClick={(evt) => handleRemoveIO(false, index, evt)}>
+                        <span className="glyphicon glyphicon-remove" aria-hidden="true"></span> Remove
+                    </Button>
+                </td>
+            </tr>
+        )
+    };
+
+    return (
+        <Table responsive>
+            <thead>
+            <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Path</th>
+                <th></th>
+            </tr>
+            </thead>
+            <tbody>
+            { service.Output.map((out) => {
+                outCounter++;
+                return (
+                    <FieldArray name={`${out}.ID`} component={IOTableRow} out={out} key={`${out}.ID` + outCounter} index={outCounter}/>
+                )
+            })}
+            </tbody>
+        </Table>
+    )
+};
+
+
+const ServiceEditForm = (props) => {
+    const {handleAddIO, handleRemoveIO, service } = props;
+
+    return (
+        <form>
+            <Row>
+                <Col xs={12} sm={12} md={12} >
+
+                    <FormGroup controlId="serviceNameGroup">
+                        <ControlLabel>Name</ControlLabel>
+                        <Field name="serviceName" component={renderField} type="text" className="form-control"/>
+                    </FormGroup>
+                    <FormGroup controlId="serviceDescriptionGroup">
+                        <ControlLabel>Description</ControlLabel>
+                        <div>
+                            <Field name="serviceDescription" component="textarea" placeholder="Describe what the service does"/>
+                        </div>
+                    </FormGroup>
+                    <FormGroup controlId="serviceVersionGroup">
+                        <ControlLabel>Version</ControlLabel>
+                        <Field name="serviceVersion" component="input" type="text" placeholder="Version of the service" className="form-control"/>
+                    </FormGroup>
+
+                    <FormGroup>
+                        <ControlLabel>Inputs</ControlLabel>
+                        <div className="input-group">
+                            <span className="input-group-addon">Name</span>
+                            <Field name="inputSourceName" component="input" type="text" placeholder="Any name"
+                                   className="form-control"/>
+                            <span className="input-group-addon">Path</span>
+                            <Field name="inputSourcePath" component="input" type="text" placeholder="Path in the container"
+                                   className="form-control"/>
+                            <span className="input-group-btn">
+                                <Button type="submit" className="btn btn-default" onClick={(evt) => handleAddIO(true, evt)}>
+                                    <span className="glyphicon glyphicon-plus" aria-hidden="true"></span> Add
+                                </Button>
+                            </span>
+                        </div>
+                        <InputTable key={"in-"+service.ID} service={service} handleRemoveIO={handleRemoveIO}/>
+                    </FormGroup>
+
+                    <FormGroup>
+                        <ControlLabel>Outputs</ControlLabel>
+                        <div className="input-group">
+                            <span className="input-group-addon">Name</span>
+                            <Field name="outputSourceName" component="input" type="text" placeholder="Any name"
+                                   className="form-control"/>
+                            <span className="input-group-addon">Path</span>
+                            <Field name="outputSourcePath" component="input" type="text" placeholder="Path in the container"
+                                   className="form-control"/>
+                            <span className="input-group-btn">
+                                <Button type="submit" className="btn btn-default" onClick={(evt) => handleAddIO(false, evt)}>
+                                    <span className="glyphicon glyphicon-plus" aria-hidden="true"></span> Add
+                                </Button>
+                            </span>
+                        </div>
+                        <OutputTable key={"out-"+service.ID} service={service} handleRemoveIO={handleRemoveIO}/>
+
+                    </FormGroup>
+                </Col>
+            </Row>
+        </form>
+    )
+};
+
+const ServiceEdit = reduxForm({form: 'ServiceEdit'})(ServiceEditForm);
+
 class Service extends React.Component {
     constructor(props) {
         super(props);
         this.handleSubmit = this.props.handleSubmit.bind(this);
+        this.handleUpdate = this.props.handleUpdate.bind(this);
+        this.handleAddIO = this.props.handleAddIO.bind(this);
+        this.handleRemoveIO = this.props.handleRemoveIO.bind(this);
+
+        this.state = {
+            showModal: false,
+        };
+    }
+
+    handleModalClose() {
+        this.setState({ showModal: false });
+    }
+
+    handleModalOpen() {
+        this.setState({showModal: true});
     }
 
     componentDidMount() {
@@ -68,8 +247,13 @@ class Service extends React.Component {
         if(! this.props.selectedService.Service) {
             return (<div>loading</div>)
         } else {
-            log("selectedService:", this.props.selectedService);
             const {ID, Name, Description, Version} = this.props.selectedService.Service;
+            let initialServiceValues = {
+                serviceName: this.props.selectedService.Service.Name,
+                serviceDescription: this.props.selectedService.Service.Description,
+                serviceVersion: this.props.selectedService.Service.Version,
+            };
+
             return (
 
                 <div className="panel panel-default">
@@ -81,22 +265,42 @@ class Service extends React.Component {
                             {tagValueRow("Description", Description)}
                             {tagValueRow("Version", Version)}
                             <JobCreator handleSubmit={this.handleSubmit} service={this.props.selectedService.Service}/>
+                            <button type="submit" className="btn btn-default" onClick={this.handleModalOpen.bind(this)}>
+                                <span className="glyphicon glyphicon-edit" aria-hidden="true"></span> Edit Metadata
+                            </button>
+
                             <div style={{height: "1em"}}></div>
                         </div>
                     </div>
-                </div>
 
+                    <div>
+                        <Modal show={this.state.showModal} onHide={this.handleModalClose.bind(this)} className="metadata-modal">
+                            <Modal.Header closeButton>
+                                <Modal.Title>{this.props.selectedService.Service.Name}</Modal.Title>
+                            </Modal.Header>
+                            <Modal.Body className="metadata-modal-body">
+                                <ServiceEdit initialValues={initialServiceValues} service={this.props.selectedService.Service} handleAddIO={this.handleAddIO.bind(this)} handleRemoveIO={this.handleRemoveIO.bind(this)}/>
+                            </Modal.Body>
+                            <Modal.Footer>
+                                <Button className="btn btn-primary" onClick={this.handleUpdate}>Save</Button>
+                                <Button onClick={this.handleModalClose.bind(this)}>Close</Button>
+                            </Modal.Footer>
+                        </Modal>
+                    </div>
+                </div>
             )
         }
     }
 }
 
-
 Service.propTypes = {
     service: PropTypes.object.isRequired,
     fetchService: PropTypes.func.isRequired,
     selectedService: PropTypes.object.isRequired,
+
     handleSubmit: PropTypes.func.isRequired,
+    handleUpdate: PropTypes.func.isRequired,
+    handleAddIO: PropTypes.func.isRequired,
     volumes: PropTypes.array.isRequired,
 };
 

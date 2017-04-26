@@ -68,6 +68,26 @@ function serviceFetchError(errorMessage) {
     }
 }
 
+function serviceUpdateStart() {
+    return {
+        type: actionTypes.SERVICE_UPDATE_START
+    }
+}
+
+function serviceUpdateSuccess(service) {
+    return {
+        type: actionTypes.SERVICE_UPDATE_SUCCESS,
+        service: service
+    }
+}
+
+function serviceUpdateError(errorMessage) {
+    return {
+        type: actionTypes.SERVICE_UPDATE_ERROR,
+        errorMessage: errorMessage
+    }
+}
+
 function jobListFetchStart() {
     return {
         type: actionTypes.JOB_LIST_FETCH_START
@@ -216,6 +236,46 @@ function consoleOutputFetchError(errorMessage) {
     }
 }
 
+function ioAddStart() {
+    return {
+        type: actionTypes.IO_ADD_START
+    }
+}
+
+function ioAddSuccess(data) {
+    return {
+        type: actionTypes.IO_ADD_SUCCESS,
+        data: data
+    }
+}
+
+function ioAddError(errorMessage) {
+    return {
+        type: actionTypes.IO_ADD_ERROR,
+        errorMessage: errorMessage
+    }
+}
+
+function ioRemoveStart() {
+    return {
+        type: actionTypes.IO_REMOVE_START
+    }
+}
+
+function ioRemoveSuccess(data) {
+    return {
+        type: actionTypes.IO_REMOVE_SUCCESS,
+        data: data
+    }
+}
+
+function ioRemoveError(errorMessage) {
+    return {
+        type: actionTypes.IO_REMOVE_ERROR,
+        errorMessage: errorMessage
+    }
+}
+
 
 
 
@@ -284,6 +344,8 @@ function fetchService(serviceID) {
         })
     }
 }
+
+
 
 function fetchVolumes() {
     return function (dispatch, getState) {
@@ -368,6 +430,41 @@ function fetchJobById(jobId) {
         })
     }
 }
+function handleUpdateService() {
+    return function (dispatch, getState) {
+        const selectedService = getState().selectedService;
+        const serviceEdit = getState().form.ServiceEdit;
+        log("selectedService", selectedService);
+
+        let outputObject =  {
+            'Created': selectedService.Service.Created,
+            'Description': serviceEdit.values.serviceDescription, // modified
+            'ID': selectedService.Service.ID,
+            'ImageID': selectedService.Service.ImageID,
+            'Input':  selectedService.Service.Input,
+            'Name': serviceEdit.values.serviceName, // modified
+            'Output': selectedService.Service.Output,
+            'RepoTag': selectedService.Service.RepoTag,
+            'Size': selectedService.Service.Size,
+            'Version': serviceEdit.values.serviceVersion // modified
+        };
+
+        dispatch(serviceUpdateStart());
+        const resultPromise = axios.put(apiNames.services + '/' + selectedService.Service.ID, outputObject);
+
+        resultPromise.then(response => {
+            log('updated service:', response.data);
+            Alert.info("Service metadata has been successfully updated");
+            dispatch(serviceFetchSuccess(response.data));
+            dispatch(serviceUpdateSuccess(response.data));
+            fetchServices();
+        }).catch(err => {
+            Alert.error("Cannot update the service.");
+            log("An update error occurred");
+            dispatch(serviceUpdateError(err));
+        })
+    }
+}
 
 function handleSubmitJob() {
     return function (dispatch, getState) {
@@ -391,6 +488,131 @@ function handleSubmitJob() {
 }
 
 
+function addIOPort(isInput) {
+    return function (dispatch, getState)  {
+        const selectedService = getState().selectedService;
+        const serviceEdit = getState().form.ServiceEdit;
+        dispatch(ioAddStart());
+
+        let inputs = [];
+        let newInput = {};
+        let outputs = [];
+        let newOutput = {};
+
+        if (isInput) {
+            newInput.ID = "input" + selectedService.Service.Input.length;
+            newInput.Name = serviceEdit.values.inputSourceName;
+            newInput.Path = serviceEdit.values.inputSourcePath;
+            if ((!newInput.Name) && (!newInput.Path)){
+                Alert.error("Input name and path cannot be empty");
+                dispatch(ioAddError());
+            } else {
+                selectedService.Service.Input.map((input) => {
+                    inputs.push(input);
+                });
+                inputs.push(newInput);
+            }
+            outputs = selectedService.Service.Output;
+        } else {
+            newOutput.ID = "output" + selectedService.Service.Output.length;
+            newOutput.Name = serviceEdit.values.outputSourceName;
+            newOutput.Path = serviceEdit.values.outputSourcePath;
+            if ((!newOutput.Name) && (!newOutput.Path)){
+                Alert.error("Output name and path cannot be empty");
+                dispatch(ioAddError());
+            } else {
+                selectedService.Service.Output.map((out) => {
+                    outputs.push(out);
+                });
+                outputs.push(newOutput);
+            }
+            inputs = selectedService.Service.Input;
+        }
+
+        let outputObject = {
+            'Created': selectedService.Service.Created,
+            'Description': selectedService.Service.Description,
+            'ID': selectedService.Service.ID,
+            'ImageID': selectedService.Service.ImageID,
+            'Input': inputs,
+            'Name': selectedService.Service.Name,
+            'Output': outputs,
+            'RepoTag': selectedService.Service.RepoTag,
+            'Size': selectedService.Service.Size,
+            'Version': selectedService.Service.Version
+        };
+
+        if ((inputs.length>0) && (outputs.length>0)) {
+            dispatch(ioAddSuccess(outputObject));
+            dispatch(serviceUpdateStart());
+            const resultPromise = axios.put(apiNames.services + '/' + selectedService.Service.ID, outputObject);
+
+            resultPromise.then(response => {
+                log('updated service:', response.data);
+                dispatch(serviceFetchSuccess(response.data));
+                dispatch(serviceUpdateSuccess(response.data));
+            }).catch(err => {
+                Alert.error("Cannot update the service.");
+                log("An update error occurred");
+                dispatch(serviceUpdateError(err));
+            })
+        }
+    }
+}
+
+function removeIOPort(isInput, removeIndex) {
+    return function (dispatch, getState)  {
+        const selectedService = getState().selectedService;
+        dispatch(ioRemoveStart());
+        let inputs = [];
+        let outputs = [];
+
+        if (isInput) {
+            selectedService.Service.Input.map((input, currentIndex) => {
+                if (currentIndex != removeIndex) {
+                    inputs.push(input);
+                }
+            });
+            outputs = selectedService.Service.Output;
+        } else {
+
+            selectedService.Service.Output.map((out, currentIndex) => {
+                if (currentIndex != removeIndex) {
+                    outputs.push(out);
+                }
+            });
+            inputs = selectedService.Service.Input;
+        }
+
+        let outputObject = {
+            'Created': selectedService.Service.Created,
+            'Description': selectedService.Service.Description,
+            'ID': selectedService.Service.ID,
+            'ImageID': selectedService.Service.ImageID,
+            'Input': inputs,
+            'Name': selectedService.Service.Name,
+            'Output': outputs,
+            'RepoTag': selectedService.Service.RepoTag,
+            'Size': selectedService.Service.Size,
+            'Version': selectedService.Service.Version
+        };
+
+        dispatch(ioRemoveSuccess(outputObject));
+        dispatch(serviceUpdateStart());
+        const resultPromise = axios.put(apiNames.services + '/' + selectedService.Service.ID, outputObject);
+
+        resultPromise.then(response => {
+            log('updated service:', response.data);
+            dispatch(serviceFetchSuccess(response.data));
+            dispatch(serviceUpdateSuccess(response.data));
+        }).catch(err => {
+            Alert.error("Cannot update the service.");
+            log("An update error occurred");
+            dispatch(serviceUpdateError(err));
+        })
+    }
+}
+
 function showErrorMessageWithTimeout(id, timeout) {
 
 }
@@ -408,6 +630,11 @@ export default {
     serviceFetchStart,
     serviceFetchSuccess,
     serviceFetchError,
+
+    serviceUpdateStart,
+    serviceUpdateSuccess,
+    serviceUpdateError,
+
     jobListFetchStart,
     jobListFetchSuccess,
     jobListFetchError,
@@ -423,10 +650,20 @@ export default {
     consoleOutputFetchStart,
     consoleOutputFetchSuccess,
     consoleOutputFetchError,
+
+    ioAddStart,
+    ioAddSuccess,
+    ioAddError,
+
+    ioRemoveStart,
+    ioRemoveSuccess,
+    ioRemoveError,
+
     fetchJobs,
     removeJob,
     fetchServices,
     fetchService,
+    handleUpdateService,
     fetchVolumes,
     inspectVolume,
     consoleOutputFetch,
@@ -437,5 +674,7 @@ export default {
     fileUploadError,
     getNewUploadEndpoint,
     handleSubmitJob,
+    addIOPort,
+    removeIOPort,
 
 };
