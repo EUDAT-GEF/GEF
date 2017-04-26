@@ -69,14 +69,13 @@ const JobCreator = reduxForm({form: 'JobCreator'} )(JobCreatorForm);
 
 
 
-const InputTable = ({service}) => {
+const InputTable = ({service, handleRemoveIO}) => {
 
-    let inCounter = 0;
+    let inCounter = -1;
     let inputs = [];
-    service.Input.map((input, index) => {
+    service.Input.map((input) => {
         inputs.push(input);
     });
-    //outputs.push({});
 
     const IOTableRow = ({input, index}) => {
         return (
@@ -85,7 +84,7 @@ const InputTable = ({service}) => {
                 <td>{input.Name}</td>
                 <td>{input.Path}</td>
                 <td>
-                    <Button type="submit" bsStyle="primary" bsSize="xsmall" onClick={() => inputs.push({})}>
+                    <Button type="submit" bsStyle="primary" bsSize="xsmall" onClick={(evt) => handleRemoveIO(true, index, evt)}>
                         <span className="glyphicon glyphicon-remove" aria-hidden="true"></span> Remove
                     </Button>
                 </td>
@@ -106,10 +105,10 @@ const InputTable = ({service}) => {
             </thead>
             <tbody>
 
-            { service.Input.map((input, index) => {
+            { service.Input.map((input) => {
                 inCounter++;
                 return (
-                    <FieldArray name={`${input}.ID`} component={IOTableRow} input={input}/>
+                    <FieldArray name={`${input}.ID`} component={IOTableRow} input={input} key={`${input}.ID` + inCounter} index={inCounter}/>
                 )
             })}
 
@@ -119,14 +118,13 @@ const InputTable = ({service}) => {
     )
 };
 
-const OutputTable = ({service}) => {
+const OutputTable = ({service, handleRemoveIO}) => {
 
-    let outCounter = 0;
+    let outCounter = -1;
     let outputs = [];
-    service.Output.map((out, index) => {
+    service.Output.map((out) => {
         outputs.push(out);
     });
-    //outputs.push({});
 
     const IOTableRow = ({out, index}) => {
         return (
@@ -135,7 +133,7 @@ const OutputTable = ({service}) => {
                 <td>{out.Name}</td>
                 <td>{out.Path}</td>
                 <td>
-                    <Button type="submit" bsStyle="primary" bsSize="xsmall" onClick={() => outputs.push({})}>
+                    <Button type="submit" bsStyle="primary" bsSize="xsmall" onClick={(evt) => handleRemoveIO(false, index, evt)}>
                         <span className="glyphicon glyphicon-remove" aria-hidden="true"></span> Remove
                     </Button>
                 </td>
@@ -156,10 +154,10 @@ const OutputTable = ({service}) => {
             </thead>
             <tbody>
 
-            { service.Output.map((out, index) => {
+            { service.Output.map((out) => {
                 outCounter++;
                 return (
-                    <FieldArray name={`${out}.ID`} component={IOTableRow} out={out}/>
+                    <FieldArray name={`${out}.ID`} component={IOTableRow} out={out} key={`${out}.ID` + outCounter} index={outCounter}/>
                 )
             })}
 
@@ -174,7 +172,7 @@ const OutputTable = ({service}) => {
 
 
 const ServiceEditForm = (props) => {
-    const { handleUpdate, handleAddIO, service } = props;
+    const { handleUpdate, handleAddIO, handleRemoveIO, service } = props;
 
     return (
         <form>
@@ -211,7 +209,7 @@ const ServiceEditForm = (props) => {
                                 </Button>
                             </span>
                         </div>
-                        <InputTable key={"in-"+service.ID} service={service}/>
+                        <InputTable key={"in-"+service.ID} service={service} handleRemoveIO={handleRemoveIO}/>
                     </FormGroup>
 
                     <FormGroup>
@@ -232,24 +230,9 @@ const ServiceEditForm = (props) => {
                                 </Button>
                             </span>
                         </div>
-                        <OutputTable key={"out-"+service.ID} service={service}/>
+                        <OutputTable key={"out-"+service.ID} service={service} handleRemoveIO={handleRemoveIO}/>
 
-
-                        <Field name="outputHidden[0]" component="hidden" type="text"/>
-                        <Field name="outputHidden[1]" component="hidden" type="text"/>
-                        <Field name="outputHidden[2]" component="hidden" type="text"/>
-                        <Field name="inputs" value={service.Input} component="hidden" type="text"/>
-                        <Field name="outputs" value={service.Output} component="hidden" type="text"/>
                     </FormGroup>
-
-                    <Button type="submit" className="btn btn-primary" onClick={handleUpdate}>
-                        <span className="glyphicon glyphicon-floppy-disk" aria-hidden="true"></span> Save
-                    </Button>
-
-
-
-
-
                 </Col>
             </Row>
         </form>
@@ -264,117 +247,42 @@ const ServiceEdit = reduxForm({form: 'ServiceEdit'})(ServiceEditForm);
 
 
 class Service extends React.Component {
-
-
-
     constructor(props) {
         super(props);
         this.handleSubmit = this.props.handleSubmit.bind(this);
         this.handleUpdate = this.props.handleUpdate.bind(this);
         this.handleAddIO = this.props.handleAddIO.bind(this);
-
+        this.handleRemoveIO = this.props.handleRemoveIO.bind(this);
 
         this.state = {
             showModal: false,
-            currentService: {},
-            //currentOutputs: [],
         };
-        //this.changedService = this.state.currentService;
     }
-
-
-    handleAddInput(e) {
-        e.preventDefault();
-        let newInput = [];
-        this.state.currentService.Input.map((input, index) => {
-            newInput.push(input);
-
-        })
-        newInput.push({});
-
-        let newOutput = [];
-        this.state.currentService.Output.map((output, index) => {
-            newOutput.push(output);
-
-        })
-        newOutput.push({});
-
-        let outputObject = {
-            'Created': this.state.currentService.Created,
-            'Description': this.state.currentService.serviceDescription,
-            'ID': this.state.currentService.ID,
-            'ImageID': this.state.currentService.ImageID,
-            'Input': newInput,
-            'Name': this.state.currentService.serviceName,
-            'Output': this.state.currentService.Input,
-            'RepoTag': this.state.currentService.RepoTag,
-            'Size': this.state.currentService.Size,
-            'Version': this.state.currentService.serviceVersion
-        };
-
-        //oldService.push({});
-        this.setState({ currentService: outputObject });
-        //this.changedService = this.state.currentService;
-    }
-
 
 
     handleModalClose() {
         this.setState({ showModal: false });
-        //this.setState({ currentService: {} });
     }
 
     handleModalOpen() {
         this.setState({showModal: true});
     }
 
-
-
     componentDidMount() {
         this.props.fetchService(this.props.service.ID);
-        this.setState({currentService:  this.props.service});
-
     }
 
-    renderModalWindow(inService) {
-        let initialServiceValues = {
-            serviceName: inService.Name,
-            serviceDescription: inService.Description,
-            serviceVersion: inService.Version,
-            outputHidden: ["sometext", "another text", "third text"],
-        };
-
-        return (
-            <div>
-                <Modal show={this.state.showModal} onHide={this.handleModalClose.bind(this)}>
-                    <Modal.Header closeButton>
-                        <Modal.Title>{inService.Name}</Modal.Title>
-                    </Modal.Header>
-                    <Modal.Body>
-                        <ServiceEdit handleUpdate={this.handleUpdate} service={this.props.selectedService.Service} initialValues={initialServiceValues} handleAddIO={this.handleAddIO.bind(this)}/>
-                    </Modal.Body>
-                    <Modal.Footer>
-                        <Button className="btn btn-primary" onClick={this.handleUpdate}>Save</Button>
-                        <Button className="btn btn-primary" onClick={this.handleAddInput.bind(this)}>Add output</Button>
-                        <Button onClick={this.handleModalClose.bind(this)}>Close</Button>
-                    </Modal.Footer>
-                </Modal>
-            </div>
-        )
-    }
 
     render() {
-
-
-
-
-
-
-
         if(! this.props.selectedService.Service) {
             return (<div>loading</div>)
         } else {
             const {ID, Name, Description, Version} = this.props.selectedService.Service;
+            let initialServiceValues = {
+                serviceName: this.props.selectedService.Service.Name,
+                serviceDescription: this.props.selectedService.Service.Description,
+                serviceVersion: this.props.selectedService.Service.Version,
+            };
 
             return (
 
@@ -394,9 +302,22 @@ class Service extends React.Component {
                             <div style={{height: "1em"}}></div>
                         </div>
                     </div>
-                    {this.renderModalWindow(this.props.selectedService.Service)}
-                </div>
 
+                    <div>
+                        <Modal show={this.state.showModal} onHide={this.handleModalClose.bind(this)} className="metadata-modal">
+                            <Modal.Header closeButton>
+                                <Modal.Title>{this.props.selectedService.Service.Name}</Modal.Title>
+                            </Modal.Header>
+                            <Modal.Body className="metadata-modal-body">
+                                <ServiceEdit handleUpdate={this.handleUpdate} service={this.props.selectedService.Service} initialValues={initialServiceValues} handleAddIO={this.handleAddIO.bind(this)} handleRemoveIO={this.handleRemoveIO.bind(this)}/>
+                            </Modal.Body>
+                            <Modal.Footer>
+                                <Button className="btn btn-primary" onClick={this.handleUpdate}>Save</Button>
+                                <Button onClick={this.handleModalClose.bind(this)}>Close</Button>
+                            </Modal.Footer>
+                        </Modal>
+                    </div>
+                </div>
             )
         }
     }

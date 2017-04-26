@@ -25,13 +25,16 @@ const mapDispatchToProps = (dispatch) => {
             e.preventDefault();
             const action = actions.handleUpdateService();
             dispatch(action);
-
-
         },
         handleAddIO: (isInput, e) => {
-            console.log(isInput);
             e.preventDefault();
             const action = actions.addIOPort(isInput);
+            dispatch(action);
+        },
+        handleRemoveIO: (isInput, index, e) => {
+            e.preventDefault();
+            console.log("Remove", isInput, index);
+            const action = actions.removeIOPort(isInput, index);
             dispatch(action);
         },
         handleSubmit: (e) => {

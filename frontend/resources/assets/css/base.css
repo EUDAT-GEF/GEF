@@ -314,3 +314,13 @@ pre {
     word-wrap: normal !important;
     white-space: pre !important;
 }​
+
+
+.metadata-modal{
+     display: block !important;
+}
+
+.metadata-modal-body{
+    height: 600px;
+    overflow-y: auto;
+}

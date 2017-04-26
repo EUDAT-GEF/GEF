@@ -36,6 +36,7 @@ class Services extends React.Component {
         this.handleSubmit = this.props.handleSubmit.bind(this);
         this.handleUpdate = this.props.handleUpdate.bind(this);
         this.handleAddIO = this.props.handleAddIO.bind(this);
+        this.handleRemoveIO = this.props.handleRemoveIO.bind(this);
     }
 
     componentDidMount() {
@@ -56,6 +57,7 @@ class Services extends React.Component {
                                             handleSubmit={this.handleSubmit}
                                             handleUpdate={this.handleUpdate}
                                             handleAddIO={this.handleAddIO}
+                                            handleRemoveIO={this.handleRemoveIO}
                                             volumes={this.props.volumes}/>;
                         } else {
                             const isGef = service.Input && service.Output;
@@ -87,6 +89,7 @@ Services.propTypes = {
     handleSubmit: PropTypes.func.isRequired,
     handleUpdate: PropTypes.func.isRequired,
     handleAddIO: PropTypes.func.isRequired,
+    handleRemoveIO: PropTypes.func.isRequired,
     volumes: PropTypes.array.isRequired,
 };
 

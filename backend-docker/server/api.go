@@ -237,25 +237,6 @@ func (s *Server) inspectServiceHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) editServiceHandler(w http.ResponseWriter, r *http.Request) {
-	log.Println("Editing a service ****************************")
-	/*log.Println(r.FormValue("serviceName"))
-	log.Println(r.FormValue("outputHidden"))
-
-
-	for key, values := range r.PostForm {
-		log.Println(key)
-		log.Println(values)
-		if *
-	}
-
-
-
-
-	log.Println(r.FormValue("outputHidden")[0])
-	log.Println(len(r.FormValue("outputHidden")))*/
-
-
-
 	decoder := json.NewDecoder(r.Body)
 	var service db.Service
 	err := decoder.Decode(&service)
@@ -264,10 +245,6 @@ func (s *Server) editServiceHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer r.Body.Close()
-
-	log.Println("***************")
-	log.Println(service)
-	log.Println(service.ID)
 
 	err = s.db.RemoveService(service.ID)
 	if err != nil {
