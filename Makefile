@@ -9,6 +9,11 @@ build: dependencies webui frontend containers backend
 webui:
 	(cd $(WEBUI) && node_modules/webpack/bin/webpack.js -p)
 
+containers:
+	(cd $(INTERNALSERVICES)/volume-stage-in && docker build -t volume-stage-in .)
+	(cd $(INTERNALSERVICES)/volume-filelist && GOOS=linux GOARCH=amd64 go build $(GOFLAGS) && docker build -t volume-filelist .)
+	(cd $(INTERNALSERVICES)/copy-from-volume && docker build -t copy-from-volume .)
+
 backend:
 	$(GOPATH)/bin/golint ./...
 	go vet ./...
