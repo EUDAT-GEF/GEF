@@ -561,7 +561,6 @@ function addIOPort(isInput) {
 }
 
 function removeIOPort(isInput, removeIndex) {
-    console.log("Remove", isInput, removeIndex);
     return function (dispatch, getState)  {
         const selectedService = getState().selectedService;
         dispatch(ioRemoveStart());

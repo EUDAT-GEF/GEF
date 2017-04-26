@@ -33,7 +33,6 @@ const mapDispatchToProps = (dispatch) => {
         },
         handleRemoveIO: (isInput, index, e) => {
             e.preventDefault();
-            console.log("Remove", isInput, index);
             const action = actions.removeIOPort(isInput, index);
             dispatch(action);
         },
@@ -42,10 +41,8 @@ const mapDispatchToProps = (dispatch) => {
             const action = actions.handleSubmitJob();
             dispatch(action);
         },
-
     };
 };
-
 
 const ServicesContainer = connect(mapStateToProps, mapDispatchToProps)(
     Services
