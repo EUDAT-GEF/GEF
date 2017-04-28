@@ -19,7 +19,7 @@ func TestClient(t *testing.T) {
 	checkMsg(t, err, "reading config files")
 
 	db, err := db.InitDb()
-	pier, err := pier.NewPier(config.Docker, config.TmpDir, &db)
+	pier, err := pier.NewPier(config.Docker, config.TmpDir, config.Limits, &db)
 	checkMsg(t, err, "creating new pier")
 	defer db.Db.Close()
 
@@ -85,7 +85,7 @@ func TestExecution(t *testing.T) {
 	checkMsg(t, err, "reading config files")
 
 	db, err := db.InitDb()
-	pier, err := pier.NewPier(config.Docker, config.TmpDir, &db)
+	pier, err := pier.NewPier(config.Docker, config.TmpDir, config.Limits, &db)
 	checkMsg(t, err, "creating new pier")
 	defer db.Db.Close()
 
