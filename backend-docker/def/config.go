@@ -39,10 +39,10 @@ type EventSystemConfig struct {
 
 // LimitsConfig keeps the configuration options to limit resources used by a docker container while its execution
 type LimitConfig struct {
-	CpuShares int64
-	CpuPeriod int64
-	CpuQuota int64
-	Memory	int64
+	CpuShares  int64
+	CpuPeriod  int64
+	CpuQuota   int64
+	Memory     int64
 	MemorySwap int64
 }
 

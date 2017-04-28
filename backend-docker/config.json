@@ -17,10 +17,10 @@
 		"Address": ""
 	},
 	"Limits": {
-        "CpuShares": 1024,
-        "CpuPeriod": 100000,
-        "CpuQuota": 50000,
-        "Memory":     100024000,
-        "MemorySwap": 150024000
+		"CpuShares": 1024,
+		"CpuPeriod": 100000,
+		"CpuQuota": 50000,
+		"Memory":     100024000,
+		"MemorySwap": 150024000
 	}
 }

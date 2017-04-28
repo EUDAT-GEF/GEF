@@ -288,11 +288,11 @@ func (c Client) StartImage(id ImageID, cmdArgs []string, binds []VolBind, limits
 	config.AttachStdout = true
 	config.AttachStderr = true
 	hc := docker.HostConfig{
-		Binds:   bs,
-		CPUShares: limits.CpuShares,
-		CPUPeriod: limits.CpuPeriod,
-		CPUQuota: limits.CpuQuota,
-		Memory: limits.Memory,
+		Binds:      bs,
+		CPUShares:  limits.CpuShares,
+		CPUPeriod:  limits.CpuPeriod,
+		CPUQuota:   limits.CpuQuota,
+		Memory:     limits.Memory,
 		MemorySwap: limits.MemorySwap,
 	}
 
