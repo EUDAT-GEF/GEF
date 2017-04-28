@@ -259,7 +259,7 @@ func (c *Client) BuildImage(dirpath string) (Image, error) {
 }
 
 // StartImage takes a docker image, creates a container and starts it
-func (c Client) StartImage(id ImageID, cmdArgs []string, binds []VolBind) (ContainerID, *bytes.Buffer, error) {
+func (c Client) StartImage(id ImageID, cmdArgs []string, binds []VolBind, limits def.LimitConfig) (ContainerID, *bytes.Buffer, error) {
 	var stdout bytes.Buffer
 
 	if id == "" {
@@ -287,9 +287,13 @@ func (c Client) StartImage(id ImageID, cmdArgs []string, binds []VolBind) (Conta
 
 	config.AttachStdout = true
 	config.AttachStderr = true
-
 	hc := docker.HostConfig{
-		Binds: bs,
+		Binds:      bs,
+		CPUShares:  limits.CpuShares,
+		CPUPeriod:  limits.CpuPeriod,
+		CPUQuota:   limits.CpuQuota,
+		Memory:     limits.Memory,
+		MemorySwap: limits.MemorySwap,
 	}
 
 	cco := docker.CreateContainerOptions{
@@ -338,8 +342,8 @@ func (w *WriteMonitor) Write(bs []byte) (int, error) {
 }
 
 // ExecuteImage takes a docker image, creates a container and executes it, and waits for it to end
-func (c Client) ExecuteImage(id ImageID, cmdArgs []string, binds []VolBind, removeOnExit bool) (ContainerID, int, *bytes.Buffer, error) {
-	containerID, consoleOutput, err := c.StartImage(id, cmdArgs, binds)
+func (c Client) ExecuteImage(id ImageID, cmdArgs []string, binds []VolBind, limits def.LimitConfig, removeOnExit bool) (ContainerID, int, *bytes.Buffer, error) {
+	containerID, consoleOutput, err := c.StartImage(id, cmdArgs, binds, limits)
 	if err != nil {
 		return containerID, 0, consoleOutput, def.Err(err, "StartImage failed")
 	}

@@ -30,7 +30,7 @@ func main() {
 	defer d.Db.Close()
 
 	var p *pier.Pier
-	p, err = pier.NewPier(config.Docker, config.TmpDir, &d)
+	p, err = pier.NewPier(config.Docker, config.TmpDir, config.Limits, &d)
 	p.PopulateServiceTable()
 	if err != nil {
 		log.Fatal("FATAL: ", def.Err(err, "Cannot create Pier"))

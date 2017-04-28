@@ -27,10 +27,11 @@ type Pier struct {
 	docker dckr.Client
 	db     *db.Db
 	tmpDir string
+	limits def.LimitConfig
 }
 
 // NewPier exported
-func NewPier(cfgList []def.DockerConfig, tmpDir string, dataBase *db.Db) (*Pier, error) {
+func NewPier(cfgList []def.DockerConfig, tmpDir string, cntrLimits def.LimitConfig, dataBase *db.Db) (*Pier, error) {
 	docker, err := dckr.NewClientFirstOf(cfgList)
 
 	if err != nil {
@@ -41,6 +42,7 @@ func NewPier(cfgList []def.DockerConfig, tmpDir string, dataBase *db.Db) (*Pier,
 		docker: docker,
 		db:     dataBase,
 		tmpDir: tmpDir,
+		limits: cntrLimits,
 	}
 
 	return &pier, nil
@@ -95,7 +97,7 @@ func (p *Pier) runJob(job *db.Job, service db.Service, inputPID string) {
 		binds := []dckr.VolBind{
 			dckr.NewVolBind(inputVolume.ID, "/volume", false),
 		}
-		containerID, exitCode, consoleOutput, err := p.docker.ExecuteImage(dckr.ImageID(stagingVolumeName), []string{inputPID}, binds, true)
+		containerID, exitCode, consoleOutput, err := p.docker.ExecuteImage(dckr.ImageID(stagingVolumeName), []string{inputPID}, binds, p.limits, true)
 		errMsg := ""
 		if err != nil {
 			errMsg = err.Error()
@@ -127,7 +129,7 @@ func (p *Pier) runJob(job *db.Job, service db.Service, inputPID string) {
 			dckr.NewVolBind(inputVolume.ID, service.Input[0].Path, true),
 			dckr.NewVolBind(outputVolume.ID, service.Output[0].Path, false),
 		}
-		containerID, exitCode, consoleOutput, err := p.docker.ExecuteImage(dckr.ImageID(service.ImageID), nil, binds, true)
+		containerID, exitCode, consoleOutput, err := p.docker.ExecuteImage(dckr.ImageID(service.ImageID), nil, binds, p.limits, true)
 		errMsg := ""
 		if err != nil {
 			errMsg = err.Error()

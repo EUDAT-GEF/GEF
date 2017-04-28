@@ -21,7 +21,7 @@ func TestServer(t *testing.T) {
 	d, err := db.InitDb()
 
 	var p *pier.Pier
-	p, err = pier.NewPier(config.Docker, config.TmpDir, &d)
+	p, err = pier.NewPier(config.Docker, config.TmpDir, config.Limits, &d)
 	checkMsg(t, err, "creating new pier")
 	defer d.Db.Close()
 

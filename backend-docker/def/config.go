@@ -15,6 +15,7 @@ type Configuration struct {
 	// TmpDir is the directory to keep session files in
 	// If the path is relative, it will be used as a subfolder of the system temporary directory
 	TmpDir string
+	Limits LimitConfig
 }
 
 // DockerConfig configuration for building docker clients
@@ -34,6 +35,15 @@ type ServerConfig struct {
 // EventSystemConfig keeps the configuration options needed to make an EventSystem
 type EventSystemConfig struct {
 	Address string
+}
+
+// LimitsConfig keeps the configuration options to limit resources used by a docker container while its execution
+type LimitConfig struct {
+	CpuShares  int64
+	CpuPeriod  int64
+	CpuQuota   int64
+	Memory     int64
+	MemorySwap int64
 }
 
 func (c DockerConfig) String() string {
