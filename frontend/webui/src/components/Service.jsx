@@ -15,9 +15,6 @@ const renderField = ({ input, label, type, meta: { touched, error } }) => (
     </div>
 )
 
-
-
-
 const tagValueRow  = (tag, value) => (
     <Row>
         <Col xs={12} sm={3} md={3} style={{fontWeight:700}}>{tag}</Col>
@@ -65,7 +62,11 @@ const JobCreator = reduxForm({form: 'JobCreator'} )(JobCreatorForm);
 const InputTable = ({service, handleRemoveIO}) => {
     let inCounter = -1;
     let inputs = [];
-    service.Input.map((input) => {
+    let srcList = [];
+    if (service.Input) {
+        srcList = service.Input
+    }
+    srcList.map((input) => {
         inputs.push(input);
     });
     const IOTableRow = ({input, index}) => {
@@ -94,7 +95,7 @@ const InputTable = ({service, handleRemoveIO}) => {
             </tr>
             </thead>
             <tbody>
-            { service.Input.map((input) => {
+            { srcList.map((input) => {
                 inCounter++;
                 return (
                     <FieldArray name={`${input}.ID`} component={IOTableRow} input={input} key={`${input}.ID` + inCounter} index={inCounter}/>
@@ -109,10 +110,13 @@ const OutputTable = ({service, handleRemoveIO}) => {
 
     let outCounter = -1;
     let outputs = [];
-    service.Output.map((out) => {
+    let srcList = [];
+    if (service.Output) {
+        srcList = service.Output
+    }
+    srcList.map((out) => {
         outputs.push(out);
     });
-
     const IOTableRow = ({out, index}) => {
         return (
             <tr>
@@ -139,7 +143,7 @@ const OutputTable = ({service, handleRemoveIO}) => {
             </tr>
             </thead>
             <tbody>
-            { service.Output.map((out) => {
+            { srcList.map((out) => {
                 outCounter++;
                 return (
                     <FieldArray name={`${out}.ID`} component={IOTableRow} out={out} key={`${out}.ID` + outCounter} index={outCounter}/>
@@ -296,8 +300,9 @@ class Service extends React.Component {
 Service.propTypes = {
     service: PropTypes.object.isRequired,
     fetchService: PropTypes.func.isRequired,
+    fetchServices: PropTypes.func.isRequired,
     selectedService: PropTypes.object.isRequired,
-
+    services: PropTypes.object.isRequired,
     handleSubmit: PropTypes.func.isRequired,
     handleUpdate: PropTypes.func.isRequired,
     handleAddIO: PropTypes.func.isRequired,
