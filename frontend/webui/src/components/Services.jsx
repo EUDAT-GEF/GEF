@@ -15,10 +15,12 @@ const ServiceRow = ({service}) => (
 const ImageRow = ({image}) => {
     const style={color:'#aaa'}
     return (
-        <Row style={{marginTop:'0.5em', marginBottom:'0.5em'}}>
-            <Col xs={12} sm={3} md={3} style={style}>{image.Name || image.RepoTag}</Col>
-            <Col xs={12} sm={9} md={9} style={style}>{image.Description}</Col>
-        </Row>
+        <LinkContainer to={`/services/${image.ID}`}>
+            <Row style={{marginTop:'0.5em', marginBottom:'0.5em'}}>
+                <Col xs={12} sm={3} md={3} style={style}>{image.Name || image.RepoTag}</Col>
+                <Col xs={12} sm={9} md={9} style={style}>{image.Description}</Col>
+            </Row>
+        </LinkContainer>
     )
 };
 
@@ -33,6 +35,7 @@ class Services extends React.Component {
     constructor(props) {
         super(props);
         this.fetchService = this.props.fetchService.bind(this);
+        this.fetchServices = this.props.fetchServices.bind(this);
         this.handleSubmit = this.props.handleSubmit.bind(this);
         this.handleUpdate = this.props.handleUpdate.bind(this);
         this.handleAddIO = this.props.handleAddIO.bind(this);
@@ -52,7 +55,11 @@ class Services extends React.Component {
                     <Header/>
                     { this.props.services.map((service) => {
                         if (service.ID === this.props.params.id) {
-                            return <Service key={service.ID} service={service} fetchService={this.fetchService}
+                            return <Service key={service.ID}
+                                            service={service}
+                                            services={this.props.services}
+                                            fetchService={this.fetchService}
+                                            fetchServices={this.fetchServices}
                                             selectedService={this.props.selectedService}
                                             handleSubmit={this.handleSubmit}
                                             handleUpdate={this.handleUpdate}
@@ -61,12 +68,12 @@ class Services extends React.Component {
                                             volumes={this.props.volumes}/>;
                         } else {
                             const isGef = service.Input && service.Output;
-                            return isGef ? <ServiceRow key={service.ID} service={service}/> : false;
+                            return isGef ? <ServiceRow key={service.ID} service={service}/> : <ImageRow key={service.ID} image={service}/>;
                         }
                     })}
                     { this.props.services.map((service) => {
-                        const isGef = service.Input && service.Output;
-                        return isGef ? false : <ImageRow key={service.ID} image={service}/>;
+                        //const isGef = service.Input && service.Output;
+                        //return isGef ? false : <ImageRow key={service.ID} image={service}/>;
                     })}
                 </div>
             )

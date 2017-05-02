@@ -74,10 +74,9 @@ function serviceUpdateStart() {
     }
 }
 
-function serviceUpdateSuccess(service) {
+function serviceUpdateSuccess() {
     return {
         type: actionTypes.SERVICE_UPDATE_SUCCESS,
-        service: service
     }
 }
 
@@ -433,8 +432,8 @@ function fetchJobById(jobId) {
 function handleUpdateService() {
     return function (dispatch, getState) {
         const selectedService = getState().selectedService;
+        const allServices = getState().services;
         const serviceEdit = getState().form.ServiceEdit;
-        log("selectedService", selectedService);
 
         let outputObject =  {
             'Created': selectedService.Service.Created,
@@ -455,9 +454,20 @@ function handleUpdateService() {
         resultPromise.then(response => {
             log('updated service:', response.data);
             Alert.info("Service metadata has been successfully updated");
+            // Updating the list of services on the client side without requesting data from the server
+            let updatedServices = [];
+            let responseService = response.data.Service;
+            allServices.map((curService) => {
+                if (curService.ID == responseService.ID) {
+                    updatedServices.push(responseService);
+                } else {
+                    updatedServices.push(curService);
+                }
+            });
+
+            dispatch(serviceUpdateSuccess());
             dispatch(serviceFetchSuccess(response.data));
-            dispatch(serviceUpdateSuccess(response.data));
-            fetchServices();
+            dispatch(servicesFetchSuccess(updatedServices)); // forcing to update the list of services
         }).catch(err => {
             Alert.error("Cannot update the service.");
             log("An update error occurred");
@@ -498,35 +508,44 @@ function addIOPort(isInput) {
         let newInput = {};
         let outputs = [];
         let newOutput = {};
-
+        let selectedInput = [];
+        let selectedOutput = [];
+        if (selectedService.Service.Input) {
+            selectedInput = selectedService.Service.Input
+        }
+        if (selectedService.Service.Output) {
+            selectedOutput = selectedService.Service.Output;
+        }
         if (isInput) {
-            newInput.ID = "input" + selectedService.Service.Input.length;
+            newInput.ID = "input" + selectedInput.length;
             newInput.Name = serviceEdit.values.inputSourceName;
             newInput.Path = serviceEdit.values.inputSourcePath;
             if ((!newInput.Name) && (!newInput.Path)){
                 Alert.error("Input name and path cannot be empty");
                 dispatch(ioAddError());
             } else {
-                selectedService.Service.Input.map((input) => {
+                selectedInput.map((input) => {
                     inputs.push(input);
                 });
                 inputs.push(newInput);
             }
-            outputs = selectedService.Service.Output;
+
+            outputs = selectedOutput;
         } else {
-            newOutput.ID = "output" + selectedService.Service.Output.length;
+            newOutput.ID = "output" + selectedOutput.length;
             newOutput.Name = serviceEdit.values.outputSourceName;
             newOutput.Path = serviceEdit.values.outputSourcePath;
             if ((!newOutput.Name) && (!newOutput.Path)){
                 Alert.error("Output name and path cannot be empty");
                 dispatch(ioAddError());
             } else {
-                selectedService.Service.Output.map((out) => {
+                selectedOutput.map((out) => {
                     outputs.push(out);
                 });
                 outputs.push(newOutput);
             }
-            inputs = selectedService.Service.Input;
+
+            inputs = selectedInput;
         }
 
         let outputObject = {
@@ -542,15 +561,15 @@ function addIOPort(isInput) {
             'Version': selectedService.Service.Version
         };
 
-        if ((inputs.length>0) && (outputs.length>0)) {
+        if ((inputs.length>0) || (outputs.length>0)) {
             dispatch(ioAddSuccess(outputObject));
             dispatch(serviceUpdateStart());
             const resultPromise = axios.put(apiNames.services + '/' + selectedService.Service.ID, outputObject);
 
             resultPromise.then(response => {
                 log('updated service:', response.data);
+                dispatch(serviceUpdateSuccess());
                 dispatch(serviceFetchSuccess(response.data));
-                dispatch(serviceUpdateSuccess(response.data));
             }).catch(err => {
                 Alert.error("Cannot update the service.");
                 log("An update error occurred");
@@ -603,8 +622,8 @@ function removeIOPort(isInput, removeIndex) {
 
         resultPromise.then(response => {
             log('updated service:', response.data);
+            dispatch(serviceUpdateSuccess());
             dispatch(serviceFetchSuccess(response.data));
-            dispatch(serviceUpdateSuccess(response.data));
         }).catch(err => {
             Alert.error("Cannot update the service.");
             log("An update error occurred");
