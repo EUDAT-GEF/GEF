@@ -1,17 +1,18 @@
 {
-	"Docker": [
-		{
-			"Endpoint" : "unix:///var/run/docker.sock"
-		},
-		{
-			"UseBoot2Docker": true,
-			"Description": "Using Boot2Docker with its environment variables: $DOCKER_HOST and $DOCKER_CERT_PATH"
-		}
-	],
+	"Docker": {
+		"UseEnvironmentVariables": false,
+		"Endpoint" : "unix:///var/run/docker.sock",
+		"Description": "The default Docker server on localhost"
+	},
+	"Pier": {
+		"InternalServicesFolder": "../services/_internal"
+	},
 	"Server": {
-		"Address": ":4142",
+		"Address": ":8443",
 		"ReadTimeoutSecs": 10,
-		"WriteTimeoutSecs": 10
+		"WriteTimeoutSecs": 10,
+		"TLSCertificateFilePath": "../ssl/server.crt",
+		"TLSKeyFilePath": "../ssl/server.key"
 	},
 	"EventSystem": {
 		"Address": ""

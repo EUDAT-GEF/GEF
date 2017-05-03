@@ -5,13 +5,16 @@ import (
 	"database/sql"
 	"time"
 
+	// imported for side-effect only (package init)
 	_ "github.com/mattn/go-sqlite3"
+
 	"github.com/pborman/uuid"
 	"gopkg.in/gorp.v1"
 )
 
-const GorpVersionColumn = "Revision" // Column in a table used to keep an internal version number of GORP
-const SQLiteDataBasePath = "gef_db.bin"
+// Column in a table used to keep an internal version number of GORP
+const gorpVersionColumn = "Revision"
+const sqliteDataBasePath = "gef_db.bin"
 
 // Db is used to keep DbMap
 type Db struct{ gorp.DbMap }
@@ -67,16 +70,16 @@ type IOPortTable struct {
 
 // InitDb initializes the database engine
 func InitDb() (Db, error) {
-	dataBase, err := sql.Open("sqlite3", SQLiteDataBasePath)
+	dataBase, err := sql.Open("sqlite3", sqliteDataBasePath)
 	if err != nil {
 		return Db{}, err
 	}
 	// For each table GORP has a special field to keep information about data version
 	dataBaseMap := &gorp.DbMap{Db: dataBase, Dialect: gorp.SqliteDialect{}}
-	dataBaseMap.AddTableWithName(JobTable{}, "Jobs").SetKeys(false, "ID").SetVersionCol(GorpVersionColumn)
-	dataBaseMap.AddTableWithName(TaskTable{}, "Tasks").SetKeys(false, "ID").SetVersionCol(GorpVersionColumn)
-	dataBaseMap.AddTableWithName(ServiceTable{}, "Services").SetKeys(false, "ID").SetVersionCol(GorpVersionColumn)
-	dataBaseMap.AddTableWithName(IOPortTable{}, "IOPorts").SetVersionCol(GorpVersionColumn)
+	dataBaseMap.AddTableWithName(JobTable{}, "Jobs").SetKeys(false, "ID").SetVersionCol(gorpVersionColumn)
+	dataBaseMap.AddTableWithName(TaskTable{}, "Tasks").SetKeys(false, "ID").SetVersionCol(gorpVersionColumn)
+	dataBaseMap.AddTableWithName(ServiceTable{}, "Services").SetKeys(false, "ID").SetVersionCol(gorpVersionColumn)
+	dataBaseMap.AddTableWithName(IOPortTable{}, "IOPorts").SetVersionCol(gorpVersionColumn)
 	err = dataBaseMap.CreateTablesIfNotExists()
 	return Db{*dataBaseMap}, err
 }

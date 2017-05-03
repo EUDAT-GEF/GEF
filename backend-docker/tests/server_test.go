@@ -18,16 +18,19 @@ func TestServer(t *testing.T) {
 	config, err := def.ReadConfigFile(configFilePath)
 	checkMsg(t, err, "reading config files")
 
-	d, err := db.InitDb()
+	db, err := db.InitDb()
+	checkMsg(t, err, "creating db")
+	defer db.Db.Close()
 
-	var p *pier.Pier
-	p, err = pier.NewPier(config.Docker, config.TmpDir, config.Limits, &d)
+	pier, err := pier.NewPier(&db, config.TmpDir)
 	checkMsg(t, err, "creating new pier")
-	defer d.Db.Close()
+
+	err = pier.SetDockerConnection(config.Docker, config.Limits, internalServicesFolder)
+	checkMsg(t, err, "setting docker connection")
 
 	var srv *httptest.Server
 	{
-		s, err := server.NewServer(config.Server, p, config.TmpDir, &d)
+		s, err := server.NewServer(config.Server, pier, config.TmpDir, &db)
 		checkMsg(t, err, "creating api server")
 		srv = httptest.NewServer(s.Server.Handler)
 	}

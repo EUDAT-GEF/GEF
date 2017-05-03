@@ -25,23 +25,27 @@ type VolumeItem struct {
 	FolderTree []VolumeItem `json:"folderTree"`
 }
 
-const volumeFileListName = "volume-filelist"
-const copyFromVolumeName = "copy-from-volume"
-
 // DownStreamContainerFile exported
 func (p *Pier) DownStreamContainerFile(volumeID string, fileLocation string, w http.ResponseWriter) error {
 	// Copy the file from the volume to a new container
 	binds := []dckr.VolBind{
 		dckr.NewVolBind(dckr.VolumeID(volumeID), "/root/volume", false),
 	}
-	containerID, _, err := p.docker.StartImage(dckr.ImageID(copyFromVolumeName), []string{filepath.Join("/root/volume/", fileLocation), "/root"}, binds, p.limits)
+	containerID, _, err := p.docker.client.StartImage(
+		p.docker.copyFromVolumeID,
+		[]string{
+			filepath.Join("/root/volume/", fileLocation),
+			"/root",
+		},
+		binds,
+		p.docker.limits)
 
 	if err != nil {
 		return def.Err(err, "copying files from the volume to the container failed")
 	}
 
 	// Stream the file from the container
-	tarStream, err := p.docker.GetTarStream(string(containerID), fileLocation)
+	tarStream, err := p.docker.client.GetTarStream(string(containerID), fileLocation)
 	if err != nil {
 		return def.Err(err, "GetTarStream failed")
 	}
@@ -77,7 +81,8 @@ func (p *Pier) ListFiles(volumeID db.VolumeID, filePath string) ([]VolumeItem, e
 	}
 
 	// Execute our image (it should produce a JSON file with the list of files)
-	containerID, consoleOutput, err := p.docker.StartImage(dckr.ImageID(volumeFileListName), []string{filePath, "r"}, volumesToMount, p.limits)
+	containerID, consoleOutput, err := p.docker.client.StartImage(
+		p.docker.fileListID, []string{filePath, "r"}, volumesToMount, p.docker.limits)
 
 	if err != nil {
 		return volumeFileList, def.Err(err, "running image failed")
@@ -90,7 +95,7 @@ func (p *Pier) ListFiles(volumeID db.VolumeID, filePath string) ([]VolumeItem, e
 	}
 
 	// Killing the container
-	_, _, err = p.docker.WaitContainer(containerID, consoleOutput, true)
+	_, _, err = p.docker.client.WaitContainer(containerID, consoleOutput, true)
 	if err != nil {
 		return volumeFileList, def.Err(err, "waiting for container to end failed")
 	}
@@ -101,7 +106,7 @@ func (p *Pier) ListFiles(volumeID db.VolumeID, filePath string) ([]VolumeItem, e
 // readJSON reads a JSON file with the list of files (in a volume) from a container
 func (p *Pier) readJSON(containerID string, filePath string) ([]VolumeItem, error) {
 	var volumeFileList []VolumeItem
-	tarStream, err := p.docker.GetTarStream(containerID, filePath)
+	tarStream, err := p.docker.client.GetTarStream(containerID, filePath)
 	if err != nil {
 		return nil, def.Err(err, "GetTarStream(%s) failed", filePath)
 	}

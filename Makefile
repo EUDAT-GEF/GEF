@@ -1,52 +1,58 @@
-GOSRC = ./../..
+GOSRC = ./../../..
+GITHUBSRC = ./../..
 EUDATSRC = ./..
 WEBUI = frontend/webui
-INTERNALSERVICES = services/_internal
-GOFLAGS=-ldflags -s
+GOFLAGS=
 
-build: dependencies webui frontend containers backend
+build: dependencies webui backend
 
-webui:
+webui: $(WEBUI)/
 	(cd $(WEBUI) && node_modules/webpack/bin/webpack.js -p)
-
-containers:
-	(cd $(INTERNALSERVICES)/volume-stage-in && docker build -t volume-stage-in .)
-	(cd $(INTERNALSERVICES)/volume-filelist && GOOS=linux GOARCH=amd64 go build $(GOFLAGS) && docker build -t volume-filelist .)
-	(cd $(INTERNALSERVICES)/copy-from-volume && docker build -t copy-from-volume .)
 
 backend:
 	$(GOPATH)/bin/golint ./...
 	go vet ./...
-	go test $(GOFLAGS) ./...
 	go build $(GOFLAGS) ./...
+	go test -timeout 4m $(GOFLAGS) ./...
 
-dependencies: $(WEBUI)/node_modules $(GOSRC)/golang/lint/golint $(GOSRC)/fsouza/go-dockerclient $(GOSRC)/gorilla/mux $(GOSRC)/pborman/uuid $(GOSRC)/gopkg.in/gorp.v1 $(GOSRC)github.com/mattn/go-sqlite3
-
-$(WEBUI)/node_modules:
-	(cd $(WEBUI) && npm install)
-
-$(GOSRC)/golang/lint/golint:
-	go get -u github.com/golang/lint/golint
-
-$(GOSRC)/fsouza/go-dockerclient:
-	go get -u github.com/fsouza/go-dockerclient
-
-$(GOSRC)/gorilla/mux:
-	go get -u github.com/gorilla/mux
-
-$(GOSRC)/pborman/uuid:
-	go get -u github.com/pborman/uuid
-
-$(GOSRC)/gopkg.in/gorp.v1:
-	go get -u gopkg.in/gorp.v1
-
-$(GOSRC)github.com/mattn/go-sqlite3:
-	go get -u github.com/mattn/go-sqlite3
-
-webui_dev_server:
+run_webui_dev_server:
 	(cd $(WEBUI) && node_modules/webpack-dev-server/bin/webpack-dev-server.js --config webpack.config.devel.js)
 
 run_gef:
 	(cd backend-docker && go run $(GOFLAGS) main.go)
 
-.PHONY: build dependencies webui frontend backend webui_dev_server run_frontend run_backend clean
+certificate:
+	@echo "Creating self-signed GEF web server certificate in ./ssl/"
+	@mkdir -p ssl
+	@openssl req -x509 -nodes -newkey rsa:2048 -keyout ssl/server.key -out ssl/server.crt -days 365 -subj "/C=EU/ST=Helsinki/L=Helsinki/O=EUDAT/OU=GEF/CN=gef" 2>&1
+
+dependencies: $(WEBUI)/node_modules \
+	          $(GITHUBSRC)/golang/lint/golint \
+	          $(GITHUBSRC)/fsouza/go-dockerclient \
+	          $(GITHUBSRC)/gorilla/mux \
+	          $(GITHUBSRC)/pborman/uuid \
+	          $(GITHUBSRC)/mattn/go-sqlite3 \
+	          $(GOSRC)/gopkg.in/gorp.v1
+
+$(WEBUI)/node_modules:
+	(cd $(WEBUI) && npm install)
+
+$(GITHUBSRC)/golang/lint/golint:
+	go get -u github.com/golang/lint/golint
+
+$(GITHUBSRC)/fsouza/go-dockerclient:
+	go get -u github.com/fsouza/go-dockerclient
+
+$(GITHUBSRC)/gorilla/mux:
+	go get -u github.com/gorilla/mux
+
+$(GITHUBSRC)/pborman/uuid:
+	go get -u github.com/pborman/uuid
+
+$(GITHUBSRC)/mattn/go-sqlite3:
+	go get -u github.com/mattn/go-sqlite3
+
+$(GOSRC)/gopkg.in/gorp.v1:
+	go get -u gopkg.in/gorp.v1
+
+.PHONY: build webui backend run_gef run_webui_dev_server certificates dependencies

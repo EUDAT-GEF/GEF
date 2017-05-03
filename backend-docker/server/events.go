@@ -14,7 +14,7 @@ import (
 
 type eventSystem struct {
 	address string
-	id      uint64
+	ID      uint64
 }
 
 var eventSys eventSystem
@@ -27,7 +27,7 @@ type eventPayload struct {
 }
 
 type event struct {
-	Id        uint64 `json:"id"`
+	ID        uint64 `json:"id"`
 	Time      string `json:"time"`   // iso string
 	Action    string `json:"action"` // one of: "DataAnalysis"...
 	Preceding bool   `json:"preceding"`
@@ -39,10 +39,12 @@ type user struct {
 }
 
 type resource struct {
-	Url    string `json:"uri"`    // "/api/jobs",
+	URL    string `json:"uri"`    // "/api/jobs",
 	Method string `json:"method"` // "POST",
 }
 
+// InitEventSystem initializes the event system, or disables it if the address
+// is empty
 func InitEventSystem(address string) {
 	if address == "" {
 		log.Println("Event system disabled")
@@ -63,7 +65,7 @@ func (es eventSystem) dispatch(action string, r *http.Request, preceding bool) b
 
 	payload := eventPayload{
 		Event: event{
-			Id:        atomic.AddUint64(&es.id, 1),
+			ID:        atomic.AddUint64(&es.ID, 1),
 			Time:      time.Now().Format(time.RFC3339),
 			Action:    action,
 			Preceding: preceding,
@@ -73,7 +75,7 @@ func (es eventSystem) dispatch(action string, r *http.Request, preceding bool) b
 			Name:  "",
 		},
 		Resource: resource{
-			Url:    r.RequestURI,
+			URL:    r.RequestURI,
 			Method: r.Method,
 		},
 		Environment: map[string]interface{}{},

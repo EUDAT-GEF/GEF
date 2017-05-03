@@ -12,23 +12,28 @@ import (
 const testPID = "11304/a3d012ca-4e23-425e-9e2a-1e6a195b966f"
 
 var configFilePath = "../config.json"
-var config []def.DockerConfig
+var internalServicesFolder = "../../services/_internal"
 
 func TestClient(t *testing.T) {
 	config, err := def.ReadConfigFile(configFilePath)
 	checkMsg(t, err, "reading config files")
 
 	db, err := db.InitDb()
-	pier, err := pier.NewPier(config.Docker, config.TmpDir, config.Limits, &db)
-	checkMsg(t, err, "creating new pier")
+	checkMsg(t, err, "creating db")
 	defer db.Db.Close()
+
+	pier, err := pier.NewPier(&db, config.TmpDir)
+	checkMsg(t, err, "creating new pier")
+
+	err = pier.SetDockerConnection(config.Docker, config.Limits, internalServicesFolder)
+	checkMsg(t, err, "setting docker connection")
 
 	before, err := db.ListServices()
 	checkMsg(t, err, "listing services failed")
 
 	service, err := pier.BuildService("./docker_test")
 	checkMsg(t, err, "build service failed")
-	log.Println("built service:", service)
+	log.Println("test service built:", service)
 
 	after, err := db.ListServices()
 	checkMsg(t, err, "listing services failed")
@@ -53,7 +58,7 @@ func TestClient(t *testing.T) {
 
 	job, err := pier.RunService(service, "")
 	checkMsg(t, err, "running service failed")
-	log.Println("job: ", job)
+	log.Println("test job: ", job)
 
 	jobList, err := db.ListJobs()
 	if len(jobList) == 0 {
@@ -85,23 +90,36 @@ func TestExecution(t *testing.T) {
 	checkMsg(t, err, "reading config files")
 
 	db, err := db.InitDb()
-	pier, err := pier.NewPier(config.Docker, config.TmpDir, config.Limits, &db)
-	checkMsg(t, err, "creating new pier")
+	checkMsg(t, err, "creating db")
 	defer db.Db.Close()
+
+	pier, err := pier.NewPier(&db, config.TmpDir)
+	checkMsg(t, err, "creating new pier")
+
+	err = pier.SetDockerConnection(config.Docker, config.Limits, internalServicesFolder)
+	checkMsg(t, err, "setting docker connection")
 
 	service, err := pier.BuildService("./clone_test")
 	checkMsg(t, err, "build service failed")
-	log.Println("built service:", service)
+	log.Println("test service built:", service)
 
 	job, err := pier.RunService(service, testPID)
 	checkMsg(t, err, "running service failed")
 
-	log.Println("job: ", job)
+	log.Println("test job: ", job)
 	jobid := job.ID
 
 	for job.State.Code == -1 {
 		job, err = db.GetJob(jobid)
 		checkMsg(t, err, "getting job failed")
+	}
+
+	if job.State.Error != "" {
+		log.Println("test job error:")
+		log.Println("state: ", job.State)
+		for i, t := range job.Tasks {
+			log.Println("task ", i, ":", t)
+		}
 	}
 	expect(t, job.State.Error == "", "job error")
 
