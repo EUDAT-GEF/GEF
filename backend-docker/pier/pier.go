@@ -45,7 +45,8 @@ func NewPier(cfgList []def.DockerConfig, tmpDir string, cntrLimits def.LimitConf
 		limits: cntrLimits,
 	}
 
-	return &pier, nil
+	err = pier.buildServicesFromFolder(filepath.Join(servicesFolder, internalServicesFolder))
+	return &pier, err
 }
 
 // BuildService builds a services based on the content of the provided folder
@@ -187,27 +188,27 @@ func (p *Pier) buildServicesFromFolder(inputFolder string) error {
 	files, _ := ioutil.ReadDir(inputFolder)
 	for _, f := range files {
 		if f.IsDir() && f.Name() != internalServicesFolder {
-			log.Print("Opening folder: " + f.Name())
+			log.Print("building service: " + f.Name())
 			img, err := p.docker.BuildImage(filepath.Join(inputFolder, f.Name()))
 
 			if err != nil {
-				log.Print("failed to create a service: ", err)
+				log.Print("  failed to create a service: ", err)
 			} else {
-				log.Print("service has been created")
+				log.Print("  service has been created")
 
 				err = p.docker.TagImage(string(img.ID), f.Name(), "latest")
 				if err != nil {
-					log.Print("could not tag the service")
+					log.Print("  could not tag the service")
 				}
 
 				img, err = p.docker.InspectImage(img.ID)
 				if err != nil {
-					log.Print("failed to inspect the image: ", err)
+					log.Print("  failed to inspect the image: ", err)
 				}
 
 				err = p.db.AddService(NewServiceFromImage(img))
 				if err != nil {
-					log.Print("failed to add the service to the database: ", err)
+					log.Print("  failed to add the service to the database: ", err)
 				}
 			}
 		}

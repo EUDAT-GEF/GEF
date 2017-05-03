@@ -9,9 +9,11 @@
 		}
 	],
 	"Server": {
-		"Address": ":4142",
+		"Address": ":8443",
 		"ReadTimeoutSecs": 10,
-		"WriteTimeoutSecs": 10
+		"WriteTimeoutSecs": 10,
+		"TLSCertificateFilePath": "../ssl/server.crt",
+		"TLSKeyFilePath": "../ssl/server.key"
 	},
 	"EventSystem": {
 		"Address": ""

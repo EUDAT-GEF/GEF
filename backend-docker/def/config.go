@@ -27,9 +27,11 @@ type DockerConfig struct {
 
 // ServerConfig keeps the configuration options needed to make a Server
 type ServerConfig struct {
-	Address          string
-	ReadTimeoutSecs  int
-	WriteTimeoutSecs int
+	Address                string
+	ReadTimeoutSecs        int
+	WriteTimeoutSecs       int
+	TLSCertificateFilePath string
+	TLSKeyFilePath         string
 }
 
 // EventSystemConfig keeps the configuration options needed to make an EventSystem

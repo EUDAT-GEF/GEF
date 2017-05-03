@@ -7,8 +7,10 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"encoding/json"
+
 	"github.com/EUDAT-GEF/GEF/backend-docker/db"
 	"github.com/EUDAT-GEF/GEF/backend-docker/def"
 	"github.com/EUDAT-GEF/GEF/backend-docker/pier"
@@ -30,10 +32,12 @@ const (
 
 // Server is a master struct for serving HTTP API requests
 type Server struct {
-	Server http.Server
-	pier   *pier.Pier
-	tmpDir string
-	db     *db.Db
+	Server                 http.Server
+	TLSCertificateFilePath string
+	TLSKeyFilePath         string
+	pier                   *pier.Pier
+	tmpDir                 string
+	db                     *db.Db
 }
 
 // NewServer creates a new Server
@@ -45,14 +49,15 @@ func NewServer(cfg def.ServerConfig, pier *pier.Pier, tmpDir string, database *d
 
 	server := &Server{
 		Server: http.Server{
-			Addr: cfg.Address,
-			// timeouts seem to trigger even after a correct read
-			// ReadTimeout: 	cfg.ReadTimeoutSecs * time.Second,
-			// WriteTimeout: 	cfg.WriteTimeoutSecs * time.Second,
+			Addr:         cfg.Address,
+			ReadTimeout:  time.Duration(cfg.ReadTimeoutSecs) * time.Second,
+			WriteTimeout: time.Duration(cfg.WriteTimeoutSecs) * time.Second,
 		},
-		pier:   pier,
-		tmpDir: tmpDir,
-		db:     database,
+		TLSCertificateFilePath: cfg.TLSCertificateFilePath,
+		TLSKeyFilePath:         cfg.TLSKeyFilePath,
+		pier:                   pier,
+		tmpDir:                 tmpDir,
+		db:                     database,
 	}
 
 	routes := map[string]func(http.ResponseWriter, *http.Request){
@@ -118,7 +123,7 @@ func (spad singlePageAppDir) Open(name string) (http.File, error) {
 
 // Start starts a new http listener
 func (s *Server) Start() error {
-	return s.Server.ListenAndServe()
+	return s.Server.ListenAndServeTLS(s.TLSCertificateFilePath, s.TLSKeyFilePath)
 }
 
 func (s *Server) infoHandler(w http.ResponseWriter, r *http.Request) {
