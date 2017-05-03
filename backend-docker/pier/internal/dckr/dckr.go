@@ -289,9 +289,9 @@ func (c Client) StartImage(id ImageID, cmdArgs []string, binds []VolBind, limits
 	config.AttachStderr = true
 	hc := docker.HostConfig{
 		Binds:      bs,
-		CPUShares:  limits.CpuShares,
-		CPUPeriod:  limits.CpuPeriod,
-		CPUQuota:   limits.CpuQuota,
+		CPUShares:  limits.CPUShares,
+		CPUPeriod:  limits.CPUPeriod,
+		CPUQuota:   limits.CPUQuota,
 		Memory:     limits.Memory,
 		MemorySwap: limits.MemorySwap,
 	}
@@ -372,7 +372,7 @@ func (c Client) StartExistingContainer(contID string, binds []string) (Container
 	return ContainerID(contID), nil
 }
 
-// RemoveContainer
+// RemoveContainer removes a docker container
 func (c Client) RemoveContainer(containerID string) {
 	c.c.RemoveContainer(docker.RemoveContainerOptions{ID: containerID, Force: true})
 }
@@ -527,7 +527,7 @@ func (c Client) UploadFile2Container(containerID, srcPath string, dstPath string
 	return err
 }
 
-func ExtractImageIDFromTar(imageFilePath string) (string, error) {
+func extractImageIDFromTar(imageFilePath string) (string, error) {
 	type Manifest struct {
 		Config   string
 		RepoTags []string
@@ -576,10 +576,11 @@ func ExtractImageIDFromTar(imageFilePath string) (string, error) {
 	return foundID, def.Err(err, "could not retrieve image information")
 }
 
+// ImportImageFromTar installs a docker tar file as a docker image
 func (c *Client) ImportImageFromTar(imageFilePath string) (ImageID, error) {
 	var id string
 
-	id, err := ExtractImageIDFromTar(imageFilePath)
+	id, err := extractImageIDFromTar(imageFilePath)
 	if err != nil {
 		return ImageID(id), err
 	}
@@ -599,6 +600,7 @@ func (c *Client) ImportImageFromTar(imageFilePath string) (ImageID, error) {
 	return ImageID(id), err
 }
 
+// TagImage tags a docker image
 func (c *Client) TagImage(id string, repo string, tag string) error {
 	opts := docker.TagImageOptions{
 		Repo:  repo,

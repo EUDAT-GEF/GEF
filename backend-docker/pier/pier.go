@@ -17,7 +17,9 @@ import (
 	"github.com/pborman/uuid"
 )
 
-const GefSrvLabelPrefix = "eudat.gef.service." // GefSrvLabelPrefix is the prefix identifying GEF related labels
+// GefSrvLabelPrefix is the prefix identifying GEF related labels
+const GefSrvLabelPrefix = "eudat.gef.service."
+
 const stagingVolumeName = "volume-stage-in"
 const servicesFolder = "../services/"
 const internalServicesFolder = "_internal"
@@ -67,12 +69,13 @@ func (p *Pier) BuildService(buildDir string) (db.Service, error) {
 
 // RunService exported
 func (p *Pier) RunService(service db.Service, inputPID string) (db.Job, error) {
+	jobState := db.NewJobStateOk("Created", -1)
 	job := db.Job{
 		ID:        db.JobID(uuid.New()),
 		ServiceID: service.ID,
 		Created:   time.Now(),
 		Input:     inputPID,
-		State:     &db.JobState{"", "Created", -1},
+		State:     &jobState,
 	}
 
 	err := p.db.AddJob(job)
@@ -85,16 +88,16 @@ func (p *Pier) RunService(service db.Service, inputPID string) (db.Job, error) {
 // runJob runs a job
 func (p *Pier) runJob(job *db.Job, service db.Service, inputPID string) {
 
-	p.db.SetJobState(job.ID, db.JobState{"", "Creating a new input volume", -1})
+	p.db.SetJobState(job.ID, db.NewJobStateOk("Creating a new input volume", -1))
 	inputVolume, err := p.docker.NewVolume()
 	if err != nil {
-		p.db.SetJobState(job.ID, db.JobState{"Error while creating new input volume", "Error", 1})
+		p.db.SetJobState(job.ID, db.NewJobStateError("Error while creating new input volume", 1))
 		return
 	}
 	log.Println("new input volume created: ", inputVolume)
 	p.db.SetJobInputVolume(job.ID, db.VolumeID(inputVolume.ID))
 	{
-		p.db.SetJobState(job.ID, db.JobState{"", "Performing data staging", -1})
+		p.db.SetJobState(job.ID, db.NewJobStateOk("Performing data staging", -1))
 		binds := []dckr.VolBind{
 			dckr.NewVolBind(inputVolume.ID, "/volume", false),
 		}
@@ -107,25 +110,25 @@ func (p *Pier) runJob(job *db.Job, service db.Service, inputPID string) {
 
 		log.Println("  staging ended: ", exitCode, ", error: ", err)
 		if err != nil {
-			p.db.SetJobState(job.ID, db.JobState{"Data staging failed", "Error", 1})
+			p.db.SetJobState(job.ID, db.NewJobStateError("Data staging failed", 1))
 			return
 		}
 		if exitCode != 0 {
 			msg := fmt.Sprintf("Data staging failed (exitCode = %v)", exitCode)
-			p.db.SetJobState(job.ID, db.JobState{"", msg, 1})
+			p.db.SetJobState(job.ID, db.NewJobStateOk(msg, 1))
 			return
 		}
 	}
-	p.db.SetJobState(job.ID, db.JobState{"", "Creating a new output volume", -1})
+	p.db.SetJobState(job.ID, db.NewJobStateOk("Creating a new output volume", -1))
 	outputVolume, err := p.docker.NewVolume()
 	if err != nil {
-		p.db.SetJobState(job.ID, db.JobState{"Error while creating new output volume", "Error", 1})
+		p.db.SetJobState(job.ID, db.NewJobStateError("Error while creating new output volume", 1))
 		return
 	}
 	log.Println("new output volume created: ", outputVolume)
 	p.db.SetJobOutputVolume(job.ID, db.VolumeID(outputVolume.ID))
 	{
-		p.db.SetJobState(job.ID, db.JobState{"", "Executing the service", -1})
+		p.db.SetJobState(job.ID, db.NewJobStateOk("Executing the service", -1))
 		binds := []dckr.VolBind{
 			dckr.NewVolBind(inputVolume.ID, service.Input[0].Path, true),
 			dckr.NewVolBind(outputVolume.ID, service.Output[0].Path, false),
@@ -139,16 +142,16 @@ func (p *Pier) runJob(job *db.Job, service db.Service, inputPID string) {
 
 		log.Println("  job ended: ", exitCode, ", error: ", err)
 		if err != nil {
-			p.db.SetJobState(job.ID, db.JobState{"Service failed", "Error", 1})
+			p.db.SetJobState(job.ID, db.NewJobStateError("Service failed", 1))
 			return
 		}
 		if exitCode != 0 {
 			msg := fmt.Sprintf("Service failed (exitCode = %v)", exitCode)
-			p.db.SetJobState(job.ID, db.JobState{"", msg, 1})
+			p.db.SetJobState(job.ID, db.NewJobStateOk(msg, 1))
 			return
 		}
 	}
-	p.db.SetJobState(job.ID, db.JobState{"", "Ended successfully", 0})
+	p.db.SetJobState(job.ID, db.NewJobStateOk("Ended successfully", 0))
 }
 
 // RemoveJob removes a job by ID
@@ -229,6 +232,7 @@ func (p *Pier) PopulateServiceTable() error {
 	return err
 }
 
+// ImportImage installs a docker tar file as a docker image
 func (p *Pier) ImportImage(imageFilePath string) (db.Service, error) {
 	imageID, err := p.docker.ImportImageFromTar(imageFilePath)
 	if err != nil {

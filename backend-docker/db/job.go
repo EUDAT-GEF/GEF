@@ -1,8 +1,6 @@
 package db
 
-import (
-	"time"
-)
+import "time"
 
 // Job stores the information about a service execution (used to serialize JSON)
 type Job struct {
@@ -18,9 +16,27 @@ type Job struct {
 
 // JobState keeps information about a job state
 type JobState struct {
-	Error  string
 	Status string
+	Error  string
 	Code   int
+}
+
+// NewJobStateOk creates a new JobState with no error
+func NewJobStateOk(status string, code int) JobState {
+	return JobState{
+		Status: status,
+		Error:  "",
+		Code:   code,
+	}
+}
+
+// NewJobStateError creates a new JobState with specified error
+func NewJobStateError(err string, code int) JobState {
+	return JobState{
+		Error:  err,
+		Status: "Error",
+		Code:   code,
+	}
 }
 
 // JobID exported
