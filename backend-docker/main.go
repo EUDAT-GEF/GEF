@@ -13,7 +13,6 @@ import (
 var configFilePath = "config.json"
 
 func main() {
-
 	flag.StringVar(&configFilePath, "config", configFilePath, "configuration file")
 	flag.Parse()
 
@@ -30,9 +29,13 @@ func main() {
 	defer d.Db.Close()
 
 	var p *pier.Pier
-	p, err = pier.NewPier(config.Docker, config.TmpDir, config.Limits, &d)
+	p, err = pier.NewPier(&d, config.TmpDir)
 	if err != nil {
 		log.Fatal("FATAL: ", def.Err(err, "Cannot create Pier"))
+	}
+	err = p.SetDockerConnection(config.Docker, config.Limits, config.Pier.InternalServicesFolder)
+	if err != nil {
+		log.Fatal("FATAL: ", def.Err(err, "Cannot set docker connection"))
 	}
 
 	server.InitEventSystem(config.EventSystem.Address)

@@ -108,19 +108,10 @@ func NewClientFirstOf(cfg []def.DockerConfig) (Client, error) {
 func NewClient(dcfg def.DockerConfig) (Client, error) {
 	var client *docker.Client
 	var err error
-	if dcfg.Endpoint != "" {
+	if !dcfg.TLSVerify {
 		client, err = docker.NewClient(dcfg.Endpoint)
-	} else if dcfg.UseBoot2Docker {
-		endpoint := os.Getenv("DOCKER_HOST")
-		if endpoint != "" {
-			path := os.Getenv("DOCKER_CERT_PATH")
-			cert := fmt.Sprintf("%s/cert.pem", path)
-			key := fmt.Sprintf("%s/key.pem", path)
-			ca := fmt.Sprintf("%s/ca.pem", path)
-			client, err = docker.NewTLSClient(endpoint, cert, key, ca)
-		}
 	} else {
-		return Client{}, errors.New("empty docker configuration")
+		client, err = docker.NewTLSClient(dcfg.Endpoint, dcfg.CertPath, dcfg.KeyPath, dcfg.CAPath)
 	}
 	if err != nil || client == nil {
 		return Client{dcfg, client}, err
@@ -278,7 +269,7 @@ func (c Client) StartImage(id ImageID, cmdArgs []string, binds []VolBind, limits
 			bs[i] = fmt.Sprintf("%s:ro", bs[i])
 		}
 	}
-	log.Println("bindings are: ", bs)
+	// log.Println("bindings are: ", bs)
 
 	config := *img.Config
 	for _, arg := range cmdArgs {

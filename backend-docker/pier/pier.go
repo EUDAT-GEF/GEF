@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
-	"os"
 	"path/filepath"
 	"time"
 
@@ -20,40 +19,79 @@ import (
 // GefSrvLabelPrefix is the prefix identifying GEF related labels
 const GefSrvLabelPrefix = "eudat.gef.service."
 
-const stagingVolumeName = "volume-stage-in"
-const servicesFolder = "../services/"
-const internalServicesFolder = "_internal"
-
 // Pier is a master struct for gef-docker abstractions
 type Pier struct {
-	docker dckr.Client
+	docker *dockerConnection
 	db     *db.Db
 	tmpDir string
-	limits def.LimitConfig
 }
 
-// NewPier exported
-func NewPier(cfgList []def.DockerConfig, tmpDir string, cntrLimits def.LimitConfig, dataBase *db.Db) (*Pier, error) {
-	docker, err := dckr.NewClientFirstOf(cfgList)
+type dockerConnection struct {
+	client           dckr.Client
+	limits           def.LimitConfig
+	stageInID        dckr.ImageID
+	fileListID       dckr.ImageID
+	copyFromVolumeID dckr.ImageID
+}
 
-	if err != nil {
-		return nil, def.Err(err, "Cannot create docker client")
-	}
-
+// NewPier creates a new pier with all the needed setup
+func NewPier(dataBase *db.Db, tmpDir string) (*Pier, error) {
 	pier := Pier{
-		docker: docker,
 		db:     dataBase,
+		docker: nil,
 		tmpDir: tmpDir,
-		limits: cntrLimits,
+	}
+	log.Println("Pier created")
+	return &pier, nil
+}
+
+// SetDockerConnection instantiates the docker client and sets the pier's docker connection
+func (p *Pier) SetDockerConnection(config def.DockerConfig, limits def.LimitConfig, internalServicesFolder string) error {
+	client, err := dckr.NewClient(config)
+	if err != nil {
+		return def.Err(err, "Cannot create docker client for config:", config)
 	}
 
-	err = pier.buildServicesFromFolder(filepath.Join(servicesFolder, internalServicesFolder))
-	return &pier, err
+	buildInternalImage := func(docker dckr.Client, name string) (dckr.ImageID, error) {
+		log.Print("building internal service: " + name)
+		path := filepath.Join(internalServicesFolder, name)
+		abspath, err := filepath.Abs(path)
+		if err != nil {
+			return "", def.Err(err, "absolute filepath failed: %s", path)
+		}
+		img, err := docker.BuildImage(abspath)
+		if err != nil {
+			return "", def.Err(err, "internal image build failed: %s", abspath)
+		}
+		return img.ID, nil
+	}
+
+	stageInID, err := buildInternalImage(client, "volume-stage-in")
+	if err != nil {
+		return err
+	}
+	fileListID, err := buildInternalImage(client, "volume-filelist")
+	if err != nil {
+		return err
+	}
+	copyFromVolumeID, err := buildInternalImage(client, "copy-from-volume")
+	if err != nil {
+		return err
+	}
+
+	p.docker = &dockerConnection{
+		client,
+		limits,
+		stageInID,
+		fileListID,
+		copyFromVolumeID,
+	}
+	return nil
 }
 
 // BuildService builds a services based on the content of the provided folder
 func (p *Pier) BuildService(buildDir string) (db.Service, error) {
-	image, err := p.docker.BuildImage(buildDir)
+	image, err := p.docker.client.BuildImage(buildDir)
 	if err != nil {
 		return db.Service{}, def.Err(err, "docker BuildImage failed")
 	}
@@ -85,30 +123,38 @@ func (p *Pier) RunService(service db.Service, inputPID string) (db.Job, error) {
 	return job, err
 }
 
-// runJob runs a job
 func (p *Pier) runJob(job *db.Job, service db.Service, inputPID string) {
-
-	p.db.SetJobState(job.ID, db.NewJobStateOk("Creating a new input volume", -1))
-	inputVolume, err := p.docker.NewVolume()
-	if err != nil {
-		p.db.SetJobState(job.ID, db.NewJobStateError("Error while creating new input volume", 1))
-		return
+	err2str := func(err error) string {
+		if err == nil {
+			return ""
+		}
+		return err.Error()
 	}
-	log.Println("new input volume created: ", inputVolume)
-	p.db.SetJobInputVolume(job.ID, db.VolumeID(inputVolume.ID))
+
+	var err error
+	var inputVolume dckr.Volume
+	{
+		p.db.SetJobState(job.ID, db.NewJobStateOk("Creating a new input volume", -1))
+		inputVolume, err = p.docker.client.NewVolume()
+		if err != nil {
+			p.db.SetJobState(job.ID, db.NewJobStateError("Error while creating new input volume", 1))
+			return
+		}
+		// log.Println("new input volume created: ", inputVolume)
+		p.db.SetJobInputVolume(job.ID, db.VolumeID(inputVolume.ID))
+	}
+
 	{
 		p.db.SetJobState(job.ID, db.NewJobStateOk("Performing data staging", -1))
 		binds := []dckr.VolBind{
 			dckr.NewVolBind(inputVolume.ID, "/volume", false),
 		}
-		containerID, exitCode, consoleOutput, err := p.docker.ExecuteImage(dckr.ImageID(stagingVolumeName), []string{inputPID}, binds, p.limits, true)
-		errMsg := ""
-		if err != nil {
-			errMsg = err.Error()
-		}
-		p.db.AddJobTask(job.ID, "Data staging", string(containerID), errMsg, exitCode, consoleOutput)
 
-		log.Println("  staging ended: ", exitCode, ", error: ", err)
+		containerID, exitCode, output, err := p.docker.client.ExecuteImage(
+			p.docker.stageInID, []string{inputPID}, binds, p.docker.limits, true)
+
+		p.db.AddJobTask(job.ID, "Data staging", string(containerID), err2str(err), exitCode, output)
+		// log.Println("  staging ended: ", exitCode, ", error: ", err)
 		if err != nil {
 			p.db.SetJobState(job.ID, db.NewJobStateError("Data staging failed", 1))
 			return
@@ -119,28 +165,30 @@ func (p *Pier) runJob(job *db.Job, service db.Service, inputPID string) {
 			return
 		}
 	}
-	p.db.SetJobState(job.ID, db.NewJobStateOk("Creating a new output volume", -1))
-	outputVolume, err := p.docker.NewVolume()
-	if err != nil {
-		p.db.SetJobState(job.ID, db.NewJobStateError("Error while creating new output volume", 1))
-		return
+
+	var outputVolume dckr.Volume
+	{
+		p.db.SetJobState(job.ID, db.NewJobStateOk("Creating a new output volume", -1))
+		outputVolume, err = p.docker.client.NewVolume()
+		if err != nil {
+			p.db.SetJobState(job.ID, db.NewJobStateError("Error while creating new output volume", 1))
+			return
+		}
+		// log.Println("new output volume created: ", outputVolume)
+		p.db.SetJobOutputVolume(job.ID, db.VolumeID(outputVolume.ID))
 	}
-	log.Println("new output volume created: ", outputVolume)
-	p.db.SetJobOutputVolume(job.ID, db.VolumeID(outputVolume.ID))
+
 	{
 		p.db.SetJobState(job.ID, db.NewJobStateOk("Executing the service", -1))
 		binds := []dckr.VolBind{
 			dckr.NewVolBind(inputVolume.ID, service.Input[0].Path, true),
 			dckr.NewVolBind(outputVolume.ID, service.Output[0].Path, false),
 		}
-		containerID, exitCode, consoleOutput, err := p.docker.ExecuteImage(dckr.ImageID(service.ImageID), nil, binds, p.limits, true)
-		errMsg := ""
-		if err != nil {
-			errMsg = err.Error()
-		}
-		p.db.AddJobTask(job.ID, "Service execution", string(containerID), errMsg, exitCode, consoleOutput)
+		containerID, exitCode, output, err := p.docker.client.ExecuteImage(
+			dckr.ImageID(service.ImageID), nil, binds, p.docker.limits, true)
+		p.db.AddJobTask(job.ID, "Service execution", string(containerID), err2str(err), exitCode, output)
 
-		log.Println("  job ended: ", exitCode, ", error: ", err)
+		// log.Println("  job ended: ", exitCode, ", error: ", err)
 		if err != nil {
 			p.db.SetJobState(job.ID, db.NewJobStateError("Service failed", 1))
 			return
@@ -151,6 +199,7 @@ func (p *Pier) runJob(job *db.Job, service db.Service, inputPID string) {
 			return
 		}
 	}
+
 	p.db.SetJobState(job.ID, db.NewJobStateOk("Ended successfully", 0))
 }
 
@@ -162,18 +211,18 @@ func (p *Pier) RemoveJob(jobID db.JobID) (db.Job, error) {
 	}
 
 	// Removing volumes
-	err = p.docker.RemoveVolume(dckr.VolumeID(job.InputVolume))
+	err = p.docker.client.RemoveVolume(dckr.VolumeID(job.InputVolume))
 	if err != nil {
 		return job, def.Err(err, "Input volume is not set")
 	}
-	err = p.docker.RemoveVolume(dckr.VolumeID(job.OutputVolume))
+	err = p.docker.client.RemoveVolume(dckr.VolumeID(job.OutputVolume))
 	if err != nil {
 		return job, def.Err(err, "Output volume is not set")
 	}
 
 	// Stopping the latest or the current task (if it is running)
 	if len(job.Tasks) > 0 {
-		p.docker.RemoveContainer(string(job.Tasks[len(job.Tasks)-1].ContainerID))
+		p.docker.client.RemoveContainer(string(job.Tasks[len(job.Tasks)-1].ContainerID))
 	}
 
 	// Removing the job from the list
@@ -181,65 +230,52 @@ func (p *Pier) RemoveJob(jobID db.JobID) (db.Job, error) {
 	return job, nil
 }
 
-// buildServicesFromFolder builds an image from the specified folder and assigns a tag to it based on the corresponding folder name
-func (p *Pier) buildServicesFromFolder(inputFolder string) error {
-	_, err := os.Stat(inputFolder)
-	if os.IsNotExist(err) {
-		return nil
+// BuildServicesFromFolder reads a folder with services, builds images for
+// these services, and adds all the necessary information to the database
+func (p *Pier) BuildServicesFromFolder(servicesFolder string) error {
+	log.Println("Building services from: " + servicesFolder)
+	files, err := ioutil.ReadDir(servicesFolder)
+	if err != nil {
+		return def.Err(err, "cannot read folder %s", servicesFolder)
 	}
-
-	files, _ := ioutil.ReadDir(inputFolder)
 	for _, f := range files {
-		if f.IsDir() && f.Name() != internalServicesFolder {
+		if f.IsDir() {
 			log.Print("building service: " + f.Name())
-			img, err := p.docker.BuildImage(filepath.Join(inputFolder, f.Name()))
+			img, err := p.docker.client.BuildImage(filepath.Join(servicesFolder, f.Name()))
 
 			if err != nil {
-				log.Print("  failed to create a service: ", err)
+				log.Print("  failed to create service: ", err)
 			} else {
 				log.Print("  service has been created")
 
-				err = p.docker.TagImage(string(img.ID), f.Name(), "latest")
+				err = p.docker.client.TagImage(string(img.ID), f.Name(), "latest")
 				if err != nil {
-					log.Print("  could not tag the service")
+					log.Print("  could not tag service")
 				}
 
-				img, err = p.docker.InspectImage(img.ID)
+				img, err = p.docker.client.InspectImage(img.ID)
 				if err != nil {
-					log.Print("  failed to inspect the image: ", err)
+					log.Print("  failed to inspect image: ", err)
 				}
 
 				err = p.db.AddService(NewServiceFromImage(img))
 				if err != nil {
-					log.Print("  failed to add the service to the database: ", err)
+					log.Print("  failed to add service to the database: ", err)
 				}
 			}
 		}
 	}
-	return nil
-}
-
-// PopulateServiceTable reads the "services" folder, builds images, and adds all the necessary information
-// to the database
-func (p *Pier) PopulateServiceTable() error {
-	log.Println("Reading the folder with Dockerfiles for internal services: " + filepath.Join(servicesFolder, internalServicesFolder))
-	err := p.buildServicesFromFolder(filepath.Join(servicesFolder, internalServicesFolder))
-	if err != nil {
-		return err
-	}
-	log.Println("Reading the folder with Dockerfiles for demo services: " + servicesFolder)
-	err = p.buildServicesFromFolder(servicesFolder)
 	return err
 }
 
 // ImportImage installs a docker tar file as a docker image
 func (p *Pier) ImportImage(imageFilePath string) (db.Service, error) {
-	imageID, err := p.docker.ImportImageFromTar(imageFilePath)
+	imageID, err := p.docker.client.ImportImageFromTar(imageFilePath)
 	if err != nil {
 		return db.Service{}, def.Err(err, "docker ImportImage failed")
 	}
 
-	image, err := p.docker.InspectImage(imageID)
+	image, err := p.docker.client.InspectImage(imageID)
 
 	if err != nil {
 		return db.Service{}, err

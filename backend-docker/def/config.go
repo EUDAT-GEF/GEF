@@ -8,21 +8,32 @@ import (
 
 // Configuration keeps the configs for the entire application
 type Configuration struct {
-	Docker      []DockerConfig
+	Docker DockerConfig
+	// Default Docker limits
+	Limits LimitConfig
+
+	Pier        PierConfig
 	Server      ServerConfig
 	EventSystem EventSystemConfig
 
 	// TmpDir is the directory to keep session files in
 	// If the path is relative, it will be used as a subfolder of the system temporary directory
 	TmpDir string
-	Limits LimitConfig
 }
 
 // DockerConfig configuration for building docker clients
 type DockerConfig struct {
-	UseBoot2Docker bool
-	Endpoint       string
-	Description    string
+	Description string
+	Endpoint    string
+	TLSVerify   bool
+	CertPath    string
+	KeyPath     string
+	CAPath      string
+}
+
+// PierConfig configuration for pier
+type PierConfig struct {
+	InternalServicesFolder string
 }
 
 // ServerConfig keeps the configuration options needed to make a Server
@@ -49,12 +60,11 @@ type LimitConfig struct {
 }
 
 func (c DockerConfig) String() string {
-	if c.Endpoint != "" {
-		return fmt.Sprintf("Endpoint: %s -- %s", c.Endpoint, c.Description)
-	} else if c.UseBoot2Docker {
-		return fmt.Sprintf("Boot2Docker[env] -- %s", c.Description)
+	tls := ""
+	if c.TLSVerify {
+		tls = "with TLS"
 	}
-	return fmt.Sprintf("unknown -- %s", c.Description)
+	return fmt.Sprintf("%s %s -- %s", c.Endpoint, tls, c.Description)
 }
 
 // ReadConfigFile reads a configuration file
@@ -73,8 +83,8 @@ func ReadConfigFile(configFilepath string) (Configuration, error) {
 		return config, Err(err, "Cannot read config file %s", configFilepath)
 	}
 
-	if len(config.Docker) == 0 {
-		return config, Err(nil, "Docker configuration missing in file: %s", configFilepath)
+	if config.Docker.Endpoint == "" {
+		return config, Err(nil, "Incorrect Docker endpoint in file: %s", configFilepath)
 	}
 
 	return config, nil

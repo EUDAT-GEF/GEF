@@ -2,7 +2,6 @@ GOSRC = ./../../..
 GITHUBSRC = ./../..
 EUDATSRC = ./..
 WEBUI = frontend/webui
-INTERNALSERVICES = services/_internal
 GOFLAGS=
 
 build: dependencies webui backend
@@ -13,8 +12,8 @@ webui: $(WEBUI)/
 backend:
 	$(GOPATH)/bin/golint ./...
 	go vet ./...
-	go test -timeout 30s $(GOFLAGS) ./...
 	go build $(GOFLAGS) ./...
+	go test -timeout 4m $(GOFLAGS) ./...
 
 run_webui_dev_server:
 	(cd $(WEBUI) && node_modules/webpack-dev-server/bin/webpack-dev-server.js --config webpack.config.devel.js)
