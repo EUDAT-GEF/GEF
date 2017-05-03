@@ -12,6 +12,19 @@ import (
 	"time"
 )
 
+func decorate(actionType string, fn func(http.ResponseWriter, *http.Request)) func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		logRequest(r)
+		allow, closefn := signalEvent(actionType, r)
+		if !allow {
+			Response{w}.DirectiveError()
+		} else {
+			defer closefn()
+			fn(w, r)
+		}
+	}
+}
+
 type eventSystem struct {
 	address string
 	ID      uint64

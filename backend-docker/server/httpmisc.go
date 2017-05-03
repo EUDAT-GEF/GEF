@@ -4,10 +4,25 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"os"
 	"path"
 
 	"net/http"
+
+	"github.com/gorilla/sessions"
 )
+
+const sessionName = "session"
+
+var cookieStore *sessions.CookieStore
+
+func init() {
+	secret := os.Getenv("GEF_SECRET_KEY")
+	if secret == "" {
+		panic("GEF_SECRET_KEY environment variable not found")
+	}
+	cookieStore = sessions.NewCookieStore([]byte(secret))
+}
 
 // Response encapsulates a http ResponseWriter
 type Response struct {

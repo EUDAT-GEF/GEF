@@ -25,6 +25,7 @@ const (
 )
 
 const apiRootPath = "/api"
+const loginRootPath = "/login"
 
 const (
 	buildsTmpDir = "builds"
@@ -60,51 +61,49 @@ func NewServer(cfg def.ServerConfig, pier *pier.Pier, tmpDir string, database *d
 		db:                     database,
 	}
 
-	routes := map[string]func(http.ResponseWriter, *http.Request){
-		"GET /":     decorate("misc", server.infoHandler),
-		"GET /info": decorate("misc", server.infoHandler),
+	routes := []struct {
+		route       string
+		handler     func(http.ResponseWriter, *http.Request)
+		description string
+	}{
+		{"GET /", server.infoHandler, "misc"},
+		{"GET /info", server.infoHandler, "misc"},
+		{"GET /user", userHandler, "user discovery"},
 
-		"POST /builds":           decorate("service deployment", server.newBuildImageHandler),
-		"POST /builds/{buildID}": decorate("service deployment", server.buildImageHandler),
+		{"POST /builds", server.newBuildImageHandler, "service deployment"},
+		{"POST /builds/{buildID}", server.buildImageHandler, "service deployment"},
 
-		"GET /services":             decorate("service discovery", server.listServicesHandler),
-		"GET /services/{serviceID}": decorate("service discovery", server.inspectServiceHandler),
-		"PUT /services/{serviceID}": decorate("service modification", server.editServiceHandler),
+		{"GET /services", server.listServicesHandler, "service discovery"},
+		{"GET /services/{serviceID}", server.inspectServiceHandler, "service discovery"},
+		{"PUT /services/{serviceID}", server.editServiceHandler, "service modification"},
 
-		"POST /jobs":               decorate("data analysis", server.executeServiceHandler),
-		"GET /jobs":                decorate("data discovery", server.listJobsHandler),
-		"GET /jobs/{jobID}":        decorate("data discovery", server.inspectJobHandler),
-		"DELETE /jobs/{jobID}":     decorate("data cleanup", server.removeJobHandler),
-		"GET /jobs/{jobID}/output": decorate("data retrieval", server.getJobTask),
+		{"POST /jobs", server.executeServiceHandler, "data analysis"},
+		{"GET /jobs", server.listJobsHandler, "data discovery"},
+		{"GET /jobs/{jobID}", server.inspectJobHandler, "data discovery"},
+		{"DELETE /jobs/{jobID}", server.removeJobHandler, "data cleanup"},
+		{"GET /jobs/{jobID}/output", server.getJobTask, "data retrieval"},
 
-		"GET /volumes/{volumeID}/{path:.*}": decorate("data retrieval", server.volumeContentHandler),
+		{"GET /volumes/{volumeID}/{path:.*}", server.volumeContentHandler, "data retrieval"},
 	}
 
 	router := mux.NewRouter()
-
 	apirouter := router.PathPrefix(apiRootPath).Subrouter()
-	for mp, handler := range routes {
-		methodPath := strings.SplitN(mp, " ", 2)
-		apirouter.HandleFunc(methodPath[1], handler).Methods(methodPath[0])
+	for _, hdl := range routes {
+		methodPath := strings.SplitN(hdl.route, " ", 2)
+		apirouter.HandleFunc(methodPath[1], decorate(hdl.description, hdl.handler)).Methods(methodPath[0])
 	}
-
+	loginrouter := router.PathPrefix(loginRootPath).Subrouter()
+	{
+		loginrouter.HandleFunc("/", loginHandler).Methods("GET")
+		loginrouter.HandleFunc("/b2access", callbackHandler).Methods("GET").Name("login_b2access")
+	}
 	router.PathPrefix("/").Handler(http.FileServer(singlePageAppDir("../frontend/resources/assets/")))
 
-	server.Server.Handler = router
-	return server, nil
-}
+	initB2Access(cfg.B2Access)
 
-func decorate(actionType string, fn func(http.ResponseWriter, *http.Request)) func(http.ResponseWriter, *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
-		logRequest(r)
-		allow, closefn := signalEvent(actionType, r)
-		if !allow {
-			Response{w}.DirectiveError()
-		} else {
-			defer closefn()
-			fn(w, r)
-		}
-	}
+	server.Server.Handler = router
+
+	return server, nil
 }
 
 type singlePageAppDir string

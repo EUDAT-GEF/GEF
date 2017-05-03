@@ -54,3 +54,4 @@ frontend/src/main/resources/assets/lib/
 backend-docker/gef_db.bin
 backend-docker/tests/gef_db.bin
 services/_internal/volume-filelist/volume-filelist
+/ssl/

@@ -43,6 +43,19 @@ type ServerConfig struct {
 	WriteTimeoutSecs       int
 	TLSCertificateFilePath string
 	TLSKeyFilePath         string
+	B2Access               B2AccessConfig
+	B2Drop                 B2DropConfig
+}
+
+// B2AccessConfig exported
+type B2AccessConfig struct {
+	BaseURL     string
+	RedirectURL string
+}
+
+// B2DropConfig exported
+type B2DropConfig struct {
+	BaseURL string
 }
 
 // EventSystemConfig keeps the configuration options needed to make an EventSystem
