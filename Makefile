@@ -2,24 +2,26 @@ GOSRC = ./../../..
 GITHUBSRC = ./../..
 EUDATSRC = ./..
 WEBUI = frontend/webui
-GOFLAGS=
+JSBUNDLE = frontend/resources/assets/gef-bundle.js
 
 build: dependencies webui backend
 
-webui: $(WEBUI)/
+webui: $(JSBUNDLE)
+
+$(JSBUNDLE):
 	(cd $(WEBUI) && node_modules/webpack/bin/webpack.js -p)
 
 backend:
 	$(GOPATH)/bin/golint ./...
 	go vet ./...
-	go build $(GOFLAGS) ./...
-	go test -timeout 4m $(GOFLAGS) ./...
+	go build ./...
+	GEF_SECRET_KEY="test" go test -timeout 4m ./...
 
 run_webui_dev_server:
 	(cd $(WEBUI) && node_modules/webpack-dev-server/bin/webpack-dev-server.js --config webpack.config.devel.js)
 
 run_gef:
-	(cd backend-docker && go run $(GOFLAGS) main.go)
+	(cd backend-docker && go run main.go)
 
 certificate:
 	@echo "Creating self-signed GEF web server certificate in ./ssl/"
@@ -30,8 +32,10 @@ dependencies: $(WEBUI)/node_modules \
 	          $(GITHUBSRC)/golang/lint/golint \
 	          $(GITHUBSRC)/fsouza/go-dockerclient \
 	          $(GITHUBSRC)/gorilla/mux \
+	          $(GITHUBSRC)/gorilla/sessions \
 	          $(GITHUBSRC)/pborman/uuid \
 	          $(GITHUBSRC)/mattn/go-sqlite3 \
+	          $(GOSRC)/golang.org/x/oauth2 \
 	          $(GOSRC)/gopkg.in/gorp.v1
 
 $(WEBUI)/node_modules:
@@ -46,11 +50,17 @@ $(GITHUBSRC)/fsouza/go-dockerclient:
 $(GITHUBSRC)/gorilla/mux:
 	go get -u github.com/gorilla/mux
 
+$(GITHUBSRC)/gorilla/sessions:
+	go get -u github.com/gorilla/sessions
+
 $(GITHUBSRC)/pborman/uuid:
 	go get -u github.com/pborman/uuid
 
 $(GITHUBSRC)/mattn/go-sqlite3:
 	go get -u github.com/mattn/go-sqlite3
+
+$(GOSRC)/golang.org/x/oauth2:
+	go get -u golang.org/x/oauth2
 
 $(GOSRC)/gopkg.in/gorp.v1:
 	go get -u gopkg.in/gorp.v1
