@@ -14,6 +14,7 @@ Installation
 - Go to the downloaded repository location: `cd $GOPATH/src/github.com/EUDAT-GEF/GEF`.
 - Build the project: `make build`.
 - Create a new self-signed certificate for the GEF server (with `make certificate`) or edit config.json to use your own
+- Define the GEF_SECRET_KEY environment variable (a random string is preferred, remember it and keep it in a safe location): `export GEF_SECRET_KEY="E60su8IL6VY6Ca2"`
 - Start the system: `make run_gef`.
 - Go to `https://localhost:8443`. The GEF UI should be online.
 
