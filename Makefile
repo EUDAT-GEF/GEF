@@ -18,7 +18,7 @@ backend:
 	GEF_SECRET_KEY="test" go test -timeout 4m ./...
 
 run_webui_dev_server:
-	(cd $(WEBUI) && node_modules/webpack-dev-server/bin/webpack-dev-server.js --config webpack.config.devel.js)
+	(cd $(WEBUI) && node_modules/webpack-dev-server/bin/webpack-dev-server.js -d --hot --https --config webpack.config.devel.js)
 
 run_gef:
 	(cd backend-docker && go run main.go)
