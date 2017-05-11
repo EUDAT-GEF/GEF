@@ -1,4 +1,4 @@
-FROM busybox:latest
+FROM golang:latest
 MAINTAINER Emanuel Dima <emanueldima@gmail.com>
 
 LABEL "eudat.gef.service.name"="Clone"
@@ -9,8 +9,10 @@ LABEL "eudat.gef.service.input.1.path"="/mydata/input"
 LABEL "eudat.gef.service.output.1.name"="Output Directory"
 LABEL "eudat.gef.service.output.1.path"="/mydata/output"
 
-COPY clone /clone
-RUN chmod +x /clone
+WORKDIR /root
+ADD main.go /root
+RUN go build main.go && mv main /clone
+
 CMD ["/clone"]
 
 # COPY taverna-commandline-core-2.5.0-linux_amd64.deb /taverna-commandline-core-2.5.0-linux_amd64.deb
