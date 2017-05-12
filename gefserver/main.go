@@ -4,10 +4,10 @@ import (
 	"flag"
 	"log"
 
-	"github.com/EUDAT-GEF/GEF/backend-docker/db"
-	"github.com/EUDAT-GEF/GEF/backend-docker/def"
-	"github.com/EUDAT-GEF/GEF/backend-docker/pier"
-	"github.com/EUDAT-GEF/GEF/backend-docker/server"
+	"github.com/EUDAT-GEF/GEF/gefserver/db"
+	"github.com/EUDAT-GEF/GEF/gefserver/def"
+	"github.com/EUDAT-GEF/GEF/gefserver/pier"
+	"github.com/EUDAT-GEF/GEF/gefserver/server"
 )
 
 var configFilePath = "config.json"

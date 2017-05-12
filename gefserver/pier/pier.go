@@ -10,9 +10,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/EUDAT-GEF/GEF/backend-docker/db"
-	"github.com/EUDAT-GEF/GEF/backend-docker/def"
-	"github.com/EUDAT-GEF/GEF/backend-docker/pier/internal/dckr"
+	"github.com/EUDAT-GEF/GEF/gefserver/db"
+	"github.com/EUDAT-GEF/GEF/gefserver/def"
+	"github.com/EUDAT-GEF/GEF/gefserver/pier/internal/dckr"
 	"github.com/pborman/uuid"
 )
 

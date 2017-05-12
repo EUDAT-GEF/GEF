@@ -3,10 +3,10 @@ var webpack = require('webpack');
 
 module.exports = {
     entry: ['./src/index.jsx'],
-    devtool: 'source-map',
+    devtool: 'cheap-module-eval-source-map',
     output: {
-        path: __dirname+"/../resources/assets",
-        filename: 'gef-bundle.js'
+        path: __dirname+"/app",
+        filename: 'gef-bundle.js',
     },
     resolve: {
         extensions: ['', '.js', '.jsx']
@@ -23,21 +23,17 @@ module.exports = {
                 test: /\.css$/,
                 loader: 'style!css'
             }
-
         ]
     },
-    plugins: [
-        new webpack.optimize.OccurenceOrderPlugin(),
-        new webpack.optimize.DedupePlugin(),
-        new webpack.DefinePlugin({
-            'process.env': {
-                'NODE_ENV': JSON.stringify('production')
+    devServer: {
+        contentBase: __dirname+"/app",
+        historyApiFallback: true,
+        proxy: {
+            '/api/**': {
+                target :'https://localhost:8443',
+                changeOrigin: true,
+                secure: false
             }
-        }),
-        new webpack.optimize.UglifyJsPlugin({
-            compressor: {
-                warnings: false
-            }
-        })
-    ],
+        }
+    }
 };

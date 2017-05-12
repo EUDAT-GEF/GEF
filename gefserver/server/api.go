@@ -11,9 +11,9 @@ import (
 
 	"encoding/json"
 
-	"github.com/EUDAT-GEF/GEF/backend-docker/db"
-	"github.com/EUDAT-GEF/GEF/backend-docker/def"
-	"github.com/EUDAT-GEF/GEF/backend-docker/pier"
+	"github.com/EUDAT-GEF/GEF/gefserver/db"
+	"github.com/EUDAT-GEF/GEF/gefserver/def"
+	"github.com/EUDAT-GEF/GEF/gefserver/pier"
 	"github.com/gorilla/mux"
 )
 
@@ -97,7 +97,7 @@ func NewServer(cfg def.ServerConfig, pier *pier.Pier, tmpDir string, database *d
 		loginrouter.HandleFunc("/", loginHandler).Methods("GET")
 		loginrouter.HandleFunc("/b2access", callbackHandler).Methods("GET").Name("login_b2access")
 	}
-	router.PathPrefix("/").Handler(http.FileServer(singlePageAppDir("../frontend/resources/assets/")))
+	router.PathPrefix("/").Handler(http.FileServer(singlePageAppDir("../webui/app/")))
 
 	initB2Access(cfg.B2Access)
 
