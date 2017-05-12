@@ -8,10 +8,10 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/EUDAT-GEF/GEF/backend-docker/db"
-	"github.com/EUDAT-GEF/GEF/backend-docker/def"
-	"github.com/EUDAT-GEF/GEF/backend-docker/pier"
-	"github.com/EUDAT-GEF/GEF/backend-docker/server"
+	"github.com/EUDAT-GEF/GEF/gefserver/db"
+	"github.com/EUDAT-GEF/GEF/gefserver/def"
+	"github.com/EUDAT-GEF/GEF/gefserver/pier"
+	"github.com/EUDAT-GEF/GEF/gefserver/server"
 )
 
 func TestServer(t *testing.T) {

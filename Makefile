@@ -1,8 +1,8 @@
 GOSRC = ./../../..
 GITHUBSRC = ./../..
 EUDATSRC = ./..
-WEBUI = frontend/webui
-JSBUNDLE = frontend/resources/assets/gef-bundle.js
+WEBUI = webui
+JSBUNDLE = webui/app/gef-bundle.js
 
 build: dependencies webui backend
 
@@ -17,16 +17,23 @@ backend:
 	go build ./...
 	GEF_SECRET_KEY="test" go test -timeout 4m ./...
 
+clean:
+	go clean ./...
+	rm $(JSBUNDLE) $(JSBUNDLE).map
+	rm -r $(WEBUI)/node_modules
+
 run_webui_dev_server:
 	(cd $(WEBUI) && node_modules/webpack-dev-server/bin/webpack-dev-server.js -d --hot --https --config webpack.config.devel.js)
 
 run_gef:
-	(cd backend-docker && go run main.go)
+	(cd gefserver && go run main.go)
+
 
 certificate:
 	@echo "Creating self-signed GEF web server certificate in ./ssl/"
 	@mkdir -p ssl
 	@openssl req -x509 -nodes -newkey rsa:2048 -keyout ssl/server.key -out ssl/server.crt -days 365 -subj "/C=EU/ST=Helsinki/L=Helsinki/O=EUDAT/OU=GEF/CN=gef" 2>&1
+
 
 dependencies: $(WEBUI)/node_modules \
 	          $(GITHUBSRC)/golang/lint/golint \

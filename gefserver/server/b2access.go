@@ -10,7 +10,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/EUDAT-GEF/GEF/backend-docker/def"
+	"github.com/EUDAT-GEF/GEF/gefserver/def"
 	"golang.org/x/oauth2"
 )
 

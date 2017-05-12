@@ -1,9 +1,9 @@
 #!/bin/bash
 # echo Copying files...
 
-CSS_DIR=../resources/assets/lib/css
-FONTS_DIR=../resources/assets/lib/fonts
-IMG_DIR=../resources/assets/lib/img
+CSS_DIR=app/lib/css
+FONTS_DIR=app/lib/fonts
+IMG_DIR=app/lib/img
 
 mkdir -p $CSS_DIR $FONTS_DIR $IMG_DIR
 

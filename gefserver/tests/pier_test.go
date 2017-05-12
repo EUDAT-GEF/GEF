@@ -4,9 +4,9 @@ import (
 	"log"
 	"testing"
 
-	"github.com/EUDAT-GEF/GEF/backend-docker/db"
-	"github.com/EUDAT-GEF/GEF/backend-docker/def"
-	"github.com/EUDAT-GEF/GEF/backend-docker/pier"
+	"github.com/EUDAT-GEF/GEF/gefserver/db"
+	"github.com/EUDAT-GEF/GEF/gefserver/def"
+	"github.com/EUDAT-GEF/GEF/gefserver/pier"
 )
 
 const testPID = "11304/a3d012ca-4e23-425e-9e2a-1e6a195b966f"

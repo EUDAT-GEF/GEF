@@ -17,7 +17,7 @@ import (
 
 	"encoding/json"
 
-	"github.com/EUDAT-GEF/GEF/backend-docker/def"
+	"github.com/EUDAT-GEF/GEF/gefserver/def"
 )
 
 const (
