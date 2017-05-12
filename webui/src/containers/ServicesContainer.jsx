@@ -1,5 +1,5 @@
 import Services from '../components/Services';
-import actions from '../actions/actions';
+import {fetchServices, fetchService, handleUpdateService, addIOPort, removeIOPort, handleSubmitJob} from '../actions/actions';
 
 import {connect} from 'react-redux';
 
@@ -14,31 +14,31 @@ const mapStateToProps = (state) => {
 const mapDispatchToProps = (dispatch) => {
     return {
         fetchServices: () => {
-            const action = actions.fetchServices();
+            const action = fetchServices();
             dispatch(action);
         },
         fetchService: (serviceID) => {
-            const action = actions.fetchService(serviceID);
+            const action = fetchService(serviceID);
             dispatch(action);
         },
         handleUpdate: (e) => {
             e.preventDefault();
-            const action = actions.handleUpdateService();
+            const action = handleUpdateService();
             dispatch(action);
         },
         handleAddIO: (isInput, e) => {
             e.preventDefault();
-            const action = actions.addIOPort(isInput);
+            const action = addIOPort(isInput);
             dispatch(action);
         },
         handleRemoveIO: (isInput, index, e) => {
             e.preventDefault();
-            const action = actions.removeIOPort(isInput, index);
+            const action = removeIOPort(isInput, index);
             dispatch(action);
         },
         handleSubmit: (e) => {
             e.preventDefault();
-            const action = actions.handleSubmitJob();
+            const action = handleSubmitJob();
             dispatch(action);
         },
     };

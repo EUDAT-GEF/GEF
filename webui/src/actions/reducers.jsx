@@ -77,6 +77,17 @@ function task(state = SI([]), action) {
     }
 }
 
+function user(state = SI([]), action) {
+    switch (action.type) {
+        case actionTypes.USER_FETCH_SUCCESS:
+            return SI(action.user);
+        case actionTypes.USER_FETCH_ERROR:
+            return SI([]);
+        default:
+            return state;
+    }
+}
+
 
 const rootReducer = combineReducers({
     jobs,
@@ -85,6 +96,7 @@ const rootReducer = combineReducers({
     selectedService,
     selectedVolume,
     task,
+    user,
     form: formReducer,
     routing: routerReducer
 });

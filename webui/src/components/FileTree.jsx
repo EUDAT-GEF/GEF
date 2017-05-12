@@ -3,7 +3,7 @@ import { Row, Col, Grid, Table } from 'react-bootstrap';
 import { toPairs } from '../utils/utils';
 import { connect } from 'react-redux'
 import { bindActionCreators } from 'redux'
-import actions from '../actions/actions';
+import * as actions from '../actions/actions';
 import moment from 'moment';
 import apiNames from '../GefAPI';
 

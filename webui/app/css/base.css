@@ -63,20 +63,28 @@ a:hover {
 }
 
 /**** NAVBAR ***/
+.navbar {
+    margin-bottom: 0;
+}
 .navbar-default {
     background-color: transparent !important;
     border: 0 !important;
 }
 .navbar-default .navbar-nav > li > a {
-    color: #333333;
     font-weight: 500;
     font-size: 16px;
 }
-.navbar-default .navbar-nav > li > a:hover {
-    color: #F45D00;
+.navbar-default .navbar-nav > li.login > a {
     font-weight: 500;
-    font-size: 16px;
+    font-size: 14px;
 }
+.navbar-default .navbar-nav>.active>a,
+.navbar-default .navbar-nav>.active>a:focus,
+.navbar-default .navbar-nav>.active>a:hover {
+    color: white;
+    background-color: #E5601E;
+}
+
 .navbar-default .navbar-collapse, .navbar-default .navbar-form {
     border:0;
 }
@@ -94,25 +102,8 @@ a:hover {
 .navbar-footer ul li a:hover {
     color: #333;
 }
-
-#searchform-input-group {
-    padding: 8px 0;
-}
-#search-box-main .navbar {
-    margin: 20px 0;
-}
-
-/*** OLD CSS STYLE ***/
-.right-not-rounded {
-    border-bottom-right-radius: 0;
-    border-top-right-radius: 0;
-}
-.left-not-rounded {
-    border-bottom-left-radius: 0;
-    border-top-left-radius: 0;
-}
-.no-padding {
-    padding: 0;
+.navbar .login {
+    color: #777;
 }
 
 

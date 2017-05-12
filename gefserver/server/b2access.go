@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/EUDAT-GEF/GEF/gefserver/def"
+	"github.com/gorilla/sessions"
 	"golang.org/x/oauth2"
 )
 
@@ -51,7 +52,7 @@ func userHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, str, 500)
 		return
 	}
-	Response{w}.Ok(jmap("name", session.Values["userName"], "email", session.Values["userEmail"]))
+	Response{w}.Ok(jmap("name", session.Values["userName"], "email", session.Values["userEmail"], "error", session.Values["userError"]))
 }
 
 func loginHandler(w http.ResponseWriter, r *http.Request) {
@@ -79,41 +80,36 @@ func callbackHandler(w http.ResponseWriter, r *http.Request) {
 	session, err := cookieStore.Get(r, sessionName)
 	if err != nil {
 		str := fmt.Sprintf("Cookie store error: %s", err.Error())
-		log.Println(str)
-		http.Error(w, str, 500)
+		userError(str, session, w, r)
 		return
 	}
 
 	// log.Println("received state: ", r.URL.Query().Get("state"))
 	if r.URL.Query().Get("state") != session.Values["state"] {
 		str := fmt.Sprintf("State mismatch, CSRF or cookies not enabled?")
-		log.Println(str)
-		http.Error(w, str, 500)
+		userError(str, session, w, r)
 		return
 	}
 
 	// log.Println("received code: ", r.URL.Query().Get("code"))
 	tkn, err := oauthCfg.Exchange(oauth2.NoContext, r.URL.Query().Get("code"))
 	if err != nil {
-		str := fmt.Sprintf("Error while getting access token: %s", err.Error())
-		log.Println(str)
-		http.Error(w, str, 500)
+		str := fmt.Sprintf("Error while getting access token: %s", err)
+		userError(str, session, w, r)
 		return
 	}
 
 	// log.Println("exchanged for token: ", tkn)
 	if !tkn.Valid() {
 		str := fmt.Sprintf("Received invalid access token: %s", tkn)
-		log.Println(str)
-		http.Error(w, str, 500)
+		userError(str, session, w, r)
 		return
 	}
 
 	resp, err := oauthCfg.Client(oauth2.NoContext, tkn).Get(userInfoURL)
 	if err != nil {
 		str := fmt.Sprintf("Error while getting user info: %s", err.Error())
-		log.Println(str)
-		http.Error(w, str, 500)
+		userError(str, session, w, r)
 		return
 	}
 
@@ -126,14 +122,23 @@ func callbackHandler(w http.ResponseWriter, r *http.Request) {
 	err = decoder.Decode(&user)
 	if err != nil {
 		str := fmt.Sprintf("Error while deserialising user info: %s", err.Error())
-		log.Println(str)
-		http.Error(w, str, 500)
+		userError(str, session, w, r)
 		return
 	}
 
+	session.Values["userError"] = nil
 	session.Values["userName"] = user.Name
 	session.Values["userEmail"] = user.Email
 	session.Save(r, w)
 
+	http.Redirect(w, r, "/", 302)
+}
+
+func userError(str string, session *sessions.Session, w http.ResponseWriter, r *http.Request) {
+	log.Println(str)
+	session.Values["userError"] = str
+	session.Values["userName"] = nil
+	session.Values["userEmail"] = nil
+	session.Save(r, w)
 	http.Redirect(w, r, "/", 302)
 }

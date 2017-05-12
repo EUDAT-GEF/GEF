@@ -1,287 +1,260 @@
 /**
  * Created by wqiu on 18/08/16.
  */
-import actionTypes from './actionTypes';
-import bows from 'bows';
 import axios from 'axios';
-import apiNames from '../GefAPI';
 import Alert from 'react-s-alert';
 import { push } from 'react-router-redux';
+import actionTypes from './actionTypes';
+import apiNames from '../GefAPI';
 import { toPairs } from '../utils/utils';
 
 const log = console.log; // bows('actions');
-//sync actions
-//these are just plain action creators
 
-
-function pageChange(pageName) {
-    return {
-        type: actionTypes.PAGE_CHANGE,
-        page: pageName
-    }
-}
-
-function errorOccur(errorMessage) {
-    return {
-        type: actionTypes.ERROR_OCCUR,
-        page: errorMessage
-    }
-}
-
-function servicesFetchStart() {
+export function servicesFetchStart() {
     return {
         type: actionTypes.SERVICES_FETCH_START
     }
 }
 
-function servicesFetchSuccess(services) {
+export function servicesFetchSuccess(services) {
     return {
         type: actionTypes.SERVICES_FETCH_SUCCESS,
         services: services
     }
 }
 
-function servicesFetchError(errorMessage) {
+export function servicesFetchError(errorMessage) {
     return {
         type: actionTypes.SERVICES_FETCH_ERROR,
         errorMessage: errorMessage
     }
 }
 
-function serviceFetchStart() {
+export function serviceFetchStart() {
     return {
         type: actionTypes.SERVICE_FETCH_START
     }
 }
 
-function serviceFetchSuccess(service) {
+export function serviceFetchSuccess(service) {
     return {
         type: actionTypes.SERVICE_FETCH_SUCCESS,
         service: service
     }
 }
 
-function serviceFetchError(errorMessage) {
+export function serviceFetchError(errorMessage) {
     return {
         type: actionTypes.SERVICE_FETCH_ERROR,
         errorMessage: errorMessage
     }
 }
 
-function serviceUpdateStart() {
+export function serviceUpdateStart() {
     return {
         type: actionTypes.SERVICE_UPDATE_START
     }
 }
 
-function serviceUpdateSuccess() {
+export function serviceUpdateSuccess() {
     return {
         type: actionTypes.SERVICE_UPDATE_SUCCESS,
     }
 }
 
-function serviceUpdateError(errorMessage) {
+export function serviceUpdateError(errorMessage) {
     return {
         type: actionTypes.SERVICE_UPDATE_ERROR,
         errorMessage: errorMessage
     }
 }
 
-function jobListFetchStart() {
+export function jobListFetchStart() {
     return {
         type: actionTypes.JOB_LIST_FETCH_START
     }
 }
 
-function jobListFetchSuccess(jobs) {
+export function jobListFetchSuccess(jobs) {
     return {
         type: actionTypes.JOB_LIST_FETCH_SUCCESS,
         jobs: jobs
     }
 }
 
-function jobListFetchError(errorMessage) {
+export function jobListFetchError(errorMessage) {
     return {
         type: actionTypes.JOB_LIST_FETCH_ERROR,
         errorMessage: errorMessage
     }
 }
 
-function jobRemovalStart() {
+export function jobRemovalStart() {
     return {
         type: actionTypes.JOB_REMOVAL_START
     }
 }
 
-function jobRemovalSuccess(data) {
+export function jobRemovalSuccess(data) {
     return {
         type: actionTypes.JOB_REMOVAL_SUCCESS,
         data: data
     }
 }
 
-function jobRemovalError(errorMessage) {
+export function jobRemovalError(errorMessage) {
     return {
         type: actionTypes.JOB_REMOVAL_ERROR,
         errorMessage: errorMessage
     }
 }
 
-function volumesFetchStart() {
+export function volumesFetchStart() {
     return {
         type: actionTypes.VOLUME_FETCH_START
     }
 }
 
-function volumesFetchSuccess(volumes) {
+export function volumesFetchSuccess(volumes) {
     return {
         type: actionTypes.VOLUME_FETCH_SUCCESS,
         volumes: volumes
     }
 }
 
-function volumesFetchError(errorMessage) {
+export function volumesFetchError(errorMessage) {
     return {
         type: actionTypes.VOLUME_FETCH_ERROR,
         errorMessage: errorMessage
     }
 }
 
-function fileUploadStart() {
+export function fileUploadStart() {
     return {
         type: actionTypes.FILE_UPLOAD_START
     }
 }
 
-function newBuild(buildID) {
+export function newBuild(buildID) {
     return {
         type: actionTypes.NEW_BUILD,
         buildID: buildID
     }
 }
 
-function newBuildError(errorMessage) {
+export function newBuildError(errorMessage) {
     return {
         type: actionTypes.NEW_BUILD_ERROR,
         errorMessage: errorMessage
     }
 }
 
-function fileUploadSuccess(data) {
+export function fileUploadSuccess(data) {
     return {
         type: actionTypes.FILE_UPLOAD_SUCCESS,
         data: data
     }
 }
 
-function fileUploadError(errorMessage) {
+export function fileUploadError(errorMessage) {
     return {
         type: actionTypes.FILE_UPLOAD_ERROR,
         errorMessage: errorMessage
     }
 }
 
-function inspectVolumeStart() {
+export function inspectVolumeStart() {
     return {
         type: actionTypes.INSPECT_VOLUME_START
     }
 }
 
-function inspectVolumeSuccess(data) {
+export function inspectVolumeSuccess(data) {
     return {
         type: actionTypes.INSPECT_VOLUME_SUCCESS,
         data: data
     }
 }
 
-function inspectVolumeEmpty() {
+export function inspectVolumeEmpty() {
     return {
         type: actionTypes.INSPECT_VOLUME_EMPTY,
         data: []
     }
 }
 
-function inspectVolumeError(errorMessage) {
+export function inspectVolumeError(errorMessage) {
     return {
         type: actionTypes.INSPECT_VOLUME_ERROR,
         errorMessage: errorMessage
     }
 }
 
-function consoleOutputFetchStart() {
+export function consoleOutputFetchStart() {
     return {
         type: actionTypes.CONSOLE_OUTPUT_FETCH_START
     }
 }
 
-function consoleOutputFetchSuccess(data) {
+export function consoleOutputFetchSuccess(data) {
     return {
         type: actionTypes.CONSOLE_OUTPUT_FETCH_SUCCESS,
         data: data
     }
 }
 
-function consoleOutputFetchEmpty() {
+export function consoleOutputFetchEmpty() {
     return {
         type: actionTypes.CONSOLE_OUTPUT_FETCH_EMPTY,
         data: []
     }
 }
 
-function consoleOutputFetchError(errorMessage) {
+export function consoleOutputFetchError(errorMessage) {
     return {
         type: actionTypes.CONSOLE_OUTPUT_FETCH_ERROR,
         errorMessage: errorMessage
     }
 }
 
-function ioAddStart() {
+export function ioAddStart() {
     return {
         type: actionTypes.IO_ADD_START
     }
 }
 
-function ioAddSuccess(data) {
+export function ioAddSuccess(data) {
     return {
         type: actionTypes.IO_ADD_SUCCESS,
         data: data
     }
 }
 
-function ioAddError(errorMessage) {
+export function ioAddError(errorMessage) {
     return {
         type: actionTypes.IO_ADD_ERROR,
         errorMessage: errorMessage
     }
 }
 
-function ioRemoveStart() {
+export function ioRemoveStart() {
     return {
         type: actionTypes.IO_REMOVE_START
     }
 }
 
-function ioRemoveSuccess(data) {
+export function ioRemoveSuccess(data) {
     return {
         type: actionTypes.IO_REMOVE_SUCCESS,
         data: data
     }
 }
 
-function ioRemoveError(errorMessage) {
-    return {
-        type: actionTypes.IO_REMOVE_ERROR,
-        errorMessage: errorMessage
-    }
-}
-
-
-
 
 //TODO: catch seems to swallow all of the exceptions, not only the exceptions occurred in fetch
 //async actions
 //these do some extra async stuff before the real actions are dispatched
-function fetchJobs() {
+export function fetchJobs() {
     return function (dispatch, getState)  {
         dispatch(jobListFetchStart());
         const resultPromise = axios.get( apiNames.jobs);
@@ -296,7 +269,7 @@ function fetchJobs() {
     }
 }
 
-function removeJob(jobID) {
+export function removeJob(jobID) {
     return function (dispatch, getState)  {
         dispatch(jobRemovalStart());
         const resultPromise = axios.delete( apiNames.jobs + "/" + jobID);
@@ -313,7 +286,7 @@ function removeJob(jobID) {
 }
 
 
-function fetchServices() {
+export function fetchServices() {
     return function (dispatch, getState)  {
         dispatch(servicesFetchStart());
         const resultPromise = axios.get( apiNames.services);
@@ -329,7 +302,7 @@ function fetchServices() {
     }
 }
 
-function fetchService(serviceID) {
+export function fetchService(serviceID) {
     return function (dispatch, getState) {
         dispatch(serviceFetchStart());
         const resultPromise = axios.get( apiNames.services + '/' + serviceID);
@@ -344,9 +317,7 @@ function fetchService(serviceID) {
     }
 }
 
-
-
-function fetchVolumes() {
+export function fetchVolumes() {
     return function (dispatch, getState) {
         dispatch(volumesFetchStart());
         const resultPromise = axios.get(apiNames.volumes);
@@ -399,37 +370,7 @@ export function consoleOutputFetch(jobId) {
     }
 }
 
-//this creates a new upload endpoint on the server,
-//the upload endpoint can be used for building services and volumes
-function getNewUploadEndpoint() {
-    return function (dispatch, getState) {
-        const resultPromise = axios.get( apiNames.builds);
-        resultPromise.then(response => {
-            const buildID = response.data.buildID;
-            log('Preapred a new buildID', buildID);
-            dispatch(newBuild(buildID))
-        }).catch(err => {
-            log("failed to get a new buildID");
-            dispatch(newBuildError(err));
-        })
-    }
-}
-
-
-function fetchJobById(jobId) {
-    return function (dispatch, getState)  {
-        dispatch(jobListFetchStart());
-        const resultPromise = axios.get( apiNames.jobs + '/' + jobId);
-        resultPromise.then(response => {
-            log('fetched job:', response.data);
-            //don't know what to do with it yet
-        }).catch(err => {
-            log("An fetch error occurred");
-            dispatch(jobListFetchError(err));
-        })
-    }
-}
-function handleUpdateService() {
+export function handleUpdateService() {
     return function (dispatch, getState) {
         const selectedService = getState().selectedService;
         const allServices = getState().services;
@@ -476,7 +417,7 @@ function handleUpdateService() {
     }
 }
 
-function handleSubmitJob() {
+export function handleSubmitJob() {
     return function (dispatch, getState) {
         const selectedService = getState().selectedService;
         const jobCreater = getState().form.JobCreator;
@@ -498,7 +439,7 @@ function handleSubmitJob() {
 }
 
 
-function addIOPort(isInput) {
+export function addIOPort(isInput) {
     return function (dispatch, getState)  {
         const selectedService = getState().selectedService;
         const serviceEdit = getState().form.ServiceEdit;
@@ -579,7 +520,7 @@ function addIOPort(isInput) {
     }
 }
 
-function removeIOPort(isInput, removeIndex) {
+export function removeIOPort(isInput, removeIndex) {
     return function (dispatch, getState)  {
         const selectedService = getState().selectedService;
         dispatch(ioRemoveStart());
@@ -632,68 +573,22 @@ function removeIOPort(isInput, removeIndex) {
     }
 }
 
-function showErrorMessageWithTimeout(id, timeout) {
-
+export function userFetchStart() {
+    return {
+        type: actionTypes.USER_FETCH_START
+    }
 }
 
-function hideErrorMessage(id) {
-
+export function userFetchSuccess(user) {
+    return {
+        type: actionTypes.USER_FETCH_SUCCESS,
+        user: user
+    }
 }
 
-export default {
-    pageChange,
-    errorOccur,
-    servicesFetchStart,
-    servicesFetchSuccess,
-    servicesFetchError,
-    serviceFetchStart,
-    serviceFetchSuccess,
-    serviceFetchError,
-
-    serviceUpdateStart,
-    serviceUpdateSuccess,
-    serviceUpdateError,
-
-    jobListFetchStart,
-    jobListFetchSuccess,
-    jobListFetchError,
-    jobRemovalStart,
-    jobRemovalSuccess,
-    jobRemovalError,
-    volumesFetchStart,
-    volumesFetchSuccess,
-    volumesFetchError,
-    inspectVolumeStart,
-    inspectVolumeSuccess,
-    inspectVolumeError,
-    consoleOutputFetchStart,
-    consoleOutputFetchSuccess,
-    consoleOutputFetchError,
-
-    ioAddStart,
-    ioAddSuccess,
-    ioAddError,
-
-    ioRemoveStart,
-    ioRemoveSuccess,
-    ioRemoveError,
-
-    fetchJobs,
-    removeJob,
-    fetchServices,
-    fetchService,
-    handleUpdateService,
-    fetchVolumes,
-    inspectVolume,
-    consoleOutputFetch,
-    showErrorMessageWithTimeout,
-    hideErrorMessage,
-    fileUploadStart,
-    fileUploadSuccess,
-    fileUploadError,
-    getNewUploadEndpoint,
-    handleSubmitJob,
-    addIOPort,
-    removeIOPort,
-
-};
+export function userFetchError(errorMessage) {
+    return {
+        type: actionTypes.USER_FETCH_ERROR,
+        errorMessage: errorMessage
+    }
+}
