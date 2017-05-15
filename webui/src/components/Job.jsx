@@ -3,7 +3,7 @@ import { Row, Col, Grid, Table, Button, Modal, OverlayTrigger } from 'react-boot
 import { toPairs } from '../utils/utils';
 import { connect } from 'react-redux'
 import { bindActionCreators } from 'redux'
-import actions from '../actions/actions';
+import * as actions from '../actions/actions';
 import FileTree from './FileTree'
 
 const Value = ({value}) => {

@@ -1,5 +1,5 @@
 import Jobs from '../components/Jobs';
-import actions from '../actions/actions';
+import {fetchJobs, fetchServices} from '../actions/actions';
 import {connect} from 'react-redux';
 
 const mapStateToProps = (state) => {
@@ -12,12 +12,12 @@ const mapStateToProps = (state) => {
 const mapDispatchToProps = (dispatch) => {
     return {
         fetchJobs: () => {
-                const action = actions.fetchJobs();
-                dispatch(action);
+            const action = fetchJobs();
+            dispatch(action);
         },
         fetchServices: () => {
-                const action = actions.fetchServices();
-                dispatch(action);
+            const action = fetchServices();
+            dispatch(action);
         }
     };
 };
