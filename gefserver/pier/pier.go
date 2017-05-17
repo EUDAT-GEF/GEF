@@ -144,7 +144,7 @@ func (p *Pier) runJob(job *db.Job, service db.Service, inputPID string) {
 		p.db.SetJobInputVolume(job.ID, db.VolumeID(inputVolume.ID))
 	}
 
-	{
+	/*{
 		p.db.SetJobState(job.ID, db.NewJobStateOk("Performing data staging", -1))
 		binds := []dckr.VolBind{
 			dckr.NewVolBind(inputVolume.ID, "/volume", false),
@@ -164,7 +164,7 @@ func (p *Pier) runJob(job *db.Job, service db.Service, inputPID string) {
 			p.db.SetJobState(job.ID, db.NewJobStateOk(msg, 1))
 			return
 		}
-	}
+	}*/
 
 	var outputVolume dckr.Volume
 	{
