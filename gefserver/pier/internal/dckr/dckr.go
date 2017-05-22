@@ -251,6 +251,37 @@ func (c *Client) BuildImage(dirpath string) (Image, error) {
 	return c.InspectImage(img.ID)
 }
 
+func (c Client) GetSwarmServiceContainerID(serviceID string) (string, error) {
+	swarmTasks, err := c.c.ListTasks(docker.ListTasksOptions{})
+	if err != nil {
+		return "", err
+	}
+
+	for _, task := range swarmTasks {
+		if task.ServiceID == serviceID {
+			if task.Status.ContainerStatus.ContainerID != "" {
+				return task.Status.ContainerStatus.ContainerID, nil
+			} else {
+				if task.Status.State == swarm.TaskStateComplete || task.Status.State == swarm.TaskStateFailed {//|| task.Status.State == swarm.TaskStateRejected {
+					log.Println("FINISHED")
+					log.Println(task.Status.Err)
+					log.Println(task.Status.ContainerStatus.ExitCode)
+					log.Println(task.Status.ContainerStatus.PID)
+					log.Println(task.Status.ContainerStatus.ContainerID)
+					log.Println(task.Status.State)
+					return task.Status.ContainerStatus.ContainerID, nil
+				}
+				/*log.Println(task.Status.State)
+				log.Println(task.Status.ContainerStatus.ExitCode)
+				log.Println(task.Status.ContainerStatus.ContainerID)*/
+				//time.Sleep(10000)
+				c.GetSwarmServiceContainerID(serviceID)
+			}
+		}
+	}
+	return "", nil
+}
+
 // StartImage takes a docker image, creates a container and starts it
 func (c Client) StartImage(id ImageID, cmdArgs []string, binds []VolBind, limits def.LimitConfig) (ContainerID, *bytes.Buffer, error) {
 	var stdout bytes.Buffer
@@ -265,9 +296,6 @@ func (c Client) StartImage(id ImageID, cmdArgs []string, binds []VolBind, limits
 		return ContainerID(""), &stdout, def.Err(err, "InspectImage failed")
 	}
 
-
-
-
 	swarmOn, err := c.IsSwarmActive()
 	if err != nil {
 		return ContainerID(""), &stdout, err
@@ -281,6 +309,13 @@ func (c Client) StartImage(id ImageID, cmdArgs []string, binds []VolBind, limits
 			return ContainerID(swarmService.ID), serviceOutput, def.Err(err, "CreateSwarmService failed")
 		}
 		stdout = *serviceOutput
+
+		// Now we need to retrieve a container's id
+		contID, err := c.GetSwarmServiceContainerID(swarmService.ID)
+		runningContainerID = ContainerID(contID)
+		log.Println("CONTAINER ID IS FOUND = ")
+		log.Println(runningContainerID)
+
 	} else {
 		bs := make([]string, len(binds), len(binds))
 		for i, b := range binds {
@@ -341,7 +376,6 @@ func (c Client) StartImage(id ImageID, cmdArgs []string, binds []VolBind, limits
 		runningContainerID = ContainerID(cont.ID)
 	}
 
-
 	return runningContainerID, &stdout, nil
 }
 
@@ -401,8 +435,6 @@ func (c Client) CreateSwarmService(id string, cmdArgs []string, binds []VolBind,
 	if err != nil {
 		return srv, &stdout, def.Err(err, "InspectImage failed")
 	}
-
-
 
 	var serviceMounts []mount.Mount
 	var curMount mount.Mount
