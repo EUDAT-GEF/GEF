@@ -1,5 +1,5 @@
 import BuildService from '../components/BuildService';
-import actions from '../actions/actions';
+import * as actions from '../actions/actions';
 
 import {connect} from 'react-redux';
 import { push } from 'react-router-redux';

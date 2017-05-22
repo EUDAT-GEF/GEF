@@ -5,7 +5,7 @@ import React, {PropTypes} from 'react';
 import bows from 'bows';
 import {Row, Col, Table} from 'react-bootstrap';
 import {LinkContainer} from 'react-router-bootstrap'
-import actions from '../actions/actions'
+import * as actions from '../actions/actions'
 import {toPairs} from '../utils/utils';
 
 
