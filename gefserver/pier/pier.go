@@ -66,7 +66,7 @@ func (p *Pier) SetDockerConnection(config def.DockerConfig, limits def.LimitConf
 		if err != nil {
 			return "", def.Err(err, "internal image build failed: %s", abspath)
 		}
-		err = docker.TagImage(string(img.ID), InternalImagePrefix + string(img.ID), GefImageTag)
+		err = docker.TagImage(string(img.ID), InternalImagePrefix+string(img.ID), GefImageTag)
 		if err != nil {
 			return "", def.Err(err, "could not tag an internal service: %s", string(img.ID))
 		}
@@ -103,7 +103,7 @@ func (p *Pier) BuildService(buildDir string) (db.Service, error) {
 		return db.Service{}, def.Err(err, "docker BuildImage failed")
 	}
 
-	err = p.docker.client.TagImage(string(image.ID), ServiceImagePrefix + string(image.ID), GefImageTag)
+	err = p.docker.client.TagImage(string(image.ID), ServiceImagePrefix+string(image.ID), GefImageTag)
 	if err != nil {
 		return db.Service{}, def.Err(err, "could not tag a service image: %s", string(image.ID))
 	}
