@@ -18,6 +18,9 @@ import (
 
 // GefSrvLabelPrefix is the prefix identifying GEF related labels
 const GefSrvLabelPrefix = "eudat.gef.service."
+const InternalImagePrefix = "internal_"
+const GefImageTag = "gef"
+const ServiceImagePrefix = "service_"
 
 // Pier is a master struct for gef-docker abstractions
 type Pier struct {
@@ -63,6 +66,10 @@ func (p *Pier) SetDockerConnection(config def.DockerConfig, limits def.LimitConf
 		if err != nil {
 			return "", def.Err(err, "internal image build failed: %s", abspath)
 		}
+		err = docker.TagImage(string(img.ID), InternalImagePrefix + string(img.ID), GefImageTag)
+		if err != nil {
+			return "", def.Err(err, "could not tag an internal service: %s", string(img.ID))
+		}
 		return img.ID, nil
 	}
 
@@ -94,6 +101,11 @@ func (p *Pier) BuildService(buildDir string) (db.Service, error) {
 	image, err := p.docker.client.BuildImage(buildDir)
 	if err != nil {
 		return db.Service{}, def.Err(err, "docker BuildImage failed")
+	}
+
+	err = p.docker.client.TagImage(string(image.ID), ServiceImagePrefix + string(image.ID), GefImageTag)
+	if err != nil {
+		return db.Service{}, def.Err(err, "could not tag a service image: %s", string(image.ID))
 	}
 
 	service := NewServiceFromImage(image)
@@ -144,7 +156,7 @@ func (p *Pier) runJob(job *db.Job, service db.Service, inputPID string) {
 		p.db.SetJobInputVolume(job.ID, db.VolumeID(inputVolume.ID))
 	}
 
-	/*{
+	{
 		p.db.SetJobState(job.ID, db.NewJobStateOk("Performing data staging", -1))
 		binds := []dckr.VolBind{
 			dckr.NewVolBind(inputVolume.ID, "/volume", false),
@@ -164,7 +176,7 @@ func (p *Pier) runJob(job *db.Job, service db.Service, inputPID string) {
 			p.db.SetJobState(job.ID, db.NewJobStateOk(msg, 1))
 			return
 		}
-	}*/
+	}
 
 	var outputVolume dckr.Volume
 	{

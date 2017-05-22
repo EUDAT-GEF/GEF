@@ -254,6 +254,7 @@ func (c *Client) BuildImage(dirpath string) (Image, error) {
 // StartImage takes a docker image, creates a container and starts it
 func (c Client) StartImage(id ImageID, cmdArgs []string, binds []VolBind, limits def.LimitConfig) (ContainerID, *bytes.Buffer, error) {
 	var stdout bytes.Buffer
+	var runningContainerID ContainerID
 
 	if id == "" {
 		return ContainerID(""), &stdout, def.Err(nil, "Empty image id")
@@ -264,65 +265,84 @@ func (c Client) StartImage(id ImageID, cmdArgs []string, binds []VolBind, limits
 		return ContainerID(""), &stdout, def.Err(err, "InspectImage failed")
 	}
 
-	bs := make([]string, len(binds), len(binds))
-	for i, b := range binds {
-		bs[i] = fmt.Sprintf("%s:%s", b.VolumeID, b.MountPoint)
-		if b.IsReadOnly {
-			bs[i] = fmt.Sprintf("%s:ro", bs[i])
+
+
+
+	swarmOn, err := c.IsSwarmActive()
+	if err != nil {
+		return ContainerID(""), &stdout, err
+	}
+
+	if swarmOn {
+		// Create a Swarm service
+		swarmService, serviceOutput, err := c.CreateSwarmService(string(id), cmdArgs, binds, limits)
+
+		if err != nil {
+			return ContainerID(swarmService.ID), serviceOutput, def.Err(err, "CreateSwarmService failed")
 		}
+		stdout = *serviceOutput
+	} else {
+		bs := make([]string, len(binds), len(binds))
+		for i, b := range binds {
+			bs[i] = fmt.Sprintf("%s:%s", b.VolumeID, b.MountPoint)
+			if b.IsReadOnly {
+				bs[i] = fmt.Sprintf("%s:ro", bs[i])
+			}
+		}
+
+		config := *img.Config
+		for _, arg := range cmdArgs {
+			config.Cmd = append(config.Cmd, arg)
+		}
+
+		config.AttachStdout = true
+		config.AttachStderr = true
+		hc := docker.HostConfig{
+			Binds:      bs,
+			CPUShares:  limits.CPUShares,
+			CPUPeriod:  limits.CPUPeriod,
+			CPUQuota:   limits.CPUQuota,
+			Memory:     limits.Memory,
+			MemorySwap: limits.MemorySwap,
+		}
+
+		cco := docker.CreateContainerOptions{
+			Config:     &config,
+			HostConfig: &hc,
+		}
+
+		cont, err := c.c.CreateContainer(cco)
+		if err != nil {
+			return ContainerID(""), &stdout, def.Err(err, "CreateContainer failed")
+		}
+
+		attached := make(chan struct{})
+		go func() {
+			c.c.AttachToContainer(docker.AttachToContainerOptions{
+				Container:    cont.ID,
+				OutputStream: &stdout,
+				ErrorStream:  &stdout,
+				Logs:         true,
+				Stdout:       true,
+				Stderr:       true,
+				Stream:       true,
+				Success:      attached,
+			})
+		}()
+
+		<-attached
+		attached <- struct{}{}
+
+		err = c.c.StartContainer(cont.ID, &hc)
+		if err != nil {
+			c.RemoveContainer(cont.ID)
+			return ContainerID(""), &stdout, def.Err(err, "StartContainer failed")
+		}
+		runningContainerID = ContainerID(cont.ID)
 	}
-	// log.Println("bindings are: ", bs)
 
-	config := *img.Config
-	for _, arg := range cmdArgs {
-		config.Cmd = append(config.Cmd, arg)
-	}
 
-	config.AttachStdout = true
-	config.AttachStderr = true
-	hc := docker.HostConfig{
-		Binds:      bs,
-		CPUShares:  limits.CPUShares,
-		CPUPeriod:  limits.CPUPeriod,
-		CPUQuota:   limits.CPUQuota,
-		Memory:     limits.Memory,
-		MemorySwap: limits.MemorySwap,
-	}
-
-	cco := docker.CreateContainerOptions{
-		Config:     &config,
-		HostConfig: &hc,
-	}
-
-	cont, err := c.c.CreateContainer(cco)
-	if err != nil {
-		return ContainerID(""), &stdout, def.Err(err, "CreateContainer failed")
-	}
-
-	attached := make(chan struct{})
-	go func() {
-		c.c.AttachToContainer(docker.AttachToContainerOptions{
-			Container:    cont.ID,
-			OutputStream: &stdout,
-			ErrorStream:  &stdout,
-			Logs:         true,
-			Stdout:       true,
-			Stderr:       true,
-			Stream:       true,
-			Success:      attached,
-		})
-	}()
-
-	<-attached
-	attached <- struct{}{}
-
-	err = c.c.StartContainer(cont.ID, &hc)
-	if err != nil {
-		c.RemoveContainer(cont.ID)
-		return ContainerID(""), &stdout, def.Err(err, "StartContainer failed")
-	}
-
-	return ContainerID(cont.ID), &stdout, nil
+	return runningContainerID, &stdout, nil
 }
 
 // WriteMonitor used to keep console output
@@ -349,34 +369,17 @@ func (c Client) IsSwarmActive() (bool, error) {
 
 // ExecuteImage takes a docker image, creates a container and executes it, and waits for it to end
 func (c Client) ExecuteImage(imgId ImageID, cmdArgs []string, binds []VolBind, limits def.LimitConfig, removeOnExit bool) (ContainerID, int, *bytes.Buffer, error) {
-	var defaultOutput *bytes.Buffer
-	var cntrId ContainerID
+	var stdout *bytes.Buffer
 
-	swarmOn, err := c.IsSwarmActive()
+	cont, stdout, err := c.StartImage(imgId, cmdArgs, binds, limits)
+
 	if err != nil {
-		return cntrId, 0, defaultOutput, err
+		return cont, 0, stdout, def.Err(err, "StartImage failed")
 	}
 
-	if swarmOn {
-		// Create a Swarm service
-		swarmService, serviceOutput, err := c.CreateSwarmService(imgId, cmdArgs, binds, limits)
-
-		cntrId = ContainerID(swarmService.ID)
-		if err != nil {
-			return ContainerID(swarmService.ID), 0, serviceOutput, def.Err(err, "CreateSwarmService failed")
-		}
-		defaultOutput = serviceOutput
-	} else {
-		// Run a regular docker container
-		cntrId, containerOutput, err := c.StartImage(imgId, cmdArgs, binds, limits)
-
-		if err != nil {
-			return cntrId, 0, containerOutput, def.Err(err, "StartImage failed")
-		}
-		defaultOutput = containerOutput
-	}
-	exitCode, err := c.WaitContainer(cntrId, removeOnExit)
-	return cntrId, exitCode, defaultOutput, err
+	//exitCode, err := c.WaitContainer(cont, removeOnExit)
+	exitCode := 0
+	return cont, exitCode, stdout, err
 }
 
 // DeleteImage removes an image by ID
@@ -386,7 +389,7 @@ func (c Client) DeleteImage(id string) error {
 }
 
 // CreateSwarmService creates a Docker swarm service
-func (c Client) CreateSwarmService(id ImageID, cmdArgs []string, binds []VolBind, limits def.LimitConfig) (*swarm.Service, *bytes.Buffer, error) {
+func (c Client) CreateSwarmService(id string, cmdArgs []string, binds []VolBind, limits def.LimitConfig) (*swarm.Service, *bytes.Buffer, error) {
 	var stdout bytes.Buffer
 	var srv *swarm.Service
 
@@ -399,13 +402,15 @@ func (c Client) CreateSwarmService(id ImageID, cmdArgs []string, binds []VolBind
 		return srv, &stdout, def.Err(err, "InspectImage failed")
 	}
 
+
+
 	var serviceMounts []mount.Mount
 	var curMount mount.Mount
 	for _, v := range binds {
 		curMount.ReadOnly = v.IsReadOnly
 		curMount.Source = string(v.VolumeID)
 		curMount.Target = v.MountPoint
-		curMount.Type = mount.TypeBind
+		curMount.Type = mount.TypeVolume
 
 		serviceMounts = append(serviceMounts, curMount)
 	}
@@ -415,12 +420,13 @@ func (c Client) CreateSwarmService(id ImageID, cmdArgs []string, binds []VolBind
 	for _, arg := range cmdArgs {
 		config.Cmd = append(config.Cmd, arg)
 	}
-
+	log.Println("TAGS = ")
+	log.Println(img.RepoTags)
 	serviceCreateOpts := docker.CreateServiceOptions{
 		ServiceSpec: swarm.ServiceSpec{
 			TaskTemplate: swarm.TaskSpec{
 				ContainerSpec: swarm.ContainerSpec{
-					Image:   "tagged:new",
+					Image:   img.RepoTags[0],
 					Mounts:  serviceMounts,
 					Command: config.Cmd,
 				},
