@@ -48,6 +48,7 @@ type Image struct {
 	Labels  map[string]string
 	Created time.Time
 	Size    int64
+	Cmd     []string
 }
 
 // Container is a struct for Docker containers
@@ -172,6 +173,7 @@ func (c Client) InspectImage(id ImageID) (Image, error) {
 		Labels:  labels,
 		Created: img.Created,
 		Size:    img.Size,
+		Cmd:     img.Config.Cmd,
 	}, nil
 }
 
@@ -182,6 +184,24 @@ func stringToImageID(id string) ImageID {
 		id = id[len(shaPrefix):]
 	}
 	return ImageID(id)
+}
+
+// GetImageRepoTag
+func (c Client) GetImageRepoTag(id ImageID) (string, error) {
+	img, err := c.InspectImage(id)
+	if err != nil {
+		return "", def.Err(err, "InspectImage failed")
+	}
+	return img.RepoTag, nil
+}
+
+// GetImageCmd
+func (c Client) GetImageCmd(id ImageID) ([]string, error) {
+	img, err := c.c.InspectImage(string(id))
+	if err != nil {
+		return nil, def.Err(err, "InspectImage failed")
+	}
+	return img.Config.Cmd, nil
 }
 
 // ListImages lists the docker images
@@ -262,7 +282,7 @@ func (c Client) GetSwarmServiceContainerID(serviceID string) (string, error) {
 			if task.Status.ContainerStatus.ContainerID != "" {
 				return task.Status.ContainerStatus.ContainerID, nil
 			} else {
-				if task.Status.State == swarm.TaskStateComplete || task.Status.State == swarm.TaskStateFailed {//|| task.Status.State == swarm.TaskStateRejected {
+				/*if task.Status.State == swarm.TaskStateComplete || task.Status.State == swarm.TaskStateReady {//|| task.Status.State == swarm.TaskStateRejected {
 					log.Println("FINISHED")
 					log.Println(task.Status.Err)
 					log.Println(task.Status.ContainerStatus.ExitCode)
@@ -270,12 +290,16 @@ func (c Client) GetSwarmServiceContainerID(serviceID string) (string, error) {
 					log.Println(task.Status.ContainerStatus.ContainerID)
 					log.Println(task.Status.State)
 					return task.Status.ContainerStatus.ContainerID, nil
+					break
 				}
-				/*log.Println(task.Status.State)
+				log.Println(task.Status.State)
+				log.Println(task.Status.Err)
 				log.Println(task.Status.ContainerStatus.ExitCode)
-				log.Println(task.Status.ContainerStatus.ContainerID)*/
-				//time.Sleep(10000)
+				log.Println(task.Status.ContainerStatus.ContainerID)
+				time.Sleep(2000 * time.Millisecond)
 				c.GetSwarmServiceContainerID(serviceID)
+				break*/
+				break
 			}
 		}
 	}
@@ -283,17 +307,12 @@ func (c Client) GetSwarmServiceContainerID(serviceID string) (string, error) {
 }
 
 // StartImage takes a docker image, creates a container and starts it
-func (c Client) StartImage(id ImageID, cmdArgs []string, binds []VolBind, limits def.LimitConfig) (ContainerID, *bytes.Buffer, error) {
+func (c Client) StartImage(id string, cmdArgs []string, binds []VolBind, limits def.LimitConfig) (ContainerID, *bytes.Buffer, error) {
 	var stdout bytes.Buffer
 	var runningContainerID ContainerID
 
 	if id == "" {
 		return ContainerID(""), &stdout, def.Err(nil, "Empty image id")
-	}
-
-	img, err := c.c.InspectImage(string(id))
-	if err != nil {
-		return ContainerID(""), &stdout, def.Err(err, "InspectImage failed")
 	}
 
 	swarmOn, err := c.IsSwarmActive()
@@ -302,6 +321,7 @@ func (c Client) StartImage(id ImageID, cmdArgs []string, binds []VolBind, limits
 	}
 
 	if swarmOn {
+		log.Println(string(id))
 		// Create a Swarm service
 		swarmService, serviceOutput, err := c.CreateSwarmService(string(id), cmdArgs, binds, limits)
 
@@ -311,12 +331,19 @@ func (c Client) StartImage(id ImageID, cmdArgs []string, binds []VolBind, limits
 		stdout = *serviceOutput
 
 		// Now we need to retrieve a container's id
-		contID, err := c.GetSwarmServiceContainerID(swarmService.ID)
-		runningContainerID = ContainerID(contID)
+		//contID, err := c.GetSwarmServiceContainerID(swarmService.ID)
+		runningContainerID = ContainerID(swarmService.ID)
 		log.Println("CONTAINER ID IS FOUND = ")
+		runningContainerID = ContainerID("")
 		log.Println(runningContainerID)
 
 	} else {
+		//
+		img, err := c.c.InspectImage(string(id))
+		if err != nil {
+			return ContainerID(""), &stdout, def.Err(err, "InspectImage failed")
+		}
+
 		bs := make([]string, len(binds), len(binds))
 		for i, b := range binds {
 			bs[i] = fmt.Sprintf("%s:%s", b.VolumeID, b.MountPoint)
@@ -326,9 +353,10 @@ func (c Client) StartImage(id ImageID, cmdArgs []string, binds []VolBind, limits
 		}
 
 		config := *img.Config
-		for _, arg := range cmdArgs {
+		config.Cmd = cmdArgs
+		/*for _, arg := range cmdArgs {
 			config.Cmd = append(config.Cmd, arg)
-		}
+		}*/
 
 		config.AttachStdout = true
 		config.AttachStderr = true
@@ -402,7 +430,7 @@ func (c Client) IsSwarmActive() (bool, error) {
 }
 
 // ExecuteImage takes a docker image, creates a container and executes it, and waits for it to end
-func (c Client) ExecuteImage(imgId ImageID, cmdArgs []string, binds []VolBind, limits def.LimitConfig, removeOnExit bool) (ContainerID, int, *bytes.Buffer, error) {
+func (c Client) ExecuteImage(imgId string, cmdArgs []string, binds []VolBind, limits def.LimitConfig, removeOnExit bool) (ContainerID, int, *bytes.Buffer, error) {
 	var stdout *bytes.Buffer
 
 	cont, stdout, err := c.StartImage(imgId, cmdArgs, binds, limits)
@@ -431,11 +459,11 @@ func (c Client) CreateSwarmService(id string, cmdArgs []string, binds []VolBind,
 		return srv, &stdout, def.Err(nil, "Empty image id")
 	}
 
-	img, err := c.c.InspectImage(string(id))
+	/*img, err := c.c.InspectImage(string(id))
 	if err != nil {
 		return srv, &stdout, def.Err(err, "InspectImage failed")
-	}
-
+	}*/
+	//db.Db.GetService(db.ServiceID(id))
 	var serviceMounts []mount.Mount
 	var curMount mount.Mount
 	for _, v := range binds {
@@ -447,20 +475,13 @@ func (c Client) CreateSwarmService(id string, cmdArgs []string, binds []VolBind,
 		serviceMounts = append(serviceMounts, curMount)
 	}
 
-	// command line arguments for the service image
-	config := *img.Config
-	for _, arg := range cmdArgs {
-		config.Cmd = append(config.Cmd, arg)
-	}
-	log.Println("TAGS = ")
-	log.Println(img.RepoTags)
 	serviceCreateOpts := docker.CreateServiceOptions{
 		ServiceSpec: swarm.ServiceSpec{
 			TaskTemplate: swarm.TaskSpec{
 				ContainerSpec: swarm.ContainerSpec{
-					Image:   img.RepoTags[0],
+					Image:   id, //img.RepoTags[0],
 					Mounts:  serviceMounts,
-					Command: config.Cmd,
+					Command: cmdArgs,
 				},
 
 				/*Resources: &swarm.ResourceRequirements{
@@ -473,7 +494,7 @@ func (c Client) CreateSwarmService(id string, cmdArgs []string, binds []VolBind,
 		},
 	}
 
-	srv, err = c.c.CreateService(serviceCreateOpts)
+	srv, err := c.c.CreateService(serviceCreateOpts)
 	_, err = stdout.Write([]byte("/services/{id}/logs is an experimental feature introduced in Docker 1.13. Unfortunately, it is not yet supported by the Docker client we use"))
 	if err != nil {
 		return srv, &stdout, def.Err(err, "Failed to write a string into stdout stream")

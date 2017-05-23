@@ -10,6 +10,7 @@ import (
 
 	"github.com/pborman/uuid"
 	"gopkg.in/gorp.v1"
+	"strings"
 )
 
 // Column in a table used to keep an internal version number of GORP
@@ -53,6 +54,7 @@ type ServiceTable struct {
 	RepoTag     string
 	Description string
 	Version     string
+	Cmd         string
 	Revision    int
 	Created     time.Time
 	Size        int64
@@ -290,6 +292,7 @@ func (d *Db) serviceTable2Service(storedService ServiceTable) (Service, error) {
 	service.RepoTag = storedService.RepoTag
 	service.Description = storedService.Description
 	service.Version = storedService.Version
+	service.Cmd = strings.Split(storedService.Cmd, " ")
 	service.Created = storedService.Created
 	service.Size = storedService.Size
 	service.Input = inputPorts
@@ -308,6 +311,7 @@ func (d *Db) service2ServiceTable(service Service) ServiceTable {
 	storedService.RepoTag = service.RepoTag
 	storedService.Description = service.Description
 	storedService.Version = service.Version
+	storedService.Cmd = strings.Join(service.Cmd, " ")
 	storedService.Created = service.Created
 	storedService.Size = service.Size
 	return storedService
