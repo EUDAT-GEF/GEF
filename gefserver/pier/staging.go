@@ -32,8 +32,9 @@ func (p *Pier) DownStreamContainerFile(volumeID string, fileLocation string, w h
 		dckr.NewVolBind(dckr.VolumeID(volumeID), "/root/volume", false),
 	}
 	containerID, _, err := p.docker.client.StartImage(
-		p.docker.copyFromVolumeID,
+		p.docker.copyFromVolume.repoTag,
 		[]string{
+			p.docker.copyFromVolume.cmd[0],
 			filepath.Join("/root/volume/", fileLocation),
 			"/root",
 		},
@@ -82,7 +83,7 @@ func (p *Pier) ListFiles(volumeID db.VolumeID, filePath string) ([]VolumeItem, e
 
 	// Execute our image (it should produce a JSON file with the list of files)
 	containerID, _, err := p.docker.client.StartImage(
-		p.docker.fileListID, []string{filePath, "r"}, volumesToMount, p.docker.limits)
+		p.docker.fileList.repoTag, []string{p.docker.fileList.cmd[0], filePath, "r"}, volumesToMount, p.docker.limits)
 
 	if err != nil {
 		return volumeFileList, def.Err(err, "running image failed")
