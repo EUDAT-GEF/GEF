@@ -282,7 +282,7 @@ func (c Client) GetSwarmServiceContainerID(serviceID string) (string, error) {
 			if task.Status.ContainerStatus.ContainerID != "" {
 				return task.Status.ContainerStatus.ContainerID, nil
 			} else {
-				/*if task.Status.State == swarm.TaskStateComplete || task.Status.State == swarm.TaskStateReady {//|| task.Status.State == swarm.TaskStateRejected {
+				if task.Status.State == swarm.TaskStateComplete || task.Status.State == swarm.TaskStateReady {//|| task.Status.State == swarm.TaskStateRejected {
 					log.Println("FINISHED")
 					log.Println(task.Status.Err)
 					log.Println(task.Status.ContainerStatus.ExitCode)
@@ -297,9 +297,9 @@ func (c Client) GetSwarmServiceContainerID(serviceID string) (string, error) {
 				log.Println(task.Status.ContainerStatus.ExitCode)
 				log.Println(task.Status.ContainerStatus.ContainerID)
 				time.Sleep(2000 * time.Millisecond)
-				c.GetSwarmServiceContainerID(serviceID)
-				break*/
-				break
+				return c.GetSwarmServiceContainerID(serviceID)
+				//break
+				//break
 			}
 		}
 	}
@@ -331,10 +331,10 @@ func (c Client) StartImage(id string, cmdArgs []string, binds []VolBind, limits 
 		stdout = *serviceOutput
 
 		// Now we need to retrieve a container's id
-		//contID, err := c.GetSwarmServiceContainerID(swarmService.ID)
+		contID, err := c.GetSwarmServiceContainerID(swarmService.ID)
 		runningContainerID = ContainerID(swarmService.ID)
 		log.Println("CONTAINER ID IS FOUND = ")
-		runningContainerID = ContainerID("")
+		runningContainerID = ContainerID(contID)
 		log.Println(runningContainerID)
 
 	} else {
