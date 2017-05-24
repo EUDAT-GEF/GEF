@@ -186,24 +186,6 @@ func stringToImageID(id string) ImageID {
 	return ImageID(id)
 }
 
-// GetImageRepoTag
-func (c Client) GetImageRepoTag(id ImageID) (string, error) {
-	img, err := c.InspectImage(id)
-	if err != nil {
-		return "", def.Err(err, "InspectImage failed")
-	}
-	return img.RepoTag, nil
-}
-
-// GetImageCmd
-func (c Client) GetImageCmd(id ImageID) ([]string, error) {
-	img, err := c.c.InspectImage(string(id))
-	if err != nil {
-		return nil, def.Err(err, "InspectImage failed")
-	}
-	return img.Config.Cmd, nil
-}
-
 // ListImages lists the docker images
 func (c Client) ListImages() ([]Image, error) {
 	imgs, err := c.c.ListImages(docker.ListImagesOptions{All: false})
