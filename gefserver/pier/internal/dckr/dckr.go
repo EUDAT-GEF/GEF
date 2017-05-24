@@ -346,12 +346,8 @@ func (c Client) StartImage(id string, repoTag string, cmdArgs []string, binds []
 		stdout = *serviceOutput
 
 		// Now we need to retrieve a container's id
-		contID, contStatus, err := c.GetSwarmContainerInfo(swarmService.ID)
-		runningContainerID = ContainerID(swarmService.ID)
-		log.Println("CONTAINER ID IS FOUND = ")
+		contID, _, err := c.GetSwarmContainerInfo(swarmService.ID)
 		runningContainerID = ContainerID(contID)
-		log.Println(runningContainerID)
-		log.Println(contStatus)
 
 	} else {
 		//
@@ -370,9 +366,6 @@ func (c Client) StartImage(id string, repoTag string, cmdArgs []string, binds []
 
 		config := *img.Config
 		config.Cmd = cmdArgs
-		/*for _, arg := range cmdArgs {
-			config.Cmd = append(config.Cmd, arg)
-		}*/
 
 		config.AttachStdout = true
 		config.AttachStderr = true
@@ -448,7 +441,6 @@ func (c Client) IsSwarmActive() (bool, error) {
 // ExecuteImage takes a docker image, creates a container and executes it, and waits for it to end
 func (c Client) ExecuteImage(imgId string, imgRepoTag string, cmdArgs []string, binds []VolBind, limits def.LimitConfig, removeOnExit bool) (ContainerID, int, *bytes.Buffer, error) {
 	var stdout *bytes.Buffer
-
 	cont, stdout, err := c.StartImage(imgId, imgRepoTag, cmdArgs, binds, limits)
 
 	if err != nil {
@@ -456,7 +448,6 @@ func (c Client) ExecuteImage(imgId string, imgRepoTag string, cmdArgs []string, 
 	}
 
 	exitCode, err := c.WaitContainer(cont, removeOnExit)
-	//exitCode := 0
 	return cont, exitCode, stdout, err
 }
 
@@ -467,12 +458,12 @@ func (c Client) DeleteImage(id string) error {
 }
 
 // CreateSwarmService creates a Docker swarm service
-func (c Client) CreateSwarmService(id string, cmdArgs []string, binds []VolBind, limits def.LimitConfig) (*swarm.Service, *bytes.Buffer, error) {
+func (c Client) CreateSwarmService(repoTag string, cmdArgs []string, binds []VolBind, limits def.LimitConfig) (*swarm.Service, *bytes.Buffer, error) {
 	var stdout bytes.Buffer
 	var srv *swarm.Service
 
-	if id == "" {
-		return srv, &stdout, def.Err(nil, "Empty image id")
+	if repoTag == "" {
+		return srv, &stdout, def.Err(nil, "Empty image repoTag")
 	}
 
 	var serviceMounts []mount.Mount
@@ -490,7 +481,7 @@ func (c Client) CreateSwarmService(id string, cmdArgs []string, binds []VolBind,
 		ServiceSpec: swarm.ServiceSpec{
 			TaskTemplate: swarm.TaskSpec{
 				ContainerSpec: swarm.ContainerSpec{
-					Image:   id, //img.RepoTags[0],
+					Image:   repoTag,
 					Mounts:  serviceMounts,
 					Command: cmdArgs,
 				},
@@ -535,22 +526,18 @@ func (c Client) RemoveContainer(containerID string) {
 // WaitContainer takes a docker container and waits for its finish.
 // It returns the exit code of the container.
 func (c Client) WaitContainer(id ContainerID, removeOnExit bool) (int, error) {
-	//containerID := string(id)
-	fmt.Println("REMOVING SERVICE")
 	swarmOn, err := c.IsSwarmActive()
 	if err != nil {
 		return 1, err
 	}
 
 	if swarmOn {
-		fmt.Println("REMOVING SWARM SERVICE")
 		notRunning, err := c.IsSwarmContainerNotRunning(string(id))
 		if err != nil {
 			return 1, err
 		}
 
 		if notRunning {
-			fmt.Println("REMOVING SWARM SERVICE IS POSSIBLE NOW")
 			opts := docker.RemoveServiceOptions{ID: string(id)}
 			err = c.c.RemoveService(opts)
 			if err != nil {

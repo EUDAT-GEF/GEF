@@ -32,9 +32,9 @@ type Pier struct {
 type dockerConnection struct {
 	client         dckr.Client
 	limits         def.LimitConfig
-	stageIn        internalImage //dckr.ImageID
-	fileList       internalImage //dckr.ImageID
-	copyFromVolume internalImage //dckr.ImageID
+	stageIn        internalImage
+	fileList       internalImage
+	copyFromVolume internalImage
 }
 
 type internalImage struct {
@@ -162,7 +162,6 @@ func (p *Pier) runJob(job *db.Job, service db.Service, inputPID string) {
 			p.db.SetJobState(job.ID, db.NewJobStateError("Error while creating new input volume", 1))
 			return
 		}
-		// log.Println("new input volume created: ", inputVolume)
 		p.db.SetJobInputVolume(job.ID, db.VolumeID(inputVolume.ID))
 	}
 
@@ -218,7 +217,7 @@ func (p *Pier) runJob(job *db.Job, service db.Service, inputPID string) {
 			true)
 		p.db.AddJobTask(job.ID, "Service execution", string(containerID), err2str(err), exitCode, output)
 
-		log.Println("  job ended: ", exitCode, ", error: ", err)
+		//log.Println("  job ended: ", exitCode, ", error: ", err)
 		if err != nil {
 			p.db.SetJobState(job.ID, db.NewJobStateError("Service failed", 1))
 			return
