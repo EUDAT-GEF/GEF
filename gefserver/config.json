@@ -1,13 +1,8 @@
 {
 	"Docker": {
 		"UseEnvironmentVariables": false,
-		"Endpoint" : "tcp://192.168.99.108:2376",
-		"Description": "The default Docker server on localhost",
-
-		"TLSVerify": true,
-        "CertPath": "/Users/achernov/server-cert.pem",
-        "KeyPath": "/Users/achernov/server-key.pem",
-        "CAPath": "/Users/achernov/ca.pem"
+		"Endpoint" : "unix:///var/run/docker.sock",
+		"Description": "The default Docker server on localhost"
 	},
 	"Pier": {
 		"InternalServicesFolder": "../services/_internal"
