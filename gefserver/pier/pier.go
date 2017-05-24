@@ -30,17 +30,17 @@ type Pier struct {
 }
 
 type dockerConnection struct {
-	client           dckr.Client
-	limits           def.LimitConfig
-	stageIn        internalImage//dckr.ImageID
-	fileList       internalImage//dckr.ImageID
-	copyFromVolume internalImage//dckr.ImageID
+	client         dckr.Client
+	limits         def.LimitConfig
+	stageIn        internalImage //dckr.ImageID
+	fileList       internalImage //dckr.ImageID
+	copyFromVolume internalImage //dckr.ImageID
 }
 
 type internalImage struct {
-	id dckr.ImageID
+	id      dckr.ImageID
 	repoTag string
-	cmd []string
+	cmd     []string
 }
 
 // NewPier creates a new pier with all the needed setup
@@ -173,11 +173,14 @@ func (p *Pier) runJob(job *db.Job, service db.Service, inputPID string) {
 		}
 
 		containerID, exitCode, output, err := p.docker.client.ExecuteImage(
-			//p.docker.stageInID, []string{inputPID}, binds, p.docker.limits, true)
-			p.docker.stageIn.repoTag, append(p.docker.stageIn.cmd, inputPID), binds, p.docker.limits, true)
+			string(p.docker.stageIn.id),
+			p.docker.stageIn.repoTag,
+			append(p.docker.stageIn.cmd, inputPID),
+			binds,
+			p.docker.limits,
+			true)
 
 		p.db.AddJobTask(job.ID, "Data staging", string(containerID), err2str(err), exitCode, output)
-		// log.Println("  staging ended: ", exitCode, ", error: ", err)
 		if err != nil {
 			p.db.SetJobState(job.ID, db.NewJobStateError("Data staging failed", 1))
 			return
@@ -197,7 +200,6 @@ func (p *Pier) runJob(job *db.Job, service db.Service, inputPID string) {
 			p.db.SetJobState(job.ID, db.NewJobStateError("Error while creating new output volume", 1))
 			return
 		}
-		// log.Println("new output volume created: ", outputVolume)
 		p.db.SetJobOutputVolume(job.ID, db.VolumeID(outputVolume.ID))
 	}
 
@@ -208,7 +210,12 @@ func (p *Pier) runJob(job *db.Job, service db.Service, inputPID string) {
 			dckr.NewVolBind(outputVolume.ID, service.Output[0].Path, false),
 		}
 		containerID, exitCode, output, err := p.docker.client.ExecuteImage(
-			service.RepoTag, service.Cmd, binds, p.docker.limits, true)
+			string(service.ImageID),
+			service.RepoTag,
+			service.Cmd,
+			binds,
+			p.docker.limits,
+			true)
 		p.db.AddJobTask(job.ID, "Service execution", string(containerID), err2str(err), exitCode, output)
 
 		log.Println("  job ended: ", exitCode, ", error: ", err)
