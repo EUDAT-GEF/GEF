@@ -573,6 +573,19 @@ export function removeIOPort(isInput, removeIndex) {
     }
 }
 
+export function fetchUser() {
+    return function (dispatch, getState)  {
+        dispatch(userFetchStart());
+        axios.get(apiNames.user)
+            .then(response => dispatch(userFetchSuccess(response.data.User)))
+            .catch(err => {
+                Alert.error("Error fetching user information from the server.");
+                log("Error fetching user info:", err);
+                dispatch(userFetchError(err));
+            });
+    }
+}
+
 export function userFetchStart() {
     return {
         type: actionTypes.USER_FETCH_START

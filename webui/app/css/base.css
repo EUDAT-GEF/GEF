@@ -62,6 +62,10 @@ a:hover {
     text-decoration: none;
 }
 
+.user a  {
+    color: #000;
+}
+
 /**** NAVBAR ***/
 .navbar {
     margin-bottom: 0;
