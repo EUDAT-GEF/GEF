@@ -68,7 +68,9 @@ func NewServer(cfg def.ServerConfig, pier *pier.Pier, tmpDir string, database *d
 	}{
 		{"GET /", server.infoHandler, "misc"},
 		{"GET /info", server.infoHandler, "misc"},
+
 		{"GET /user", userHandler, "user discovery"},
+		{"GET /user/logout", logoutHandler, "user logout"},
 
 		{"POST /builds", server.newBuildImageHandler, "service deployment"},
 		{"POST /builds/{buildID}", server.buildImageHandler, "service deployment"},
@@ -90,12 +92,12 @@ func NewServer(cfg def.ServerConfig, pier *pier.Pier, tmpDir string, database *d
 	apirouter := router.PathPrefix(apiRootPath).Subrouter()
 	for _, hdl := range routes {
 		methodPath := strings.SplitN(hdl.route, " ", 2)
-		apirouter.HandleFunc(methodPath[1], decorate(hdl.description, hdl.handler)).Methods(methodPath[0])
+		apirouter.HandleFunc(methodPath[1], decorate(hdl.handler, hdl.description)).Methods(methodPath[0])
 	}
 	loginrouter := router.PathPrefix(loginRootPath).Subrouter()
 	{
-		loginrouter.HandleFunc("/", loginHandler).Methods("GET")
-		loginrouter.HandleFunc("/b2access", callbackHandler).Methods("GET").Name("login_b2access")
+		loginrouter.HandleFunc("/", decorate(loginHandler, "user login")).Methods("GET")
+		loginrouter.HandleFunc("/b2access", callbackHandler).Methods("GET")
 	}
 	router.PathPrefix("/").Handler(http.FileServer(singlePageAppDir("../webui/app/")))
 

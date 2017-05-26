@@ -12,7 +12,7 @@ import (
 	"time"
 )
 
-func decorate(actionType string, fn func(http.ResponseWriter, *http.Request)) func(http.ResponseWriter, *http.Request) {
+func decorate(fn func(http.ResponseWriter, *http.Request), actionType string) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		logRequest(r)
 		allow, closefn := signalEvent(actionType, r)

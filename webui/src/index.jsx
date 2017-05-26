@@ -19,6 +19,7 @@ import rootReducers from './actions/reducers';
 import BrowseJobsContainer from './containers/JobsContainer';
 import BuildServiceContainer from './containers/BuildServiceContainer';
 import BrowseServicesContainer from './containers/ServicesContainer';
+import UserContainer from './containers/UserContainer';
 
 
 const log = bows('app');
@@ -64,7 +65,6 @@ class App extends React.Component {
     }
 }
 
-
 const Frame = (props) => (
     <Grid fluid={true}>
         <Row>
@@ -91,9 +91,7 @@ const Frame = (props) => (
                             </LinkContainer>
                         </Nav>
                         <Nav pullRight>
-                            <NavItem onClick={()=>{window.location.href = "/login/"}} className="login">
-                                <i className="glyphicon glyphicon-log-in"/> Login
-                            </NavItem>
+                            <UserContainer/>
                         </Nav>
                     </Navbar.Collapse>
                 </Navbar>
