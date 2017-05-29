@@ -11,12 +11,17 @@ require('dropzone/dist/min/dropzone.min.css');
 
 
 const log = bows('Files');
+const BuildProgress = ({isInProgress, statusMessage}) => {
+    if (!isInProgress) {
+        return <div className="text-center">{statusMessage}</div>
+    } else {
+        return <div className="text-center"><img src="/images/progress-animation.gif" /> {statusMessage}</div>;
+    }
+};
 
 class Files extends React.Component {
     constructor(props) {
         super(props);
-
-       
 
         this.djsConfig = {
             addRemoveLinks: true,
@@ -38,7 +43,11 @@ class Files extends React.Component {
             )
         };
 
-        this.state = {myDropzone: undefined};
+        this.state = {
+            myDropzone: undefined,
+            uploadInProgress: false,
+            statusMessage: "Ready to build a service"
+        };
         this.fileUploadSuccess = this.props.fileUploadSuccess.bind(this);
         this.fileUploadError = this.props.fileUploadError.bind(this);
     }
@@ -59,10 +68,12 @@ class Files extends React.Component {
             successmultiple: (files, response) => {
                 log('successmultiple, response is: ', response);
                 this.fileUploadSuccess(response);
+                this.setState({ uploadInProgress: false, statusMessage: "Service has been successfully created" });
             },
 
             error: (files, errorMessage) => {
                 this.fileUploadError(errorMessage);
+                this.setState({ uploadInProgress: false, statusMessage: errorMessage });
             }
         };
 
@@ -70,9 +81,9 @@ class Files extends React.Component {
 
         const submitHandler = ()  => {
             fileUploadStart();
+            this.setState({ uploadInProgress: true, statusMessage: "Service is being built" });
             this.state.myDropzone.processQueue();
         };
-
 
         if(getApiURL() != null) {
             const config = {
@@ -83,12 +94,12 @@ class Files extends React.Component {
                 <Row>
                     <Col md={4} mdOffset={4}> <Button type='submit' bsStyle='primary' style={{width: '100%'} } onClick={submitHandler}> <Glyphicon glyph='upload'/> {buttonText} </Button> </Col>
                 </Row>
+                <BuildProgress isInProgress={this.state.uploadInProgress} statusMessage={this.state.statusMessage}/>
             </div>
         } else {
             return <div> loading </div>
         }
     }
-
 }
 
 Files.propTypes = {
