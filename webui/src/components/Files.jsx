@@ -12,7 +12,7 @@ require('dropzone/dist/min/dropzone.min.css');
 
 const log = bows('Files');
 const BuildProgress = ({isInProgress, statusMessage}) => {
-    if (isInProgress == false) {
+    if (!isInProgress) {
         return <div className="text-center">{statusMessage}</div>
     } else {
         return <div className="text-center"><img src="/images/progress-animation.gif" /> {statusMessage}</div>;
