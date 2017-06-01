@@ -272,7 +272,6 @@ func (c Client) GetSwarmContainerInfo(serviceID string) (string, swarm.TaskState
 				if task.Status.State == swarm.TaskStateComplete || task.Status.State == swarm.TaskStateFailed {
 					return task.Status.ContainerStatus.ContainerID, task.Status.State, err
 				}
-				return c.GetSwarmContainerInfo(serviceID)
 			}
 		}
 	}
@@ -280,27 +279,27 @@ func (c Client) GetSwarmContainerInfo(serviceID string) (string, swarm.TaskState
 }
 
 // IsSwarmContainerNotRunning checks if a task container is not running
-func (c Client) IsSwarmContainerNotRunning(serviceID string) (bool, error) {
-	swarmTasks, err := c.c.ListTasks(docker.ListTasksOptions{})
-	if err != nil {
-		return false, err
+func (c Client) IsSwarmContainerNotRunning(serviceID string) (bool, swarm.TaskState, error) {
+	var containerError error
+	swarmTasks, containerError := c.c.ListTasks(docker.ListTasksOptions{})
+	if containerError != nil {
+		return false, swarm.TaskState(""), containerError
 	}
 
 	for _, task := range swarmTasks {
 		if task.ServiceID == serviceID {
-			err = nil
 			if task.Status.Err != "" {
-				err = def.Err(nil, task.Status.Err)
+				containerError = def.Err(nil, task.Status.Err)
 			}
 
-			if task.Status.State == swarm.TaskStateComplete || task.Status.State == swarm.TaskStateFailed || task.Status.State == swarm.TaskStateShutdown {
-				return true, err
+			if len(task.Status.State) == 0 || task.Status.State == swarm.TaskStateComplete || task.Status.State == swarm.TaskStateFailed || task.Status.State == swarm.TaskStateShutdown {
+				return true, task.Status.State, containerError
 			} else {
-				return c.IsSwarmContainerNotRunning(serviceID)
+				return false, task.Status.State, containerError
 			}
 		}
 	}
-	return false, err
+	return true, swarm.TaskState(""), containerError
 }
 
 // StartImage takes a docker image, creates a container and starts it
@@ -328,8 +327,18 @@ func (c Client) StartImage(id string, repoTag string, cmdArgs []string, binds []
 		stdout = *serviceOutput
 
 		// Now we need to retrieve a container's id
-		contID, _, err := c.GetSwarmContainerInfo(swarmService.ID)
-		runningContainerID = ContainerID(contID)
+		for {
+			contID, contState, err := c.GetSwarmContainerInfo(swarmService.ID)
+			runningContainerID = ContainerID(contID)
+
+			if (contID != "") || (contState == swarm.TaskStateComplete || contState == swarm.TaskStateFailed) {
+				if err != nil {
+					return runningContainerID, &stdout, def.Err(err, "Failed to get information about the service container")
+				}
+				break
+			}
+		}
+		return runningContainerID, &stdout, nil
 
 	} else {
 		//
@@ -392,10 +401,11 @@ func (c Client) StartImage(id string, repoTag string, cmdArgs []string, binds []
 			c.RemoveContainer(cont.ID)
 			return ContainerID(""), &stdout, def.Err(err, "StartContainer failed")
 		}
-		runningContainerID = ContainerID(cont.ID)
+
+		return ContainerID(cont.ID), &stdout, nil
 	}
 
-	return runningContainerID, &stdout, nil
+
 }
 
 // WriteMonitor used to keep console output
@@ -514,9 +524,16 @@ func (c Client) WaitContainer(id ContainerID, removeOnExit bool) (int, error) {
 	}
 
 	if swarmOn {
-		notRunning, err := c.IsSwarmContainerNotRunning(string(id))
-		if err != nil {
-			return 1, err
+		notRunning := false
+		for {
+			notRunning, contState, err := c.IsSwarmContainerNotRunning(string(id))
+			if (contState == swarm.TaskStateComplete || contState == swarm.TaskStateFailed || contState == swarm.TaskStateShutdown) && (err != nil) {
+				return 1, err
+			}
+
+			if notRunning {
+				break
+			}
 		}
 
 		if notRunning {
