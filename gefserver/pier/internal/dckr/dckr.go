@@ -470,8 +470,8 @@ func (c Client) CreateSwarmService(repoTag string, cmdArgs []string, binds []Vol
 
 				/*Resources: &swarm.ResourceRequirements{
 					Limits: &swarm.Resources{
-						NanoCPUs:    0,
-						MemoryBytes: limits.Memory,
+						//NanoCPUs:    10000,
+						MemoryBytes: limits.Memory*20000,
 					},
 				},*/
 			},
