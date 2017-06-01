@@ -119,6 +119,7 @@ func (p *Pier) BuildService(buildDir string) (db.Service, error) {
 	}
 
 	service := NewServiceFromImage(image)
+	service.RepoTag = ServiceImagePrefix+string(image.ID) + ":" + GefImageTag
 	err = p.db.AddService(service)
 	if err != nil {
 		return db.Service{}, def.Err(err, "could not add a new service to the database")
