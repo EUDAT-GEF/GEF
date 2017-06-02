@@ -2,7 +2,7 @@
 	"Docker": {
 		"UseEnvironmentVariables": false,
 		"Endpoint" : "unix:///var/run/docker.sock",
-		"Description": "The default Docker server on localhost"
+		"Description": "The default Docker server on localhost",
 	},
 	"Pier": {
 		"InternalServicesFolder": "../services/_internal"
