@@ -10,7 +10,6 @@ import (
 
 	"github.com/pborman/uuid"
 	"gopkg.in/gorp.v1"
-	"strings"
 )
 
 // Column in a table used to keep an internal version number of GORP
@@ -54,7 +53,6 @@ type ServiceTable struct {
 	RepoTag     string
 	Description string
 	Version     string
-	Cmd         string
 	Revision    int
 	Created     time.Time
 	Size        int64
@@ -66,6 +64,15 @@ type IOPortTable struct {
 	Name      string
 	Path      string
 	IsInput   bool
+	Revision  int
+	ServiceID string
+}
+
+// IOPortTable is used to store data in a database
+type ServiceCmdTable struct {
+	ID        int
+	Cmd       string
+	Index     int
 	Revision  int
 	ServiceID string
 }
@@ -82,6 +89,7 @@ func InitDb() (Db, error) {
 	dataBaseMap.AddTableWithName(TaskTable{}, "Tasks").SetKeys(false, "ID").SetVersionCol(gorpVersionColumn)
 	dataBaseMap.AddTableWithName(ServiceTable{}, "Services").SetKeys(false, "ID").SetVersionCol(gorpVersionColumn)
 	dataBaseMap.AddTableWithName(IOPortTable{}, "IOPorts").SetVersionCol(gorpVersionColumn)
+	dataBaseMap.AddTableWithName(ServiceCmdTable{}, "ServiceCmd").SetKeys(true, "ID").SetVersionCol(gorpVersionColumn)
 	err = dataBaseMap.CreateTablesIfNotExists()
 	return Db{*dataBaseMap}, err
 }
@@ -257,6 +265,7 @@ func (d *Db) serviceTable2Service(storedService ServiceTable) (Service, error) {
 	var storedOutputPorts []IOPortTable
 	var inputPorts []IOPort
 	var outputPorts []IOPort
+	var selectedCmd []ServiceCmdTable
 
 	_, err := d.Select(&storedInputPorts, "SELECT * FROM IOPorts WHERE IsInput=1 AND ServiceID=?", storedService.ID)
 	if err != nil {
@@ -286,13 +295,29 @@ func (d *Db) serviceTable2Service(storedService ServiceTable) (Service, error) {
 		outputPorts = append(outputPorts, curOutput)
 	}
 
+	_, err = d.Select(&selectedCmd, "SELECT * FROM ServiceCmd WHERE ServiceID=?", storedService.ID)
+	if err != nil {
+		return service, err
+	}
+
+	var storedCmd []string
+	// arguments should have a correct order
+	for i, s := range selectedCmd {
+		for _, item := range selectedCmd {
+			if item.Index == i {
+				storedCmd = append(storedCmd, s.Cmd)
+				break
+			}
+		}
+	}
+
 	service.ID = ServiceID(storedService.ID)
 	service.ImageID = ImageID(storedService.ImageID)
 	service.Name = storedService.Name
 	service.RepoTag = storedService.RepoTag
 	service.Description = storedService.Description
 	service.Version = storedService.Version
-	service.Cmd = strings.Split(storedService.Cmd, " ")
+	service.Cmd = storedCmd
 	service.Created = storedService.Created
 	service.Size = storedService.Size
 	service.Input = inputPorts
@@ -311,7 +336,6 @@ func (d *Db) service2ServiceTable(service Service) ServiceTable {
 	storedService.RepoTag = service.RepoTag
 	storedService.Description = service.Description
 	storedService.Version = service.Version
-	storedService.Cmd = strings.Join(service.Cmd, " ")
 	storedService.Created = service.Created
 	storedService.Size = service.Size
 	return storedService
@@ -372,18 +396,46 @@ func (d *Db) AddService(service Service) error {
 		return err
 	}
 
+	err = d.AddCmd(service)
+	if err != nil {
+		return err
+	}
+
 	storedService := d.service2ServiceTable(service)
 	err = d.Insert(&storedService)
 	return err
 }
 
+// AddCmd adds an array of cmd options to the specified service
+func (d *Db) AddCmd(service Service) error {
+	var storedCmd ServiceCmdTable
+	for i, c := range service.Cmd {
+		storedCmd.Cmd = c
+		storedCmd.Index = i
+		storedCmd.ServiceID = string(service.ID)
+		err := d.Insert(&storedCmd)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // RemoveService removes a service and the corresponding IOPorts from the database
 func (d *Db) RemoveService(id ServiceID) error {
+	// remove linked ports
 	_, err := d.Exec("DELETE FROM IOPorts WHERE ServiceID=?", string(id))
 	if err != nil {
 		return err
 	}
 
+	// remove linked cmd
+	_, err = d.Exec("DELETE FROM ServiceCmd WHERE ServiceID=?", string(id))
+	if err != nil {
+		return err
+	}
+
+	// remove the service itself
 	_, err = d.Exec("DELETE FROM services WHERE ID=?", string(id))
 	return err
 }
