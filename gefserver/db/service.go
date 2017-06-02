@@ -18,6 +18,7 @@ type Service struct {
 	RepoTag     string
 	Description string
 	Version     string
+	Cmd         []string
 	Created     time.Time
 	Size        int64
 	Input       []IOPort

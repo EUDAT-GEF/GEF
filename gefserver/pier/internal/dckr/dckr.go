@@ -18,6 +18,8 @@ import (
 	"encoding/json"
 
 	"github.com/EUDAT-GEF/GEF/gefserver/def"
+	"github.com/docker/docker/api/types/mount"
+	"github.com/docker/docker/api/types/swarm"
 )
 
 const (
@@ -46,6 +48,7 @@ type Image struct {
 	Labels  map[string]string
 	Created time.Time
 	Size    int64
+	Cmd     []string
 }
 
 // Container is a struct for Docker containers
@@ -170,6 +173,7 @@ func (c Client) InspectImage(id ImageID) (Image, error) {
 		Labels:  labels,
 		Created: img.Created,
 		Size:    img.Size,
+		Cmd:     img.Config.Cmd,
 	}, nil
 }
 
@@ -249,78 +253,159 @@ func (c *Client) BuildImage(dirpath string) (Image, error) {
 	return c.InspectImage(img.ID)
 }
 
+// GetSwarmContainerInfo finds a task associated with the given serviceID and retrieves information about the corresponding container
+func (c Client) GetSwarmContainerInfo(serviceID string) (string, swarm.TaskState, error) {
+	swarmTasks, err := c.c.ListTasks(docker.ListTasksOptions{})
+	if err != nil {
+		return "", swarm.TaskState(""), err
+	}
+
+	for _, task := range swarmTasks {
+		if task.ServiceID == serviceID {
+			err = nil
+			if task.Status.Err != "" {
+				err = def.Err(nil, task.Status.Err)
+			}
+			if task.Status.ContainerStatus.ContainerID != "" {
+				return task.Status.ContainerStatus.ContainerID, task.Status.State, err
+			} else {
+				if task.Status.State == swarm.TaskStateComplete || task.Status.State == swarm.TaskStateFailed {
+					return task.Status.ContainerStatus.ContainerID, task.Status.State, err
+				}
+			}
+		}
+	}
+	return "", swarm.TaskState(""), err
+}
+
+// IsSwarmContainerNotRunning checks if a task container is not running
+func (c Client) IsSwarmContainerNotRunning(serviceID string) (bool, swarm.TaskState, error) {
+	var containerError error
+	swarmTasks, containerError := c.c.ListTasks(docker.ListTasksOptions{})
+	if containerError != nil {
+		return false, swarm.TaskState(""), containerError
+	}
+
+	for _, task := range swarmTasks {
+		if task.ServiceID == serviceID {
+			if task.Status.Err != "" {
+				containerError = def.Err(nil, task.Status.Err)
+			}
+
+			if len(task.Status.State) == 0 || task.Status.State == swarm.TaskStateComplete || task.Status.State == swarm.TaskStateFailed || task.Status.State == swarm.TaskStateShutdown {
+				return true, task.Status.State, containerError
+			} else {
+				return false, task.Status.State, containerError
+			}
+		}
+	}
+	return true, swarm.TaskState(""), containerError
+}
+
 // StartImage takes a docker image, creates a container and starts it
-func (c Client) StartImage(id ImageID, cmdArgs []string, binds []VolBind, limits def.LimitConfig) (ContainerID, *bytes.Buffer, error) {
+func (c Client) StartImage(id string, repoTag string, cmdArgs []string, binds []VolBind, limits def.LimitConfig) (ContainerID, *bytes.Buffer, error) {
 	var stdout bytes.Buffer
+	var runningContainerID ContainerID
 
 	if id == "" {
 		return ContainerID(""), &stdout, def.Err(nil, "Empty image id")
 	}
 
-	img, err := c.c.InspectImage(string(id))
+	swarmOn, err := c.IsSwarmActive()
 	if err != nil {
-		return ContainerID(""), &stdout, def.Err(err, "InspectImage failed")
+		return ContainerID(""), &stdout, err
 	}
 
-	bs := make([]string, len(binds), len(binds))
-	for i, b := range binds {
-		bs[i] = fmt.Sprintf("%s:%s", b.VolumeID, b.MountPoint)
-		if b.IsReadOnly {
-			bs[i] = fmt.Sprintf("%s:ro", bs[i])
+	if swarmOn {
+		log.Println(string(id))
+		// Create a Swarm service
+		swarmService, serviceOutput, err := c.CreateSwarmService(repoTag, cmdArgs, binds, limits)
+
+		if err != nil {
+			return ContainerID(swarmService.ID), serviceOutput, def.Err(err, "CreateSwarmService failed")
 		}
+		stdout = *serviceOutput
+
+		// Now we need to retrieve a container's id
+		for {
+			contID, contState, err := c.GetSwarmContainerInfo(swarmService.ID)
+			runningContainerID = ContainerID(contID)
+
+			if (contID != "") || (contState == swarm.TaskStateComplete || contState == swarm.TaskStateFailed) {
+				if err != nil {
+					return runningContainerID, &stdout, def.Err(err, "Failed to get information about the service container")
+				}
+				break
+			}
+		}
+		return runningContainerID, &stdout, nil
+
+	} else {
+		//
+		img, err := c.c.InspectImage(string(id))
+		if err != nil {
+			return ContainerID(""), &stdout, def.Err(err, "InspectImage failed")
+		}
+
+		bs := make([]string, len(binds), len(binds))
+		for i, b := range binds {
+			bs[i] = fmt.Sprintf("%s:%s", b.VolumeID, b.MountPoint)
+			if b.IsReadOnly {
+				bs[i] = fmt.Sprintf("%s:ro", bs[i])
+			}
+		}
+
+		config := *img.Config
+		config.Cmd = cmdArgs
+
+		config.AttachStdout = true
+		config.AttachStderr = true
+		hc := docker.HostConfig{
+			Binds:      bs,
+			CPUShares:  limits.CPUShares,
+			CPUPeriod:  limits.CPUPeriod,
+			CPUQuota:   limits.CPUQuota,
+			Memory:     limits.Memory,
+			MemorySwap: limits.MemorySwap,
+		}
+
+		cco := docker.CreateContainerOptions{
+			Config:     &config,
+			HostConfig: &hc,
+		}
+
+		cont, err := c.c.CreateContainer(cco)
+		if err != nil {
+			return ContainerID(""), &stdout, def.Err(err, "CreateContainer failed")
+		}
+
+		attached := make(chan struct{})
+		go func() {
+			c.c.AttachToContainer(docker.AttachToContainerOptions{
+				Container:    cont.ID,
+				OutputStream: &stdout,
+				ErrorStream:  &stdout,
+				Logs:         true,
+				Stdout:       true,
+				Stderr:       true,
+				Stream:       true,
+				Success:      attached,
+			})
+		}()
+
+		<-attached
+		attached <- struct{}{}
+
+		err = c.c.StartContainer(cont.ID, &hc)
+		if err != nil {
+			c.RemoveContainer(cont.ID)
+			return ContainerID(""), &stdout, def.Err(err, "StartContainer failed")
+		}
+
+		return ContainerID(cont.ID), &stdout, nil
 	}
-	// log.Println("bindings are: ", bs)
 
-	config := *img.Config
-	for _, arg := range cmdArgs {
-		config.Cmd = append(config.Cmd, arg)
-	}
 
-	config.AttachStdout = true
-	config.AttachStderr = true
-	hc := docker.HostConfig{
-		Binds:      bs,
-		CPUShares:  limits.CPUShares,
-		CPUPeriod:  limits.CPUPeriod,
-		CPUQuota:   limits.CPUQuota,
-		Memory:     limits.Memory,
-		MemorySwap: limits.MemorySwap,
-	}
-
-	cco := docker.CreateContainerOptions{
-		Config:     &config,
-		HostConfig: &hc,
-	}
-
-	cont, err := c.c.CreateContainer(cco)
-	if err != nil {
-		return ContainerID(""), &stdout, def.Err(err, "CreateContainer failed")
-	}
-
-	attached := make(chan struct{})
-	go func() {
-		c.c.AttachToContainer(docker.AttachToContainerOptions{
-			Container:    cont.ID,
-			OutputStream: &stdout,
-			ErrorStream:  &stdout,
-			Logs:         true,
-			Stdout:       true,
-			Stderr:       true,
-			Stream:       true,
-			Success:      attached,
-		})
-	}()
-
-	<-attached
-	attached <- struct{}{}
-
-	err = c.c.StartContainer(cont.ID, &hc)
-	if err != nil {
-		c.RemoveContainer(cont.ID)
-		return ContainerID(""), &stdout, def.Err(err, "StartContainer failed")
-	}
-
-	return ContainerID(cont.ID), &stdout, nil
 }
 
 // WriteMonitor used to keep console output
@@ -332,21 +417,83 @@ func (w *WriteMonitor) Write(bs []byte) (int, error) {
 	return n, err
 }
 
-// ExecuteImage takes a docker image, creates a container and executes it, and waits for it to end
-func (c Client) ExecuteImage(id ImageID, cmdArgs []string, binds []VolBind, limits def.LimitConfig, removeOnExit bool) (ContainerID, int, *bytes.Buffer, error) {
-	containerID, consoleOutput, err := c.StartImage(id, cmdArgs, binds, limits)
+// IsSwarmActive checks if the Swarm Mode is active
+func (c Client) IsSwarmActive() (bool, error) {
+	isActive := false
+	dockerInfo, err := c.c.Info()
 	if err != nil {
-		return containerID, 0, consoleOutput, def.Err(err, "StartImage failed")
+		return isActive, err
+	}
+	if dockerInfo.Swarm.LocalNodeState == "active" {
+		isActive = true
+	}
+	return isActive, nil
+}
+
+// ExecuteImage takes a docker image, creates a container and executes it, and waits for it to end
+func (c Client) ExecuteImage(imgId string, imgRepoTag string, cmdArgs []string, binds []VolBind, limits def.LimitConfig, removeOnExit bool) (ContainerID, int, *bytes.Buffer, error) {
+	var stdout *bytes.Buffer
+	cont, stdout, err := c.StartImage(imgId, imgRepoTag, cmdArgs, binds, limits)
+
+	if err != nil {
+		return cont, 0, stdout, def.Err(err, "StartImage failed")
 	}
 
-	exitCode, consoleOutput, err := c.WaitContainer(containerID, consoleOutput, removeOnExit)
-	return containerID, exitCode, consoleOutput, err
+	exitCode, err := c.WaitContainer(cont, removeOnExit)
+	return cont, exitCode, stdout, err
 }
 
 // DeleteImage removes an image by ID
 func (c Client) DeleteImage(id string) error {
 	err := c.c.RemoveImage(id)
 	return err
+}
+
+// CreateSwarmService creates a Docker swarm service
+func (c Client) CreateSwarmService(repoTag string, cmdArgs []string, binds []VolBind, limits def.LimitConfig) (*swarm.Service, *bytes.Buffer, error) {
+	var stdout bytes.Buffer
+	var srv *swarm.Service
+
+	if repoTag == "" {
+		return srv, &stdout, def.Err(nil, "Empty image repoTag")
+	}
+
+	var serviceMounts []mount.Mount
+	var curMount mount.Mount
+	for _, v := range binds {
+		curMount.ReadOnly = v.IsReadOnly
+		curMount.Source = string(v.VolumeID)
+		curMount.Target = v.MountPoint
+		curMount.Type = mount.TypeVolume
+
+		serviceMounts = append(serviceMounts, curMount)
+	}
+
+	serviceCreateOpts := docker.CreateServiceOptions{
+		ServiceSpec: swarm.ServiceSpec{
+			TaskTemplate: swarm.TaskSpec{
+				ContainerSpec: swarm.ContainerSpec{
+					Image:   repoTag,
+					Mounts:  serviceMounts,
+					Command: cmdArgs,
+				},
+
+				/*Resources: &swarm.ResourceRequirements{
+					Limits: &swarm.Resources{
+						//NanoCPUs:    10000,
+						MemoryBytes: limits.Memory*20000,
+					},
+				},*/
+			},
+		},
+	}
+
+	srv, err := c.c.CreateService(serviceCreateOpts)
+	_, err = stdout.Write([]byte("/services/{id}/logs is an experimental feature introduced in Docker 1.13. Unfortunately, it is not yet supported by the Docker client we use"))
+	if err != nil {
+		return srv, &stdout, def.Err(err, "Failed to write a string into stdout stream")
+	}
+	return srv, &stdout, err
 }
 
 // StartExistingContainer starts an existing container
@@ -370,13 +517,41 @@ func (c Client) RemoveContainer(containerID string) {
 
 // WaitContainer takes a docker container and waits for its finish.
 // It returns the exit code of the container.
-func (c Client) WaitContainer(id ContainerID, consoleOutput *bytes.Buffer, removeOnExit bool) (int, *bytes.Buffer, error) {
-	containerID := string(id)
-	exitCode, err := c.c.WaitContainer(containerID)
-	if removeOnExit {
-		c.RemoveContainer(containerID)
+func (c Client) WaitContainer(id ContainerID, removeOnExit bool) (int, error) {
+	swarmOn, err := c.IsSwarmActive()
+	if err != nil {
+		return 1, err
 	}
-	return exitCode, consoleOutput, err
+
+	if swarmOn {
+		notRunning := false
+		for {
+			notRunning, contState, err := c.IsSwarmContainerNotRunning(string(id))
+			if (contState == swarm.TaskStateComplete || contState == swarm.TaskStateFailed || contState == swarm.TaskStateShutdown) && (err != nil) {
+				return 1, err
+			}
+
+			if notRunning {
+				break
+			}
+		}
+
+		if notRunning {
+			opts := docker.RemoveServiceOptions{ID: string(id)}
+			err = c.c.RemoveService(opts)
+			if err != nil {
+				return 1, err
+			}
+		}
+		return 0, nil
+
+	} else {
+		exitCode, err := c.c.WaitContainer(string(id))
+		if removeOnExit {
+			c.RemoveContainer(string(id))
+		}
+		return exitCode, err
+	}
 }
 
 // ListContainers lists the docker images

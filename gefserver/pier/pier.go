@@ -18,6 +18,9 @@ import (
 
 // GefSrvLabelPrefix is the prefix identifying GEF related labels
 const GefSrvLabelPrefix = "eudat.gef.service."
+const InternalImagePrefix = "internal_"
+const GefImageTag = "gef"
+const ServiceImagePrefix = "service_"
 
 // Pier is a master struct for gef-docker abstractions
 type Pier struct {
@@ -27,11 +30,17 @@ type Pier struct {
 }
 
 type dockerConnection struct {
-	client           dckr.Client
-	limits           def.LimitConfig
-	stageInID        dckr.ImageID
-	fileListID       dckr.ImageID
-	copyFromVolumeID dckr.ImageID
+	client         dckr.Client
+	limits         def.LimitConfig
+	stageIn        internalImage
+	fileList       internalImage
+	copyFromVolume internalImage
+}
+
+type internalImage struct {
+	id      dckr.ImageID
+	repoTag string
+	cmd     []string
 }
 
 // NewPier creates a new pier with all the needed setup
@@ -52,29 +61,37 @@ func (p *Pier) SetDockerConnection(config def.DockerConfig, limits def.LimitConf
 		return def.Err(err, "Cannot create docker client for config:", config)
 	}
 
-	buildInternalImage := func(docker dckr.Client, name string) (dckr.ImageID, error) {
+	buildInternalImage := func(docker dckr.Client, name string) (internalImage, error) {
 		log.Print("building internal service: " + name)
 		path := filepath.Join(internalServicesFolder, name)
 		abspath, err := filepath.Abs(path)
+		var newImage internalImage
 		if err != nil {
-			return "", def.Err(err, "absolute filepath failed: %s", path)
+			return newImage, def.Err(err, "absolute filepath failed: %s", path)
 		}
 		img, err := docker.BuildImage(abspath)
 		if err != nil {
-			return "", def.Err(err, "internal image build failed: %s", abspath)
+			return newImage, def.Err(err, "internal image build failed: %s", abspath)
 		}
-		return img.ID, nil
+		err = docker.TagImage(string(img.ID), InternalImagePrefix+string(img.ID), GefImageTag)
+		if err != nil {
+			return newImage, def.Err(err, "could not tag an internal service: %s", string(img.ID))
+		}
+		newImage.id = img.ID
+		newImage.cmd = img.Cmd
+		newImage.repoTag = img.RepoTag
+		return newImage, nil
 	}
 
-	stageInID, err := buildInternalImage(client, "volume-stage-in")
+	stageInImage, err := buildInternalImage(client, "volume-stage-in")
 	if err != nil {
 		return err
 	}
-	fileListID, err := buildInternalImage(client, "volume-filelist")
+	fileListImage, err := buildInternalImage(client, "volume-filelist")
 	if err != nil {
 		return err
 	}
-	copyFromVolumeID, err := buildInternalImage(client, "copy-from-volume")
+	copyFromVolumeImage, err := buildInternalImage(client, "copy-from-volume")
 	if err != nil {
 		return err
 	}
@@ -82,9 +99,9 @@ func (p *Pier) SetDockerConnection(config def.DockerConfig, limits def.LimitConf
 	p.docker = &dockerConnection{
 		client,
 		limits,
-		stageInID,
-		fileListID,
-		copyFromVolumeID,
+		stageInImage,
+		fileListImage,
+		copyFromVolumeImage,
 	}
 	return nil
 }
@@ -95,8 +112,14 @@ func (p *Pier) BuildService(buildDir string) (db.Service, error) {
 	if err != nil {
 		return db.Service{}, def.Err(err, "docker BuildImage failed")
 	}
+	log.Println("Tagging the image")
+	err = p.docker.client.TagImage(string(image.ID), ServiceImagePrefix+string(image.ID), GefImageTag)
+	if err != nil {
+		return db.Service{}, def.Err(err, "could not tag a service image: %s", string(image.ID))
+	}
 
 	service := NewServiceFromImage(image)
+	service.RepoTag = ServiceImagePrefix+string(image.ID) + ":" + GefImageTag
 	err = p.db.AddService(service)
 	if err != nil {
 		return db.Service{}, def.Err(err, "could not add a new service to the database")
@@ -140,7 +163,6 @@ func (p *Pier) runJob(job *db.Job, service db.Service, inputPID string) {
 			p.db.SetJobState(job.ID, db.NewJobStateError("Error while creating new input volume", 1))
 			return
 		}
-		// log.Println("new input volume created: ", inputVolume)
 		p.db.SetJobInputVolume(job.ID, db.VolumeID(inputVolume.ID))
 	}
 
@@ -151,10 +173,14 @@ func (p *Pier) runJob(job *db.Job, service db.Service, inputPID string) {
 		}
 
 		containerID, exitCode, output, err := p.docker.client.ExecuteImage(
-			p.docker.stageInID, []string{inputPID}, binds, p.docker.limits, true)
+			string(p.docker.stageIn.id),
+			p.docker.stageIn.repoTag,
+			append(p.docker.stageIn.cmd, inputPID),
+			binds,
+			p.docker.limits,
+			true)
 
 		p.db.AddJobTask(job.ID, "Data staging", string(containerID), err2str(err), exitCode, output)
-		// log.Println("  staging ended: ", exitCode, ", error: ", err)
 		if err != nil {
 			p.db.SetJobState(job.ID, db.NewJobStateError("Data staging failed", 1))
 			return
@@ -174,7 +200,6 @@ func (p *Pier) runJob(job *db.Job, service db.Service, inputPID string) {
 			p.db.SetJobState(job.ID, db.NewJobStateError("Error while creating new output volume", 1))
 			return
 		}
-		// log.Println("new output volume created: ", outputVolume)
 		p.db.SetJobOutputVolume(job.ID, db.VolumeID(outputVolume.ID))
 	}
 
@@ -185,10 +210,15 @@ func (p *Pier) runJob(job *db.Job, service db.Service, inputPID string) {
 			dckr.NewVolBind(outputVolume.ID, service.Output[0].Path, false),
 		}
 		containerID, exitCode, output, err := p.docker.client.ExecuteImage(
-			dckr.ImageID(service.ImageID), nil, binds, p.docker.limits, true)
+			string(service.ImageID),
+			service.RepoTag,
+			service.Cmd,
+			binds,
+			p.docker.limits,
+			true)
 		p.db.AddJobTask(job.ID, "Service execution", string(containerID), err2str(err), exitCode, output)
 
-		// log.Println("  job ended: ", exitCode, ", error: ", err)
+		//log.Println("  job ended: ", exitCode, ", error: ", err)
 		if err != nil {
 			p.db.SetJobState(job.ID, db.NewJobStateError("Service failed", 1))
 			return
@@ -298,6 +328,7 @@ func NewServiceFromImage(image dckr.Image) db.Service {
 		RepoTag: image.RepoTag,
 		Created: image.Created,
 		Size:    image.Size,
+		Cmd:     image.Cmd,
 	}
 
 	for k, v := range image.Labels {
