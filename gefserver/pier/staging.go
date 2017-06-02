@@ -32,8 +32,10 @@ func (p *Pier) DownStreamContainerFile(volumeID string, fileLocation string, w h
 		dckr.NewVolBind(dckr.VolumeID(volumeID), "/root/volume", false),
 	}
 	containerID, _, err := p.docker.client.StartImage(
-		p.docker.copyFromVolumeID,
+		string(p.docker.copyFromVolume.id),
+		p.docker.copyFromVolume.repoTag,
 		[]string{
+			p.docker.copyFromVolume.cmd[0],
 			filepath.Join("/root/volume/", fileLocation),
 			"/root",
 		},
@@ -81,8 +83,14 @@ func (p *Pier) ListFiles(volumeID db.VolumeID, filePath string) ([]VolumeItem, e
 	}
 
 	// Execute our image (it should produce a JSON file with the list of files)
-	containerID, consoleOutput, err := p.docker.client.StartImage(
-		p.docker.fileListID, []string{filePath, "r"}, volumesToMount, p.docker.limits)
+	containerID, _, err := p.docker.client.StartImage(
+		string(p.docker.fileList.id),
+		p.docker.fileList.repoTag,
+		[]string{
+			p.docker.fileList.cmd[0], filePath, "r",
+		},
+		volumesToMount,
+		p.docker.limits)
 
 	if err != nil {
 		return volumeFileList, def.Err(err, "running image failed")
@@ -95,7 +103,7 @@ func (p *Pier) ListFiles(volumeID db.VolumeID, filePath string) ([]VolumeItem, e
 	}
 
 	// Killing the container
-	_, _, err = p.docker.client.WaitContainer(containerID, consoleOutput, true)
+	_, err = p.docker.client.WaitContainer(containerID, true)
 	if err != nil {
 		return volumeFileList, def.Err(err, "waiting for container to end failed")
 	}
