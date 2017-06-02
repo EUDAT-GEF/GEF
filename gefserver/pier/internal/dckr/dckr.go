@@ -405,7 +405,6 @@ func (c Client) StartImage(id string, repoTag string, cmdArgs []string, binds []
 		return ContainerID(cont.ID), &stdout, nil
 	}
 
-
 }
 
 // WriteMonitor used to keep console output
