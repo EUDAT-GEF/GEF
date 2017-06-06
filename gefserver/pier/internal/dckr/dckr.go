@@ -467,6 +467,11 @@ func (c Client) CreateSwarmService(repoTag string, cmdArgs []string, binds []Vol
 
 		serviceMounts = append(serviceMounts, curMount)
 	}
+	if limits.CPUPeriod <= 0 {
+		return srv, &stdout, def.Err(nil, "CPUPeriod is not set in the config file")
+
+	}
+	calculatedNanoCPU := (limits.CPUQuota * 1e9) / limits.CPUPeriod
 
 	serviceCreateOpts := docker.CreateServiceOptions{
 		ServiceSpec: swarm.ServiceSpec{
@@ -477,12 +482,12 @@ func (c Client) CreateSwarmService(repoTag string, cmdArgs []string, binds []Vol
 					Command: cmdArgs,
 				},
 
-				/*Resources: &swarm.ResourceRequirements{
+				Resources: &swarm.ResourceRequirements{
 					Limits: &swarm.Resources{
-						//NanoCPUs:    10000,
-						MemoryBytes: limits.Memory*20000,
+						NanoCPUs:    calculatedNanoCPU,
+						MemoryBytes: limits.Memory,
 					},
-				},*/
+				},
 			},
 		},
 	}
