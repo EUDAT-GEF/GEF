@@ -480,7 +480,9 @@ func (c Client) CreateSwarmService(repoTag string, cmdArgs []string, binds []Vol
 					Mounts:  serviceMounts,
 					Command: cmdArgs,
 				},
-
+				RestartPolicy: &swarm.RestartPolicy{
+					Condition: "none",
+				},
 				Resources: &swarm.ResourceRequirements{
 					Limits: &swarm.Resources{
 						NanoCPUs:    calculatedNanoCPU,
