@@ -474,11 +474,17 @@ func (c Client) CreateSwarmService(repoTag string, cmdArgs []string, binds []Vol
 
 	serviceCreateOpts := docker.CreateServiceOptions{
 		ServiceSpec: swarm.ServiceSpec{
+
 			TaskTemplate: swarm.TaskSpec{
 				ContainerSpec: swarm.ContainerSpec{
 					Image:   repoTag,
 					Mounts:  serviceMounts,
 					Command: cmdArgs,
+
+				},
+
+				RestartPolicy: &swarm.RestartPolicy{
+					Condition: "none",
 				},
 
 				Resources: &swarm.ResourceRequirements{
