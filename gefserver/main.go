@@ -20,6 +20,9 @@ func main() {
 	if err != nil {
 		log.Fatal("FATAL: ", err)
 	}
+	if config.Limits.CPUPeriod <= 0 {
+		log.Fatal("FATAL: ", def.Err(nil, "CPUPeriod is not set in the config file"))
+	}
 
 	d, err := db.InitDb()
 	if err != nil {

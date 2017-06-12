@@ -467,9 +467,6 @@ func (c Client) CreateSwarmService(repoTag string, cmdArgs []string, binds []Vol
 
 		serviceMounts = append(serviceMounts, curMount)
 	}
-	if limits.CPUPeriod <= 0 {
-		return srv, &stdout, def.Err(nil, "CPUPeriod is not set in the config file")
-	}
 
 	/* Based on resources.CPUQuota = r.Limits.NanoCPUs * resources.CPUPeriod / 1e9
 	taken from https://github.com/moby/moby/blob/v1.12.0-rc4/daemon/cluster/executor/container/container.go#L331 */
