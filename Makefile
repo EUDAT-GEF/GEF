@@ -22,6 +22,9 @@ clean:
 	rm $(JSBUNDLE) $(JSBUNDLE).map
 	rm -r $(WEBUI)/node_modules
 
+pack:
+	(make build && tar -cvzf gef.tar.gz ./*)
+
 run_webui_dev_server:
 	(cd $(WEBUI) && node_modules/webpack-dev-server/bin/webpack-dev-server.js -d --hot --https --config webpack.config.devel.js)
 
