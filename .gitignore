@@ -55,4 +55,4 @@ gefserver/gef_db.bin
 gefserver/tests/gef_db.bin
 services/_internal/volume-filelist/volume-filelist
 /ssl/
-gef.tar.gz
+gef-0.2.0.tar.gz
