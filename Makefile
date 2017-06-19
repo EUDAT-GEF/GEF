@@ -23,13 +23,9 @@ clean:
 	rm -r $(WEBUI)/node_modules
 
 pack: dependencies webui
-	$(GOPATH)/bin/golint ./...
 	go vet ./...
 	mkdir -p ./build/webui
-	eval $(docker-machine env default)
 	docker run --rm -v $(GOPATH):/go -w /go/src/github.com/EUDAT-GEF/GEF golang:latest go build ./...
-	GEF_SECRET_KEY="test" go test -timeout 4m ./...
-	eval $(docker-machine env default)
 	docker run --rm -v $(GOPATH):/go -w /go/src/github.com/EUDAT-GEF/GEF golang:latest go build -o ./build/gefserver ./gefserver
 	cp gefserver/config.json ./build/
 	cp -r webui/app build/webui/app
