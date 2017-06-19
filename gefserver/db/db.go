@@ -58,7 +58,7 @@ type ServiceTable struct {
 	Size        int64
 }
 
-// IOPortTable is used to store data in a database
+// IOPortTable is used to store info about service inputs and outputs in a database
 type IOPortTable struct {
 	ID        string
 	Name      string
@@ -68,7 +68,7 @@ type IOPortTable struct {
 	ServiceID string
 }
 
-// IOPortTable is used to store data in a database
+// ServiceCmdTable stores CMD options for services
 type ServiceCmdTable struct {
 	ID        int
 	Cmd       string

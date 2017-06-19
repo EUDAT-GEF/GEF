@@ -18,9 +18,15 @@ import (
 
 // GefSrvLabelPrefix is the prefix identifying GEF related labels
 const GefSrvLabelPrefix = "eudat.gef.service."
+
+// InternalImagePrefix prefix for internal images
 const InternalImagePrefix = "internal_"
-const GefImageTag = "gef"
+
+// ServiceImagePrefix prefix for GEF service images
 const ServiceImagePrefix = "service_"
+
+// GefImageTag tag for all images created by the GEF
+const GefImageTag = "gef"
 
 // Pier is a master struct for gef-docker abstractions
 type Pier struct {

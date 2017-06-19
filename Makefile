@@ -22,6 +22,14 @@ clean:
 	rm $(JSBUNDLE) $(JSBUNDLE).map
 	rm -r $(WEBUI)/node_modules
 
+pack: dependencies webui
+	mkdir -p ./build/webui
+	docker run --rm -v $(GOPATH):/go -w /go/src/github.com/EUDAT-GEF/GEF golang:latest go build -o ./build/gefserver ./gefserver
+	cp gefserver/config.json ./build/
+	cp -r webui/app build/webui/app
+	tar -cvzf gef-0.2.0.tar.gz build/* services/_internal/* ssl/*
+	rm -rf build
+
 run_webui_dev_server:
 	(cd $(WEBUI) && node_modules/webpack-dev-server/bin/webpack-dev-server.js -d --hot --https --config webpack.config.devel.js)
 

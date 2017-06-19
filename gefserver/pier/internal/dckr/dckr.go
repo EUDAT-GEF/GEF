@@ -268,10 +268,9 @@ func (c Client) GetSwarmContainerInfo(serviceID string) (string, swarm.TaskState
 			}
 			if task.Status.ContainerStatus.ContainerID != "" {
 				return task.Status.ContainerStatus.ContainerID, task.Status.State, err
-			} else {
-				if task.Status.State == swarm.TaskStateComplete || task.Status.State == swarm.TaskStateFailed {
-					return task.Status.ContainerStatus.ContainerID, task.Status.State, err
-				}
+			}
+			if task.Status.State == swarm.TaskStateComplete || task.Status.State == swarm.TaskStateFailed {
+				return task.Status.ContainerStatus.ContainerID, task.Status.State, err
 			}
 		}
 	}
@@ -294,9 +293,9 @@ func (c Client) IsSwarmContainerNotRunning(serviceID string) (bool, swarm.TaskSt
 
 			if len(task.Status.State) == 0 || task.Status.State == swarm.TaskStateComplete || task.Status.State == swarm.TaskStateFailed || task.Status.State == swarm.TaskStateShutdown {
 				return true, task.Status.State, containerError
-			} else {
-				return false, task.Status.State, containerError
 			}
+
+			return false, task.Status.State, containerError
 		}
 	}
 	return true, swarm.TaskState(""), containerError
@@ -339,72 +338,70 @@ func (c Client) StartImage(id string, repoTag string, cmdArgs []string, binds []
 			}
 		}
 		return runningContainerID, &stdout, nil
-
-	} else {
-		//
-		img, err := c.c.InspectImage(string(id))
-		if err != nil {
-			return ContainerID(""), &stdout, def.Err(err, "InspectImage failed")
-		}
-
-		bs := make([]string, len(binds), len(binds))
-		for i, b := range binds {
-			bs[i] = fmt.Sprintf("%s:%s", b.VolumeID, b.MountPoint)
-			if b.IsReadOnly {
-				bs[i] = fmt.Sprintf("%s:ro", bs[i])
-			}
-		}
-
-		config := *img.Config
-		config.Cmd = cmdArgs
-
-		config.AttachStdout = true
-		config.AttachStderr = true
-		hc := docker.HostConfig{
-			Binds:      bs,
-			CPUShares:  limits.CPUShares,
-			CPUPeriod:  limits.CPUPeriod,
-			CPUQuota:   limits.CPUQuota,
-			Memory:     limits.Memory,
-			MemorySwap: limits.MemorySwap,
-		}
-
-		cco := docker.CreateContainerOptions{
-			Config:     &config,
-			HostConfig: &hc,
-		}
-
-		cont, err := c.c.CreateContainer(cco)
-		if err != nil {
-			return ContainerID(""), &stdout, def.Err(err, "CreateContainer failed")
-		}
-
-		attached := make(chan struct{})
-		go func() {
-			c.c.AttachToContainer(docker.AttachToContainerOptions{
-				Container:    cont.ID,
-				OutputStream: &stdout,
-				ErrorStream:  &stdout,
-				Logs:         true,
-				Stdout:       true,
-				Stderr:       true,
-				Stream:       true,
-				Success:      attached,
-			})
-		}()
-
-		<-attached
-		attached <- struct{}{}
-
-		err = c.c.StartContainer(cont.ID, &hc)
-		if err != nil {
-			c.RemoveContainer(cont.ID)
-			return ContainerID(""), &stdout, def.Err(err, "StartContainer failed")
-		}
-
-		return ContainerID(cont.ID), &stdout, nil
 	}
 
+	// Normal Mode (regular containers)
+	img, err := c.c.InspectImage(string(id))
+	if err != nil {
+		return ContainerID(""), &stdout, def.Err(err, "InspectImage failed")
+	}
+
+	bs := make([]string, len(binds), len(binds))
+	for i, b := range binds {
+		bs[i] = fmt.Sprintf("%s:%s", b.VolumeID, b.MountPoint)
+		if b.IsReadOnly {
+			bs[i] = fmt.Sprintf("%s:ro", bs[i])
+		}
+	}
+
+	config := *img.Config
+	config.Cmd = cmdArgs
+
+	config.AttachStdout = true
+	config.AttachStderr = true
+	hc := docker.HostConfig{
+		Binds:      bs,
+		CPUShares:  limits.CPUShares,
+		CPUPeriod:  limits.CPUPeriod,
+		CPUQuota:   limits.CPUQuota,
+		Memory:     limits.Memory,
+		MemorySwap: limits.MemorySwap,
+	}
+
+	cco := docker.CreateContainerOptions{
+		Config:     &config,
+		HostConfig: &hc,
+	}
+
+	cont, err := c.c.CreateContainer(cco)
+	if err != nil {
+		return ContainerID(""), &stdout, def.Err(err, "CreateContainer failed")
+	}
+
+	attached := make(chan struct{})
+	go func() {
+		c.c.AttachToContainer(docker.AttachToContainerOptions{
+			Container:    cont.ID,
+			OutputStream: &stdout,
+			ErrorStream:  &stdout,
+			Logs:         true,
+			Stdout:       true,
+			Stderr:       true,
+			Stream:       true,
+			Success:      attached,
+		})
+	}()
+
+	<-attached
+	attached <- struct{}{}
+
+	err = c.c.StartContainer(cont.ID, &hc)
+	if err != nil {
+		c.RemoveContainer(cont.ID)
+		return ContainerID(""), &stdout, def.Err(err, "StartContainer failed")
+	}
+
+	return ContainerID(cont.ID), &stdout, nil
 }
 
 // WriteMonitor used to keep console output
@@ -430,9 +427,9 @@ func (c Client) IsSwarmActive() (bool, error) {
 }
 
 // ExecuteImage takes a docker image, creates a container and executes it, and waits for it to end
-func (c Client) ExecuteImage(imgId string, imgRepoTag string, cmdArgs []string, binds []VolBind, limits def.LimitConfig, removeOnExit bool) (ContainerID, int, *bytes.Buffer, error) {
+func (c Client) ExecuteImage(imgID string, imgRepoTag string, cmdArgs []string, binds []VolBind, limits def.LimitConfig, removeOnExit bool) (ContainerID, int, *bytes.Buffer, error) {
 	var stdout *bytes.Buffer
-	cont, stdout, err := c.StartImage(imgId, imgRepoTag, cmdArgs, binds, limits)
+	cont, stdout, err := c.StartImage(imgID, imgRepoTag, cmdArgs, binds, limits)
 
 	if err != nil {
 		return cont, 0, stdout, def.Err(err, "StartImage failed")
@@ -550,13 +547,14 @@ func (c Client) WaitContainer(id ContainerID, removeOnExit bool) (int, error) {
 		}
 		return 0, nil
 
-	} else {
-		exitCode, err := c.c.WaitContainer(string(id))
-		if removeOnExit {
-			c.RemoveContainer(string(id))
-		}
-		return exitCode, err
 	}
+
+	// Normal Mode (regular containers)
+	exitCode, err := c.c.WaitContainer(string(id))
+	if removeOnExit {
+		c.RemoveContainer(string(id))
+	}
+	return exitCode, err
 }
 
 // ListContainers lists the docker images
