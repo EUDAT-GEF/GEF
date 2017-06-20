@@ -56,3 +56,32 @@ If you create a virtual machine in VirtualBox, you should configure the network 
 | Daemon | TCP | 127.0.0.1 | 59047 | 10.0.2.15 | 2376 |
 | swarm | TCP | 127.0.0.1 | 59046 | 10.0.2.15 | 3024 |
 | ssh | TCP | 127.0.0.1 | 59045 |  | 22 |
+
+
+Easy Deployment
+-------------
+You can build a linux binary and run it on a server by using `make pack` command (after executing `make build`). The
+command will create an archive which you should unpack on a server. After that do `cd` to the `build` folder and run
+`./gefserver`
+
+Apache Configuration
+-------------
+If you are using Apache, you may want to use a configuration similar to the one below:
+~~~~
+Listen 443
+NameVirtualHost *:443
+<VirtualHost *:443>
+    SSLEngine on
+    SSLProxyEngine on
+    SSLProxyVerify none
+    SSLProxyCheckPeerCN off
+    SSLProxyCheckPeerName off
+    SSLProxyCheckPeerExpire off
+    ProxyRequests off
+    SSLCertificateFile /etc/apache2/ssl/ssl.crt
+    SSLCertificateKeyFile /etc/apache2/ssl/ssl.key
+    ProxyPreserveHost On
+    ProxyPass / https://127.0.0.1:8443/
+    ProxyPassReverse / https://127.0.0.1:8443/
+</VirtualHost>
+~~~~
