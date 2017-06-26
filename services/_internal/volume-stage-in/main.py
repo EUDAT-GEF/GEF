@@ -79,9 +79,9 @@ def list_b2share_record_files(url):
 
 def download_file(url, local_filename=None):
     r = requests.get(url, stream=True, verify=False)
-    if 'content-disposition' in (key.lower() for key in r.headers):
+    try:
         disp = r.headers['content-disposition']
-    else:
+    except Exception:
         disp = ""
     fname = re.findall("filename=(.+)", disp, flags=re.IGNORECASE)
     if fname and fname[0]:
