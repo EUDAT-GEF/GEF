@@ -79,7 +79,10 @@ def list_b2share_record_files(url):
 
 def download_file(url, local_filename=None):
     r = requests.get(url, stream=True, verify=False)
-    disp = r.headers['content-disposition']
+    try:
+        disp = r.headers['content-disposition']
+    except Exception:
+        disp = ""
     fname = re.findall("filename=(.+)", disp, flags=re.IGNORECASE)
     if fname and fname[0]:
         fname = fname[0]
