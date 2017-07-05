@@ -79,7 +79,7 @@ type TimeoutConfig struct {
 	DataStaging      int64
 	VolumeInspection int64
 	FileDownload     int64
-	Preparation int64
+	Preparation      int64
 	JobExecution     int64
 }
 

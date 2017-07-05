@@ -17,10 +17,11 @@ import (
 
 	"encoding/json"
 
+	"context"
+
 	"github.com/EUDAT-GEF/GEF/gefserver/def"
 	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/docker/api/types/swarm"
-	"context"
 )
 
 const (
@@ -369,14 +370,13 @@ func (c Client) StartImage(id string, repoTag string, cmdArgs []string, binds []
 		MemorySwap: limits.MemorySwap,
 	}
 
-
 	createContainerContext, cancel := context.WithTimeout(context.Background(), time.Duration(preparationTimeOut)*time.Second)
 	defer cancel()
 
 	cco := docker.CreateContainerOptions{
 		Config:     &config,
 		HostConfig: &hc,
-		Context: createContainerContext,
+		Context:    createContainerContext,
 	}
 
 	cont, err := c.c.CreateContainer(cco)
