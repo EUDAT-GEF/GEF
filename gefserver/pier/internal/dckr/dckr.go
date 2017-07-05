@@ -302,16 +302,6 @@ func (c Client) IsSwarmContainerNotRunning(serviceID string) (bool, swarm.TaskSt
 	return true, swarm.TaskState(""), containerError
 }
 
-
-
-
-
-
-
-
-
-
-
 // StartImage takes a docker image, creates a container and starts it
 func (c Client) StartImage(id string, repoTag string, cmdArgs []string, binds []VolBind, limits def.LimitConfig, preparationTimeOut int64, executionTimeOut int64) (ContainerID, *bytes.Buffer, error) {
 	var stdout bytes.Buffer
