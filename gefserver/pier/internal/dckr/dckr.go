@@ -20,6 +20,7 @@ import (
 	"github.com/EUDAT-GEF/GEF/gefserver/def"
 	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/docker/api/types/swarm"
+	"context"
 )
 
 const (
@@ -301,8 +302,18 @@ func (c Client) IsSwarmContainerNotRunning(serviceID string) (bool, swarm.TaskSt
 	return true, swarm.TaskState(""), containerError
 }
 
+
+
+
+
+
+
+
+
+
+
 // StartImage takes a docker image, creates a container and starts it
-func (c Client) StartImage(id string, repoTag string, cmdArgs []string, binds []VolBind, limits def.LimitConfig) (ContainerID, *bytes.Buffer, error) {
+func (c Client) StartImage(id string, repoTag string, cmdArgs []string, binds []VolBind, limits def.LimitConfig, preparationTimeOut int64, executionTimeOut int64) (ContainerID, *bytes.Buffer, error) {
 	var stdout bytes.Buffer
 	var runningContainerID ContainerID
 
@@ -318,7 +329,7 @@ func (c Client) StartImage(id string, repoTag string, cmdArgs []string, binds []
 	if swarmOn {
 		log.Println(string(id))
 		// Create a Swarm service
-		swarmService, serviceOutput, err := c.CreateSwarmService(repoTag, cmdArgs, binds, limits)
+		swarmService, serviceOutput, err := c.CreateSwarmService(repoTag, cmdArgs, binds, limits, executionTimeOut)
 
 		if err != nil {
 			return ContainerID(swarmService.ID), serviceOutput, def.Err(err, "CreateSwarmService failed")
@@ -368,13 +379,19 @@ func (c Client) StartImage(id string, repoTag string, cmdArgs []string, binds []
 		MemorySwap: limits.MemorySwap,
 	}
 
+
+	createContainerContext, cancel := context.WithTimeout(context.Background(), time.Duration(preparationTimeOut)*time.Second)
+	defer cancel()
+
 	cco := docker.CreateContainerOptions{
 		Config:     &config,
 		HostConfig: &hc,
+		Context: createContainerContext,
 	}
 
 	cont, err := c.c.CreateContainer(cco)
 	if err != nil {
+		log.Println(err)
 		return ContainerID(""), &stdout, def.Err(err, "CreateContainer failed")
 	}
 
@@ -395,7 +412,9 @@ func (c Client) StartImage(id string, repoTag string, cmdArgs []string, binds []
 	<-attached
 	attached <- struct{}{}
 
-	err = c.c.StartContainer(cont.ID, &hc)
+	jobExecutionContext, cancel := context.WithTimeout(context.Background(), time.Duration(executionTimeOut)*time.Second)
+	defer cancel()
+	err = c.c.StartContainerWithContext(cont.ID, &hc, jobExecutionContext)
 	if err != nil {
 		c.RemoveContainer(cont.ID)
 		return ContainerID(""), &stdout, def.Err(err, "StartContainer failed")
@@ -427,9 +446,9 @@ func (c Client) IsSwarmActive() (bool, error) {
 }
 
 // ExecuteImage takes a docker image, creates a container and executes it, and waits for it to end
-func (c Client) ExecuteImage(imgID string, imgRepoTag string, cmdArgs []string, binds []VolBind, limits def.LimitConfig, removeOnExit bool) (ContainerID, int, *bytes.Buffer, error) {
+func (c Client) ExecuteImage(imgID string, imgRepoTag string, cmdArgs []string, binds []VolBind, limits def.LimitConfig, preparationTimeOut int64, executionTimeOut int64, removeOnExit bool) (ContainerID, int, *bytes.Buffer, error) {
 	var stdout *bytes.Buffer
-	cont, stdout, err := c.StartImage(imgID, imgRepoTag, cmdArgs, binds, limits)
+	cont, stdout, err := c.StartImage(imgID, imgRepoTag, cmdArgs, binds, limits, preparationTimeOut, executionTimeOut)
 
 	if err != nil {
 		return cont, 0, stdout, def.Err(err, "StartImage failed")
@@ -446,7 +465,7 @@ func (c Client) DeleteImage(id string) error {
 }
 
 // CreateSwarmService creates a Docker swarm service
-func (c Client) CreateSwarmService(repoTag string, cmdArgs []string, binds []VolBind, limits def.LimitConfig) (*swarm.Service, *bytes.Buffer, error) {
+func (c Client) CreateSwarmService(repoTag string, cmdArgs []string, binds []VolBind, limits def.LimitConfig, executionTimeOut int64) (*swarm.Service, *bytes.Buffer, error) {
 	var stdout bytes.Buffer
 	var srv *swarm.Service
 
@@ -469,6 +488,9 @@ func (c Client) CreateSwarmService(repoTag string, cmdArgs []string, binds []Vol
 	taken from https://github.com/moby/moby/blob/v1.12.0-rc4/daemon/cluster/executor/container/container.go#L331 */
 	calculatedNanoCPU := (limits.CPUQuota * 1e9) / limits.CPUPeriod
 
+	swarmContext, cancel := context.WithTimeout(context.Background(), time.Duration(executionTimeOut)*time.Second)
+	defer cancel()
+
 	serviceCreateOpts := docker.CreateServiceOptions{
 		ServiceSpec: swarm.ServiceSpec{
 			TaskTemplate: swarm.TaskSpec{
@@ -488,6 +510,7 @@ func (c Client) CreateSwarmService(repoTag string, cmdArgs []string, binds []Vol
 				},
 			},
 		},
+		Context: swarmContext,
 	}
 
 	srv, err := c.c.CreateService(serviceCreateOpts)

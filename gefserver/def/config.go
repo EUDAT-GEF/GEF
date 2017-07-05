@@ -12,6 +12,9 @@ type Configuration struct {
 	// Default Docker limits
 	Limits LimitConfig
 
+	// Default GEF internal timeouts
+	Timeouts TimeoutConfig
+
 	Pier        PierConfig
 	Server      ServerConfig
 	EventSystem EventSystemConfig
@@ -70,6 +73,14 @@ type LimitConfig struct {
 	CPUQuota   int64
 	Memory     int64
 	MemorySwap int64
+}
+
+type TimeoutConfig struct {
+	DataStaging      int64
+	VolumeInspection int64
+	FileDownload     int64
+	Preparation int64
+	JobExecution     int64
 }
 
 func (c DockerConfig) String() string {

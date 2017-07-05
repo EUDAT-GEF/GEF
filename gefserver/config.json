@@ -30,5 +30,12 @@
 		"CpuQuota": 50000,
 		"Memory":     100024000,
 		"MemorySwap": 150024000
+	},
+	"Timeouts": {
+		"DataStaging": 1000,
+		"VolumeInspection": 1000,
+		"FileDownload": 1000,
+		"Preparation": 100,
+		"JobExecution": 1000
 	}
 }
