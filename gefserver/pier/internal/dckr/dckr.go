@@ -381,7 +381,6 @@ func (c Client) StartImage(id string, repoTag string, cmdArgs []string, binds []
 
 	cont, err := c.c.CreateContainer(cco)
 	if err != nil {
-		log.Println(err)
 		return ContainerID(""), &stdout, def.Err(err, "CreateContainer failed")
 	}
 
