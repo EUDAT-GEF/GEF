@@ -40,7 +40,9 @@ func (p *Pier) DownStreamContainerFile(volumeID string, fileLocation string, w h
 			"/root",
 		},
 		binds,
-		p.docker.limits)
+		p.docker.limits,
+		p.docker.timeouts.Preparation,
+		p.docker.timeouts.FileDownload)
 
 	if err != nil {
 		return def.Err(err, "copying files from the volume to the container failed")
@@ -90,7 +92,9 @@ func (p *Pier) ListFiles(volumeID db.VolumeID, filePath string) ([]VolumeItem, e
 			p.docker.fileList.cmd[0], filePath, "r",
 		},
 		volumesToMount,
-		p.docker.limits)
+		p.docker.limits,
+		p.docker.timeouts.Preparation,
+		p.docker.timeouts.VolumeInspection)
 
 	if err != nil {
 		return volumeFileList, def.Err(err, "running image failed")

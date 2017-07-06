@@ -25,7 +25,7 @@ func TestServer(t *testing.T) {
 	pier, err := pier.NewPier(&db, config.TmpDir)
 	checkMsg(t, err, "creating new pier")
 
-	err = pier.SetDockerConnection(config.Docker, config.Limits, internalServicesFolder)
+	err = pier.SetDockerConnection(config.Docker, config.Limits, config.Timeouts, internalServicesFolder)
 	checkMsg(t, err, "setting docker connection")
 
 	var srv *httptest.Server

@@ -38,6 +38,7 @@ type Pier struct {
 type dockerConnection struct {
 	client         dckr.Client
 	limits         def.LimitConfig
+	timeouts       def.TimeoutConfig
 	stageIn        internalImage
 	fileList       internalImage
 	copyFromVolume internalImage
@@ -61,7 +62,7 @@ func NewPier(dataBase *db.Db, tmpDir string) (*Pier, error) {
 }
 
 // SetDockerConnection instantiates the docker client and sets the pier's docker connection
-func (p *Pier) SetDockerConnection(config def.DockerConfig, limits def.LimitConfig, internalServicesFolder string) error {
+func (p *Pier) SetDockerConnection(config def.DockerConfig, limits def.LimitConfig, timeouts def.TimeoutConfig, internalServicesFolder string) error {
 	client, err := dckr.NewClient(config)
 	if err != nil {
 		return def.Err(err, "Cannot create docker client for config:", config)
@@ -105,6 +106,7 @@ func (p *Pier) SetDockerConnection(config def.DockerConfig, limits def.LimitConf
 	p.docker = &dockerConnection{
 		client,
 		limits,
+		timeouts,
 		stageInImage,
 		fileListImage,
 		copyFromVolumeImage,
@@ -184,6 +186,8 @@ func (p *Pier) runJob(job *db.Job, service db.Service, inputPID string) {
 			append(p.docker.stageIn.cmd, inputPID),
 			binds,
 			p.docker.limits,
+			p.docker.timeouts.Preparation,
+			p.docker.timeouts.DataStaging,
 			true)
 
 		p.db.AddJobTask(job.ID, "Data staging", string(containerID), err2str(err), exitCode, output)
@@ -221,6 +225,8 @@ func (p *Pier) runJob(job *db.Job, service db.Service, inputPID string) {
 			service.Cmd,
 			binds,
 			p.docker.limits,
+			p.docker.timeouts.Preparation,
+			p.docker.timeouts.JobExecution,
 			true)
 		p.db.AddJobTask(job.ID, "Service execution", string(containerID), err2str(err), exitCode, output)
 
