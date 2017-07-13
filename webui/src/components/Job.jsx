@@ -1,4 +1,5 @@
-import React, {PropTypes} from 'react';
+import React from 'react';
+import PropTypes from 'prop-types';
 import { Row, Col, Grid, Table, Button, Modal, OverlayTrigger } from 'react-bootstrap';
 import { toPairs } from '../utils/utils';
 import { connect } from 'react-redux'

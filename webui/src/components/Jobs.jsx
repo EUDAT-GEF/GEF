@@ -1,4 +1,5 @@
-import React, {PropTypes} from 'react';
+import React from 'react';
+import PropTypes from 'prop-types';
 import {Row, Col} from 'react-bootstrap';
 import {LinkContainer} from 'react-router-bootstrap'
 import Job from './Job'
@@ -65,9 +66,9 @@ class Jobs extends React.Component {
 }
 
 Jobs.propTypes = {
-    jobs: PropTypes.array.isRequired,
+    jobs: PropTypes.array, // can be null
     fetchJobs: PropTypes.func.isRequired,
-    services: PropTypes.array.isRequired,
+    services: PropTypes.array, // can be null
     fetchServices: PropTypes.func.isRequired,
     jobID: PropTypes.string
 };

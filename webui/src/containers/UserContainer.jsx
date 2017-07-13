@@ -1,13 +1,18 @@
-import User from '../components/User';
-import {fetchUser} from '../actions/actions';
+import {User, UserProfile} from '../components/User';
+import {fetchUser, fetchTokens, submitNewAccessToken, deleteAccessToken} from '../actions/actions';
 import {connect} from 'react-redux';
 
-const mapStateToProps = (state) => ({user: state.user});
+const mapStateToProps = (state) => ({
+    user: state.user,
+    tokens: state.tokens,
+});
 
 const mapDispatchToProps = (dispatch) => ({
     fetchUser: () => dispatch(fetchUser()),
+    fetchTokens: () => dispatch(fetchTokens()),
+    submitNewAccessToken: (tokenName, successFn) => dispatch(submitNewAccessToken(tokenName, successFn)),
+    deleteAccessToken: (tokenID) => dispatch(deleteAccessToken(tokenID)),
 });
 
-const UserContainer = connect(mapStateToProps, mapDispatchToProps)(User);
-
-export default UserContainer;
+export const UserContainer = connect(mapStateToProps, mapDispatchToProps)(User);
+export const UserProfileContainer = connect(mapStateToProps, mapDispatchToProps)(UserProfile);

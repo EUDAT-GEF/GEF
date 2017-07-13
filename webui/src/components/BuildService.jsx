@@ -1,7 +1,8 @@
-import React, {PropTypes} from 'react';
+import React from 'react';
+import PropTypes from 'prop-types';
 import Files from './Files';
 import axios from 'axios';
-import apiNames from '../GefAPI';
+import {apiNames} from '../GefAPI';
 import bows from 'bows';
 
 const log = bows('BuildService');

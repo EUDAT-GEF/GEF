@@ -7,6 +7,15 @@ import actionTypes from '../actions/actionTypes';
 import { reducer as formReducer } from 'redux-form';
 import { syncHistoryWithStore, routerReducer } from 'react-router-redux';
 
+function apiinfo(state = SI([]), action) {
+    switch (action.type) {
+        case actionTypes.APIINFO_FETCH_SUCCESS:
+            return SI(action.apiinfo);
+        default:
+            return state;
+    }
+}
+
 function jobs(state = SI([]), action) {
     switch (action.type) {
         case actionTypes.JOB_LIST_FETCH_SUCCESS:
@@ -88,8 +97,20 @@ function user(state = SI([]), action) {
     }
 }
 
+function tokens(state = SI([]), action) {
+    switch (action.type) {
+        case actionTypes.USER_TOKENS_FETCH_SUCCESS:
+            return SI(action.tokens);
+        case actionTypes.USER_TOKENS_FETCH_ERROR:
+            return SI([]);
+        default:
+            return state;
+    }
+}
+
 
 const rootReducer = combineReducers({
+    apiinfo,
     jobs,
     services,
     volumes,
@@ -97,6 +118,7 @@ const rootReducer = combineReducers({
     selectedVolume,
     task,
     user,
+    tokens,
     form: formReducer,
     routing: routerReducer
 });

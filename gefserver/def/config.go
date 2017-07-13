@@ -75,6 +75,7 @@ type LimitConfig struct {
 	MemorySwap int64
 }
 
+// TimeoutConfig specifies the execution timeouts
 type TimeoutConfig struct {
 	DataStaging      int64
 	VolumeInspection int64

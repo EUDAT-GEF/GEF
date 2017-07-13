@@ -15,7 +15,7 @@
 		"TLSKeyFilePath": "../ssl/server.key",
 		"B2ACCESS": {
 			"BaseURL": "https://unity.eudat-aai.fz-juelich.de:8443",
-			"RedirectURL": "https://localhost:8443/login/b2access/"
+			"RedirectURL": "https://localhost:8443/wui/b2access/"
 		},
 		"B2DROP": {
 			"BaseURL": "https://b2drop.eudat.eu/"

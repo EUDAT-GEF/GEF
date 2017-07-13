@@ -3,6 +3,9 @@ package db
 import (
 	"bytes"
 	"database/sql"
+	"log"
+	"os"
+	"path/filepath"
 	"time"
 
 	// imported for side-effect only (package init)
@@ -17,7 +20,9 @@ const gorpVersionColumn = "Revision"
 const sqliteDataBasePath = "gef_db.bin"
 
 // Db is used to keep DbMap
-type Db struct{ gorp.DbMap }
+type Db struct {
+	db gorp.DbMap
+}
 
 // JobTable stores the information about a service execution (used to store data in a database)
 type JobTable struct {
@@ -77,43 +82,103 @@ type ServiceCmdTable struct {
 	ServiceID string
 }
 
+// UserTable is used to store the users in a database
+type UserTable struct {
+	ID       int64
+	Name     string
+	Email    string
+	Created  time.Time
+	Updated  time.Time
+	Revision int
+}
+
+// TokenTable used to store tokens in the db
+type TokenTable struct {
+	ID       int64
+	Name     string // token name, user defined
+	Secret   string // token secret, a random string
+	UserID   int64
+	Expire   time.Time
+	Revision int
+}
+
 // InitDb initializes the database engine
 func InitDb() (Db, error) {
 	dataBase, err := sql.Open("sqlite3", sqliteDataBasePath)
 	if err != nil {
 		return Db{}, err
 	}
+	return initializeDatabase(dataBase)
+}
+
+// InitDbForTesting must only be used for tests
+func InitDbForTesting() (Db, string, error) {
+	filename := filepath.Join(os.TempDir(), "gef_db_test_"+uuid.New()+".bin")
+	log.Println("new testing database file: ", filename)
+	dataBase, err := sql.Open("sqlite3", filename)
+	if err != nil {
+		return Db{}, "", err
+	}
+	db, err := initializeDatabase(dataBase)
+	return db, filename, err
+}
+
+func initializeDatabase(dataBase *sql.DB) (Db, error) {
 	// For each table GORP has a special field to keep information about data version
 	dataBaseMap := &gorp.DbMap{Db: dataBase, Dialect: gorp.SqliteDialect{}}
+
 	dataBaseMap.AddTableWithName(JobTable{}, "Jobs").SetKeys(false, "ID").SetVersionCol(gorpVersionColumn)
+
 	dataBaseMap.AddTableWithName(TaskTable{}, "Tasks").SetKeys(false, "ID").SetVersionCol(gorpVersionColumn)
+
 	dataBaseMap.AddTableWithName(ServiceTable{}, "Services").SetKeys(false, "ID").SetVersionCol(gorpVersionColumn)
+
 	dataBaseMap.AddTableWithName(IOPortTable{}, "IOPorts").SetVersionCol(gorpVersionColumn)
+
 	dataBaseMap.AddTableWithName(ServiceCmdTable{}, "ServiceCmd").SetKeys(true, "ID").SetVersionCol(gorpVersionColumn)
-	err = dataBaseMap.CreateTablesIfNotExists()
-	return Db{*dataBaseMap}, err
+
+	userTable := dataBaseMap.AddTableWithName(UserTable{}, "Users").SetKeys(true, "ID")
+	{
+		userTable.SetVersionCol(gorpVersionColumn)
+		userTable.ColMap("Email").SetUnique(true)
+	}
+
+	tokensTable := dataBaseMap.AddTableWithName(TokenTable{}, "Tokens").SetKeys(true, "ID")
+	{
+		tokensTable.SetVersionCol(gorpVersionColumn)
+		tokensTable.ColMap("Name").SetUnique(true)
+		tokensTable.ColMap("Secret").SetUnique(true)
+	}
+
+	err := dataBaseMap.CreateTablesIfNotExists()
+	return Db{db: *dataBaseMap}, err
+}
+
+// Close closes the db connections
+func (d *Db) Close() {
+	d.db.Db.Close()
 }
 
 // AddJob adds a job to the database
 func (d *Db) AddJob(job Job) error {
 	storedJob := d.job2JobTable(job)
-	return d.Insert(&storedJob)
+	return d.db.Insert(&storedJob)
 }
 
 // RemoveJob removes a job and all corresponding tasks from the database
 func (d *Db) RemoveJob(id JobID) error {
-	_, err := d.Exec("DELETE FROM Tasks WHERE jobID=?", string(id))
+	_, err := d.db.Exec("DELETE FROM Tasks WHERE jobID=?", string(id))
 	if err != nil {
 		return err
 	}
 
-	_, err = d.Exec("DELETE FROM Jobs WHERE ID=?", string(id))
+	_, err = d.db.Exec("DELETE FROM Jobs WHERE ID=?", string(id))
 	return err
 }
 
 // RemoveJobTask removes a task from the database
 func (d *Db) RemoveJobTask(taskID string) error {
-	_, err := d.Exec("DELETE FROM Tasks WHERE ID=?", taskID)
+	_, err := d.db.Exec("DELETE FROM Tasks WHERE ID=?", taskID)
 	return err
 }
 
@@ -123,7 +188,7 @@ func (d *Db) jobTable2Job(storedJob JobTable) (Job, error) {
 	var jobState JobState
 	var linkedTasks []Task
 	var storedTasks []TaskTable
-	_, err := d.Select(&storedTasks, "SELECT * FROM Tasks WHERE JobID=?", storedJob.ID)
+	_, err := d.db.Select(&storedTasks, "SELECT * FROM Tasks WHERE JobID=?", storedJob.ID)
 	if err != nil {
 		return job, err
 	}
@@ -174,7 +239,7 @@ func (d *Db) job2JobTable(job Job) JobTable {
 func (d *Db) ListJobs() ([]Job, error) {
 	var jobs []Job
 	var jobsFromTable []JobTable
-	_, err := d.Select(&jobsFromTable, "SELECT * FROM Jobs ORDER BY ID")
+	_, err := d.db.Select(&jobsFromTable, "SELECT * FROM Jobs ORDER BY ID")
 	if err != nil {
 		return jobs, err
 	}
@@ -195,7 +260,7 @@ func (d *Db) ListJobs() ([]Job, error) {
 func (d *Db) GetJob(id JobID) (Job, error) {
 	var job Job
 	var jobFromTable JobTable
-	err := d.SelectOne(&jobFromTable, "SELECT * FROM jobs WHERE ID=?", string(id))
+	err := d.db.SelectOne(&jobFromTable, "SELECT * FROM jobs WHERE ID=?", string(id))
 	if err != nil {
 		return job, err
 	}
@@ -207,7 +272,7 @@ func (d *Db) GetJob(id JobID) (Job, error) {
 // SetJobState sets a job state
 func (d *Db) SetJobState(id JobID, state JobState) error {
 	var storedJob JobTable
-	err := d.SelectOne(&storedJob, "SELECT * FROM jobs WHERE ID=?", string(id))
+	err := d.db.SelectOne(&storedJob, "SELECT * FROM jobs WHERE ID=?", string(id))
 	if err != nil {
 		return err
 	}
@@ -215,38 +280,39 @@ func (d *Db) SetJobState(id JobID, state JobState) error {
 	storedJob.Error = state.Error
 	storedJob.Status = state.Status
 	storedJob.Code = state.Code
-	_, err = d.Update(&storedJob)
+	_, err = d.db.Update(&storedJob)
 	return err
 }
 
 // SetJobInputVolume sets a job input volume
 func (d *Db) SetJobInputVolume(id JobID, inputVolume VolumeID) error {
 	var storedJob JobTable
-	err := d.SelectOne(&storedJob, "SELECT * FROM jobs WHERE ID=?", string(id))
+	err := d.db.SelectOne(&storedJob, "SELECT * FROM jobs WHERE ID=?", string(id))
 	if err != nil {
 		return err
 	}
 
 	storedJob.InputVolume = string(inputVolume)
-	_, err = d.Update(&storedJob)
+	_, err = d.db.Update(&storedJob)
 	return err
 }
 
 // SetJobOutputVolume sets a job output volume
 func (d *Db) SetJobOutputVolume(id JobID, outputVolume VolumeID) error {
 	var storedJob JobTable
-	err := d.SelectOne(&storedJob, "SELECT * from jobs WHERE ID=?", string(id))
+	err := d.db.SelectOne(&storedJob, "SELECT * from jobs WHERE ID=?", string(id))
 	if err != nil {
 		return err
 	}
 
 	storedJob.OutputVolume = string(outputVolume)
-	_, err = d.Update(&storedJob)
+	_, err = d.db.Update(&storedJob)
 	return err
 }
 
 // AddJobTask adds a task to a job
-func (d *Db) AddJobTask(id JobID, taskName string, taskContainer string, taskError string, taskExitCode int, taskConsoleOutput *bytes.Buffer) error {
+func (d *Db) AddJobTask(id JobID, taskName string, taskContainer string,
+	taskError string, taskExitCode int, taskConsoleOutput *bytes.Buffer) error {
 	var newTask TaskTable
 	newTask.ID = uuid.New()
 	newTask.Name = taskName
@@ -255,7 +321,7 @@ func (d *Db) AddJobTask(id JobID, taskName string, taskContainer string, taskErr
 	newTask.ExitCode = taskExitCode
 	newTask.ConsoleOutput = taskConsoleOutput.String()
 	newTask.JobID = string(id)
-	return d.Insert(&newTask)
+	return d.db.Insert(&newTask)
 }
 
 // serviceTable2Service performs mapping of the database service table to its JSON representation
@@ -267,7 +333,8 @@ func (d *Db) serviceTable2Service(storedService ServiceTable) (Service, error) {
 	var outputPorts []IOPort
 	var selectedCmd []ServiceCmdTable
 
-	_, err := d.Select(&storedInputPorts, "SELECT * FROM IOPorts WHERE IsInput=1 AND ServiceID=?", storedService.ID)
+	_, err := d.db.Select(&storedInputPorts, "SELECT * FROM IOPorts WHERE IsInput=1 AND ServiceID=?",
+		storedService.ID)
 	if err != nil {
 		return service, err
 	}
@@ -281,7 +348,8 @@ func (d *Db) serviceTable2Service(storedService ServiceTable) (Service, error) {
 		inputPorts = append(inputPorts, curInput)
 	}
 
-	_, err = d.Select(&storedOutputPorts, "SELECT * FROM IOPorts WHERE IsInput=0 AND ServiceID=?", storedService.ID)
+	_, err = d.db.Select(&storedOutputPorts, "SELECT * FROM IOPorts WHERE IsInput=0 AND ServiceID=?",
+		storedService.ID)
 	if err != nil {
 		return service, err
 	}
@@ -295,7 +363,7 @@ func (d *Db) serviceTable2Service(storedService ServiceTable) (Service, error) {
 		outputPorts = append(outputPorts, curOutput)
 	}
 
-	_, err = d.Select(&selectedCmd, "SELECT * FROM ServiceCmd WHERE ServiceID=?", storedService.ID)
+	_, err = d.db.Select(&selectedCmd, "SELECT * FROM ServiceCmd WHERE ServiceID=?", storedService.ID)
 	if err != nil {
 		return service, err
 	}
@@ -351,7 +419,7 @@ func (d *Db) AddIOPort(service Service) error {
 		curInputPort.ID = p.ID
 		curInputPort.IsInput = true
 		curInputPort.ServiceID = string(service.ID)
-		err = d.Insert(&curInputPort)
+		err = d.db.Insert(&curInputPort)
 		if err != nil {
 			return err
 		}
@@ -364,7 +432,7 @@ func (d *Db) AddIOPort(service Service) error {
 		curOutputPort.ID = p.ID
 		curOutputPort.IsInput = false
 		curOutputPort.ServiceID = string(service.ID)
-		err = d.Insert(&curOutputPort)
+		err = d.db.Insert(&curOutputPort)
 		if err != nil {
 			return err
 		}
@@ -377,7 +445,7 @@ func (d *Db) AddService(service Service) error {
 	// Before adding a service we need to check if the service with the same name already exists.
 	// If it does, we remove it and add a new one
 	var servicesFromTable []ServiceTable
-	_, err := d.Select(&servicesFromTable, "SELECT * FROM services WHERE Name=?", service.Name)
+	_, err := d.db.Select(&servicesFromTable, "SELECT * FROM services WHERE Name=?", service.Name)
 	if err != nil {
 		return err
 	}
@@ -402,7 +470,7 @@ func (d *Db) AddService(service Service) error {
 	}
 
 	storedService := d.service2ServiceTable(service)
-	err = d.Insert(&storedService)
+	err = d.db.Insert(&storedService)
 	return err
 }
 
@@ -413,7 +481,7 @@ func (d *Db) AddCmd(service Service) error {
 		storedCmd.Cmd = c
 		storedCmd.Index = i
 		storedCmd.ServiceID = string(service.ID)
-		err := d.Insert(&storedCmd)
+		err := d.db.Insert(&storedCmd)
 		if err != nil {
 			return err
 		}
@@ -424,19 +492,19 @@ func (d *Db) AddCmd(service Service) error {
 // RemoveService removes a service and the corresponding IOPorts from the database
 func (d *Db) RemoveService(id ServiceID) error {
 	// remove linked ports
-	_, err := d.Exec("DELETE FROM IOPorts WHERE ServiceID=?", string(id))
+	_, err := d.db.Exec("DELETE FROM IOPorts WHERE ServiceID=?", string(id))
 	if err != nil {
 		return err
 	}
 
 	// remove linked cmd
-	_, err = d.Exec("DELETE FROM ServiceCmd WHERE ServiceID=?", string(id))
+	_, err = d.db.Exec("DELETE FROM ServiceCmd WHERE ServiceID=?", string(id))
 	if err != nil {
 		return err
 	}
 
 	// remove the service itself
-	_, err = d.Exec("DELETE FROM services WHERE ID=?", string(id))
+	_, err = d.db.Exec("DELETE FROM services WHERE ID=?", string(id))
 	return err
 }
 
@@ -444,7 +512,7 @@ func (d *Db) RemoveService(id ServiceID) error {
 func (d *Db) ListServices() ([]Service, error) {
 	var services []Service
 	var servicesFromTable []ServiceTable
-	_, err := d.Select(&servicesFromTable, "SELECT * FROM services ORDER BY ID")
+	_, err := d.db.Select(&servicesFromTable, "SELECT * FROM services ORDER BY ID")
 	if err != nil {
 		return services, err
 	}
@@ -464,7 +532,7 @@ func (d *Db) ListServices() ([]Service, error) {
 func (d *Db) GetService(id ServiceID) (Service, error) {
 	var service Service
 	var serviceFromTable ServiceTable
-	err := d.SelectOne(&serviceFromTable, "SELECT * FROM services WHERE ID=?", string(id))
+	err := d.db.SelectOne(&serviceFromTable, "SELECT * FROM services WHERE ID=?", string(id))
 	if err != nil {
 		return service, err
 	}

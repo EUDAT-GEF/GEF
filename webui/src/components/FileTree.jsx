@@ -1,11 +1,12 @@
-import React, {PropTypes} from 'react';
+import React from 'react';
+import PropTypes from 'prop-types';
 import { Row, Col, Grid, Table } from 'react-bootstrap';
 import { toPairs } from '../utils/utils';
 import { connect } from 'react-redux'
 import { bindActionCreators } from 'redux'
 import * as actions from '../actions/actions';
 import moment from 'moment';
-import apiNames from '../GefAPI';
+import {apiNames} from '../GefAPI';
 
 var path = require('path');
 

@@ -1,7 +1,8 @@
 /**
  * Created by Alexandr Chernov on 16/12/16.
  */
-import React, {PropTypes} from 'react';
+import React from 'react';
+import PropTypes from 'prop-types';
 import bows from 'bows';
 import {Row, Col, Table} from 'react-bootstrap';
 import {LinkContainer} from 'react-router-bootstrap'

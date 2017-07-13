@@ -28,8 +28,7 @@ func main() {
 	if err != nil {
 		log.Fatal("FATAL: ", def.Err(err, "Cannot initialize the database engine"))
 	}
-
-	defer d.Db.Close()
+	defer d.Close()
 
 	var p *pier.Pier
 	p, err = pier.NewPier(&d, config.TmpDir)
