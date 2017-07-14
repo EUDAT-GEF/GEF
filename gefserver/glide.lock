@@ -1,0 +1,103 @@
+hash: 7485248c9beddae8a4cc39fef27ed4fd20821f4c5b38db3f6b4b7d6693afa430
+updated: 2017-07-14T16:44:16.614011251+02:00
+imports:
+- name: github.com/Azure/go-ansiterm
+  version: 19f72df4d05d31cbe1c56bfc8045c96babff6c7e
+  subpackages:
+  - winterm
+- name: github.com/docker/docker
+  version: 90d35abf7b3535c1c319c872900fbd76374e521c
+  subpackages:
+  - api/types
+  - api/types/blkiodev
+  - api/types/container
+  - api/types/filters
+  - api/types/mount
+  - api/types/network
+  - api/types/registry
+  - api/types/strslice
+  - api/types/swarm
+  - api/types/versions
+  - opts
+  - pkg/archive
+  - pkg/fileutils
+  - pkg/homedir
+  - pkg/idtools
+  - pkg/ioutils
+  - pkg/jsonlog
+  - pkg/jsonmessage
+  - pkg/longpath
+  - pkg/pools
+  - pkg/promise
+  - pkg/stdcopy
+  - pkg/system
+  - pkg/term
+  - pkg/term/windows
+- name: github.com/docker/go-connections
+  version: 3ede32e2033de7505e6500d6c868c2b9ed9f169d
+  subpackages:
+  - nat
+- name: github.com/docker/go-units
+  version: 0dadbb0345b35ec7ef35e228dabb8de89a65bf52
+- name: github.com/fsouza/go-dockerclient
+  version: 4df4873b288c855e4186534280c3a3a1af403e67
+- name: github.com/golang/protobuf
+  version: 0a4f71a498b7c4812f64969510bcb4eca251e33a
+  subpackages:
+  - proto
+- name: github.com/gorilla/context
+  version: 08b5f424b9271eedf6f9f0ce86cb9396ed337a42
+- name: github.com/gorilla/mux
+  version: bcd8bc72b08df0f70df986b97f95590779502d31
+- name: github.com/gorilla/securecookie
+  version: e59506cc896acb7f7bf732d4fdf5e25f7ccd8983
+- name: github.com/gorilla/sessions
+  version: ca9ada44574153444b00d3fd9c8559e4cc95f896
+- name: github.com/hashicorp/go-cleanhttp
+  version: 3573b8b52aa7b37b9358d966a898feb387f62437
+- name: github.com/mattn/go-sqlite3
+  version: ca5e3819723d8eeaf170ad510e7da1d6d2e94a08
+- name: github.com/Microsoft/go-winio
+  version: c4dc1301f1dc0307acd38e611aa375a64dfe0642
+- name: github.com/Nvveen/Gotty
+  version: cd527374f1e5bff4938207604a14f2e38a9cf512
+- name: github.com/opencontainers/runc
+  version: a0159fddcd197a57790b6dd5654802b7dc8f80be
+  subpackages:
+  - libcontainer/system
+  - libcontainer/user
+- name: github.com/pborman/uuid
+  version: a97ce2ca70fa5a848076093f05e639a89ca34d06
+- name: github.com/Sirupsen/logrus
+  version: 51dc0fc64317a2861273909081f9c315786533eb
+  repo: https://github.com/sirupsen/logrus.git
+  vcs: git
+- name: github.com/sirupsen/logrus
+  version: 51dc0fc64317a2861273909081f9c315786533eb
+- name: golang.org/x/net
+  version: f01ecb60fe3835d80d9a0b7b2bf24b228c89260e
+  subpackages:
+  - context
+  - context/ctxhttp
+- name: golang.org/x/oauth2
+  version: cce311a261e6fcf29de72ca96827bdb0b7d9c9e6
+  subpackages:
+  - internal
+- name: golang.org/x/sys
+  version: abf9c25f54453410d0c6668e519582a9e1115027
+  subpackages:
+  - unix
+  - windows
+- name: google.golang.org/appengine
+  version: ad2570cd3913654e00c5f0183b39d2f998e54046
+  subpackages:
+  - internal
+  - internal/base
+  - internal/datastore
+  - internal/log
+  - internal/remote_api
+  - internal/urlfetch
+  - urlfetch
+- name: gopkg.in/gorp.v1
+  version: 4deece61034873cb5b5416e81abe4cea7bd0da72
+testImports: []

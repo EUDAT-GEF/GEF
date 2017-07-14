@@ -51,9 +51,10 @@ node_modules
 gef-bundle.js
 gef-bundle.js.map
 webui/app/lib/
-gefserver/gef_db.bin
-gefserver/tests/gef_db.bin
-services/_internal/volume-filelist/volume-filelist
+
+gefserver/vendor
 /ssl/
 /build/
+
+gefserver/gef_db.bin
 gef-0.2.0.tar.gz

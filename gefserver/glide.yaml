@@ -1,0 +1,25 @@
+package: github.com/EUDAT-GEF/GEF/gefserver
+import:
+- package: github.com/docker/docker
+  version: ~17.5.0-ce-rc3
+  subpackages:
+  - api/types/mount
+  - api/types/swarm
+- package: github.com/fsouza/go-dockerclient
+- package: github.com/gorilla/mux
+  version: ~1.4.0
+- package: github.com/gorilla/sessions
+  version: ~1.1.0
+- package: github.com/mattn/go-sqlite3
+  version: ~1.2.0
+- package: github.com/pborman/uuid
+  version: ~1.0.0
+- package: golang.org/x/oauth2
+- package: gopkg.in/gorp.v1
+  version: ~2.0.0
+- package: github.com/sirupsen/logrus
+  version: master
+- package: github.com/Sirupsen/logrus
+  repo: https://github.com/sirupsen/logrus.git
+  vcs: git
+  version: master
