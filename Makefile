@@ -23,7 +23,9 @@ clean:
 	rm -r $(WEBUI)/node_modules
 
 pack: dependencies webui
-	docker run --rm -v $(GOPATH):/go -w /go/src/github.com/EUDAT-GEF/GEF golang:latest go build -o ./build/gefserver ./gefserver
+	mkdir -p build
+	docker build -t gefcompile:linux .
+	docker run --rm -v $(PWD)/build:/go/src/github.com/EUDAT-GEF/GEF/build gefcompile:linux
 	cp gefserver/config.json ./build/
 	tar -cvzf gef-0.2.0.tar.gz build/* services/_internal/* ssl/* webui/*
 	rm -rf build
