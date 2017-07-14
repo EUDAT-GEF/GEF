@@ -2,7 +2,6 @@ package pier
 
 import (
 	"fmt"
-	"io/ioutil"
 	"log"
 	"path/filepath"
 	"time"
@@ -419,44 +418,6 @@ func (p *Pier) RemoveJob(userID int64, jobID db.JobID) (db.Job, error) {
 	}
 
 	return job, nil
-}
-
-// BuildServicesFromFolder reads a folder with services, builds images for
-// these services, and adds all the necessary information to the database
-func (p *Pier) BuildServicesFromFolder(userID int64, servicesFolder string) error {
-	log.Println("Building services from: " + servicesFolder)
-	files, err := ioutil.ReadDir(servicesFolder)
-	if err != nil {
-		return def.Err(err, "cannot read folder %s", servicesFolder)
-	}
-	for _, f := range files {
-		if f.IsDir() {
-			log.Print("building service: " + f.Name())
-			img, err := p.docker.client.BuildImage(filepath.Join(servicesFolder, f.Name()))
-
-			if err != nil {
-				log.Print("  failed to create service: ", err)
-			} else {
-				log.Print("  service has been created")
-
-				err = p.docker.client.TagImage(string(img.ID), f.Name(), "latest")
-				if err != nil {
-					log.Print("  could not tag service")
-				}
-
-				img, err = p.docker.client.InspectImage(img.ID)
-				if err != nil {
-					log.Print("  failed to inspect image: ", err)
-				}
-
-				err = p.db.AddService(userID, NewServiceFromImage(img))
-				if err != nil {
-					log.Print("  failed to add service to the database: ", err)
-				}
-			}
-		}
-	}
-	return err
 }
 
 // ImportImage installs a docker tar file as a docker image

@@ -61,6 +61,35 @@ func TestServer(t *testing.T) {
 	ExpectEquals(t, code, 200)
 	ExpectEquals(t, info["Version"], server.Version)
 
+	// test get user info
+	userData, code := getRes(t, gefurl(baseURL+"user", ""))
+	ExpectEquals(t, code, 200)
+	ExpectEquals(t, userData, make(map[string]interface{}))
+
+	userData, code = getRes(t, gefurl(baseURL+"user", superToken))
+	ExpectEquals(t, code, 200)
+	user := userData["User"].(map[string]interface{})
+	ExpectEquals(t, user["Name"], "admin")
+	ExpectEquals(t, userData["IsSuperAdmin"], true)
+
+	userData, code = getRes(t, gefurl(baseURL+"user", userToken))
+	ExpectEquals(t, code, 200)
+	user = userData["User"].(map[string]interface{})
+	ExpectEquals(t, user["Name"], name1)
+	ExpectEquals(t, user["Email"], email1)
+	ExpectEquals(t, userData["IsSuperAdmin"], false)
+
+	userData, code = getRes(t, gefurl(baseURL+"user", memberToken))
+	ExpectEquals(t, code, 200)
+	user = userData["User"].(map[string]interface{})
+	ExpectEquals(t, user["Name"], name2)
+	ExpectEquals(t, user["Email"], email2)
+	ExpectEquals(t, userData["IsSuperAdmin"], false)
+	userRoleList := userData["Roles"].([]interface{})
+	userRole := userRoleList[0].(map[string]interface{})
+	ExpectEquals(t, userRole["Name"], "Member")
+	ExpectEquals(t, userRole["CommunityID"], 1.0) // json represents numbers as floats
+
 	// test create a build
 	build, code := postRes(t, gefurl(baseURL+"builds", ""), nil)
 	ExpectEquals(t, code, 401)

@@ -593,11 +593,7 @@ export function fetchUser() {
         axios.get(apiNames.user)
             .then(response => {
                 const data = response.data || {};
-                const user = data.User||{};
-                if (data.IsSuperAdmin) {
-                    user.IsSuperAdmin = data.IsSuperAdmin;
-                }
-                dispatch(userFetchSuccess(user));
+                dispatch(userFetchSuccess(data));
             })
             .catch(err => {
                 errHandler("Error fetching user info.")(err);

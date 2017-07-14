@@ -39,7 +39,26 @@ func (s *Server) userHandler(w http.ResponseWriter, r *http.Request) {
 	} else if user == nil {
 		Response{w}.Ok("{}")
 	} else {
-		Response{w}.Ok(jmap("User", user, "IsSuperAdmin", s.isSuperAdmin(user)))
+		roles, err := s.db.GetUserRoles(user.ID)
+		if err != nil {
+			log.Printf("ERROR retrieving user roles: %#v", err)
+		}
+		cmap := make(map[int64]db.Community)
+		for _, r := range roles {
+			if _, ok := cmap[r.ID]; !ok {
+				c, err := s.db.GetCommunityByID(r.CommunityID)
+				if err != nil {
+					log.Printf("ERROR retrieving community for user roles: %#v", err)
+				} else {
+					cmap[c.ID] = c
+				}
+			}
+		}
+		Response{w}.Ok(jmap(
+			"User", user,
+			"IsSuperAdmin", s.isSuperAdmin(user),
+			"Roles", roles,
+			"CommunityMap", cmap))
 	}
 }
 
