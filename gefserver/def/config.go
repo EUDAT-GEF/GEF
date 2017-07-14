@@ -48,6 +48,7 @@ type ServerConfig struct {
 	TLSKeyFilePath         string
 	B2Access               B2AccessConfig
 	B2Drop                 B2DropConfig
+	Info                   InfoConfig
 }
 
 // B2AccessConfig exported
@@ -59,6 +60,11 @@ type B2AccessConfig struct {
 // B2DropConfig exported
 type B2DropConfig struct {
 	BaseURL string
+}
+
+// InfoConfig exported
+type InfoConfig struct {
+	ContactLink string
 }
 
 // EventSystemConfig keeps the configuration options needed to make an EventSystem
