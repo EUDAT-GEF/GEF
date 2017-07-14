@@ -18,6 +18,11 @@ import (
 	"golang.org/x/oauth2"
 )
 
+var (
+	AccessTokenQueryParam = "access_token"
+	AccessTokenCookieKey  = "UIAccessToken"
+)
+
 func init() {
 	if os.Getenv("GEF_B2ACCESS_CONSUMER_KEY") == "" {
 		log.Println("ERROR: GEF_B2ACCESS_CONSUMER_KEY environment variable not found")
@@ -28,13 +33,13 @@ func init() {
 }
 
 func (s *Server) userHandler(w http.ResponseWriter, r *http.Request) {
-	user, err := s.getLoggedInUser(r)
+	user, err := s.getCurrentUser(r)
 	if err != nil {
 		Response{w}.Ok(jmap("Error", err.Error()))
-	} else if user != nil {
-		Response{w}.Ok(jmap("User", user))
-	} else {
+	} else if user == nil {
 		Response{w}.Ok("{}")
+	} else {
+		Response{w}.Ok(jmap("User", user, "IsSuperAdmin", s.isSuperAdmin(user)))
 	}
 }
 
@@ -44,27 +49,23 @@ func (s *Server) logoutHandler(w http.ResponseWriter, r *http.Request) {
 		Response{w}.ServerError("Cookie store error", err)
 		return
 	}
-	delete(session.Values, "userID")
+	delete(session.Values, AccessTokenCookieKey)
 	session.Save(r, w)
 	http.Redirect(w, r, "/", 302)
 }
 
 func (s *Server) newTokenHandler(w http.ResponseWriter, r *http.Request) {
+	user := s.getUserOrWriteError(w, r)
+	if user != nil {
+		return
+	}
+
 	tokenName := r.FormValue("tokenName")
 	if tokenName == "" {
 		vars := mux.Vars(r)
 		tokenName = vars["tokenName"]
 	}
 	logParam("tokenName", tokenName)
-
-	user, err := s.getLoggedInUser(r)
-	if err != nil {
-		Response{w}.ServerError("User error", err)
-		return
-	} else if user == nil {
-		Response{w}.Unauthorized()
-		return
-	}
 
 	expire := time.Now().AddDate(10, 0, 0) // 10 years from now on
 	token, err := s.db.NewUserToken(user.ID, tokenName, expire)
@@ -76,12 +77,8 @@ func (s *Server) newTokenHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) listTokenHandler(w http.ResponseWriter, r *http.Request) {
-	user, err := s.getLoggedInUser(r)
-	if err != nil {
-		Response{w}.ServerError("User error", err)
-		return
-	} else if user == nil {
-		Response{w}.Unauthorized()
+	user := s.getUserOrWriteError(w, r)
+	if user != nil {
 		return
 	}
 
@@ -110,19 +107,11 @@ func (s *Server) removeTokenHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := s.getLoggedInUser(r)
-	if err != nil {
-		Response{w}.ServerError("User error", err)
-		return
-	} else if user == nil {
-		Response{w}.Unauthorized()
+	allow, user := Authorization{s, w, r}.allowDeleteToken(token)
+	if !allow {
 		return
 	}
 
-	if token.UserID != user.ID {
-		Response{w}.Forbidden()
-		return
-	}
 	err = s.db.DeleteUserToken(user.ID, token.ID)
 	if err != nil {
 		Response{w}.ServerError("delete token error", err)
@@ -131,27 +120,73 @@ func (s *Server) removeTokenHandler(w http.ResponseWriter, r *http.Request) {
 	Response{w}.Ok(jmap("Token", token))
 }
 
-func (s *Server) getLoggedInUser(r *http.Request) (*db.User, error) {
+///////////////////////////////////////////////////////////////////////////////
+
+func (s *Server) isSuperAdmin(user *db.User) bool {
+	if user.Email == s.administration.SuperAdminEmail {
+		return true
+	}
+	return s.db.HasSuperAdminRole(user.ID)
+}
+
+func (s *Server) getCurrentUser(r *http.Request) (*db.User, error) {
+	accessToken := ""
+
 	session, err := cookieStore.Get(r, sessionName)
 	if err != nil {
 		return nil, def.Err(err, "Cookie store error")
 	}
 
-	userIDValue := session.Values["userID"]
-	if userIDValue == nil {
-		return nil, nil // no logged in user, but also no error
+	accessTokenInterface := session.Values[AccessTokenCookieKey]
+	if accessTokenInterface != nil {
+		var ok bool
+		accessToken, ok = accessTokenInterface.(string)
+		if !ok {
+			return nil, def.Err(err, "Bad cookie value type")
+		}
+		// log.Println("\tuser authenticated by cookie")
+	}
+	if accessToken == "" {
+		accessTokenList, ok := r.URL.Query()[AccessTokenQueryParam]
+		if !ok || len(accessTokenList) == 0 {
+			// no access_token
+			return nil, nil
+		}
+		if len(accessTokenList) > 1 {
+			return nil, def.Err(err, "too many access token parameters")
+		}
+		accessToken = accessTokenList[0]
+		if accessToken == "" {
+			return nil, nil // no user, no error
+		}
+		// log.Println("\tuser authenticated by access_token")
 	}
 
-	userID, ok := userIDValue.(int64)
-	if !ok {
-		return nil, def.Err(err, "Session userID is not an integer")
+	token, err := s.db.GetTokenBySecret(accessToken)
+	if err != nil || token.ID == 0 || token.Secret != accessToken {
+		return nil, def.Err(err, "bad access token")
 	}
 
-	user, err := s.db.GetUserByID(userID)
-	if err != nil {
+	user, err := s.db.GetUserByID(token.UserID)
+	if err != nil || user.ID == 0 {
 		return nil, def.Err(err, "GetUserByID error")
 	}
+
 	return user, nil
+}
+
+// getUserOrWriteError returns the logged in user or writes errors into the http stream
+func (s *Server) getUserOrWriteError(w http.ResponseWriter, r *http.Request) *db.User {
+	user, err := s.getCurrentUser(r)
+	if err != nil {
+		Response{w}.ServerError("User error", err)
+		return nil
+	}
+	if user == nil {
+		Response{w}.Unauthorized()
+		return nil
+	}
+	return user
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -225,6 +260,7 @@ func (s *Server) oauthCallbackHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// extract user info provided by B2ACCESS
 	type userInfoType struct {
 		Name  string `json:"name"`
 		Email string `json:"email"`
@@ -236,6 +272,7 @@ func (s *Server) oauthCallbackHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// put user in the database if not already there
 	user, err := s.db.GetUserByEmail(userInfo.Email)
 	if err != nil {
 		Response{w}.ServerError("Database error while retrieving user info", err)
@@ -259,13 +296,37 @@ func (s *Server) oauthCallbackHandler(w http.ResponseWriter, r *http.Request) {
 		user = &_user
 	}
 
+	// update user data if necessary
 	if user.Name != userInfo.Name {
 		user.Name = userInfo.Name
 		user.Updated = time.Now()
 		s.db.UpdateUser(*user)
 	}
 
-	session.Values["userID"] = user.ID
+	// create access token for the UI if necessary
+	tokenList, err := s.db.GetUserTokens(user.ID)
+	if err != nil {
+		Response{w}.ServerError("Error while retrieving user tokens", err)
+		return
+	}
+	accessToken := ""
+	for _, token := range tokenList {
+		if token.Name == AccessTokenCookieKey {
+			accessToken = token.Secret
+			break
+		}
+	}
+	if accessToken == "" {
+		expire := time.Now().AddDate(100, 0, 0)
+		token, err := s.db.NewUserToken(user.ID, AccessTokenCookieKey, expire)
+		if err != nil {
+			Response{w}.ServerError("Error while creating user token", err)
+			return
+		}
+		accessToken = token.Secret
+	}
+
+	session.Values[AccessTokenCookieKey] = accessToken
 	session.Save(r, w)
 	http.Redirect(w, r, "/", 302)
 }

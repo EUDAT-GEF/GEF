@@ -20,8 +20,12 @@ const ActiveUser = ({user}) => {
             <i className="glyphicon glyphicon-user"></i>
             {" "} {user.Name || user.Email}
         </span>;
+    const style = {border:'none'};
+    if (user.IsSuperAdmin) {
+        style.backgroundColor ='orange';
+    }
     return <NavItem className="user">
-        <DropdownButton id="usermenu" title={title} style={{border:'none'}}>
+        <DropdownButton id="usermenu" title={title} style={style}>
             <MenuItem>
                 <Link to="/user"> <i className="fa fa-info"></i> Profile </Link>
             </MenuItem>
@@ -88,6 +92,9 @@ export const UserProfile = React.createClass({
                     </div>
                     <div className="row">
                         <h3>Roles</h3>
+                        {user.IsSuperAdmin ?
+                            <p><span style={{fontWeight:'bold', color:"red"}}>You are SuperAdministrator.</span></p> :
+                            false}
                         { roles.length ?
                             roles.map(r => <li key={r.name}> {r.description} </li>) :
                             <p>You have no assigned roles</p> }

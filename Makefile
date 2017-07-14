@@ -3,14 +3,31 @@ GITHUBSRC = ./../..
 EUDATSRC = ./..
 WEBUI = webui
 JSBUNDLE = webui/app/gef-bundle.js
+GEFPREFIX = github.com/EUDAT-GEF/GEF/gefserver
+GEFPKGS = $(GEFPREFIX)/db,$(GEFPREFIX)/def,$(GEFPREFIX)/pier,$(GEFPREFIX)/server,$(GEFPREFIX)/tests
 
-build: dependencies backend webui
+build: dependencies backend test webui
 
-backend:
+backend: buildbackend test
+
+buildbackend:
 	$(GOPATH)/bin/golint ./gefserver
 	go vet ./gefserver
 	go build -i -o build/gefserver ./gefserver
-	(cd ./gefserver/tests &&  GEF_SECRET_KEY="test" go test -coverpkg "../db","../def/","../pier/...","../server" -timeout 4m)
+
+test:
+	@rm -f coverage*.out
+	@echo "mode: count" > coverage.out
+	@(for pkg in `go list ./... | grep -v /vendor/`; do \
+		echo --- ; \
+		GEF_SECRET_KEY="test" go test -covermode=count -coverpkg $(GEFPKGS) -coverprofile=coverage-`basename $${pkg}`.out -timeout 4m $${pkg}; \
+		if [ $$? -ne 0 ]; then \
+			exit 1; \
+		fi; \
+		tail -n +2 coverage-`basename $${pkg}`.out >> coverage.out 2>/dev/null || true; \
+	done)
+	@echo --- Coverage ---
+	@go tool cover -func=coverage.out
 
 webui: $(JSBUNDLE)
 

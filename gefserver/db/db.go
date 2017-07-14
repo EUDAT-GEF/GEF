@@ -6,13 +6,14 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	// imported for side-effect only (package init)
 	_ "github.com/mattn/go-sqlite3"
 
 	"github.com/pborman/uuid"
-	"gopkg.in/gorp.v1"
+	gorp "gopkg.in/gorp.v1"
 )
 
 // Column in a table used to keep an internal version number of GORP
@@ -83,7 +84,7 @@ type ServiceCmdTable struct {
 	Revision  int
 }
 
-// UserTable is used to store the users in a database
+// UserTable stores the users in the db
 type UserTable struct {
 	ID       int64
 	Name     string
@@ -93,7 +94,7 @@ type UserTable struct {
 	Revision int
 }
 
-// TokenTable used to store tokens in the db
+// TokenTable stores user tokens in the db
 type TokenTable struct {
 	ID       int64
 	Name     string // token name, user defined
@@ -103,13 +104,45 @@ type TokenTable struct {
 	Revision int
 }
 
+//CommunityTable stores the communities in the db
+type CommunityTable struct {
+	ID          int64
+	Name        string
+	Description string
+	Revision    int
+}
+
+// RoleTable stores user roles in the db
+type RoleTable struct {
+	ID          int64
+	Name        string
+	CommunityID int64 // most roles are per community
+	Description string
+	Revision    int
+}
+
+// UserRoleTable stores user mapping to roles in the db
+type UserRoleTable struct {
+	UserID   int64
+	RoleID   int64
+	Revision int
+}
+
+// OwnerTable stores object ownerships
+type OwnerTable struct {
+	UserID     int64
+	ObjectType string
+	ObjectID   string
+	Revision   int
+}
+
 // InitDb initializes the database engine
 func InitDb() (Db, error) {
 	dataBase, err := sql.Open("sqlite3", sqliteDataBasePath)
 	if err != nil {
 		return Db{}, err
 	}
-	return initializeDatabase(dataBase)
+	return setupDatabase(dataBase)
 }
 
 // InitDbForTesting must only be used for tests
@@ -120,11 +153,11 @@ func InitDbForTesting() (Db, string, error) {
 	if err != nil {
 		return Db{}, "", err
 	}
-	db, err := initializeDatabase(dataBase)
+	db, err := setupDatabase(dataBase)
 	return db, filename, err
 }
 
-func initializeDatabase(dataBase *sql.DB) (Db, error) {
+func setupDatabase(dataBase *sql.DB) (Db, error) {
 	// For each table GORP has a special field to keep information about data version
 	dataBaseMap := &gorp.DbMap{Db: dataBase, Dialect: gorp.SqliteDialect{}}
 
@@ -147,12 +180,52 @@ func initializeDatabase(dataBase *sql.DB) (Db, error) {
 	tokensTable := dataBaseMap.AddTableWithName(TokenTable{}, "Tokens").SetKeys(true, "ID")
 	{
 		tokensTable.SetVersionCol(gorpVersionColumn)
-		tokensTable.ColMap("Name").SetUnique(true)
 		tokensTable.ColMap("Secret").SetUnique(true)
 	}
 
+	communityTable := dataBaseMap.AddTableWithName(CommunityTable{}, "Communities").SetKeys(true, "ID")
+	{
+		communityTable.SetVersionCol(gorpVersionColumn)
+		communityTable.ColMap("Name").SetUnique(true)
+	}
+
+	rolesTable := dataBaseMap.AddTableWithName(RoleTable{}, "Roles").SetKeys(true, "ID")
+	{
+		rolesTable.SetVersionCol(gorpVersionColumn)
+	}
+
+	dataBaseMap.AddTableWithName(UserRoleTable{}, "UserRoles").SetVersionCol(gorpVersionColumn)
+	dataBaseMap.AddTableWithName(OwnerTable{}, "Owners").SetVersionCol(gorpVersionColumn)
+
 	err := dataBaseMap.CreateTablesIfNotExists()
-	return Db{db: *dataBaseMap}, err
+	if err != nil {
+		return Db{}, err
+	}
+
+	db := Db{db: *dataBaseMap}
+	err = initializeDatabaseValues(db)
+	return db, err
+}
+
+func initializeDatabaseValues(d Db) error {
+	_, err := d.AddRole(SuperAdminRoleName, 0, "Super Administrator of the site, with all privileges.")
+	if err != nil {
+		return err
+	}
+
+	description := "The EUDAT community. Use this community if no other is suited for you."
+	_, err = d.AddCommunity("EUDAT", description, true)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func isNoResultsError(e error) bool {
+	if e == nil {
+		return false
+	}
+	return strings.HasSuffix(e.Error(), "no rows in result set")
 }
 
 // Close closes the db connections
@@ -161,20 +234,38 @@ func (d *Db) Close() {
 }
 
 // AddJob adds a job to the database
-func (d *Db) AddJob(job Job) error {
+func (d *Db) AddJob(userID int64, job Job) error {
 	storedJob := d.job2JobTable(job)
-	return d.db.Insert(&storedJob)
+	err := d.db.Insert(&storedJob)
+	if err != nil {
+		return err
+	}
+	ownership := OwnerTable{
+		UserID:     userID,
+		ObjectType: "Job",
+		ObjectID:   string(job.ID),
+	}
+	return d.db.Insert(&ownership)
 }
 
 // RemoveJob removes a job and all corresponding tasks from the database
-func (d *Db) RemoveJob(id JobID) error {
+func (d *Db) RemoveJob(userID int64, id JobID) error {
 	_, err := d.db.Exec("DELETE FROM Tasks WHERE jobID=?", string(id))
 	if err != nil {
 		return err
 	}
 
 	_, err = d.db.Exec("DELETE FROM Jobs WHERE ID=?", string(id))
-	return err
+	if err != nil {
+		return err
+	}
+
+	_, err = d.db.Exec("DELETE FROM Owners WHERE UserID=? AND ObjectType=? AND ObjectID",
+		userID, "Job", string(id))
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 // RemoveJobTask removes a task from the database
@@ -444,7 +535,7 @@ func (d *Db) AddIOPort(service Service) error {
 }
 
 // AddService creates a new service in the database
-func (d *Db) AddService(service Service) error {
+func (d *Db) AddService(userID int64, service Service) error {
 	// Before adding a service we need to check if the service with the same name already exists.
 	// If it does, we remove it and add a new one
 	var servicesFromTable []ServiceTable
@@ -455,7 +546,7 @@ func (d *Db) AddService(service Service) error {
 
 	if len(servicesFromTable) > 0 {
 		for _, s := range servicesFromTable {
-			err = d.RemoveService(ServiceID(s.ID))
+			err = d.RemoveService(userID, ServiceID(s.ID))
 			if err != nil {
 				return err
 			}
@@ -474,7 +565,16 @@ func (d *Db) AddService(service Service) error {
 
 	storedService := d.service2ServiceTable(service)
 	err = d.db.Insert(&storedService)
-	return err
+	if err != nil {
+		return err
+	}
+
+	ownership := OwnerTable{
+		UserID:     userID,
+		ObjectType: "Service",
+		ObjectID:   string(service.ID),
+	}
+	return d.db.Insert(&ownership)
 }
 
 // AddCmd adds an array of cmd options to the specified service
@@ -493,7 +593,7 @@ func (d *Db) AddCmd(service Service) error {
 }
 
 // RemoveService removes a service and the corresponding IOPorts from the database
-func (d *Db) RemoveService(id ServiceID) error {
+func (d *Db) RemoveService(userID int64, id ServiceID) error {
 	// remove linked ports
 	_, err := d.db.Exec("DELETE FROM IOPorts WHERE ServiceID=?", string(id))
 	if err != nil {
@@ -508,7 +608,16 @@ func (d *Db) RemoveService(id ServiceID) error {
 
 	// remove the service itself
 	_, err = d.db.Exec("DELETE FROM services WHERE ID=?", string(id))
-	return err
+	if err != nil {
+		return err
+	}
+
+	_, err = d.db.Exec("DELETE FROM Owners WHERE UserID=? AND ObjectType=? AND ObjectID",
+		userID, "Service", string(id))
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 // ListServices produces a list of all services ready to be converted into JSON
@@ -542,4 +651,15 @@ func (d *Db) GetService(id ServiceID) (Service, error) {
 
 	service, err = d.serviceTable2Service(serviceFromTable)
 	return service, err
+}
+
+// GetJobOwningVolume returns a service ready to be converted into JSON
+func (d *Db) GetJobOwningVolume(volumeID string) (Job, error) {
+	var dbjob JobTable
+	err := d.db.SelectOne(&dbjob, "SELECT * FROM jobs WHERE InputVolume=? OR OutputVolume=?",
+		volumeID, volumeID)
+	if err != nil {
+		return Job{}, err
+	}
+	return d.jobTable2Job(dbjob)
 }

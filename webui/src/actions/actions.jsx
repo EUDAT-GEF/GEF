@@ -8,7 +8,25 @@ import actionTypes from './actionTypes';
 import {apiNames} from '../GefAPI';
 import { toPairs } from '../utils/utils';
 
-const log = console.log; // bows('actions');
+const log = console.log;
+
+export function errHandler(msg) {
+    return function(err) {
+        const alert = (x) => {log(x); Alert.error(x)};
+        const response = err.response || {};
+        if (response.status == 401) {
+            alert("Please login");
+        } else if (response.status == 403) {
+            alert("Access denied. "+(response.data || ""));
+        } else {
+            msg = msg || "An error occurred while contacting the server.";
+            if (response.data) {
+                msg += " " + response.data;
+            }
+            alert(msg);
+        }
+    }
+}
 
 export function fetchApiInfo() {
     return function (dispatch, getState) {
@@ -17,10 +35,7 @@ export function fetchApiInfo() {
                 type: actionTypes.APIINFO_FETCH_SUCCESS,
                 apiinfo: response.data
             });
-        }).catch(err => {
-            Alert.error("An error occurred while contacting the server");
-            log("Error retrieving api info", err);
-        });
+        }).catch(errHandler());
     }
 }
 
@@ -275,8 +290,7 @@ export function fetchJobs() {
         resultPromise.then(response => {
             dispatch(jobListFetchSuccess(response.data.Jobs));
         }).catch(err => {
-            Alert.error("Cannot fetch job information from the server.");
-            log("An fetch error occurred", err);
+            errHandler()(err);
             dispatch(jobListFetchError(err));
         })
     }
@@ -291,8 +305,7 @@ export function removeJob(jobID) {
             dispatch(jobRemovalSuccess(response.data));
             dispatch(fetchJobs());
         }).catch(err => {
-            Alert.error("Cannot remove the job.");
-            log("An error occurred during the job removal", err);
+            errHandler("Cannot remove job.")(err);
             dispatch(jobRemovalError(err));
         })
     }
@@ -308,8 +321,7 @@ export function fetchServices() {
             log('fetched services:', response.data.Services);
             dispatch(servicesFetchSuccess(response.data.Services));
         }).catch(err => {
-            Alert.error("Cannot fetch service information from the server.");
-            log("A fetch error occurred");
+            errHandler()(err);
             dispatch(servicesFetchError(err));
         })
     }
@@ -323,8 +335,7 @@ export function fetchService(serviceID) {
             log('fetched service:', response.data);
             dispatch(serviceFetchSuccess(response.data));
         }).catch(err => {
-            Alert.error("Cannot fetch service information from the server.");
-            log("A fetch error occurred");
+            errHandler()(err);
             dispatch(serviceFetchError(err));
         })
     }
@@ -338,8 +349,7 @@ export function fetchVolumes() {
             log('fetched volumes:', response.data.Volumes);
             dispatch(volumesFetchSuccess(response.data.Volumes))
         }).catch(err => {
-            Alert.error("Cannot fetch volume information from the server.");
-            log("A fetch error occurred");
+            errHandler()(err);
             dispatch(volumesFetchError(err));
         })
     }
@@ -356,8 +366,7 @@ export function inspectVolume(volumeId) {
             resultPromise.then(response => {
                 dispatch(inspectVolumeSuccess(response.data))
             }).catch(err => {
-                Alert.error("Cannot fetch volume content information from the server.");
-                log("A fetch error occurred");
+                errHandler()(err);
                 dispatch(inspectVolumeError(err));
             })
         }
@@ -375,8 +384,7 @@ export function consoleOutputFetch(jobId) {
             resultPromise.then(response => {
                 dispatch(consoleOutputFetchSuccess(response.data))
             }).catch(err => {
-                Alert.error("Cannot fetch the console content.");
-                log("A fetch error occurred");
+                errHandler()(err);
                 dispatch(consoleOutputFetchError(err));
             })
         }
@@ -423,8 +431,7 @@ export function handleUpdateService() {
             dispatch(serviceFetchSuccess(response.data));
             dispatch(servicesFetchSuccess(updatedServices)); // forcing to update the list of services
         }).catch(err => {
-            Alert.error("Cannot update the service.");
-            log("An update error occurred");
+            errHandler()(err);
             dispatch(serviceUpdateError(err));
         })
     }
@@ -443,11 +450,7 @@ export function handleSubmitJob() {
             Alert.info("Your job has been successfully submitted");
             dispatch(push('/jobs' + '/' + response.data.jobID));
             log("created job:", response.data)
-        }).catch(err => {
-            Alert.error("An error occurred during submitting your job");
-            log("An error occurred during creating a job", err);
-        });
-        console.log("submitting current job:", fd)
+        }).catch(errHandler());
     }
 }
 
@@ -525,8 +528,7 @@ export function addIOPort(isInput) {
                 dispatch(serviceUpdateSuccess());
                 dispatch(serviceFetchSuccess(response.data));
             }).catch(err => {
-                Alert.error("Cannot update the service.");
-                log("An update error occurred");
+                errHandler()(err);
                 dispatch(serviceUpdateError(err));
             })
         }
@@ -579,8 +581,7 @@ export function removeIOPort(isInput, removeIndex) {
             dispatch(serviceUpdateSuccess());
             dispatch(serviceFetchSuccess(response.data));
         }).catch(err => {
-            Alert.error("Cannot update the service.");
-            log("An update error occurred");
+            errHandler()(err);
             dispatch(serviceUpdateError(err));
         })
     }
@@ -591,15 +592,15 @@ export function fetchUser() {
         dispatch(userFetchStart());
         axios.get(apiNames.user)
             .then(response => {
-                dispatch(userFetchSuccess(response.data.User || {}));
-                if (response.data.Error) {
-                    Alert.error("Login error: " + response.data.Error);
-                    dispatch(userFetchError(response.data.Error));
-                };
+                const data = response.data || {};
+                const user = data.User||{};
+                if (data.IsSuperAdmin) {
+                    user.IsSuperAdmin = data.IsSuperAdmin;
+                }
+                dispatch(userFetchSuccess(user));
             })
             .catch(err => {
-                Alert.error("Error fetching user information from the server.");
-                log("Error fetching user info:", err);
+                errHandler("Error fetching user info.")(err);
                 dispatch(userFetchError(err));
             });
     }
@@ -637,8 +638,7 @@ export function fetchTokens() {
                 };
             })
             .catch(err => {
-                Alert.error("Error fetching user tokens from the server.");
-                log("Error fetching user tokens:", err);
+                errHandler("Error fetching user tokens from the server.")(err);
                 dispatch(tokensFetchError(err));
             });
     }
@@ -652,10 +652,7 @@ export function submitNewAccessToken(tokenName, successFn) {
             Alert.info("Token created");
             dispatch(fetchTokens());
             successFn(response.data);
-        }).catch(err => {
-            Alert.error("An error occurred while requesting for a new access token");
-            log("An error occurred while requesting for a new access token", err);
-        });
+        }).catch(errHandler("Error while requesting for a new access token."));
     }
 }
 
@@ -664,10 +661,7 @@ export function deleteAccessToken(tokenID) {
         axios.delete(apiNames.userTokens+'/'+tokenID).then(response => {
             Alert.info("Token deleted");
             dispatch(fetchTokens());
-        }).catch(err => {
-            Alert.error("An error occurred while deleting access token");
-            log("An error occurred while deleting access token", err);
-        });
+        }).catch(errHandler("Error while deleting access token."));
     }
 }
 

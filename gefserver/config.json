@@ -20,7 +20,8 @@
 		"B2DROP": {
 			"BaseURL": "https://b2drop.eudat.eu/"
 		},
-		"Info": {
+		"Administration": {
+			"SuperAdminEmail": "admin@example.com",
 			"ContactLink": "https://www.eudat.eu/support-request?service=Other"
 		}
 	},

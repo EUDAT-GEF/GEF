@@ -27,3 +27,20 @@ func Err(cause error, format string, a ...interface{}) Error {
 		cause,
 	}
 }
+
+// PermissionError is returned when the currently loggedin user
+// is denied an action
+type PermissionError struct {
+	message string
+}
+
+func (e PermissionError) Error() string {
+	return e.message
+}
+
+// PermissionErr creates a new PermissionError
+func PermissionErr(format string, a ...interface{}) PermissionError {
+	return PermissionError{
+		fmt.Sprintf(format, a...),
+	}
+}

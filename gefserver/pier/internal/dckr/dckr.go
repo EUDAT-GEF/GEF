@@ -784,13 +784,13 @@ func (c Client) UploadFile2Container(containerID, srcPath string, dstPath string
 
 	err = tw.WriteHeader(header)
 	if err != nil {
-		log.Println(err.Error())
+		log.Println(def.Err(err, "UploadFile2Container/WriteHeader failed"))
 		return err
 	}
 
 	contents, err := ioutil.ReadFile(srcPath)
 	if err != nil {
-		log.Println(err.Error())
+		log.Println(def.Err(err, "UploadFile2Container/ReadFile failed"))
 		return err
 	}
 
