@@ -24,10 +24,14 @@ clean:
 
 pack: dependencies webui
 	mkdir -p build
+	mkdir -p build/bin
 	docker build -t gefcompile:linux .
 	docker run --rm -v $(PWD)/build:/go/src/github.com/EUDAT-GEF/GEF/build gefcompile:linux
-	cp gefserver/config.json ./build/
-	tar -cvzf gef-0.2.0.tar.gz build/* services/_internal/* ssl/* webui/*
+	mv build/gef_linux ./build/bin
+	cp gefserver/config.json ./build/bin
+	cp -r services ./build/
+	cp -r ssl ./build/
+	tar -cvzf gef-0.2.0.tar.gz build/*
 	rm -rf build
 
 run_webui_dev_server:
