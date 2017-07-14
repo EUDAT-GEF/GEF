@@ -37,8 +37,9 @@ type Server struct {
 	TLSCertificateFilePath string
 	TLSKeyFilePath         string
 	pier                   *pier.Pier
-	tmpDir                 string
 	db                     *db.Db
+	tmpDir                 string
+	info                   def.InfoConfig
 }
 
 // NewServer creates a new Server
@@ -57,8 +58,9 @@ func NewServer(cfg def.ServerConfig, pier *pier.Pier, tmpDir string, database *d
 		TLSCertificateFilePath: cfg.TLSCertificateFilePath,
 		TLSKeyFilePath:         cfg.TLSKeyFilePath,
 		pier:                   pier,
-		tmpDir:                 tmpDir,
 		db:                     database,
+		tmpDir:                 tmpDir,
+		info:                   cfg.Info,
 	}
 
 	routes := []struct {
@@ -132,7 +134,8 @@ func (s *Server) Start() error {
 }
 
 func (s *Server) infoHandler(w http.ResponseWriter, r *http.Request) {
-	Response{w}.Ok(jmap("service", ServiceName, "version", Version))
+	Response{w}.Ok(jmap("ServiceName", ServiceName, "Version", Version,
+		"ContactLink", s.info.ContactLink))
 }
 
 func (s *Server) newBuildImageHandler(w http.ResponseWriter, r *http.Request) {

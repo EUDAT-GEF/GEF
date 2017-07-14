@@ -13,7 +13,7 @@ const footerStyle = {
     fontSize: 12
 };
 
-export const Footer = ({version}) => (
+export const Footer = ({Version, ContactLink}) => (
     <Grid style={footerStyle}>
         <Row>
             <Col xs={12} md={6} sm={6}>
@@ -25,12 +25,11 @@ export const Footer = ({version}) => (
             </Col>
             <Col xs={12} sm={6} md={6}>
                 <ul className="list-inline pull-right" style={{marginLeft:20}}>
-                    <li><span style={{color:'#173b93', fontWeight:'500'}}> GEF v.{version}</span></li>
+                    <li><span style={{color:'#173b93', fontWeight:'500'}}> v.{Version || ""}</span></li>
                 </ul>
                 <ul className="list-inline pull-right">
                     <li><a target="_blank" href="http://eudat.eu/what-eudat">About EUDAT</a></li>
-                    <li><a href="https://github.com/EUDAT-GEF">Go to GitHub</a></li>
-                    <li><a href="mailto:emanuel.dima@uni-tuebingen.de">Contact</a></li>
+                    <li><a href={ContactLink || "#"}>Contact</a></li>
                 </ul>
             </Col>
         </Row>

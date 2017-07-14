@@ -1,8 +1,6 @@
 import {Footer} from '../components/Footer';
 import {connect} from 'react-redux';
 
-const mapStateToProps = (state) =>
-    state.apiinfo.version ? state.apiinfo : {version:""};
-
+const mapStateToProps = (state) => state.apiinfo;
 export const FooterContainer = connect(mapStateToProps)(Footer);
 
