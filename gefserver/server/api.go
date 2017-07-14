@@ -21,11 +21,11 @@ const (
 	// ServiceName is used for HTTP API
 	ServiceName = "GEF"
 	// Version defines the api version
-	Version = "0.2.0"
+	Version = "0.3.0"
 )
 
 const apiRootPath = "/api"
-const loginRootPath = "/login"
+const wuiRootPath = "/wui"
 
 const (
 	buildsTmpDir = "builds"
@@ -69,8 +69,11 @@ func NewServer(cfg def.ServerConfig, pier *pier.Pier, tmpDir string, database *d
 		{"GET /", server.infoHandler, "misc"},
 		{"GET /info", server.infoHandler, "misc"},
 
-		{"GET /user", userHandler, "user discovery"},
-		{"GET /user/logout", logoutHandler, "user logout"},
+		{"GET /user", server.userHandler, "user discovery"},
+
+		{"POST /user/tokens", server.newTokenHandler, "access management"},
+		{"GET /user/tokens", server.listTokenHandler, "access discovery"},
+		{"DELETE /user/tokens/{tokenID}", server.removeTokenHandler, "access management"},
 
 		{"POST /builds", server.newBuildImageHandler, "service deployment"},
 		{"POST /builds/{buildID}", server.buildImageHandler, "service deployment"},
@@ -94,10 +97,11 @@ func NewServer(cfg def.ServerConfig, pier *pier.Pier, tmpDir string, database *d
 		methodPath := strings.SplitN(hdl.route, " ", 2)
 		apirouter.HandleFunc(methodPath[1], decorate(hdl.handler, hdl.description)).Methods(methodPath[0])
 	}
-	loginrouter := router.PathPrefix(loginRootPath).Subrouter()
+	wuirouter := router.PathPrefix(wuiRootPath).Subrouter()
 	{
-		loginrouter.HandleFunc("/", decorate(loginHandler, "user login")).Methods("GET")
-		loginrouter.HandleFunc("/b2access", callbackHandler).Methods("GET")
+		wuirouter.HandleFunc("/login", decorate(server.oauthLoginHandler, "user login")).Methods("GET")
+		wuirouter.HandleFunc("/b2access", server.oauthCallbackHandler).Methods("GET")
+		wuirouter.HandleFunc("/logout", decorate(server.logoutHandler, "user logout")).Methods("GET")
 	}
 	router.PathPrefix("/").Handler(http.FileServer(singlePageAppDir("../webui/app/")))
 

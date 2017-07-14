@@ -1,4 +1,5 @@
-import React, {PropTypes} from 'react';
+import React from 'react';
+import PropTypes from 'prop-types';
 import {Row, Col} from 'react-bootstrap';
 import {LinkContainer} from 'react-router-bootstrap'
 import Service from './Service'
@@ -91,7 +92,7 @@ class Services extends React.Component {
 Services.propTypes = {
     fetchServices: PropTypes.func.isRequired,
     fetchService: PropTypes.func.isRequired,
-    services: PropTypes.array.isRequired,
+    services: PropTypes.array, // can be null
     selectedService: PropTypes.object.isRequired,
     handleSubmit: PropTypes.func.isRequired,
     handleUpdate: PropTypes.func.isRequired,

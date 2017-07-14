@@ -5,10 +5,24 @@ import axios from 'axios';
 import Alert from 'react-s-alert';
 import { push } from 'react-router-redux';
 import actionTypes from './actionTypes';
-import apiNames from '../GefAPI';
+import {apiNames} from '../GefAPI';
 import { toPairs } from '../utils/utils';
 
 const log = console.log; // bows('actions');
+
+export function fetchApiInfo() {
+    return function (dispatch, getState) {
+        axios.get(apiNames.apiinfo).then(response => {
+            dispatch({
+                type: actionTypes.APIINFO_FETCH_SUCCESS,
+                apiinfo: response.data
+            });
+        }).catch(err => {
+            Alert.error("An error occurred while contacting the server");
+            log("Error retrieving api info", err);
+        });
+    }
+}
 
 export function servicesFetchStart() {
     return {
@@ -259,7 +273,6 @@ export function fetchJobs() {
         dispatch(jobListFetchStart());
         const resultPromise = axios.get( apiNames.jobs);
         resultPromise.then(response => {
-            log('fetched jobs:', response.data.Jobs);
             dispatch(jobListFetchSuccess(response.data.Jobs));
         }).catch(err => {
             Alert.error("Cannot fetch job information from the server.");
@@ -577,7 +590,13 @@ export function fetchUser() {
     return function (dispatch, getState)  {
         dispatch(userFetchStart());
         axios.get(apiNames.user)
-            .then(response => dispatch(userFetchSuccess(response.data.User)))
+            .then(response => {
+                dispatch(userFetchSuccess(response.data.User || {}));
+                if (response.data.Error) {
+                    Alert.error("Login error: " + response.data.Error);
+                    dispatch(userFetchError(response.data.Error));
+                };
+            })
             .catch(err => {
                 Alert.error("Error fetching user information from the server.");
                 log("Error fetching user info:", err);
@@ -602,6 +621,72 @@ export function userFetchSuccess(user) {
 export function userFetchError(errorMessage) {
     return {
         type: actionTypes.USER_FETCH_ERROR,
+        errorMessage: errorMessage
+    }
+}
+
+export function fetchTokens() {
+    return function (dispatch, getState)  {
+        dispatch(tokensFetchStart());
+        axios.get(apiNames.userTokens)
+            .then(response => {
+                dispatch(tokensFetchSuccess(response.data.Tokens || []));
+                if (response.data.Error) {
+                    Alert.error("Fething tokens error: " + response.data.Error);
+                    dispatch(tokensFetchError(response.data.Error));
+                };
+            })
+            .catch(err => {
+                Alert.error("Error fetching user tokens from the server.");
+                log("Error fetching user tokens:", err);
+                dispatch(tokensFetchError(err));
+            });
+    }
+}
+
+export function submitNewAccessToken(tokenName, successFn) {
+    return function (dispatch, getState) {
+        const fd = new FormData();
+        fd.append('tokenName', tokenName);
+        axios.post(apiNames.userTokens, fd).then(response => {
+            Alert.info("Token created");
+            dispatch(fetchTokens());
+            successFn(response.data);
+        }).catch(err => {
+            Alert.error("An error occurred while requesting for a new access token");
+            log("An error occurred while requesting for a new access token", err);
+        });
+    }
+}
+
+export function deleteAccessToken(tokenID) {
+    return function (dispatch, getState) {
+        axios.delete(apiNames.userTokens+'/'+tokenID).then(response => {
+            Alert.info("Token deleted");
+            dispatch(fetchTokens());
+        }).catch(err => {
+            Alert.error("An error occurred while deleting access token");
+            log("An error occurred while deleting access token", err);
+        });
+    }
+}
+
+export function tokensFetchStart() {
+    return {
+        type: actionTypes.USER_TOKENS_FETCH_START
+    }
+}
+
+export function tokensFetchSuccess(tokens) {
+    return {
+        type: actionTypes.USER_TOKENS_FETCH_SUCCESS,
+        tokens: tokens
+    }
+}
+
+export function tokensFetchError(errorMessage) {
+    return {
+        type: actionTypes.USER_TOKENS_FETCH_ERROR,
         errorMessage: errorMessage
     }
 }

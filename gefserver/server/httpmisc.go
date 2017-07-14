@@ -39,9 +39,27 @@ func logParam(name, value string) {
 
 // ClientError sets a 400 error
 func (w Response) ClientError(message string, err error) {
-	str := fmt.Sprintf("    API Client ERROR: %s\n\t%s", message, err.Error())
+	errstr := ""
+	if err != nil {
+		errstr = "\n\t" + err.Error()
+	}
+	str := fmt.Sprintf("    API Client ERROR: %s%s", message, errstr)
 	log.Println(str)
 	http.Error(w, str, 400)
+}
+
+// Unauthorized sets a 401 error
+func (w Response) Unauthorized() {
+	str := fmt.Sprintf("    Authentication required")
+	log.Println(str)
+	http.Error(w, str, 401)
+}
+
+// Forbidden sets a 403 error
+func (w Response) Forbidden() {
+	str := fmt.Sprintf("    Access forbidden")
+	log.Println(str)
+	http.Error(w, str, 401)
 }
 
 // DirectiveError sets a 403 error
@@ -53,7 +71,11 @@ func (w Response) DirectiveError() {
 
 // ServerError sets a 500/server error
 func (w Response) ServerError(message string, err error) {
-	str := fmt.Sprintf("    API Server ERROR: %s\n\t%s", message, err.Error())
+	errstr := ""
+	if err != nil {
+		errstr = "\n\t" + err.Error()
+	}
+	str := fmt.Sprintf("    API Server ERROR: %s%s", message, errstr)
 	log.Println(str)
 	http.Error(w, str, 500)
 }

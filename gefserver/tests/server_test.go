@@ -4,8 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 
 	"github.com/EUDAT-GEF/GEF/gefserver/db"
@@ -18,9 +20,10 @@ func TestServer(t *testing.T) {
 	config, err := def.ReadConfigFile(configFilePath)
 	checkMsg(t, err, "reading config files")
 
-	db, err := db.InitDb()
+	db, dbfile, err := db.InitDbForTesting()
 	checkMsg(t, err, "creating db")
-	defer db.Db.Close()
+	defer db.Close()
+	defer os.Remove(dbfile)
 
 	pier, err := pier.NewPier(&db, config.TmpDir)
 	checkMsg(t, err, "creating new pier")
@@ -35,9 +38,17 @@ func TestServer(t *testing.T) {
 		srv = httptest.NewServer(s.Server.Handler)
 	}
 	defer srv.Close()
-	baseURL := srv.URL + "/api/"
 
+	baseURL := srv.URL + "/api/"
 	checkRunRequest(t, "GET", baseURL, 200)
+
+	service, err := pier.BuildService("./clone_test")
+	checkMsg(t, err, "build service failed")
+	log.Println("test service built:", service)
+
+	job, err := pier.RunService(service, testPID)
+	checkMsg(t, err, "running service failed")
+	log.Println("test job: ", job)
 
 	json := checkGetJSON(t, baseURL+"services")
 	services, ok := json["Services"]
