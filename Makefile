@@ -22,7 +22,7 @@ clean:
 	rm $(JSBUNDLE) $(JSBUNDLE).map
 	rm -r $(WEBUI)/node_modules
 
-pack: dependencies webui
+pack: dependencies webui certificate
 	mkdir -p build
 	mkdir -p build/bin
 	docker build -t gefcompile:linux .
