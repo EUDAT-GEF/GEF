@@ -54,8 +54,9 @@ The GEF is using an SQLite database to store the data. Using a different SQL dat
 
 Docker Swarm Mode
 -----------------
-If you want to run GEF services on a Docker Swarm, you will need to create and configure it first. There is no need to install anything
-else, as long as you have Docker installed. `config.json` file has to be modified accordingly: endpoint should be changed
+If you want to run GEF services on a Docker Swarm, you will need to create and configure it first. There is no need to install anything else,
+as long as you have Docker installed. To active the Swarm mode on a local machine run `docker swarm init --advertise-addr 127.0.0.1`.
+Executing `docker swarm leave -f` will turn it off. `config.json` file has to be modified accordingly: endpoint should be changed
 to `tcp://[IP_ADDRESS_OF_THE_MANAGER_MACHINE]:[PORT_WHERE_DOCKER_IS_RUNNING]` and `TLSVerify`, `CertPath`,
 `KeyPath`, `CAPath` should be set in the `Docker` section of the config file.
 - This tutorial explains how to create a swarm: https://rominirani.com/docker-swarm-tutorial-b67470cf8872
@@ -75,8 +76,14 @@ If you create a virtual machine in VirtualBox, you should configure the network 
 | ssh | TCP | 127.0.0.1 | 59045 |  | 22 |
 
 
+Packaging For Deployment
+------------------------
+For the packaging procedure you will only need to have the GEF source code and `docker` to be installed on your machine. You can build a linux binary
+by running `make pack` command. The command will create an archive which you can unpack on a server. After that do `cd build/bin` and run `./gefserver`.
+The GEF server should be running now.
+
 Apache Configuration
--------------
+--------------------
 If you are using Apache, you may want to use a configuration similar to the one below:
 ~~~~
 Listen 443
