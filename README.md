@@ -59,9 +59,9 @@ If you create a virtual machine in VirtualBox, you should configure the network 
 | ssh | TCP | 127.0.0.1 | 59045 |  | 22 |
 
 
-Easy Deployment
+Packaging For Deployment
 -------------
-For the easy deployment you will only need `go` and `docker` to be installed on your machine. Having executed the first
+For the packaging procedure you will only need `go` and `docker` to be installed on your machine. Having executed the first
 4 steps from the `Installation` section, you can build a linux binary by running `make pack` command. The command will
 create an archive which you can unpack on a server. After that do `cd build/bin` and run `./gefserver`. The GEF server
 should be running now.
