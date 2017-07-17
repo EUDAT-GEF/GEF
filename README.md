@@ -8,16 +8,16 @@ The EUDAT Generic Execution Framework.
 Installation
 ------------
 
-- Make sure you have `go 1.8` (the language tools), `docker`, and `npm` installed on your machine. For MacOS it is
+1. Make sure you have `go 1.8` (the language tools), `docker`, and `npm` installed on your machine. For MacOS it is
 recommended to have `go 1.8.1` (or newer)
-- Set a GOPATH, e.g.: `export GOPATH=/Users/myself/Projects/Go`.
-- Use `go get` to clone the GEF repository: `go get -u github.com/EUDAT-GEF/GEF`.
-- Go to the downloaded repository location: `cd $GOPATH/src/github.com/EUDAT-GEF/GEF`.
-- Build the project: `make build`.
-- Create a new self-signed certificate for the GEF server (with `make certificate`) or edit config.json to use your own
-- Define the GEF_SECRET_KEY environment variable (a random string is preferred, remember it and keep it in a safe location): `export GEF_SECRET_KEY="E60su8IL6VY6Ca2"`
-- Start the system: `make run_gef`.
-- Go to `https://localhost:8443`. The GEF UI should be online.
+2. Set a GOPATH, e.g.: `export GOPATH=/Users/myself/Projects/Go`.
+3. Use `go get` to clone the GEF repository: `go get -u github.com/EUDAT-GEF/GEF`.
+4. Go to the downloaded repository location: `cd $GOPATH/src/github.com/EUDAT-GEF/GEF`.
+5. Build the project: `make build`.
+6. Create a new self-signed certificate for the GEF server (with `make certificate`) or edit config.json to use your own
+7. Define the GEF_SECRET_KEY environment variable (a random string is preferred, remember it and keep it in a safe location): `export GEF_SECRET_KEY="E60su8IL6VY6Ca2"`
+8. Start the system: `make run_gef`.
+9. Go to `https://localhost:8443`. The GEF UI should be online.
 
 Internal Docker Images
 -------------
@@ -37,7 +37,8 @@ The GEF is using an SQLite database to store the data. Using a different SQL dat
 
 Docker Swarm Mode
 -------------
-If you want to run GEF services on a Docker Swarm, you will need to create and configure it first. There is no need to install anything
+To active the Swarm mode on a local machine run `docker swarm init --advertise-addr 127.0.0.1`. Executing `docker swarm leave -f`
+will turn it off. If you want to run GEF services on a Docker Swarm, you will need to create and configure it first. There is no need to install anything
 else, as long as you have Docker installed. `config.json` file has to be modified accordingly: endpoint should be changed
 to `tcp://[IP_ADDRESS_OF_THE_MANAGER_MACHINE]:[PORT_WHERE_DOCKER_IS_RUNNING]` and `TLSVerify`, `CertPath`,
 `KeyPath`, `CAPath` should be set in the `Docker` section of the config file.
@@ -58,11 +59,12 @@ If you create a virtual machine in VirtualBox, you should configure the network 
 | ssh | TCP | 127.0.0.1 | 59045 |  | 22 |
 
 
-Easy Deployment
+Packaging For Deployment
 -------------
-You can build a linux binary and run it on a server by using `make pack` command (after executing `make build`). The
-command will create an archive which you should unpack on a server. After that do `cd` to the `build` folder and run
-`./gefserver`
+For the packaging procedure you will only need `go` and `docker` to be installed on your machine. Having executed the first
+4 steps from the `Installation` section, you can build a linux binary by running `make pack` command. The command will
+create an archive which you can unpack on a server. After that do `cd build/bin` and run `./gefserver`. The GEF server
+should be running now.
 
 Apache Configuration
 -------------
