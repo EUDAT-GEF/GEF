@@ -9,12 +9,14 @@ import (
 	"github.com/EUDAT-GEF/GEF/gefserver/db"
 	"github.com/EUDAT-GEF/GEF/gefserver/def"
 	"github.com/EUDAT-GEF/GEF/gefserver/pier"
+	"fmt"
 )
 
 const testPID = "11304/a3d012ca-4e23-425e-9e2a-1e6a195b966f"
 
 var configFilePath = "../config.json"
 var internalServicesFolder = "../../services/_internal"
+
 
 var (
 	name1  = "user1"
@@ -23,7 +25,15 @@ var (
 	email2 = "user2@example.com"
 )
 
+
+func TestMain(m *testing.M) {
+	//testDB, _, _ = db.InitDbForTesting()
+
+	os.Exit(m.Run())
+}
+
 func TestClient(t *testing.T) {
+
 	config, err := def.ReadConfigFile(configFilePath)
 	checkMsg(t, err, "reading config files")
 
@@ -45,7 +55,9 @@ func TestClient(t *testing.T) {
 	before, err := db.ListServices()
 	checkMsg(t, err, "listing services failed")
 
-	service, err := pier.BuildService("./docker_test")
+	fmt.Println("DOCKER_TEST")
+	//service, err := pier.BuildService("./docker_test")
+	service, err := pier.BuildService("./clone_test")
 	checkMsg(t, err, "build service failed")
 	log.Println("test service built:", service)
 
@@ -70,7 +82,8 @@ func TestClient(t *testing.T) {
 		return
 	}
 
-	job, err := pier.RunService(service, "")
+	//job, err := pier.RunService(service, "")
+	job, err := pier.RunService(service, testPID)
 	checkMsg(t, err, "running service failed")
 	log.Println("test job: ", job)
 
@@ -100,6 +113,7 @@ func TestClient(t *testing.T) {
 }
 
 func TestExecution(t *testing.T) {
+	log.Println("TestB running")
 	config, err := def.ReadConfigFile(configFilePath)
 	checkMsg(t, err, "reading config files")
 
@@ -117,6 +131,7 @@ func TestExecution(t *testing.T) {
 	err = pier.SetDockerConnection(config.Docker, config.Limits, config.Timeouts, internalServicesFolder)
 	checkMsg(t, err, "setting docker connection")
 
+	fmt.Println("CLONE_TEST")
 	service, err := pier.BuildService("./clone_test")
 	checkMsg(t, err, "build service failed")
 	log.Println("test service built:", service)
@@ -141,10 +156,10 @@ func TestExecution(t *testing.T) {
 	}
 	expect(t, job.State.Error == "", "job error")
 
-	files, err := pier.ListFiles(job.OutputVolume, "")
-	checkMsg(t, err, "getting volume failed")
-
-	expect(t, len(files) == 1, "bad returned files")
+	//files, err := pier.ListFiles(job.OutputVolume, "")
+	//checkMsg(t, err, "getting volume failed")
+	//
+	//expect(t, len(files) == 1, "bad returned files")
 
 	_, err = pier.RemoveJob(jobid)
 	checkMsg(t, err, "removing job failed")

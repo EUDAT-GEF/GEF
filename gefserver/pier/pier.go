@@ -245,12 +245,29 @@ func (p *Pier) runJob(job *db.Job, service db.Service, inputPID string) {
 	p.db.SetJobState(job.ID, db.NewJobStateOk("Ended successfully", 0))
 }
 
+// WaitContainerOrSwarmService takes a docker container/swarm service and waits for its finish.
+// It returns the exit code of the container/swarm service.
+func (p *Pier) WaitContainerOrSwarmService(id string, removeOnExit bool) (int, error) {
+	return p.docker.client.WaitContainerOrSwarmService(id, removeOnExit)
+}
+
+// GetSwarmServiceIDByContainerID
+func (p *Pier) GetSwarmServiceIDByContainerID(id string) (string, error) {
+	return p.docker.client.GetSwarmServiceIDByContainerID(id)
+}
+
 // RemoveJob removes a job by ID
 func (p *Pier) RemoveJob(jobID db.JobID) (db.Job, error) {
 	job, err := p.db.GetJob(jobID)
 	if err != nil {
 		return job, def.Err(nil, "not found")
 	}
+
+	_, err = p.WaitContainerOrSwarmService(string(job.Tasks[len(job.Tasks)-1].ContainerID), true)
+	if err != nil {
+		return job, def.Err(err, "Cannot stop and remove a container/swarm service")
+	}
+
 
 	// Removing volumes
 	err = p.docker.client.RemoveVolume(dckr.VolumeID(job.InputVolume))
@@ -262,13 +279,12 @@ func (p *Pier) RemoveJob(jobID db.JobID) (db.Job, error) {
 		return job, def.Err(err, "Output volume is not set")
 	}
 
-	// Stopping the latest or the current task (if it is running)
-	if len(job.Tasks) > 0 {
-		p.docker.client.RemoveContainer(string(job.Tasks[len(job.Tasks)-1].ContainerID))
+	// Removing the job from the list
+	err = p.db.RemoveJob(jobID)
+	if err != nil {
+		return job, def.Err(err, "Could not remove the job")
 	}
 
-	// Removing the job from the list
-	p.db.RemoveJob(jobID)
 	return job, nil
 }
 
