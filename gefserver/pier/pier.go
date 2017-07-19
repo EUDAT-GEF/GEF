@@ -268,6 +268,7 @@ func (p *Pier) WaitAndRemoveVolume(id dckr.VolumeID) error {
 		if err != dckr.VolumeInUse {
 			return def.Err(err, "Input volume cannot be removed")
 		}
+		time.Sleep(10 * time.Millisecond)
 	}
 	return nil
 }

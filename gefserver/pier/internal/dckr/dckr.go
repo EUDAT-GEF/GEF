@@ -576,6 +576,7 @@ func (c Client) WaitContainerOrSwarmService(id string, removeOnExit bool) (int, 
 			if (contState == swarm.TaskStateComplete || contState == swarm.TaskStateFailed || contState == swarm.TaskStateShutdown) && (err != nil) {
 				return 1, def.Err(err, "an error has occurred while executing a swarm service")
 			}
+			time.Sleep(10 * time.Millisecond)
 		}
 
 		serviceID, err := c.getSwarmServiceIDByContainerID(id)
@@ -583,13 +584,11 @@ func (c Client) WaitContainerOrSwarmService(id string, removeOnExit bool) (int, 
 			return 1, def.Err(err, "could not find a swarm service related to the provided container id: "+id)
 		}
 
-		if removeOnExit {
-			if len(serviceID) > 0 {
-				opts := docker.RemoveServiceOptions{ID: serviceID}
-				err = c.c.RemoveService(opts)
-				if err != nil {
-					return 1, def.Err(err, "an error has occurred while trying to remove a swarm service")
-				}
+		if removeOnExit && serviceID != "" {
+			opts := docker.RemoveServiceOptions{ID: serviceID}
+			err = c.c.RemoveService(opts)
+			if err != nil {
+				return 1, def.Err(err, "an error has occurred while trying to remove a swarm service")
 			}
 		}
 		return 0, nil

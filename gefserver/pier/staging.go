@@ -50,6 +50,7 @@ func (p *Pier) DownStreamContainerFile(volumeID string, fileLocation string, w h
 
 	// Stream the file from the container
 	tarStream, err := p.docker.client.GetTarStream(string(containerID), fileLocation)
+
 	if err != nil {
 		return def.Err(err, "GetTarStream failed")
 	}
