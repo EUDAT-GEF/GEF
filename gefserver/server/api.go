@@ -310,7 +310,7 @@ func (s *Server) executeServiceHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	job, err := s.pier.RunService(service, input)
+	job, err := s.pier.RunService(service.ID, input)
 	if err != nil {
 		Response{w}.ServerError("cannot read the reqested file from the archive", err)
 		return

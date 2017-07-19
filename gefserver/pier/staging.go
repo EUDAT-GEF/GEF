@@ -100,20 +100,20 @@ func (p *Pier) ListFiles(volumeID db.VolumeID, filePath string) ([]VolumeItem, e
 		return volumeFileList, def.Err(err, "running image failed")
 	}
 
-	// Wait till the container stops and after that read the JSON file
-	for {
-		cont, err := p.docker.client.InspectContainer(containerID)
-		if !cont.State.Running {
-			// Reading the JSON file
-			volumeFileList, err = p.readJSON(string(containerID), "/root/_filelist.json")
-			if err != nil {
-				return volumeFileList, def.Err(err, "readJson failed")
-			}
-			break
-		}
+
+	// Stop but do not remove the container
+	_, err = p.docker.client.WaitContainerOrSwarmService(string(containerID), false)
+	if err != nil {
+		return volumeFileList, def.Err(err, "waiting for container to end failed")
 	}
 
-	// Remove a container/swarm service after it is stopped
+	// Reading the JSON file
+	volumeFileList, err = p.readJSON(string(containerID), "/root/_filelist.json")
+	if err != nil {
+		return volumeFileList, def.Err(err, "readJson failed")
+	}
+
+	// Remove a container/swarm service (it was stopped earlier)
 	_, err = p.docker.client.WaitContainerOrSwarmService(string(containerID), true)
 	if err != nil {
 		return volumeFileList, def.Err(err, "waiting for container to end failed")

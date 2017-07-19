@@ -70,16 +70,13 @@ func TestClient(t *testing.T) {
 		return
 	}
 
-	job, err := pier.RunService(service, testPID)
+	job, err := pier.RunService(service.ID, testPID)
 	checkMsg(t, err, "running service failed")
-	for {
-		runningJob, err := db.GetJob(job.ID)
-		checkMsg(t, err, "running job failed")
-		if runningJob.State.Code > -1 {
-			expect(t, runningJob.State.Code == 0, "job failed: "+runningJob.State.Error)
-			break
-		}
+	for job.State.Code == -1 {
+		job, err = db.GetJob(job.ID)
+		checkMsg(t, err, "getting job failed")
 	}
+
 	log.Println("test job: ", job)
 
 	jobList, err := db.ListJobs()
@@ -129,7 +126,7 @@ func TestExecution(t *testing.T) {
 	checkMsg(t, err, "build service failed")
 	log.Println("test service built:", service)
 
-	job, err := pier.RunService(service, testPID)
+	job, err := pier.RunService(service.ID, testPID)
 	checkMsg(t, err, "running service failed")
 
 	log.Println("test job: ", job)
