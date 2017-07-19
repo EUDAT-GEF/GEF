@@ -16,14 +16,12 @@ const testPID = "11304/a3d012ca-4e23-425e-9e2a-1e6a195b966f"
 var configFilePath = "../config.json"
 var internalServicesFolder = "../../services/_internal"
 
-
 var (
 	name1  = "user1"
 	email1 = "user1@example.com"
 	name2  = "user2"
 	email2 = "user2@example.com"
 )
-
 
 func TestClient(t *testing.T) {
 
@@ -78,7 +76,7 @@ func TestClient(t *testing.T) {
 		runningJob, err := db.GetJob(job.ID)
 		checkMsg(t, err, "running job failed")
 		if runningJob.State.Code > -1 {
-			expect(t, runningJob.State.Code == 0, "job failed: " + runningJob.State.Error)
+			expect(t, runningJob.State.Code == 0, "job failed: "+runningJob.State.Error)
 			break
 		}
 	}

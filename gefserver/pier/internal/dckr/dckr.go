@@ -554,11 +554,11 @@ func (c Client) RemoveContainer(containerID string) error {
 // WaitContainerOrSwarmService takes a docker container/swarm service and waits for its finish.
 // It returns the exit code of the container/swarm service.
 func (c Client) WaitContainerOrSwarmService(id string, removeOnExit bool) (int, error) {
-	opts := docker.ListContainersOptions {
+	opts := docker.ListContainersOptions{
 		All: true,
 	}
 	containers, err := c.c.ListContainers(opts)
-	if err !=nil {
+	if err != nil {
 		return 1, err
 	}
 	containerExists := false

@@ -13,8 +13,8 @@ import (
 	"github.com/EUDAT-GEF/GEF/gefserver/db"
 	"github.com/EUDAT-GEF/GEF/gefserver/def"
 	"github.com/EUDAT-GEF/GEF/gefserver/pier/internal/dckr"
-	"github.com/pborman/uuid"
 	"github.com/fsouza/go-dockerclient"
+	"github.com/pborman/uuid"
 )
 
 // GefSrvLabelPrefix is the prefix identifying GEF related labels
@@ -270,7 +270,7 @@ func (p *Pier) RemoveJob(jobID db.JobID) (db.Job, error) {
 		return job, def.Err(nil, "not found")
 	}
 
-	if len(job.Tasks)>0 {
+	if len(job.Tasks) > 0 {
 		_, err = p.WaitContainerOrSwarmService(string(job.Tasks[len(job.Tasks)-1].ContainerID), true)
 		if err != nil {
 			return job, def.Err(err, "Cannot stop and remove a container/swarm service")

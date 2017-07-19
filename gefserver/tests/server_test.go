@@ -37,23 +37,24 @@ func TestServer(t *testing.T) {
 		checkMsg(t, err, "creating api server")
 		srv = httptest.NewServer(s.Server.Handler)
 	}
+	defer srv.Close()
+
+	baseURL := srv.URL + "/api/"
+	checkRunRequest(t, "GET", baseURL, 200)
 
 	service, err := pier.BuildService("./clone_test")
 	checkMsg(t, err, "build service failed")
 	log.Println("test service built:", service)
+
 	job, err := pier.RunService(service, testPID)
 	checkMsg(t, err, "running service failed")
 	log.Println("test job: ", job)
-
-	baseURL := srv.URL + "/api/"
-	checkRunRequest(t, "GET", baseURL, 200)
 
 	json := checkGetJSON(t, baseURL+"services")
 	services, ok := json["Services"]
 	expect(t, ok, "Services not found in returned json")
 	expect(t, services != nil, "nil Services in returned json")
 
-	defer srv.Close()
 	json = checkGetJSON(t, baseURL+"jobs")
 	jobs, ok := json["Jobs"]
 	expect(t, ok, "Jobs not found in returned json")
