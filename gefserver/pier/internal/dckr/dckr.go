@@ -286,10 +286,10 @@ func (c Client) GetSwarmContainerInfo(serviceID string) (string, swarm.TaskState
 }
 
 // isSwarmContainerStopped checks if a task container is not running
-func (c Client) isSwarmContainerStopped(containerID string) (bool, swarm.TaskState, error) {
+func (c Client) isSwarmContainerStopped(containerID string) (bool, swarm.Task, error) {
 	task, err := c.findSwarmContainerTask(containerID)
 	if err != nil {
-		return false, swarm.TaskState(""), err
+		return false, swarm.Task{}, err
 	}
 
 	if task.Status.State == swarm.TaskStateComplete || task.Status.State == swarm.TaskStateFailed {
@@ -297,10 +297,10 @@ func (c Client) isSwarmContainerStopped(containerID string) (bool, swarm.TaskSta
 		if task.Status.Err != "" {
 			taskErr = def.Err(nil, task.Status.Err)
 		}
-		return true, task.Status.State, taskErr
+		return true, task, taskErr
 	}
 
-	return false, swarm.TaskState(""), nil
+	return false, swarm.Task{}, nil
 }
 
 // findSwarmContainerStatus finds a swarm container status information by container ID
@@ -570,10 +570,10 @@ func (c Client) WaitContainerOrSwarmService(id string, removeOnExit bool) (int, 
 
 	// Swarm mode (swarm services)
 	if swarmOn {
-		isStopped, contState, err := c.isSwarmContainerStopped(id)
+		isStopped, task, err := c.isSwarmContainerStopped(id)
 		for isStopped == false {
-			isStopped, contState, err = c.isSwarmContainerStopped(id)
-			if (contState == swarm.TaskStateComplete || contState == swarm.TaskStateFailed || contState == swarm.TaskStateShutdown) && (err != nil) {
+			isStopped, task, err = c.isSwarmContainerStopped(id)
+			if (task.Status.State == swarm.TaskStateComplete || task.Status.State == swarm.TaskStateFailed || task.Status.State == swarm.TaskStateShutdown) && (err != nil) {
 				return 1, def.Err(err, "an error has occurred while executing a swarm service")
 			}
 			time.Sleep(10 * time.Millisecond)
@@ -591,7 +591,7 @@ func (c Client) WaitContainerOrSwarmService(id string, removeOnExit bool) (int, 
 				return 1, def.Err(err, "an error has occurred while trying to remove a swarm service")
 			}
 		}
-		return 0, nil
+		return task.Status.ContainerStatus.ExitCode, nil
 	} else { // Normal Mode (regular containers)
 		exitCode, err := c.c.WaitContainer(id)
 		if removeOnExit {
