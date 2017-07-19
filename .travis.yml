@@ -8,6 +8,6 @@ before_install:
   - curl https://glide.sh/get | sh
 
 script:
-  make build
-  docker swarm init --advertise-addr 127.0.0.1
-  GEF_SECRET_KEY="test" go test -v -timeout 4m ./gefserver/tests
+  - make build
+  - docker swarm init --advertise-addr 127.0.0.1
+  - GEF_SECRET_KEY="test" go test -v -timeout 4m ./gefserver/tests
