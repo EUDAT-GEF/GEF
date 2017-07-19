@@ -73,7 +73,10 @@ type VolBind struct {
 	IsReadOnly bool
 }
 
+// VolumeInUse is an error that occurs when a volume is in use
 var VolumeInUse = docker.ErrVolumeInUse
+
+// NoSuchVolume is an error that occurs when a volume is not found
 var NoSuchVolume = docker.ErrNoSuchVolume
 
 // NewVolBind creates a new VolBind
@@ -282,8 +285,8 @@ func (c Client) GetSwarmContainerInfo(serviceID string) (string, swarm.TaskState
 	return "", swarm.TaskState(""), err
 }
 
-// IsSwarmContainerStopped checks if a task container is not running
-func (c Client) IsSwarmContainerStopped(containerID string) (bool, swarm.TaskState, error) {
+// isSwarmContainerStopped checks if a task container is not running
+func (c Client) isSwarmContainerStopped(containerID string) (bool, swarm.TaskState, error) {
 	task, err := c.findSwarmContainerTask(containerID)
 	if err != nil {
 		return false, swarm.TaskState(""), err
@@ -315,8 +318,8 @@ func (c Client) findSwarmContainerTask(containerID string) (swarm.Task, error) {
 	return swarm.Task{}, def.Err(nil, "Could not find the container")
 }
 
-// GetSwarmServiceIDByContainerID returns a Swarm service id by a container id
-func (c Client) GetSwarmServiceIDByContainerID(containerID string) (string, error) {
+// getSwarmServiceIDByContainerID returns a Swarm service id by a container id
+func (c Client) getSwarmServiceIDByContainerID(containerID string) (string, error) {
 	task, err := c.findSwarmContainerTask(containerID)
 	if err != nil {
 		return "", err
@@ -567,31 +570,25 @@ func (c Client) WaitContainerOrSwarmService(id string, removeOnExit bool) (int, 
 
 	// Swarm mode (swarm services)
 	if swarmOn {
-		notRunning := false
-		for {
-			stopped, contState, err := c.IsSwarmContainerStopped(id)
-			notRunning = stopped
-
+		isStopped, contState, err := c.isSwarmContainerStopped(id)
+		for isStopped == false {
+			isStopped, contState, err = c.isSwarmContainerStopped(id)
 			if (contState == swarm.TaskStateComplete || contState == swarm.TaskStateFailed || contState == swarm.TaskStateShutdown) && (err != nil) {
-				return 1, err
-			}
-
-			if notRunning {
-				break
+				return 1, def.Err(err, "an error has occurred while executing a swarm service")
 			}
 		}
 
-		serviceID, err := c.GetSwarmServiceIDByContainerID(id)
+		serviceID, err := c.getSwarmServiceIDByContainerID(id)
 		if err != nil {
-			return 1, err
+			return 1, def.Err(err, "could not find a swarm service related to the provided container id: "+id)
 		}
 
 		if removeOnExit {
-			if notRunning && len(serviceID) > 0 {
+			if len(serviceID) > 0 {
 				opts := docker.RemoveServiceOptions{ID: serviceID}
 				err = c.c.RemoveService(opts)
 				if err != nil {
-					return 1, err
+					return 1, def.Err(err, "an error has occurred while trying to remove a swarm service")
 				}
 			}
 		}

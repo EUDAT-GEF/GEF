@@ -100,7 +100,6 @@ func (p *Pier) ListFiles(volumeID db.VolumeID, filePath string) ([]VolumeItem, e
 		return volumeFileList, def.Err(err, "running image failed")
 	}
 
-
 	// Stop but do not remove the container
 	_, err = p.docker.client.WaitContainerOrSwarmService(string(containerID), false)
 	if err != nil {

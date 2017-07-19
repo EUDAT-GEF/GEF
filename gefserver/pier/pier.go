@@ -139,7 +139,7 @@ func (p *Pier) BuildService(buildDir string) (db.Service, error) {
 // RunService exported
 func (p *Pier) RunService(id db.ServiceID, inputPID string) (db.Job, error) {
 	service, err := p.db.GetService(id)
-	if err !=nil {
+	if err != nil {
 		return db.Job{}, err
 	}
 
@@ -153,7 +153,7 @@ func (p *Pier) RunService(id db.ServiceID, inputPID string) (db.Job, error) {
 	}
 
 	err = p.db.AddJob(job)
-	if err !=nil {
+	if err != nil {
 		return job, err
 	}
 
@@ -258,7 +258,7 @@ func (p *Pier) runJob(job *db.Job, service db.Service, inputPID string) {
 }
 
 // RemoveVolumeInUse removes a volume that may seem to be in use
-func (p *Pier) RemoveVolumeInUse(id dckr.VolumeID) error {
+func (p *Pier) WaitAndRemoveVolume(id dckr.VolumeID) error {
 	for {
 		err := p.docker.client.RemoveVolume(id)
 		if err == nil || err == dckr.NoSuchVolume {
@@ -280,18 +280,18 @@ func (p *Pier) RemoveJob(jobID db.JobID) (db.Job, error) {
 	}
 
 	if len(job.Tasks) > 0 {
-		theLastContainer:= job.Tasks[len(job.Tasks)-1].ContainerID
+		theLastContainer := job.Tasks[len(job.Tasks)-1].ContainerID
 		_, err = p.docker.client.WaitContainerOrSwarmService(string(theLastContainer), true)
 		if err != nil {
 			return job, def.Err(err, "Cannot stop and remove a container/swarm service")
 		}
 	}
 	// Removing volumes
-	err = p.RemoveVolumeInUse(dckr.VolumeID(job.InputVolume))
+	err = p.WaitAndRemoveVolume(dckr.VolumeID(job.InputVolume))
 	if err != nil {
 		return job, err
 	}
-	err = p.RemoveVolumeInUse(dckr.VolumeID(job.OutputVolume))
+	err = p.WaitAndRemoveVolume(dckr.VolumeID(job.OutputVolume))
 	if err != nil {
 		return job, err
 	}
