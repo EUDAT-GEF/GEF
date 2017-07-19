@@ -9,7 +9,6 @@ import (
 	"github.com/EUDAT-GEF/GEF/gefserver/db"
 	"github.com/EUDAT-GEF/GEF/gefserver/def"
 	"github.com/EUDAT-GEF/GEF/gefserver/pier"
-	"fmt"
 )
 
 const testPID = "11304/a3d012ca-4e23-425e-9e2a-1e6a195b966f"
@@ -49,8 +48,6 @@ func TestClient(t *testing.T) {
 	before, err := db.ListServices()
 	checkMsg(t, err, "listing services failed")
 
-	fmt.Println("DOCKER_TEST")
-	//service, err := pier.BuildService("./docker_test")
 	service, err := pier.BuildService("./clone_test")
 	checkMsg(t, err, "build service failed")
 	log.Println("test service built:", service)
@@ -76,8 +73,16 @@ func TestClient(t *testing.T) {
 		return
 	}
 
-	//job, err := pier.RunService(service, "")
 	job, err := pier.RunService(service, testPID)
+	for {
+		runningJob, err := db.GetJob(job.ID)
+		checkMsg(t, err, "running job failed")
+		if runningJob.State.Code > -1 {
+			expect(t, runningJob.State.Code == 0, "job failed: " + runningJob.State.Error)
+			break
+		}
+	}
+
 	checkMsg(t, err, "running service failed")
 	log.Println("test job: ", job)
 
@@ -125,7 +130,6 @@ func TestExecution(t *testing.T) {
 	err = pier.SetDockerConnection(config.Docker, config.Limits, config.Timeouts, internalServicesFolder)
 	checkMsg(t, err, "setting docker connection")
 
-	fmt.Println("CLONE_TEST")
 	service, err := pier.BuildService("./clone_test")
 	checkMsg(t, err, "build service failed")
 	log.Println("test service built:", service)

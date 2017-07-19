@@ -13,7 +13,6 @@ import (
 
 	"github.com/pborman/uuid"
 	"gopkg.in/gorp.v1"
-	"fmt"
 )
 
 // Column in a table used to keep an internal version number of GORP
@@ -446,15 +445,11 @@ func (d *Db) AddService(service Service) error {
 	// Before adding a service we need to check if the service with the same name already exists.
 	// If it does, we remove it and add a new one
 	var servicesFromTable []ServiceTable
-	rec, err := d.db.Select(&servicesFromTable, "SELECT * FROM services WHERE Name=?", service.Name)
+	_, err := d.db.Select(&servicesFromTable, "SELECT * FROM services WHERE Name=?", service.Name)
 	if err != nil {
 		return err
 	}
-	fmt.Println("IDENTICAL SERVICES FOUND")
-	fmt.Println(service)
-	fmt.Println(len(servicesFromTable))
-	fmt.Println(rec)
-	fmt.Println( service.Name)
+
 	if len(servicesFromTable) > 0 {
 		for _, s := range servicesFromTable {
 			err = d.RemoveService(ServiceID(s.ID))

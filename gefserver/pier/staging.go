@@ -13,7 +13,6 @@ import (
 	"github.com/EUDAT-GEF/GEF/gefserver/db"
 	"github.com/EUDAT-GEF/GEF/gefserver/def"
 	"github.com/EUDAT-GEF/GEF/gefserver/pier/internal/dckr"
-	"fmt"
 )
 
 // VolumeItem describes a folder content
@@ -100,10 +99,7 @@ func (p *Pier) ListFiles(volumeID db.VolumeID, filePath string) ([]VolumeItem, e
 	if err != nil {
 		return volumeFileList, def.Err(err, "running image failed")
 	}
-	fmt.Println("INSPECTION ID")
-	fmt.Println(p.docker.fileList.repoTag)
-	fmt.Println(p.docker.copyFromVolume.repoTag)
-	fmt.Println(p.docker.stageIn.repoTag)
+
 	// Wait till the container stops and after that read the JSON file
 	for {
 		cont, err := p.docker.client.InspectContainer(containerID)

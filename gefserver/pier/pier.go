@@ -149,9 +149,9 @@ func (p *Pier) RunService(service db.Service, inputPID string) (db.Job, error) {
 	}
 
 	err := p.db.AddJob(job)
-	service1, err := p.db.GetService(service.ID)
+	updService, err := p.db.GetService(service.ID) // we need an updated service with all metadata
 
-	go p.runJob(&job, service1, inputPID)
+	go p.runJob(&job, updService, inputPID)
 
 	return job, err
 }
@@ -178,6 +178,11 @@ func (p *Pier) runJob(job *db.Job, service db.Service, inputPID string) {
 
 	{
 		p.db.SetJobState(job.ID, db.NewJobStateOk("Performing data staging", -1))
+		if len(inputPID) == 0 {
+			p.db.SetJobState(job.ID, db.NewJobStateError("Data staging was canceled, since no input source was provided", 1))
+			return
+		}
+
 		binds := []dckr.VolBind{
 			dckr.NewVolBind(inputVolume.ID, "/volume", false),
 		}
