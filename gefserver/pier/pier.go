@@ -14,6 +14,7 @@ import (
 	"github.com/EUDAT-GEF/GEF/gefserver/def"
 	"github.com/EUDAT-GEF/GEF/gefserver/pier/internal/dckr"
 	"github.com/pborman/uuid"
+	"github.com/fsouza/go-dockerclient"
 )
 
 // GefSrvLabelPrefix is the prefix identifying GEF related labels
@@ -148,8 +149,9 @@ func (p *Pier) RunService(service db.Service, inputPID string) (db.Job, error) {
 	}
 
 	err := p.db.AddJob(job)
+	service1, err := p.db.GetService(service.ID)
 
-	go p.runJob(&job, service, inputPID)
+	go p.runJob(&job, service1, inputPID)
 
 	return job, err
 }
@@ -263,20 +265,37 @@ func (p *Pier) RemoveJob(jobID db.JobID) (db.Job, error) {
 		return job, def.Err(nil, "not found")
 	}
 
-	_, err = p.WaitContainerOrSwarmService(string(job.Tasks[len(job.Tasks)-1].ContainerID), true)
-	if err != nil {
-		return job, def.Err(err, "Cannot stop and remove a container/swarm service")
+	if len(job.Tasks)>0 {
+		_, err = p.WaitContainerOrSwarmService(string(job.Tasks[len(job.Tasks)-1].ContainerID), true)
+		if err != nil {
+			return job, def.Err(err, "Cannot stop and remove a container/swarm service")
+		}
 	}
-
 
 	// Removing volumes
-	err = p.docker.client.RemoveVolume(dckr.VolumeID(job.InputVolume))
-	if err != nil {
-		return job, def.Err(err, "Input volume is not set")
+	// They may be in use, so we need to wait a bit
+	for {
+		err = p.docker.client.RemoveVolume(dckr.VolumeID(job.InputVolume))
+		if err == nil {
+			break
+		}
+		if err != docker.ErrVolumeInUse {
+			return job, def.Err(err, "Input volume cannot be removed")
+		}
+
+		time.Sleep(1000)
 	}
-	err = p.docker.client.RemoveVolume(dckr.VolumeID(job.OutputVolume))
-	if err != nil {
-		return job, def.Err(err, "Output volume is not set")
+
+	for {
+		err = p.docker.client.RemoveVolume(dckr.VolumeID(job.OutputVolume))
+		if err == nil {
+			break
+		}
+		if err != docker.ErrVolumeInUse {
+			return job, def.Err(err, "Output volume cannot be removed")
+		}
+
+		time.Sleep(1000)
 	}
 
 	// Removing the job from the list

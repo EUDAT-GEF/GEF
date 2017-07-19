@@ -37,28 +37,38 @@ func TestServer(t *testing.T) {
 		checkMsg(t, err, "creating api server")
 		srv = httptest.NewServer(s.Server.Handler)
 	}
-	defer srv.Close()
+
+
+
+
+	service1, err := pier.BuildService("./clone_test")
+	checkMsg(t, err, "build service failed")
+	log.Println("test service built:", service1)
+	fmt.Println("DATA STAGING >>>>")
+	fmt.Println(testPID)
+	job, err := pier.RunService(service1, "11304/0591b2ed-d5c6-4007-bb99-6b473f3f07fb")
+	checkMsg(t, err, "running service failed")
+	log.Println("test job: ", job)
+
+
+
 
 	baseURL := srv.URL + "/api/"
 	checkRunRequest(t, "GET", baseURL, 200)
 
-	service, err := pier.BuildService("./clone_test")
-	checkMsg(t, err, "build service failed")
-	log.Println("test service built:", service)
-
-	job, err := pier.RunService(service, testPID)
-	checkMsg(t, err, "running service failed")
-	log.Println("test job: ", job)
-
 	json := checkGetJSON(t, baseURL+"services")
+	fmt.Println(baseURL+"services")
 	services, ok := json["Services"]
 	expect(t, ok, "Services not found in returned json")
 	expect(t, services != nil, "nil Services in returned json")
 
+
+	defer srv.Close()
 	json = checkGetJSON(t, baseURL+"jobs")
 	jobs, ok := json["Jobs"]
 	expect(t, ok, "Jobs not found in returned json")
 	expect(t, jobs != nil, "nil Jobs in returned json")
+
 }
 
 func checkGetJSON(t *testing.T, url string) map[string]interface{} {
