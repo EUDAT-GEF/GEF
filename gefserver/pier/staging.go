@@ -50,6 +50,7 @@ func (p *Pier) DownStreamContainerFile(volumeID string, fileLocation string, w h
 
 	// Stream the file from the container
 	tarStream, err := p.docker.client.GetTarStream(string(containerID), fileLocation)
+
 	if err != nil {
 		return def.Err(err, "GetTarStream failed")
 	}
@@ -100,14 +101,20 @@ func (p *Pier) ListFiles(volumeID db.VolumeID, filePath string) ([]VolumeItem, e
 		return volumeFileList, def.Err(err, "running image failed")
 	}
 
+	// Stop but do not remove the container
+	_, err = p.docker.client.WaitContainerOrSwarmService(string(containerID), false)
+	if err != nil {
+		return volumeFileList, def.Err(err, "waiting for container to end failed")
+	}
+
 	// Reading the JSON file
 	volumeFileList, err = p.readJSON(string(containerID), "/root/_filelist.json")
 	if err != nil {
 		return volumeFileList, def.Err(err, "readJson failed")
 	}
 
-	// Killing the container
-	_, err = p.docker.client.WaitContainer(containerID, true)
+	// Remove a container/swarm service (it was stopped earlier)
+	_, err = p.docker.client.WaitContainerOrSwarmService(string(containerID), true)
 	if err != nil {
 		return volumeFileList, def.Err(err, "waiting for container to end failed")
 	}

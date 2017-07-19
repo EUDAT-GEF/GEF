@@ -73,6 +73,12 @@ type VolBind struct {
 	IsReadOnly bool
 }
 
+// VolumeInUse is an error that occurs when a volume is in use
+var VolumeInUse = docker.ErrVolumeInUse
+
+// NoSuchVolume is an error that occurs when a volume is not found
+var NoSuchVolume = docker.ErrNoSuchVolume
+
 // NewVolBind creates a new VolBind
 func NewVolBind(id VolumeID, mount string, readonly bool) VolBind {
 	return VolBind{
@@ -279,28 +285,46 @@ func (c Client) GetSwarmContainerInfo(serviceID string) (string, swarm.TaskState
 	return "", swarm.TaskState(""), err
 }
 
-// IsSwarmContainerNotRunning checks if a task container is not running
-func (c Client) IsSwarmContainerNotRunning(serviceID string) (bool, swarm.TaskState, error) {
-	var containerError error
-	swarmTasks, containerError := c.c.ListTasks(docker.ListTasksOptions{})
-	if containerError != nil {
-		return false, swarm.TaskState(""), containerError
+// isSwarmContainerStopped checks if a task container is not running
+func (c Client) isSwarmContainerStopped(containerID string) (bool, swarm.Task, error) {
+	task, err := c.findSwarmContainerTask(containerID)
+	if err != nil {
+		return false, swarm.Task{}, err
+	}
+
+	if task.Status.State == swarm.TaskStateComplete || task.Status.State == swarm.TaskStateFailed {
+		var taskErr error
+		if task.Status.Err != "" {
+			taskErr = def.Err(nil, task.Status.Err)
+		}
+		return true, task, taskErr
+	}
+
+	return false, swarm.Task{}, nil
+}
+
+// findSwarmContainerStatus finds a swarm container status information by container ID
+func (c Client) findSwarmContainerTask(containerID string) (swarm.Task, error) {
+	swarmTasks, err := c.c.ListTasks(docker.ListTasksOptions{})
+	if err != nil {
+		return swarm.Task{}, err
 	}
 
 	for _, task := range swarmTasks {
-		if task.ServiceID == serviceID {
-			if task.Status.Err != "" {
-				containerError = def.Err(nil, task.Status.Err)
-			}
-
-			if len(task.Status.State) == 0 || task.Status.State == swarm.TaskStateComplete || task.Status.State == swarm.TaskStateFailed || task.Status.State == swarm.TaskStateShutdown {
-				return true, task.Status.State, containerError
-			}
-
-			return false, task.Status.State, containerError
+		if task.Status.ContainerStatus.ContainerID == containerID {
+			return task, nil
 		}
 	}
-	return true, swarm.TaskState(""), containerError
+	return swarm.Task{}, def.Err(nil, "Could not find the container")
+}
+
+// getSwarmServiceIDByContainerID returns a Swarm service id by a container id
+func (c Client) getSwarmServiceIDByContainerID(containerID string) (string, error) {
+	task, err := c.findSwarmContainerTask(containerID)
+	if err != nil {
+		return "", err
+	}
+	return task.ServiceID, nil
 }
 
 // StartImage takes a docker image, creates a container and starts it
@@ -443,7 +467,7 @@ func (c Client) ExecuteImage(imgID string, imgRepoTag string, cmdArgs []string, 
 		return cont, 0, stdout, def.Err(err, "StartImage failed")
 	}
 
-	exitCode, err := c.WaitContainer(cont, removeOnExit)
+	exitCode, err := c.WaitContainerOrSwarmService(string(cont), removeOnExit)
 	return cont, exitCode, stdout, err
 }
 
@@ -507,6 +531,7 @@ func (c Client) CreateSwarmService(repoTag string, cmdArgs []string, binds []Vol
 	if err != nil {
 		return srv, &stdout, def.Err(err, "Failed to write a string into stdout stream")
 	}
+
 	return srv, &stdout, err
 }
 
@@ -525,48 +550,58 @@ func (c Client) StartExistingContainer(contID string, binds []string) (Container
 }
 
 // RemoveContainer removes a docker container
-func (c Client) RemoveContainer(containerID string) {
-	c.c.RemoveContainer(docker.RemoveContainerOptions{ID: containerID, Force: true})
+func (c Client) RemoveContainer(containerID string) error {
+	return c.c.RemoveContainer(docker.RemoveContainerOptions{ID: containerID, Force: true})
 }
 
-// WaitContainer takes a docker container and waits for its finish.
-// It returns the exit code of the container.
-func (c Client) WaitContainer(id ContainerID, removeOnExit bool) (int, error) {
+// WaitContainerOrSwarmService takes a docker container/swarm service and waits for its finish.
+// It returns the exit code of the container/swarm service.
+func (c Client) WaitContainerOrSwarmService(id string, removeOnExit bool) (int, error) {
+	// Inspection will fail, if the container does not exist
+	_, err := c.c.InspectContainer(id)
+	if err != nil {
+		return 0, nil
+	}
+
 	swarmOn, err := c.IsSwarmActive()
 	if err != nil {
 		return 1, err
 	}
 
+	// Swarm mode (swarm services)
 	if swarmOn {
-		notRunning := false
-		for {
-			notRunning, contState, err := c.IsSwarmContainerNotRunning(string(id))
-			if (contState == swarm.TaskStateComplete || contState == swarm.TaskStateFailed || contState == swarm.TaskStateShutdown) && (err != nil) {
-				return 1, err
+		isStopped, task, err := c.isSwarmContainerStopped(id)
+		for isStopped == false {
+			isStopped, task, err = c.isSwarmContainerStopped(id)
+			if (task.Status.State == swarm.TaskStateComplete || task.Status.State == swarm.TaskStateFailed || task.Status.State == swarm.TaskStateShutdown) && (err != nil) {
+				return 1, def.Err(err, "an error has occurred while executing a swarm service")
 			}
-
-			if notRunning {
-				break
-			}
+			time.Sleep(10 * time.Millisecond)
 		}
 
-		if notRunning {
-			opts := docker.RemoveServiceOptions{ID: string(id)}
+		serviceID, err := c.getSwarmServiceIDByContainerID(id)
+		if err != nil {
+			return 1, def.Err(err, "could not find a swarm service related to the provided container id: "+id)
+		}
+
+		if removeOnExit && serviceID != "" {
+			opts := docker.RemoveServiceOptions{ID: serviceID}
 			err = c.c.RemoveService(opts)
+			if err != nil {
+				return 1, def.Err(err, "an error has occurred while trying to remove a swarm service")
+			}
+		}
+		return task.Status.ContainerStatus.ExitCode, nil
+	} else { // Normal Mode (regular containers)
+		exitCode, err := c.c.WaitContainer(id)
+		if removeOnExit {
+			err = c.RemoveContainer(id)
 			if err != nil {
 				return 1, err
 			}
 		}
-		return 0, nil
-
+		return exitCode, err
 	}
-
-	// Normal Mode (regular containers)
-	exitCode, err := c.c.WaitContainer(string(id))
-	if removeOnExit {
-		c.RemoveContainer(string(id))
-	}
-	return exitCode, err
 }
 
 // ListContainers lists the docker images

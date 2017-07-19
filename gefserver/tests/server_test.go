@@ -46,7 +46,7 @@ func TestServer(t *testing.T) {
 	checkMsg(t, err, "build service failed")
 	log.Println("test service built:", service)
 
-	job, err := pier.RunService(service, testPID)
+	job, err := pier.RunService(service.ID, testPID)
 	checkMsg(t, err, "running service failed")
 	log.Println("test job: ", job)
 

@@ -45,7 +45,7 @@ func TestClient(t *testing.T) {
 	before, err := db.ListServices()
 	checkMsg(t, err, "listing services failed")
 
-	service, err := pier.BuildService("./docker_test")
+	service, err := pier.BuildService("./clone_test")
 	checkMsg(t, err, "build service failed")
 	log.Println("test service built:", service)
 
@@ -70,8 +70,13 @@ func TestClient(t *testing.T) {
 		return
 	}
 
-	job, err := pier.RunService(service, "")
+	job, err := pier.RunService(service.ID, testPID)
 	checkMsg(t, err, "running service failed")
+	for job.State.Code == -1 {
+		job, err = db.GetJob(job.ID)
+		checkMsg(t, err, "getting job failed")
+	}
+
 	log.Println("test job: ", job)
 
 	jobList, err := db.ListJobs()
@@ -121,7 +126,7 @@ func TestExecution(t *testing.T) {
 	checkMsg(t, err, "build service failed")
 	log.Println("test service built:", service)
 
-	job, err := pier.RunService(service, testPID)
+	job, err := pier.RunService(service.ID, testPID)
 	checkMsg(t, err, "running service failed")
 
 	log.Println("test job: ", job)
@@ -140,12 +145,10 @@ func TestExecution(t *testing.T) {
 		}
 	}
 	expect(t, job.State.Error == "", "job error")
-
 	files, err := pier.ListFiles(job.OutputVolume, "")
 	checkMsg(t, err, "getting volume failed")
 
 	expect(t, len(files) == 1, "bad returned files")
-
 	_, err = pier.RemoveJob(jobid)
 	checkMsg(t, err, "removing job failed")
 }
