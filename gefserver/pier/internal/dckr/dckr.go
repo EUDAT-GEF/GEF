@@ -74,6 +74,7 @@ type VolBind struct {
 }
 
 var VolumeInUse = docker.ErrVolumeInUse
+var NoSuchVolume = docker.ErrNoSuchVolume
 
 // NewVolBind creates a new VolBind
 func NewVolBind(id VolumeID, mount string, readonly bool) VolBind {
@@ -553,15 +554,11 @@ func (c Client) RemoveContainer(containerID string) error {
 // WaitContainerOrSwarmService takes a docker container/swarm service and waits for its finish.
 // It returns the exit code of the container/swarm service.
 func (c Client) WaitContainerOrSwarmService(id string, removeOnExit bool) (int, error) {
-	noContainer := docker.NoSuchContainer{ID: id}
+	// Inspection will fail, if the container does not exist
 	_, err := c.c.InspectContainer(id)
-	if err == noContainer.Err {
+	if err != nil {
 		return 0, nil
 	}
-	if err != nil {
-		return 1, err
-	}
-
 
 	swarmOn, err := c.IsSwarmActive()
 	if err != nil {

@@ -254,17 +254,11 @@ func (p *Pier) runJob(job *db.Job, service db.Service, inputPID string) {
 	p.db.SetJobState(job.ID, db.NewJobStateOk("Ended successfully", 0))
 }
 
-// WaitContainerOrSwarmService takes a docker container/swarm service and waits for its finish.
-// It returns the exit code of the container/swarm service.
-func (p *Pier) WaitContainerOrSwarmService(id string, removeOnExit bool) (int, error) {
-	return p.docker.client.WaitContainerOrSwarmService(id, removeOnExit)
-}
-
 // RemoveVolumeInUse removes a volume that may seem to be in use
 func (p *Pier) RemoveVolumeInUse(id dckr.VolumeID) error {
 	for {
 		err := p.docker.client.RemoveVolume(id)
-		if err == nil {
+		if err == nil || err == dckr.NoSuchVolume {
 			break
 		}
 
@@ -284,12 +278,11 @@ func (p *Pier) RemoveJob(jobID db.JobID) (db.Job, error) {
 
 	if len(job.Tasks) > 0 {
 		theLastContainer:= job.Tasks[len(job.Tasks)-1].ContainerID
-		_, err = p.WaitContainerOrSwarmService(string(theLastContainer), true)
+		_, err = p.docker.client.WaitContainerOrSwarmService(string(theLastContainer), true)
 		if err != nil {
 			return job, def.Err(err, "Cannot stop and remove a container/swarm service")
 		}
 	}
-
 	// Removing volumes
 	err = p.RemoveVolumeInUse(dckr.VolumeID(job.InputVolume))
 	if err != nil {

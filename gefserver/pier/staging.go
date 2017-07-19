@@ -111,7 +111,6 @@ func (p *Pier) ListFiles(volumeID db.VolumeID, filePath string) ([]VolumeItem, e
 			}
 			break
 		}
-		time.Sleep(1000)
 	}
 
 	// Remove a container/swarm service after it is stopped
