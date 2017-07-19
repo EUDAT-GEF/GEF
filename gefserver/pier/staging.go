@@ -114,7 +114,7 @@ func (p *Pier) ListFiles(volumeID db.VolumeID, filePath string) ([]VolumeItem, e
 		time.Sleep(1000)
 	}
 
-	// Killing the container
+	// Remove a container/swarm service after it is stopped
 	_, err = p.docker.client.WaitContainerOrSwarmService(string(containerID), true)
 	if err != nil {
 		return volumeFileList, def.Err(err, "waiting for container to end failed")

@@ -24,7 +24,6 @@ var (
 )
 
 func TestClient(t *testing.T) {
-
 	config, err := def.ReadConfigFile(configFilePath)
 	checkMsg(t, err, "reading config files")
 
@@ -72,6 +71,7 @@ func TestClient(t *testing.T) {
 	}
 
 	job, err := pier.RunService(service, testPID)
+	checkMsg(t, err, "running service failed")
 	for {
 		runningJob, err := db.GetJob(job.ID)
 		checkMsg(t, err, "running job failed")
@@ -80,8 +80,6 @@ func TestClient(t *testing.T) {
 			break
 		}
 	}
-
-	checkMsg(t, err, "running service failed")
 	log.Println("test job: ", job)
 
 	jobList, err := db.ListJobs()
@@ -110,7 +108,6 @@ func TestClient(t *testing.T) {
 }
 
 func TestExecution(t *testing.T) {
-	log.Println("TestB running")
 	config, err := def.ReadConfigFile(configFilePath)
 	checkMsg(t, err, "reading config files")
 

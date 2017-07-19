@@ -13,7 +13,6 @@ import (
 	"github.com/EUDAT-GEF/GEF/gefserver/db"
 	"github.com/EUDAT-GEF/GEF/gefserver/def"
 	"github.com/EUDAT-GEF/GEF/gefserver/pier/internal/dckr"
-	"github.com/fsouza/go-dockerclient"
 	"github.com/pborman/uuid"
 )
 
@@ -149,9 +148,12 @@ func (p *Pier) RunService(service db.Service, inputPID string) (db.Job, error) {
 	}
 
 	err := p.db.AddJob(job)
-	updService, err := p.db.GetService(service.ID) // we need an updated service with all metadata
+	if err !=nil {
+		return job, err
+	}
+	//updService, err := p.db.GetService(service.ID) // we need an updated service with all metadata
 
-	go p.runJob(&job, updService, inputPID)
+	go p.runJob(&job, service, inputPID)
 
 	return job, err
 }
@@ -258,9 +260,19 @@ func (p *Pier) WaitContainerOrSwarmService(id string, removeOnExit bool) (int, e
 	return p.docker.client.WaitContainerOrSwarmService(id, removeOnExit)
 }
 
-// GetSwarmServiceIDByContainerID
-func (p *Pier) GetSwarmServiceIDByContainerID(id string) (string, error) {
-	return p.docker.client.GetSwarmServiceIDByContainerID(id)
+// RemoveVolumeInUse removes a volume that may seem to be in use
+func (p *Pier) RemoveVolumeInUse(id dckr.VolumeID) error {
+	for {
+		err := p.docker.client.RemoveVolume(id)
+		if err == nil {
+			break
+		}
+
+		if err != dckr.VolumeInUse {
+			return def.Err(err, "Input volume cannot be removed")
+		}
+	}
+	return nil
 }
 
 // RemoveJob removes a job by ID
@@ -271,36 +283,21 @@ func (p *Pier) RemoveJob(jobID db.JobID) (db.Job, error) {
 	}
 
 	if len(job.Tasks) > 0 {
-		_, err = p.WaitContainerOrSwarmService(string(job.Tasks[len(job.Tasks)-1].ContainerID), true)
+		theLastContainer:= job.Tasks[len(job.Tasks)-1].ContainerID
+		_, err = p.WaitContainerOrSwarmService(string(theLastContainer), true)
 		if err != nil {
 			return job, def.Err(err, "Cannot stop and remove a container/swarm service")
 		}
 	}
 
 	// Removing volumes
-	// They may be in use, so we need to wait a bit
-	for {
-		err = p.docker.client.RemoveVolume(dckr.VolumeID(job.InputVolume))
-		if err == nil {
-			break
-		}
-		if err != docker.ErrVolumeInUse {
-			return job, def.Err(err, "Input volume cannot be removed")
-		}
-
-		time.Sleep(1000)
+	err = p.RemoveVolumeInUse(dckr.VolumeID(job.InputVolume))
+	if err != nil {
+		return job, err
 	}
-
-	for {
-		err = p.docker.client.RemoveVolume(dckr.VolumeID(job.OutputVolume))
-		if err == nil {
-			break
-		}
-		if err != docker.ErrVolumeInUse {
-			return job, def.Err(err, "Output volume cannot be removed")
-		}
-
-		time.Sleep(1000)
+	err = p.RemoveVolumeInUse(dckr.VolumeID(job.OutputVolume))
+	if err != nil {
+		return job, err
 	}
 
 	// Removing the job from the list
