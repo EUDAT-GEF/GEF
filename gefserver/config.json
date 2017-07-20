@@ -31,8 +31,8 @@
 		"CpuShares": 1024,
 		"CpuPeriod": 100000,
 		"CpuQuota": 50000,
-		"Memory":     100024000,
-		"MemorySwap": 150024000
+		"Memory":     400024000,
+		"MemorySwap": 450024000
 	},
 	"Timeouts": {
 		"DataStaging": 1000,
