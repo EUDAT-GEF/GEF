@@ -114,6 +114,16 @@ func (p *Pier) SetDockerConnection(config def.DockerConfig, limits def.LimitConf
 	return nil
 }
 
+// InitiateOrLeaveSwarmMode switches a node to the Swarm Mode, if it was off and vice versa
+func (p *Pier) InitiateOrLeaveSwarmMode(listenAddr string, advertiseAddr string) (string, error) {
+	return p.docker.client.InitiateOrLeaveSwarmMode(listenAddr, advertiseAddr)
+}
+
+// LeaveIfInSwarmMode deactivates the Swarm Mode, if it was on
+func (p *Pier) LeaveIfInSwarmMode() error {
+	return p.docker.client.LeaveIfInSwarmMode()
+}
+
 // BuildService builds a services based on the content of the provided folder
 func (p *Pier) BuildService(buildDir string) (db.Service, error) {
 	image, err := p.docker.client.BuildImage(buildDir)

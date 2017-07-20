@@ -79,6 +79,12 @@ var VolumeInUse = docker.ErrVolumeInUse
 // NoSuchVolume is an error that occurs when a volume is not found
 var NoSuchVolume = docker.ErrNoSuchVolume
 
+// NodeAlreadyInSwarm is an error that occurs when we try to switch to the swarm mode but the node is already in a swarm
+var NodeAlreadyInSwarm = docker.ErrNodeAlreadyInSwarm
+
+// NodeNotInSwarm is an error that occurs when we try to switch to the swarm mode but the node is cannot do it
+var NodeNotInSwarm = docker.ErrNodeNotInSwarm
+
 // NewVolBind creates a new VolBind
 func NewVolBind(id VolumeID, mount string, readonly bool) VolBind {
 	return VolBind{
@@ -259,6 +265,50 @@ func (c *Client) BuildImage(dirpath string) (Image, error) {
 	}
 
 	return c.InspectImage(img.ID)
+}
+
+// InitiateOrLeaveSwarmMode switches a node to the Swarm Mode, if it was off and vice versa
+func (c Client) InitiateOrLeaveSwarmMode(listenAddr string, advertiseAddr string) (string, error) {
+	swarm, err := c.c.InitSwarm(
+		docker.InitSwarmOptions{
+			InitRequest: swarm.InitRequest{
+				ListenAddr:    listenAddr,
+				AdvertiseAddr: advertiseAddr,
+			},
+		},
+	)
+	if err == NodeAlreadyInSwarm {
+		err = c.LeaveSwarmMode(true)
+	}
+	return swarm, err
+}
+
+// LeaveIfInSwarmMode deactivates the Swarm Mode, if it was on
+func (c Client) LeaveIfInSwarmMode() error {
+	err := c.LeaveSwarmMode(true)
+	if err == NodeNotInSwarm {
+		return nil
+	}
+	return err
+}
+
+// InitiateSwarmMode switches a node to the Swarm Mode
+func (c Client) InitiateSwarmMode(listenAddr string, advertiseAddr string) (string, error) {
+	return c.c.InitSwarm(
+		docker.InitSwarmOptions{
+			InitRequest: swarm.InitRequest{
+				ListenAddr:    listenAddr,
+				AdvertiseAddr: advertiseAddr,
+			},
+		},
+	)
+}
+
+// LeaveSwarmMode deactivates the Swarm Mode
+func (c Client) LeaveSwarmMode(forced bool) error {
+	return c.c.LeaveSwarm(docker.LeaveSwarmOptions{
+		Force: forced,
+	})
 }
 
 // GetSwarmContainerInfo finds a task associated with the given serviceID and retrieves information about the corresponding container
