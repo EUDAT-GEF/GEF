@@ -10,7 +10,7 @@ backend:
 	$(GOPATH)/bin/golint ./gefserver
 	go vet ./gefserver
 	go build -i -o build/gefserver ./gefserver
-	GEF_SECRET_KEY="test" go test -timeout 4m ./gefserver/tests
+	(cd ./gefserver/tests &&  GEF_SECRET_KEY="test" go test -coverpkg "../db","../def/","../pier/...","../server" -timeout 4m)
 
 webui: $(JSBUNDLE)
 
