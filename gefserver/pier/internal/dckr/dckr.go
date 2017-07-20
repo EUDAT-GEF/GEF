@@ -269,14 +269,7 @@ func (c *Client) BuildImage(dirpath string) (Image, error) {
 
 // InitiateOrLeaveSwarmMode switches a node to the Swarm Mode, if it was off and vice versa
 func (c Client) InitiateOrLeaveSwarmMode(listenAddr string, advertiseAddr string) (string, error) {
-	swarm, err := c.c.InitSwarm(
-		docker.InitSwarmOptions{
-			InitRequest: swarm.InitRequest{
-				ListenAddr:    listenAddr,
-				AdvertiseAddr: advertiseAddr,
-			},
-		},
-	)
+	swarm, err := c.InitiateSwarmMode(listenAddr, advertiseAddr)
 	if err == NodeAlreadyInSwarm {
 		err = c.LeaveSwarmMode(true)
 	}

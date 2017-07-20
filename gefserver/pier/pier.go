@@ -114,9 +114,9 @@ func (p *Pier) SetDockerConnection(config def.DockerConfig, limits def.LimitConf
 	return nil
 }
 
-// InitiateOrLeaveSwarmMode switches a node to the Swarm Mode, if it was off and vice versa
-func (p *Pier) InitiateOrLeaveSwarmMode(listenAddr string, advertiseAddr string) (string, error) {
-	return p.docker.client.InitiateOrLeaveSwarmMode(listenAddr, advertiseAddr)
+// InitiateSwarmMode switches a node to the Swarm Mode
+func (p *Pier) InitiateSwarmMode(listenAddr string, advertiseAddr string) (string, error) {
+	return p.docker.client.InitiateSwarmMode(listenAddr, advertiseAddr)
 }
 
 // LeaveIfInSwarmMode deactivates the Swarm Mode, if it was on

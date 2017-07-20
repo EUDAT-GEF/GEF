@@ -23,57 +23,6 @@ var (
 	email2 = "user2@example.com"
 )
 
-func TestMain(m *testing.M) {
-	code := m.Run()
-	if code != 0 {
-		os.Exit(code)
-	} else {
-		log.Println("************************************")
-		log.Println("* Running tests for the swarm mode *")
-		log.Println("************************************")
-		config, err := def.ReadConfigFile(configFilePath)
-		if err != nil {
-			log.Fatal(def.Err(err, "reading config files failed"))
-			os.Exit(1)
-		}
-
-		db, file, err := db.InitDbForTesting()
-		if err != nil {
-			log.Fatal(def.Err(err, "creating db failed"))
-			os.Exit(1)
-		}
-		defer db.Close()
-		defer os.Remove(file)
-
-		pier, err := pier.NewPier(&db, config.TmpDir)
-		if err != nil {
-			log.Fatal(def.Err(err, "creating new pier failed"))
-			os.Exit(1)
-		}
-
-		err = pier.SetDockerConnection(config.Docker, config.Limits, config.Timeouts, internalServicesFolder)
-		if err != nil {
-			log.Fatal(def.Err(err, "setting docker connection failed"))
-			os.Exit(1)
-		}
-
-		_, err = pier.InitiateOrLeaveSwarmMode("127.0.0.1", "127.0.0.1")
-		if err != nil {
-			log.Fatal(def.Err(err, "switching to the swarm mode or leaving swarm failed"))
-			os.Exit(1)
-		}
-
-		swarmExitCode := m.Run()
-		err = pier.LeaveIfInSwarmMode()
-		if err != nil {
-			log.Fatal(def.Err(err, "leaving swarm failed"))
-			os.Exit(1)
-		}
-
-		os.Exit(swarmExitCode)
-	}
-}
-
 func TestClient(t *testing.T) {
 	config, err := def.ReadConfigFile(configFilePath)
 	checkMsg(t, err, "reading config files")
