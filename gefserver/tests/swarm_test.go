@@ -11,7 +11,7 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	doYouNeedSwarm(false)
+	setSwarmMode(false)
 	code := m.Run()
 	os.Exit(code)
 }
@@ -21,14 +21,14 @@ func TestAgainInSwarm(t *testing.T) {
 	log.Println("* Running tests for the swarm mode *")
 	log.Println("************************************")
 
-	doYouNeedSwarm(true) // switching to a swarm
+	setSwarmMode(true) // switching to a swarm
 	TestClient(t)
 	TestExecution(t)
 	TestServer(t)
-	doYouNeedSwarm(false) // leaving a swarm
+	setSwarmMode(false) // leaving a swarm
 }
 
-func doYouNeedSwarm(activate bool) {
+func setSwarmMode(activate bool) {
 	config, err := def.ReadConfigFile(configFilePath)
 	if err != nil {
 		log.Fatal(def.Err(err, "reading config files failed"))

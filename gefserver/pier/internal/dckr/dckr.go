@@ -268,7 +268,7 @@ func (c *Client) BuildImage(dirpath string) (Image, error) {
 }
 
 // InitiateOrLeaveSwarmMode switches a node to the Swarm Mode, if it was off and vice versa
-func (c Client) InitiateOrLeaveSwarmMode(listenAddr string, advertiseAddr string) (string, error) {
+func (c Client) ToggleSwarmMode(listenAddr string, advertiseAddr string) (string, error) {
 	swarm, err := c.InitiateSwarmMode(listenAddr, advertiseAddr)
 	if err == NodeAlreadyInSwarm {
 		err = c.LeaveSwarmMode(true)
