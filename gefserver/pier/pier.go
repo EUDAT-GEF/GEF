@@ -30,9 +30,11 @@ const GefImageTag = "gef"
 
 // Pier is a master struct for gef-docker abstractions
 type Pier struct {
-	docker *dockerConnection
-	db     *db.Db
-	tmpDir string
+	docker         *dockerConnection
+	db             *db.Db
+	tmpDir         string
+	jobExecTimeOut int64
+	checkInterval  int64
 }
 
 type dockerConnection struct {
@@ -51,11 +53,13 @@ type internalImage struct {
 }
 
 // NewPier creates a new pier with all the needed setup
-func NewPier(dataBase *db.Db, tmpDir string) (*Pier, error) {
+func NewPier(dataBase *db.Db, tmpDir string, jobExecTimeOut int64, checkInterval int64) (*Pier, error) {
 	pier := Pier{
-		db:     dataBase,
-		docker: nil,
-		tmpDir: tmpDir,
+		db:             dataBase,
+		docker:         nil,
+		tmpDir:         tmpDir,
+		jobExecTimeOut: jobExecTimeOut,
+		checkInterval:  checkInterval,
 	}
 	log.Println("Pier created")
 	return &pier, nil
@@ -146,6 +150,31 @@ func (p *Pier) BuildService(buildDir string) (db.Service, error) {
 	return service, nil
 }
 
+// startTimeOutTicker starts a clock that checks if a job exceeds an execution timeout
+func (p *Pier) startTimeOutTicker(jobId db.JobID) {
+	ticker := time.NewTicker(time.Second * time.Duration(p.checkInterval))
+	go func() {
+		for _ := range ticker.C {
+			job, err := p.db.GetJob(jobId)
+			if err != nil {
+				p.db.SetJobState(job.ID, db.NewJobStateError("Cannot get information about the job running", 1))
+			}
+			if job.State.Code != -1 {
+				ticker.Stop()
+			}
+
+			startingTime := job.Created
+			currentTime := time.Now().UTC()
+			durationTime := time.Duration(currentTime.Sub(startingTime))
+
+			if durationTime.Seconds() >= float64(p.jobExecTimeOut) {
+				p.db.SetJobState(job.ID, db.NewJobStateError("Job execution timeout exceeded", 1))
+				ticker.Stop()
+			}
+		}
+	}()
+}
+
 // RunService exported
 func (p *Pier) RunService(id db.ServiceID, inputPID string) (db.Job, error) {
 	service, err := p.db.GetService(id)
@@ -172,6 +201,7 @@ func (p *Pier) RunService(id db.ServiceID, inputPID string) (db.Job, error) {
 	}
 
 	go p.runJob(&job, service, inputPID)
+	go p.startTimeOutTicker(job.ID)
 
 	return job, err
 }

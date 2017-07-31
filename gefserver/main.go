@@ -31,7 +31,7 @@ func main() {
 	defer d.Close()
 
 	var p *pier.Pier
-	p, err = pier.NewPier(&d, config.TmpDir)
+	p, err = pier.NewPier(&d, config.TmpDir, config.Timeouts.JobExecution, config.Timeouts.CheckInterval)
 	if err != nil {
 		log.Fatal("FATAL: ", def.Err(err, "Cannot create Pier"))
 	}
