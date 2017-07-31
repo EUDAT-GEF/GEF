@@ -25,7 +25,7 @@ func TestServer(t *testing.T) {
 	defer db.Close()
 	defer os.Remove(dbfile)
 
-	pier, err := pier.NewPier(&db, config.TmpDir)
+	pier, err := pier.NewPier(&db, config.TmpDir, config.Timeouts.JobExecution, config.Timeouts.CheckInterval)
 	checkMsg(t, err, "creating new pier")
 
 	err = pier.SetDockerConnection(config.Docker, config.Limits, config.Timeouts, internalServicesFolder)

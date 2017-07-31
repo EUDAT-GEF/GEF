@@ -35,7 +35,7 @@ func setSwarmMode(activate bool) {
 		os.Exit(1)
 	}
 
-	pier, err := pier.NewPier(&db.Db{}, config.TmpDir)
+	pier, err := pier.NewPier(&db.Db{}, config.TmpDir, config.Timeouts.JobExecution, config.Timeouts.CheckInterval)
 	if err != nil {
 		log.Fatal(def.Err(err, "creating new pier failed"))
 		os.Exit(1)

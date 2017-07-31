@@ -39,7 +39,7 @@
 		"VolumeInspection": 1000,
 		"FileDownload": 1000,
 		"Preparation": 100,
-		"JobExecution": 20,
+		"JobExecution": 100,
 		"CheckInterval": 2
 	}
 }

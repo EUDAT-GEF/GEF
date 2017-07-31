@@ -156,11 +156,15 @@ func (p *Pier) startTimeOutTicker(jobId db.JobID) {
 	go func() {
 		for range ticker.C {
 			job, err := p.db.GetJob(jobId)
+
 			if err != nil {
 				p.db.SetJobState(job.ID, db.NewJobStateError("Cannot get information about the job running", 1))
+				ticker.Stop()
+				break
 			}
 			if job.State.Code != -1 {
 				ticker.Stop()
+				break
 			}
 
 			startingTime := job.Created
@@ -170,6 +174,13 @@ func (p *Pier) startTimeOutTicker(jobId db.JobID) {
 			if durationTime.Seconds() >= float64(p.jobExecTimeOut) {
 				p.db.SetJobState(job.ID, db.NewJobStateError("Job execution timeout exceeded", 1))
 				ticker.Stop()
+
+				theLastContainer := job.Tasks[len(job.Tasks)-1].ContainerID
+				_, err = p.docker.client.WaitContainerOrSwarmService(string(theLastContainer), true)
+				if err != nil {
+					p.db.SetJobState(job.ID, db.NewJobStateError("Container removal failed", 1))
+				}
+				break
 			}
 		}
 	}()
