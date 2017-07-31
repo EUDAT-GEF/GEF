@@ -154,7 +154,7 @@ func (p *Pier) BuildService(buildDir string) (db.Service, error) {
 func (p *Pier) startTimeOutTicker(jobId db.JobID) {
 	ticker := time.NewTicker(time.Second * time.Duration(p.checkInterval))
 	go func() {
-		for _ := range ticker.C {
+		for range ticker.C {
 			job, err := p.db.GetJob(jobId)
 			if err != nil {
 				p.db.SetJobState(job.ID, db.NewJobStateError("Cannot get information about the job running", 1))
