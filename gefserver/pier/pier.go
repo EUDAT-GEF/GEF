@@ -155,7 +155,10 @@ func (p *Pier) startTimeOutTicker(jobId db.JobID) {
 		job, err := p.db.GetJob(jobId)
 
 		if err != nil {
-			p.db.SetJobState(job.ID, db.NewJobStateError("Cannot get information about the job running", 1))
+			err = p.db.SetJobState(job.ID, db.NewJobStateError("Cannot get information about the job running", 1))
+			if err !=nil {
+				log.Println(err)
+			}
 			ticker.Stop()
 			break
 		}
@@ -169,13 +172,19 @@ func (p *Pier) startTimeOutTicker(jobId db.JobID) {
 		durationTime := time.Duration(currentTime.Sub(startingTime))
 
 		if durationTime.Seconds() >= float64(p.timeOuts.JobExecution) {
-			p.db.SetJobState(job.ID, db.NewJobStateError("Job execution timeout exceeded", 1))
+			err = p.db.SetJobState(job.ID, db.NewJobStateError("Job execution timeout exceeded", 1))
+			if err !=nil {
+				log.Println(err)
+			}
 			ticker.Stop()
 
 			theLastContainer := job.Tasks[len(job.Tasks)-1].ContainerID
 			_, err = p.docker.client.WaitContainerOrSwarmService(string(theLastContainer), true)
 			if err != nil {
-				p.db.SetJobState(job.ID, db.NewJobStateError("Job execution timeout exceeded and container removal failed", 1))
+				err = p.db.SetJobState(job.ID, db.NewJobStateError("Job execution timeout exceeded and container removal failed", 1))
+				if err !=nil {
+					log.Println(err)
+				}
 			}
 			break
 		}
@@ -224,17 +233,29 @@ func (p *Pier) runJob(job *db.Job, service db.Service, inputPID string) {
 	var err error
 	var inputVolume dckr.Volume
 	{
-		p.db.SetJobState(job.ID, db.NewJobStateOk("Creating a new input volume", -1))
+		err = p.db.SetJobState(job.ID, db.NewJobStateOk("Creating a new input volume", -1))
+		if err !=nil {
+			log.Println(err)
+		}
 		inputVolume, err = p.docker.client.NewVolume()
 		if err != nil {
-			p.db.SetJobState(job.ID, db.NewJobStateError("Error while creating new input volume", 1))
+			err = p.db.SetJobState(job.ID, db.NewJobStateError("Error while creating new input volume", 1))
+			if err !=nil {
+				log.Println(err)
+			}
 			return
 		}
-		p.db.SetJobInputVolume(job.ID, db.VolumeID(inputVolume.ID))
+		err = p.db.SetJobInputVolume(job.ID, db.VolumeID(inputVolume.ID))
+		if err !=nil {
+			log.Println(err)
+		}
 	}
 
 	{
-		p.db.SetJobState(job.ID, db.NewJobStateOk("Performing data staging", -1))
+		err = p.db.SetJobState(job.ID, db.NewJobStateOk("Performing data staging", -1))
+		if err !=nil {
+			log.Println(err)
+		}
 		binds := []dckr.VolBind{
 			dckr.NewVolBind(inputVolume.ID, "/volume", false),
 		}
@@ -251,29 +272,47 @@ func (p *Pier) runJob(job *db.Job, service db.Service, inputPID string) {
 
 		p.db.AddJobTask(job.ID, "Data staging", string(containerID), err2str(err), exitCode, output)
 		if err != nil {
-			p.db.SetJobState(job.ID, db.NewJobStateError("Data staging failed", 1))
+			err = p.db.SetJobState(job.ID, db.NewJobStateError("Data staging failed", 1))
+			if err !=nil {
+				log.Println(err)
+			}
 			return
 		}
 		if exitCode != 0 {
 			msg := fmt.Sprintf("Data staging failed (exitCode = %v)", exitCode)
-			p.db.SetJobState(job.ID, db.NewJobStateOk(msg, 1))
+			err = p.db.SetJobState(job.ID, db.NewJobStateOk(msg, 1))
+			if err !=nil {
+				log.Println(err)
+			}
 			return
 		}
 	}
 
 	var outputVolume dckr.Volume
 	{
-		p.db.SetJobState(job.ID, db.NewJobStateOk("Creating a new output volume", -1))
+		err = p.db.SetJobState(job.ID, db.NewJobStateOk("Creating a new output volume", -1))
+		if err !=nil {
+			log.Println(err)
+		}
 		outputVolume, err = p.docker.client.NewVolume()
 		if err != nil {
-			p.db.SetJobState(job.ID, db.NewJobStateError("Error while creating new output volume", 1))
+			err = p.db.SetJobState(job.ID, db.NewJobStateError("Error while creating new output volume", 1))
+			if err !=nil {
+				log.Println(err)
+			}
 			return
 		}
-		p.db.SetJobOutputVolume(job.ID, db.VolumeID(outputVolume.ID))
+		err = p.db.SetJobOutputVolume(job.ID, db.VolumeID(outputVolume.ID))
+		if err !=nil {
+			log.Println(err)
+		}
 	}
 
 	{
-		p.db.SetJobState(job.ID, db.NewJobStateOk("Executing the service", -1))
+		err = p.db.SetJobState(job.ID, db.NewJobStateOk("Executing the service", -1))
+		if err !=nil {
+			log.Println(err)
+		}
 		binds := []dckr.VolBind{
 			dckr.NewVolBind(inputVolume.ID, service.Input[0].Path, true),
 			dckr.NewVolBind(outputVolume.ID, service.Output[0].Path, false),
@@ -287,21 +326,33 @@ func (p *Pier) runJob(job *db.Job, service db.Service, inputPID string) {
 			p.docker.timeouts.Preparation,
 			p.docker.timeouts.JobExecution,
 			true)
-		p.db.AddJobTask(job.ID, "Service execution", string(containerID), err2str(err), exitCode, output)
+		err = p.db.AddJobTask(job.ID, "Service execution", string(containerID), err2str(err), exitCode, output)
+		if err !=nil {
+			log.Println(err)
+		}
 
 		//log.Println("  job ended: ", exitCode, ", error: ", err)
 		if err != nil {
-			p.db.SetJobState(job.ID, db.NewJobStateError("Service failed", 1))
+			err = p.db.SetJobState(job.ID, db.NewJobStateError("Service failed", 1))
+			if err !=nil {
+				log.Println(err)
+			}
 			return
 		}
 		if exitCode != 0 {
 			msg := fmt.Sprintf("Service failed (exitCode = %v)", exitCode)
-			p.db.SetJobState(job.ID, db.NewJobStateOk(msg, 1))
+			err = p.db.SetJobState(job.ID, db.NewJobStateOk(msg, 1))
+			if err !=nil {
+				log.Println(err)
+			}
 			return
 		}
 	}
 
-	p.db.SetJobState(job.ID, db.NewJobStateOk("Ended successfully", 0))
+	err = p.db.SetJobState(job.ID, db.NewJobStateOk("Ended successfully", 0))
+	if err !=nil {
+		log.Println(err)
+	}
 }
 
 // RemoveVolumeInUse removes a volume that may seem to be in use
