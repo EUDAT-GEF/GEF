@@ -30,11 +30,10 @@ const GefImageTag = "gef"
 
 // Pier is a master struct for gef-docker abstractions
 type Pier struct {
-	docker         *dockerConnection
-	db             *db.Db
-	tmpDir         string
-	jobExecTimeOut int64
-	checkInterval  int64
+	docker   *dockerConnection
+	db       *db.Db
+	tmpDir   string
+	timeOuts def.TimeoutConfig
 }
 
 type dockerConnection struct {
@@ -53,13 +52,12 @@ type internalImage struct {
 }
 
 // NewPier creates a new pier with all the needed setup
-func NewPier(dataBase *db.Db, tmpDir string, jobExecTimeOut int64, checkInterval int64) (*Pier, error) {
+func NewPier(dataBase *db.Db, tmpDir string, timeOuts def.TimeoutConfig) (*Pier, error) {
 	pier := Pier{
-		db:             dataBase,
-		docker:         nil,
-		tmpDir:         tmpDir,
-		jobExecTimeOut: jobExecTimeOut,
-		checkInterval:  checkInterval,
+		db:       dataBase,
+		docker:   nil,
+		tmpDir:   tmpDir,
+		timeOuts: timeOuts,
 	}
 	log.Println("Pier created")
 	return &pier, nil
@@ -152,38 +150,36 @@ func (p *Pier) BuildService(buildDir string) (db.Service, error) {
 
 // startTimeOutTicker starts a clock that checks if a job exceeds an execution timeout
 func (p *Pier) startTimeOutTicker(jobId db.JobID) {
-	ticker := time.NewTicker(time.Second * time.Duration(p.checkInterval))
-	go func() {
-		for range ticker.C {
-			job, err := p.db.GetJob(jobId)
+	ticker := time.NewTicker(time.Second * time.Duration(p.timeOuts.CheckInterval))
+	for range ticker.C {
+		job, err := p.db.GetJob(jobId)
 
-			if err != nil {
-				p.db.SetJobState(job.ID, db.NewJobStateError("Cannot get information about the job running", 1))
-				ticker.Stop()
-				break
-			}
-			if job.State.Code != -1 {
-				ticker.Stop()
-				break
-			}
-
-			startingTime := job.Created
-			currentTime := time.Now().UTC()
-			durationTime := time.Duration(currentTime.Sub(startingTime))
-
-			if durationTime.Seconds() >= float64(p.jobExecTimeOut) {
-				p.db.SetJobState(job.ID, db.NewJobStateError("Job execution timeout exceeded", 1))
-				ticker.Stop()
-
-				theLastContainer := job.Tasks[len(job.Tasks)-1].ContainerID
-				_, err = p.docker.client.WaitContainerOrSwarmService(string(theLastContainer), true)
-				if err != nil {
-					p.db.SetJobState(job.ID, db.NewJobStateError("Container removal failed", 1))
-				}
-				break
-			}
+		if err != nil {
+			p.db.SetJobState(job.ID, db.NewJobStateError("Cannot get information about the job running", 1))
+			ticker.Stop()
+			break
 		}
-	}()
+		if job.State.Code != -1 {
+			ticker.Stop()
+			break
+		}
+
+		startingTime := job.Created
+		currentTime := time.Now()
+		durationTime := time.Duration(currentTime.Sub(startingTime))
+
+		if durationTime.Seconds() >= float64(p.timeOuts.JobExecution) {
+			p.db.SetJobState(job.ID, db.NewJobStateError("Job execution timeout exceeded", 1))
+			ticker.Stop()
+
+			theLastContainer := job.Tasks[len(job.Tasks)-1].ContainerID
+			_, err = p.docker.client.WaitContainerOrSwarmService(string(theLastContainer), true)
+			if err != nil {
+				p.db.SetJobState(job.ID, db.NewJobStateError("Job execution timeout exceeded and container removal failed", 1))
+			}
+			break
+		}
+	}
 }
 
 // RunService exported

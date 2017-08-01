@@ -36,7 +36,7 @@ func TestClient(t *testing.T) {
 	user2 := addUser(t, db, name2, email2)
 	testUserTokens(t, db, user1, user2)
 
-	pier, err := pier.NewPier(&db, config.TmpDir, config.Timeouts.JobExecution, config.Timeouts.CheckInterval)
+	pier, err := pier.NewPier(&db, config.TmpDir, config.Timeouts)
 	checkMsg(t, err, "creating new pier")
 
 	err = pier.SetDockerConnection(config.Docker, config.Limits, config.Timeouts, internalServicesFolder)
@@ -116,7 +116,7 @@ func TestExecution(t *testing.T) {
 	addUser(t, db, name1, email1)
 	addUser(t, db, name2, email2)
 
-	pier, err := pier.NewPier(&db, config.TmpDir, config.Timeouts.JobExecution, config.Timeouts.CheckInterval)
+	pier, err := pier.NewPier(&db, config.TmpDir, config.Timeouts)
 	checkMsg(t, err, "creating new pier")
 
 	err = pier.SetDockerConnection(config.Docker, config.Limits, config.Timeouts, internalServicesFolder)
