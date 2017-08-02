@@ -596,7 +596,6 @@ func (c Client) StartExistingContainer(contID string, binds []string) (Container
 func (c Client) RemoveContainer(containerID string) error {
 	removeOpts := docker.RemoveContainerOptions{
 		ID:            containerID,
-		RemoveVolumes: true,
 		Force:         true,
 	}
 
@@ -660,7 +659,7 @@ func (c Client) WaitContainerOrSwarmService(id string, removeOnExit bool) (int, 
 }
 
 // StopAndRemoveContainerOrSwarmService stops and removes a running container or a swarm service
-func (c Client) StopAndRemoveContainerOrSwarmService(id string) error {
+func (c Client) ForceRemoveContainerOrSwarmService(id string) error {
 	// Inspection will fail, if the container does not exist
 	_, err := c.c.InspectContainer(id)
 	if err != nil {

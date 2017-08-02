@@ -58,7 +58,7 @@ func (p *Pier) DownStreamContainerFile(volumeID string, fileLocation string, w h
 	tarBallReader := tar.NewReader(tarStream)
 	header, err := tarBallReader.Next()
 	//defer p.docker.client.RemoveContainer(string(containerID))
-	defer p.docker.client.StopAndRemoveContainerOrSwarmService(string(containerID))
+	defer p.docker.client.ForceRemoveContainerOrSwarmService(string(containerID))
 	if err != nil {
 		return def.Err(err, "reading tarball failed")
 	}
