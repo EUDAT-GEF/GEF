@@ -116,17 +116,17 @@ func TestExecution(t *testing.T) {
 	addUser(t, db, name1, email1)
 	addUser(t, db, name2, email2)
 
-	pier, err := pier.NewPier(&db, config.TmpDir, config.Timeouts)
+	p, err := pier.NewPier(&db, config.TmpDir, config.Timeouts)
 	checkMsg(t, err, "creating new pier")
 
-	err = pier.SetDockerConnection(config.Docker, config.Limits, config.Timeouts, internalServicesFolder)
+	err = p.SetDockerConnection(config.Docker, config.Limits, config.Timeouts, internalServicesFolder)
 	checkMsg(t, err, "setting docker connection")
 
-	service, err := pier.BuildService("./clone_test")
+	service, err := p.BuildService("./clone_test")
 	checkMsg(t, err, "build service failed")
 	log.Println("test service built:", service)
 
-	job, err := pier.RunService(service.ID, testPID)
+	job, err := p.RunService(service.ID, testPID)
 	checkMsg(t, err, "running service failed")
 
 	log.Println("test job: ", job)
@@ -144,13 +144,59 @@ func TestExecution(t *testing.T) {
 			log.Println("task ", i, ":", t)
 		}
 	}
+
 	expect(t, job.State.Error == "", "job error")
-	files, err := pier.ListFiles(job.OutputVolume, "")
+	files, err := p.ListFiles(job.OutputVolume, "")
 	checkMsg(t, err, "getting volume failed")
 
 	expect(t, len(files) == 1, "bad returned files")
-	_, err = pier.RemoveJob(jobid)
+	_, err = p.RemoveJob(jobid)
 	checkMsg(t, err, "removing job failed")
+}
+
+func TestJobTimeOut(t *testing.T) {
+	config, err := def.ReadConfigFile(configFilePath)
+	checkMsg(t, err, "reading config files")
+	config.Timeouts.JobExecution = 3  // forcing a small time out
+	config.Timeouts.CheckInterval = 2 // forcing a small check interval
+
+	db, dbfile, err := db.InitDbForTesting()
+	checkMsg(t, err, "creating db")
+	defer db.Close()
+	defer os.Remove(dbfile)
+
+	addUser(t, db, name1, email1)
+	addUser(t, db, name2, email2)
+
+	p, err := pier.NewPier(&db, config.TmpDir, config.Timeouts)
+	checkMsg(t, err, "creating new pier")
+
+	err = p.SetDockerConnection(config.Docker, config.Limits, config.Timeouts, internalServicesFolder)
+	checkMsg(t, err, "setting docker connection")
+
+	service, err := p.BuildService("./timeout_test")
+	checkMsg(t, err, "build service failed")
+	log.Println("test service built:", service)
+
+	timedOutjob, err := p.RunService(service.ID, testPID)
+	checkMsg(t, err, "running service failed")
+
+	log.Println("test timed out job: ", timedOutjob)
+	timedOutJobId := timedOutjob.ID
+
+	for timedOutjob.State.Code == -1 {
+		timedOutjob, err = db.GetJob(timedOutJobId)
+		checkMsg(t, err, "getting job failed")
+	}
+
+	if timedOutjob.State.Error != "" {
+		log.Println("test timed out job error:")
+		log.Println("state: ", timedOutjob.State)
+		for i, t := range timedOutjob.Tasks {
+			log.Println("task ", i, ":", t)
+		}
+	}
+	expect(t, timedOutjob.State.Error == pier.JobTimeOutError || timedOutjob.State.Error == pier.JobTimeOutAndRemovalError, "job was supposed to time out")
 }
 
 ///////////////////////////////////////////////////////////////////////////////

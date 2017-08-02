@@ -83,12 +83,12 @@ type LimitConfig struct {
 
 // TimeoutConfig specifies timeout parameters (in seconds)
 type TimeoutConfig struct {
-	DataStaging      int64
-	VolumeInspection int64
-	FileDownload     int64
-	Preparation      int64
-	JobExecution     int64
-	CheckInterval    int64 // how often (in seconds) we need to check a job's execution time
+	DataStaging      float64
+	VolumeInspection float64
+	FileDownload     float64
+	Preparation      float64
+	JobExecution     float64
+	CheckInterval    float64 // how often (in seconds) we need to check a job's execution time
 }
 
 func (c DockerConfig) String() string {

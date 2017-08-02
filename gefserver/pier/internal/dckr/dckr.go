@@ -371,12 +371,20 @@ func (c Client) getSwarmServiceIDByContainerID(containerID string) (string, erro
 }
 
 // StartImage takes a docker image, creates a container and starts it
-func (c Client) StartImage(id string, repoTag string, cmdArgs []string, binds []VolBind, limits def.LimitConfig, preparationTimeOut int64, executionTimeOut int64) (ContainerID, *bytes.Buffer, error) {
+func (c Client) StartImage(id string, repoTag string, cmdArgs []string, binds []VolBind, limits def.LimitConfig, preparationTimeOut float64, executionTimeOut float64) (ContainerID, *bytes.Buffer, error) {
 	var stdout bytes.Buffer
 	var runningContainerID ContainerID
 
 	if id == "" {
 		return ContainerID(""), &stdout, def.Err(nil, "Empty image id")
+	}
+
+	if preparationTimeOut == 0 {
+		return ContainerID(""), &stdout, def.Err(nil, "Container preparation time out is not set")
+	}
+
+	if executionTimeOut == 0 {
+		return ContainerID(""), &stdout, def.Err(nil, "Job execution time out is not set")
 	}
 
 	swarmOn, err := c.IsSwarmActive()
@@ -505,7 +513,7 @@ func (c Client) IsSwarmActive() (bool, error) {
 }
 
 // ExecuteImage takes a docker image, creates a container and executes it, and waits for it to end
-func (c Client) ExecuteImage(imgID string, imgRepoTag string, cmdArgs []string, binds []VolBind, limits def.LimitConfig, preparationTimeOut int64, executionTimeOut int64, removeOnExit bool) (ContainerID, int, *bytes.Buffer, error) {
+func (c Client) ExecuteImage(imgID string, imgRepoTag string, cmdArgs []string, binds []VolBind, limits def.LimitConfig, preparationTimeOut float64, executionTimeOut float64, removeOnExit bool) (ContainerID, int, *bytes.Buffer, error) {
 	var stdout *bytes.Buffer
 	cont, stdout, err := c.StartImage(imgID, imgRepoTag, cmdArgs, binds, limits, preparationTimeOut, executionTimeOut)
 
@@ -531,7 +539,7 @@ func (c Client) DeleteImage(id string) error {
 }
 
 // CreateSwarmService creates a Docker swarm service
-func (c Client) CreateSwarmService(repoTag string, cmdArgs []string, binds []VolBind, limits def.LimitConfig, executionTimeOut int64) (*swarm.Service, *bytes.Buffer, error) {
+func (c Client) CreateSwarmService(repoTag string, cmdArgs []string, binds []VolBind, limits def.LimitConfig, executionTimeOut float64) (*swarm.Service, *bytes.Buffer, error) {
 	var stdout bytes.Buffer
 	var srv *swarm.Service
 
@@ -674,6 +682,43 @@ func (c Client) WaitContainerOrSwarmService(id string) (int, error) {
 	} else {
 		// Normal Mode (regular containers)
 		return c.c.WaitContainer(id)
+	}
+}
+
+// StopAndRemoveContainerOrSwarmService stops and removes a running container or a swarm service
+func (c Client) StopAndRemoveContainerOrSwarmService(id string) error {
+	// Inspection will fail, if the container does not exist
+	_, err := c.c.InspectContainer(id)
+	if err != nil {
+		return nil
+	}
+	swarmOn, err := c.IsSwarmActive()
+	if err != nil {
+		return err
+	}
+
+	// Swarm mode (swarm services)
+	if swarmOn {
+		fmt.Println("SWARM")
+		serviceID, err := c.getSwarmServiceIDByContainerID(id)
+		if err != nil {
+			return def.Err(err, "could not find a swarm service related to the provided container id: "+id)
+		}
+
+		if serviceID != "" {
+			opts := docker.RemoveServiceOptions{ID: serviceID}
+			err = c.c.RemoveService(opts)
+			if err != nil {
+				return def.Err(err, "an error has occurred while trying to remove a swarm service")
+			}
+		}
+		return nil
+	} else { // Normal Mode (regular containers)
+		err = c.c.RemoveContainer(docker.RemoveContainerOptions{
+			Force: true,
+			ID:    id,
+		})
+		return err
 	}
 }
 
