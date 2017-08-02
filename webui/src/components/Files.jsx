@@ -82,7 +82,9 @@ class Files extends React.Component {
 
         const submitHandler = ()  => {
             fileUploadStart();
-            this.setState({ uploadInProgress: true, statusMessage: "Service is being built" });
+            if (this.state.myDropzone.files.length>0) {
+                this.setState({uploadInProgress: true, statusMessage: "Service is being built"});
+            }
             this.state.myDropzone.processQueue();
         };
 
