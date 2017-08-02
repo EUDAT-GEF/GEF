@@ -699,7 +699,6 @@ func (c Client) StopAndRemoveContainerOrSwarmService(id string) error {
 
 	// Swarm mode (swarm services)
 	if swarmOn {
-		fmt.Println("SWARM")
 		serviceID, err := c.getSwarmServiceIDByContainerID(id)
 		if err != nil {
 			return def.Err(err, "could not find a swarm service related to the provided container id: "+id)
