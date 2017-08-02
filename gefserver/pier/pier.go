@@ -182,7 +182,7 @@ func (p *Pier) startTimeOutTicker(jobId db.JobID, timeOut float64) {
 				ticker.Stop()
 
 				for _, task := range job.Tasks {
-					err = p.docker.client.StopAndRemoveContainerOrSwarmService(string(task.ContainerID))
+					err = p.docker.client.TerminateContainerOrSwarmService(string(task.ContainerID))
 					if err != nil {
 						log.Println(err)
 						err = p.db.SetJobState(job.ID, db.NewJobStateError(JobTimeOutAndRemovalError, 1))
