@@ -594,7 +594,19 @@ func (c Client) StartExistingContainer(contID string, binds []string) (Container
 
 // RemoveContainer removes a docker container
 func (c Client) RemoveContainer(containerID string) error {
-	return c.c.RemoveContainer(docker.RemoveContainerOptions{ID: containerID, Force: true})
+	removeOpts := docker.RemoveContainerOptions{
+		ID:            containerID,
+		RemoveVolumes: true,
+		Force:         true,
+	}
+
+	err := c.c.RemoveContainer(removeOpts)
+	if err != nil {
+		if _, ok := err.(*docker.NoSuchContainer); ok {
+			return nil
+		}
+	}
+	return err
 }
 
 // WaitContainerOrSwarmService takes a docker container/swarm service and waits for its finish.
