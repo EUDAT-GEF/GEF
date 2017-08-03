@@ -472,7 +472,7 @@ func (c Client) StartImage(id string, repoTag string, cmdArgs []string, binds []
 	defer cancel()
 	err = c.c.StartContainerWithContext(cont.ID, &hc, jobExecutionContext)
 	if err != nil {
-		_, removeErr := c.WaitContainerOrSwarmService(cont.ID, true, true)
+		removeErr := c.TerminateContainerOrSwarmService(cont.ID)
 		if removeErr != nil {
 			log.Println(removeErr)
 		}
@@ -513,7 +513,14 @@ func (c Client) ExecuteImage(imgID string, imgRepoTag string, cmdArgs []string, 
 		return cont, 0, stdout, def.Err(err, "StartImage failed")
 	}
 
-	exitCode, err := c.WaitContainerOrSwarmService(string(cont), removeOnExit, false)
+	exitCode, err := c.WaitContainerOrSwarmService(string(cont))
+	if err != nil {
+		return cont, exitCode, stdout, def.Err(err, "WaitContainerOrSwarmService failed")
+	}
+
+	if removeOnExit {
+		err = c.TerminateContainerOrSwarmService(string(cont))
+	}
 	return cont, exitCode, stdout, err
 }
 
@@ -606,10 +613,20 @@ func (c Client) containerExists(containerId string) bool {
 	return true
 }
 
-// removeContainerOrSwarmService removes a container or a swarm service
-func (c Client) removeContainerOrSwarmService(id string, swarmOn bool) error {
+// TerminateContainerOrSwarmService removes a container or a swarm service
+func (c Client) TerminateContainerOrSwarmService(id string) error {
+	swarmOn, err := c.IsSwarmActive()
+	if err != nil {
+		return err
+	}
+
 	// Swarm mode (swarm services)
 	if swarmOn {
+		// Swarm mode (swarm services)
+		if !c.containerExists(id) { // exit if the container does not exist (to save time)
+			return nil
+		}
+
 		serviceID, err := c.getSwarmServiceIDByContainerID(id)
 		if err != nil {
 			return def.Err(err, "could not find a swarm service related to the provided container id: "+id)
@@ -638,10 +655,9 @@ func (c Client) removeContainerOrSwarmService(id string, swarmOn bool) error {
 	}
 }
 
-// WaitContainerOrSwarmService takes a docker container/swarm service id, monitors it and waits for it to finish. It is
-// also possible to force the removal or keep a container/swarm service after the execution. An exit code of the
-// container/swarm service is returned.
-func (c Client) WaitContainerOrSwarmService(id string, removeOnExit bool, forceRemove bool) (int, error) {
+// WaitContainerOrSwarmService takes a docker container/swarm service id, monitors it and waits for it to finish. An
+// exit code of the container/swarm service is returned.
+func (c Client) WaitContainerOrSwarmService(id string) (int, error) {
 	swarmOn, err := c.IsSwarmActive()
 	if err != nil {
 		return 1, err
@@ -653,44 +669,11 @@ func (c Client) WaitContainerOrSwarmService(id string, removeOnExit bool, forceR
 		if !c.containerExists(id) { // exit if the container does not exist (to save time)
 			return exitCode, nil
 		}
-
-		// we may want to wait till the service is done
-		if !forceRemove {
-			exitCode, err = c.waitSwarmService(id)
-			if err != nil {
-				return exitCode, err
-			}
-		}
-
-		if removeOnExit || forceRemove {
-			err = c.removeContainerOrSwarmService(id, swarmOn)
-			if err != nil {
-				return exitCode, err
-			}
-		}
-		return exitCode, nil
+		exitCode, err = c.waitSwarmService(id)
+		return exitCode, err
 	} else {
 		// Normal Mode (regular containers)
-		if !forceRemove {
-			exitCode, err = c.c.WaitContainer(id)
-			if err != nil {
-				return exitCode, err
-			}
-		}
-		if removeOnExit || forceRemove {
-			removeOpts := docker.RemoveContainerOptions{
-				ID:    id,
-				Force: true,
-			}
-
-			err = c.c.RemoveContainer(removeOpts)
-			if err != nil {
-				if _, ok := err.(*docker.NoSuchContainer); ok {
-					return exitCode, nil
-				}
-			}
-		}
-		return exitCode, err
+		return c.c.WaitContainer(id)
 	}
 }
 

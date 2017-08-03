@@ -292,9 +292,9 @@ func (p *Pier) RemoveJob(jobID db.JobID) (db.Job, error) {
 
 	if len(job.Tasks) > 0 {
 		theLastContainer := job.Tasks[len(job.Tasks)-1].ContainerID
-		_, err = p.docker.client.WaitContainerOrSwarmService(string(theLastContainer), true, true)
+		err = p.docker.client.TerminateContainerOrSwarmService(string(theLastContainer))
 		if err != nil {
-			return job, def.Err(err, "Cannot stop and remove a container/swarm service")
+			return job, def.Err(err, "Cannot remove a container/swarm service")
 		}
 	}
 	// Removing volumes
