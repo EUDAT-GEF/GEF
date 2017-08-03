@@ -10,10 +10,11 @@ import (
 
 	"path/filepath"
 
+	"log"
+
 	"github.com/EUDAT-GEF/GEF/gefserver/db"
 	"github.com/EUDAT-GEF/GEF/gefserver/def"
 	"github.com/EUDAT-GEF/GEF/gefserver/pier/internal/dckr"
-	"log"
 )
 
 // VolumeItem describes a folder content

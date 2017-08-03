@@ -638,8 +638,8 @@ func (c Client) WaitOrRemoveContainerOrSwarmService(id string, removeOnExit bool
 		}
 		if removeOnExit || forceRemove {
 			removeOpts := docker.RemoveContainerOptions{
-				ID:            id,
-				Force:         true,
+				ID:    id,
+				Force: true,
 			}
 
 			err = c.c.RemoveContainer(removeOpts)
