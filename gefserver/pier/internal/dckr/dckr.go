@@ -473,7 +473,9 @@ func (c Client) StartImage(id string, repoTag string, cmdArgs []string, binds []
 	err = c.c.StartContainerWithContext(cont.ID, &hc, jobExecutionContext)
 	if err != nil {
 		_, removeErr := c.WaitOrRemoveContainerOrSwarmService(cont.ID, true, true)
-		log.Println(removeErr)
+		if removeErr != nil {
+			log.Println(removeErr)
+		}
 		return ContainerID(""), &stdout, def.Err(err, "StartContainer failed")
 	}
 
