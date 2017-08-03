@@ -24,6 +24,7 @@ func TestAgainInSwarm(t *testing.T) {
 	setSwarmMode(true) // switching to a swarm
 	TestClient(t)
 	TestExecution(t)
+	TestJobTimeOut(t)
 	TestServer(t)
 	setSwarmMode(false) // leaving a swarm
 }
@@ -35,7 +36,7 @@ func setSwarmMode(activate bool) {
 		os.Exit(1)
 	}
 
-	pier, err := pier.NewPier(&db.Db{}, config.TmpDir)
+	pier, err := pier.NewPier(&db.Db{}, config.TmpDir, config.Timeouts)
 	if err != nil {
 		log.Fatal(def.Err(err, "creating new pier failed"))
 		os.Exit(1)
