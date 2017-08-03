@@ -165,9 +165,6 @@ func TestJobTimeOut(t *testing.T) {
 	defer db.Close()
 	defer os.Remove(dbfile)
 
-	addUser(t, db, name1, email1)
-	addUser(t, db, name2, email2)
-
 	p, err := pier.NewPier(&db, config.TmpDir, config.Timeouts)
 	checkMsg(t, err, "creating new pier")
 
