@@ -60,7 +60,7 @@ func (p *Pier) DownStreamContainerFile(volumeID string, fileLocation string, w h
 	tarBallReader := tar.NewReader(tarStream)
 	header, err := tarBallReader.Next()
 	defer func() {
-		_, err := p.docker.client.WaitOrRemoveContainerOrSwarmService(string(containerID), true, true)
+		_, err := p.docker.client.WaitContainerOrSwarmService(string(containerID), true, true)
 		if err != nil {
 			log.Println("error while forcefully removing container in DownStreamContainerFile", err)
 		}
@@ -110,7 +110,7 @@ func (p *Pier) ListFiles(volumeID db.VolumeID, filePath string) ([]VolumeItem, e
 	}
 
 	// Stop but do not remove the container
-	_, err = p.docker.client.WaitOrRemoveContainerOrSwarmService(string(containerID), false, false)
+	_, err = p.docker.client.WaitContainerOrSwarmService(string(containerID), false, false)
 	if err != nil {
 		return volumeFileList, def.Err(err, "waiting for container to end failed")
 	}
@@ -122,7 +122,7 @@ func (p *Pier) ListFiles(volumeID db.VolumeID, filePath string) ([]VolumeItem, e
 	}
 
 	// Remove a container/swarm service (it was stopped earlier)
-	_, err = p.docker.client.WaitOrRemoveContainerOrSwarmService(string(containerID), true, true)
+	_, err = p.docker.client.WaitContainerOrSwarmService(string(containerID), true, true)
 	if err != nil {
 		return volumeFileList, def.Err(err, "waiting for container to end failed")
 	}
