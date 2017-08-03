@@ -153,51 +153,53 @@ func (p *Pier) BuildService(buildDir string) (db.Service, error) {
 
 // startTimeOutTicker starts a clock that checks if a job exceeds an execution timeout
 func (p *Pier) startTimeOutTicker(jobId db.JobID, timeOut float64) {
-	if timeOut > 0 {
-		ticker := time.NewTicker(time.Second * time.Duration(p.timeOuts.CheckInterval))
-		for range ticker.C {
-			job, err := p.db.GetJob(jobId)
+	if timeOut == 0 {
+		log.Println("Timeout value was not specified. Check the config file")
+		return
+	}
 
+	ticker := time.NewTicker(time.Second * time.Duration(p.timeOuts.CheckInterval))
+	for range ticker.C {
+		job, err := p.db.GetJob(jobId)
+
+		if err != nil {
+			err = p.db.SetJobState(job.ID, db.NewJobStateError("Cannot get information about the job running", 1))
 			if err != nil {
-				err = p.db.SetJobState(job.ID, db.NewJobStateError("Cannot get information about the job running", 1))
+				log.Println(err)
+			}
+			ticker.Stop()
+			break
+		}
+		if job.State.Code != -1 {
+			ticker.Stop()
+			break
+		}
+
+		startingTime := job.Created
+		currentTime := time.Now()
+		durationTime := time.Duration(currentTime.Sub(startingTime))
+		if durationTime.Seconds() >= timeOut {
+			err = p.db.SetJobState(job.ID, db.NewJobStateError(JobTimeOutError, 1))
+			if err != nil {
+				log.Println(err)
+			}
+			ticker.Stop()
+
+			for _, task := range job.Tasks {
+				err = p.docker.client.TerminateContainerOrSwarmService(string(task.ContainerID))
 				if err != nil {
 					log.Println(err)
-				}
-				ticker.Stop()
-				break
-			}
-			if job.State.Code != -1 {
-				ticker.Stop()
-				break
-			}
-
-			startingTime := job.Created
-			currentTime := time.Now()
-			durationTime := time.Duration(currentTime.Sub(startingTime))
-			if durationTime.Seconds() >= timeOut {
-				err = p.db.SetJobState(job.ID, db.NewJobStateError(JobTimeOutError, 1))
-				if err != nil {
-					log.Println(err)
-				}
-				ticker.Stop()
-
-				for _, task := range job.Tasks {
-					err = p.docker.client.TerminateContainerOrSwarmService(string(task.ContainerID))
+					err = p.db.SetJobState(job.ID, db.NewJobStateError(JobTimeOutAndRemovalError, 1))
 					if err != nil {
 						log.Println(err)
-						err = p.db.SetJobState(job.ID, db.NewJobStateError(JobTimeOutAndRemovalError, 1))
-						if err != nil {
-							log.Println(err)
-						}
 					}
 				}
-
-				break
 			}
+
+			break
 		}
-	} else {
-		log.Println("Timeout value was not specified. Check the config file")
 	}
+
 }
 
 // RunService exported
