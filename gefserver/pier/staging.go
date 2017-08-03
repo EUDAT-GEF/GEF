@@ -13,6 +13,7 @@ import (
 	"github.com/EUDAT-GEF/GEF/gefserver/db"
 	"github.com/EUDAT-GEF/GEF/gefserver/def"
 	"github.com/EUDAT-GEF/GEF/gefserver/pier/internal/dckr"
+	"log"
 )
 
 // VolumeItem describes a folder content
@@ -57,8 +58,12 @@ func (p *Pier) DownStreamContainerFile(volumeID string, fileLocation string, w h
 
 	tarBallReader := tar.NewReader(tarStream)
 	header, err := tarBallReader.Next()
-	//defer p.docker.client.RemoveContainer(string(containerID))
-	defer p.docker.client.ForceRemoveContainerOrSwarmService(string(containerID))
+	defer func() {
+		_, err := p.docker.client.WaitOrRemoveContainerOrSwarmService(string(containerID), true, true)
+		if err != nil {
+			log.Println("error while forcefully removing container in DownStreamContainerFile", err)
+		}
+	}()
 	if err != nil {
 		return def.Err(err, "reading tarball failed")
 	}
@@ -104,7 +109,7 @@ func (p *Pier) ListFiles(volumeID db.VolumeID, filePath string) ([]VolumeItem, e
 	}
 
 	// Stop but do not remove the container
-	_, err = p.docker.client.WaitContainerOrSwarmService(string(containerID), false)
+	_, err = p.docker.client.WaitOrRemoveContainerOrSwarmService(string(containerID), false, false)
 	if err != nil {
 		return volumeFileList, def.Err(err, "waiting for container to end failed")
 	}
@@ -116,7 +121,7 @@ func (p *Pier) ListFiles(volumeID db.VolumeID, filePath string) ([]VolumeItem, e
 	}
 
 	// Remove a container/swarm service (it was stopped earlier)
-	_, err = p.docker.client.WaitContainerOrSwarmService(string(containerID), true)
+	_, err = p.docker.client.WaitOrRemoveContainerOrSwarmService(string(containerID), true, true)
 	if err != nil {
 		return volumeFileList, def.Err(err, "waiting for container to end failed")
 	}
