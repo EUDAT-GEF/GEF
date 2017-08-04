@@ -47,8 +47,8 @@ type TaskTable struct {
 	Error          string
 	ExitCode       int
 	ConsoleOutput  string
-	Revision       int
 	JobID          string
+	Revision       int
 }
 
 // ServiceTable describes metadata for a GEF service (used to store data in a database)
@@ -59,9 +59,9 @@ type ServiceTable struct {
 	RepoTag     string
 	Description string
 	Version     string
-	Revision    int
 	Created     time.Time
 	Size        int64
+	Revision    int
 }
 
 // IOPortTable is used to store info about service inputs and outputs in a database
@@ -70,8 +70,8 @@ type IOPortTable struct {
 	Name      string
 	Path      string
 	IsInput   bool
-	Revision  int
 	ServiceID string
+	Revision  int
 }
 
 // ServiceCmdTable stores CMD options for services
@@ -79,8 +79,8 @@ type ServiceCmdTable struct {
 	ID        int
 	Cmd       string
 	Index     int
-	Revision  int
 	ServiceID string
+	Revision  int
 }
 
 // UserTable is used to store the users in a database
