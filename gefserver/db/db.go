@@ -40,14 +40,15 @@ type JobTable struct {
 
 // TaskTable contains tasks related to a specific job (used to store data in a database)
 type TaskTable struct {
-	ID            string
-	Name          string
-	ContainerID   string
-	Error         string
-	ExitCode      int
-	ConsoleOutput string
-	Revision      int
-	JobID         string
+	ID             string
+	Name           string
+	ContainerID    string
+	SwarmServiceID string
+	Error          string
+	ExitCode       int
+	ConsoleOutput  string
+	Revision       int
+	JobID          string
 }
 
 // ServiceTable describes metadata for a GEF service (used to store data in a database)
@@ -198,6 +199,7 @@ func (d *Db) jobTable2Job(storedJob JobTable) (Job, error) {
 		curTask.Error = t.Error
 		curTask.ConsoleOutput = t.ConsoleOutput
 		curTask.ContainerID = ContainerID(t.ContainerID)
+		curTask.SwarmServiceID = t.SwarmServiceID
 		curTask.ExitCode = t.ExitCode
 		curTask.ID = t.ID
 		curTask.Name = t.Name
@@ -311,12 +313,13 @@ func (d *Db) SetJobOutputVolume(id JobID, outputVolume VolumeID) error {
 }
 
 // AddJobTask adds a task to a job
-func (d *Db) AddJobTask(id JobID, taskName string, taskContainer string,
+func (d *Db) AddJobTask(id JobID, taskName string, taskContainer string, taskSwarmService string,
 	taskError string, taskExitCode int, taskConsoleOutput *bytes.Buffer) error {
 	var newTask TaskTable
 	newTask.ID = uuid.New()
 	newTask.Name = taskName
 	newTask.ContainerID = string(taskContainer)
+	newTask.SwarmServiceID = taskSwarmService
 	newTask.Error = taskError
 	newTask.ExitCode = taskExitCode
 	newTask.ConsoleOutput = taskConsoleOutput.String()

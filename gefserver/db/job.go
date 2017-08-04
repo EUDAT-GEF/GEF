@@ -53,6 +53,7 @@ type Task struct {
 	ID            string
 	Name          string
 	ContainerID   ContainerID
+	SwarmServiceID  string
 	Error         string
 	ExitCode      int
 	ConsoleOutput string

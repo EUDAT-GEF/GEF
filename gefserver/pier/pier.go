@@ -186,7 +186,7 @@ func (p *Pier) startTimeOutTicker(jobId db.JobID, timeOut float64) {
 			ticker.Stop()
 
 			for _, task := range job.Tasks {
-				err = p.docker.client.TerminateContainerOrSwarmService(string(task.ContainerID))
+				err = p.docker.client.TerminateContainerOrSwarmService(string(task.ContainerID), task.SwarmServiceID)
 				if err != nil {
 					log.Println(err)
 					err = p.db.SetJobState(job.ID, db.NewJobStateError(JobTimeOutAndRemovalError, 1))
@@ -270,17 +270,16 @@ func (p *Pier) runJob(job *db.Job, service db.Service, inputPID string) {
 			dckr.NewVolBind(inputVolume.ID, "/volume", false),
 		}
 
-		containerID, exitCode, output, err := p.docker.client.ExecuteImage(
+		containerID, swarmServiceID, exitCode, output, err := p.docker.client.ExecuteImage(
 			string(p.docker.stageIn.id),
 			p.docker.stageIn.repoTag,
 			append(p.docker.stageIn.cmd, inputPID),
 			binds,
 			p.docker.limits,
-			p.docker.timeouts.Preparation,
-			p.docker.timeouts.DataStaging,
+			p.docker.timeouts,
 			true)
 
-		dbErr := p.db.AddJobTask(job.ID, "Data staging", string(containerID), err2str(err), exitCode, output)
+		dbErr := p.db.AddJobTask(job.ID, "Data staging", string(containerID), swarmServiceID, err2str(err), exitCode, output)
 		if dbErr != nil {
 			log.Println(dbErr)
 		}
@@ -333,17 +332,16 @@ func (p *Pier) runJob(job *db.Job, service db.Service, inputPID string) {
 			dckr.NewVolBind(inputVolume.ID, service.Input[0].Path, true),
 			dckr.NewVolBind(outputVolume.ID, service.Output[0].Path, false),
 		}
-		containerID, exitCode, output, err := p.docker.client.ExecuteImage(
+		containerID, swarmServiceID, exitCode, output, err := p.docker.client.ExecuteImage(
 			string(service.ImageID),
 			service.RepoTag,
 			service.Cmd,
 			binds,
 			p.docker.limits,
-			p.docker.timeouts.Preparation,
-			p.docker.timeouts.JobExecution,
+			p.docker.timeouts,
 			true)
 
-		dbErr := p.db.AddJobTask(job.ID, "Service execution", string(containerID), err2str(err), exitCode, output)
+		dbErr := p.db.AddJobTask(job.ID, "Service execution", string(containerID), swarmServiceID, err2str(err), exitCode, output)
 		if dbErr != nil {
 			log.Println(dbErr)
 		}
@@ -397,7 +395,8 @@ func (p *Pier) RemoveJob(jobID db.JobID) (db.Job, error) {
 
 	if len(job.Tasks) > 0 {
 		theLastContainer := job.Tasks[len(job.Tasks)-1].ContainerID
-		err = p.docker.client.TerminateContainerOrSwarmService(string(theLastContainer))
+		theLastSwarmService := job.Tasks[len(job.Tasks)-1].SwarmServiceID
+		err = p.docker.client.TerminateContainerOrSwarmService(string(theLastContainer), theLastSwarmService)
 		if err != nil {
 			return job, def.Err(err, "Cannot remove a container/swarm service")
 		}
