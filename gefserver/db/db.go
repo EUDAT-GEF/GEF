@@ -40,14 +40,15 @@ type JobTable struct {
 
 // TaskTable contains tasks related to a specific job (used to store data in a database)
 type TaskTable struct {
-	ID            string
-	Name          string
-	ContainerID   string
-	Error         string
-	ExitCode      int
-	ConsoleOutput string
-	Revision      int
-	JobID         string
+	ID             string
+	Name           string
+	ContainerID    string
+	SwarmServiceID string
+	Error          string
+	ExitCode       int
+	ConsoleOutput  string
+	JobID          string
+	Revision       int
 }
 
 // ServiceTable describes metadata for a GEF service (used to store data in a database)
@@ -58,9 +59,9 @@ type ServiceTable struct {
 	RepoTag     string
 	Description string
 	Version     string
-	Revision    int
 	Created     time.Time
 	Size        int64
+	Revision    int
 }
 
 // IOPortTable is used to store info about service inputs and outputs in a database
@@ -69,8 +70,8 @@ type IOPortTable struct {
 	Name      string
 	Path      string
 	IsInput   bool
-	Revision  int
 	ServiceID string
+	Revision  int
 }
 
 // ServiceCmdTable stores CMD options for services
@@ -78,8 +79,8 @@ type ServiceCmdTable struct {
 	ID        int
 	Cmd       string
 	Index     int
-	Revision  int
 	ServiceID string
+	Revision  int
 }
 
 // UserTable is used to store the users in a database
@@ -198,6 +199,7 @@ func (d *Db) jobTable2Job(storedJob JobTable) (Job, error) {
 		curTask.Error = t.Error
 		curTask.ConsoleOutput = t.ConsoleOutput
 		curTask.ContainerID = ContainerID(t.ContainerID)
+		curTask.SwarmServiceID = t.SwarmServiceID
 		curTask.ExitCode = t.ExitCode
 		curTask.ID = t.ID
 		curTask.Name = t.Name
@@ -311,12 +313,13 @@ func (d *Db) SetJobOutputVolume(id JobID, outputVolume VolumeID) error {
 }
 
 // AddJobTask adds a task to a job
-func (d *Db) AddJobTask(id JobID, taskName string, taskContainer string,
+func (d *Db) AddJobTask(id JobID, taskName string, taskContainer string, taskSwarmService string,
 	taskError string, taskExitCode int, taskConsoleOutput *bytes.Buffer) error {
 	var newTask TaskTable
 	newTask.ID = uuid.New()
 	newTask.Name = taskName
 	newTask.ContainerID = string(taskContainer)
+	newTask.SwarmServiceID = taskSwarmService
 	newTask.Error = taskError
 	newTask.ExitCode = taskExitCode
 	newTask.ConsoleOutput = taskConsoleOutput.String()

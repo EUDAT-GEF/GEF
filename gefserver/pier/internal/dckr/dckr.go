@@ -361,63 +361,44 @@ func (c Client) findSwarmContainerTask(containerID string) (swarm.Task, error) {
 	return swarm.Task{}, def.Err(nil, "Could not find the container")
 }
 
-// getSwarmServiceIDByContainerID returns a Swarm service id by a container id
-func (c Client) getSwarmServiceIDByContainerID(containerID string) (string, error) {
-	task, err := c.findSwarmContainerTask(containerID)
+// WriteMonitor used to keep console output
+type WriteMonitor struct{ io.Writer }
+
+func (w *WriteMonitor) Write(bs []byte) (int, error) {
+	n, err := w.Writer.Write(bs)
+	log.Printf("Write() (%v, %v)", n, err)
+	return n, err
+}
+
+// IsSwarmActive checks if the Swarm Mode is active
+func (c Client) IsSwarmActive() (bool, error) {
+	isActive := false
+	dockerInfo, err := c.c.Info()
 	if err != nil {
-		return "", err
+		return isActive, err
 	}
-	return task.ServiceID, nil
+	if dockerInfo.Swarm.LocalNodeState == "active" {
+		isActive = true
+	}
+	return isActive, nil
 }
 
 // StartImage takes a docker image, creates a container and starts it
-func (c Client) StartImage(id string, repoTag string, cmdArgs []string, binds []VolBind, limits def.LimitConfig, preparationTimeOut float64, executionTimeOut float64) (ContainerID, *bytes.Buffer, error) {
+func (c Client) StartImage(id string, repoTag string, cmdArgs []string, binds []VolBind, limits def.LimitConfig, timeouts def.TimeoutConfig) (ContainerID, *bytes.Buffer, error) {
 	var stdout bytes.Buffer
-	var runningContainerID ContainerID
 
 	if id == "" {
 		return ContainerID(""), &stdout, def.Err(nil, "Empty image id")
 	}
 
-	if preparationTimeOut == 0 {
+	if timeouts.Preparation == 0 {
 		return ContainerID(""), &stdout, def.Err(nil, "Container preparation time out is not set")
 	}
 
-	if executionTimeOut == 0 {
+	if timeouts.JobExecution == 0 {
 		return ContainerID(""), &stdout, def.Err(nil, "Job execution time out is not set")
 	}
 
-	swarmOn, err := c.IsSwarmActive()
-	if err != nil {
-		return ContainerID(""), &stdout, err
-	}
-
-	if swarmOn {
-		log.Println(string(id))
-		// Create a Swarm service
-		swarmService, serviceOutput, err := c.CreateSwarmService(repoTag, cmdArgs, binds, limits, executionTimeOut)
-
-		if err != nil {
-			return ContainerID(swarmService.ID), serviceOutput, def.Err(err, "CreateSwarmService failed")
-		}
-		stdout = *serviceOutput
-
-		// Now we need to retrieve a container's id
-		for {
-			contID, contState, err := c.GetSwarmContainerInfo(swarmService.ID)
-			runningContainerID = ContainerID(contID)
-
-			if (contID != "") || (contState == swarm.TaskStateComplete || contState == swarm.TaskStateFailed) {
-				if err != nil {
-					return runningContainerID, &stdout, def.Err(err, "Failed to get information about the service container")
-				}
-				break
-			}
-		}
-		return runningContainerID, &stdout, nil
-	}
-
-	// Normal Mode (regular containers)
 	img, err := c.c.InspectImage(string(id))
 	if err != nil {
 		return ContainerID(""), &stdout, def.Err(err, "InspectImage failed")
@@ -445,7 +426,7 @@ func (c Client) StartImage(id string, repoTag string, cmdArgs []string, binds []
 		MemorySwap: limits.MemorySwap,
 	}
 
-	createContainerContext, cancel := context.WithTimeout(context.Background(), time.Duration(preparationTimeOut)*time.Second)
+	createContainerContext, cancel := context.WithTimeout(context.Background(), time.Duration(timeouts.Preparation)*time.Second)
 	defer cancel()
 
 	cco := docker.CreateContainerOptions{
@@ -476,11 +457,11 @@ func (c Client) StartImage(id string, repoTag string, cmdArgs []string, binds []
 	<-attached
 	attached <- struct{}{}
 
-	jobExecutionContext, cancel := context.WithTimeout(context.Background(), time.Duration(executionTimeOut)*time.Second)
+	jobExecutionContext, cancel := context.WithTimeout(context.Background(), time.Duration(timeouts.JobExecution)*time.Second)
 	defer cancel()
 	err = c.c.StartContainerWithContext(cont.ID, &hc, jobExecutionContext)
 	if err != nil {
-		removeErr := c.TerminateContainerOrSwarmService(cont.ID)
+		removeErr := c.TerminateContainerOrSwarmService(cont.ID, "")
 		if removeErr != nil {
 			log.Println(removeErr)
 		}
@@ -490,46 +471,72 @@ func (c Client) StartImage(id string, repoTag string, cmdArgs []string, binds []
 	return ContainerID(cont.ID), &stdout, nil
 }
 
-// WriteMonitor used to keep console output
-type WriteMonitor struct{ io.Writer }
+// StartSwarmService
+func (c Client) StartSwarmService(id string, repoTag string, cmdArgs []string, binds []VolBind, limits def.LimitConfig, timeouts def.TimeoutConfig) (ContainerID, string, *bytes.Buffer, error) {
+	var runningContainerID ContainerID
 
-func (w *WriteMonitor) Write(bs []byte) (int, error) {
-	n, err := w.Writer.Write(bs)
-	log.Printf("Write() (%v, %v)", n, err)
-	return n, err
+	swarmService, stdout, err := c.CreateSwarmService(repoTag, cmdArgs, binds, limits, timeouts)
+	if err != nil {
+		return runningContainerID, swarmService.ID, stdout, def.Err(err, "CreateSwarmService failed")
+	}
+
+	// Now we need to retrieve a container id
+	for {
+		contID, contState, err := c.GetSwarmContainerInfo(swarmService.ID)
+		runningContainerID = ContainerID(contID)
+
+		if (contID != "") || (contState == swarm.TaskStateComplete || contState == swarm.TaskStateFailed) {
+			if err != nil {
+				return runningContainerID, swarmService.ID, stdout, def.Err(err, "Failed to get information about the service container")
+			}
+			break
+		}
+		time.Sleep(100 * time.Millisecond)
+	}
+	return runningContainerID, swarmService.ID, stdout, nil
 }
 
-// IsSwarmActive checks if the Swarm Mode is active
-func (c Client) IsSwarmActive() (bool, error) {
-	isActive := false
-	dockerInfo, err := c.c.Info()
+// StartImageOrSwarmService
+func (c Client) StartImageOrSwarmService(imgID string, imgRepoTag string, cmdArgs []string, binds []VolBind, limits def.LimitConfig, timeouts def.TimeoutConfig) (ContainerID, string, *bytes.Buffer, error) {
+	var stdout *bytes.Buffer
+	var runningContainer ContainerID
+	var swarmService string
+
+	swarmOn, err := c.IsSwarmActive()
 	if err != nil {
-		return isActive, err
+		return runningContainer, swarmService, stdout, err
 	}
-	if dockerInfo.Swarm.LocalNodeState == "active" {
-		isActive = true
+
+	if swarmOn {
+		runningContainer, swarmService, stdout, err = c.StartSwarmService(imgID, imgRepoTag, cmdArgs, binds, limits, timeouts)
+		if err != nil {
+			return runningContainer, swarmService, stdout, def.Err(err, "StartSwarmService failed")
+		}
+	} else {
+		runningContainer, stdout, err = c.StartImage(imgID, imgRepoTag, cmdArgs, binds, limits, timeouts)
+		if err != nil {
+			return runningContainer, swarmService, stdout, def.Err(err, "StartImage failed")
+		}
 	}
-	return isActive, nil
+	return runningContainer, swarmService, stdout, nil
 }
 
 // ExecuteImage takes a docker image, creates a container and executes it, and waits for it to end
-func (c Client) ExecuteImage(imgID string, imgRepoTag string, cmdArgs []string, binds []VolBind, limits def.LimitConfig, preparationTimeOut float64, executionTimeOut float64, removeOnExit bool) (ContainerID, int, *bytes.Buffer, error) {
-	var stdout *bytes.Buffer
-	cont, stdout, err := c.StartImage(imgID, imgRepoTag, cmdArgs, binds, limits, preparationTimeOut, executionTimeOut)
-
+func (c Client) ExecuteImage(imgID string, imgRepoTag string, cmdArgs []string, binds []VolBind, limits def.LimitConfig, timeouts def.TimeoutConfig, removeOnExit bool) (ContainerID, string, int, *bytes.Buffer, error) {
+	runningContainer, swarmService, stdout, err := c.StartImageOrSwarmService(imgID, imgRepoTag, cmdArgs, binds, limits, timeouts)
 	if err != nil {
-		return cont, 0, stdout, def.Err(err, "StartImage failed")
+		return runningContainer, swarmService, 0, stdout, err
 	}
 
-	exitCode, err := c.WaitContainerOrSwarmService(string(cont))
+	exitCode, err := c.WaitContainerOrSwarmService(string(runningContainer))
 	if err != nil {
-		return cont, exitCode, stdout, def.Err(err, "WaitContainerOrSwarmService failed")
+		return runningContainer, swarmService, exitCode, stdout, def.Err(err, "WaitContainerOrSwarmService failed")
 	}
 
 	if removeOnExit {
-		err = c.TerminateContainerOrSwarmService(string(cont))
+		err = c.TerminateContainerOrSwarmService(string(runningContainer), swarmService)
 	}
-	return cont, exitCode, stdout, err
+	return runningContainer, swarmService, exitCode, stdout, err
 }
 
 // DeleteImage removes an image by ID
@@ -539,7 +546,7 @@ func (c Client) DeleteImage(id string) error {
 }
 
 // CreateSwarmService creates a Docker swarm service
-func (c Client) CreateSwarmService(repoTag string, cmdArgs []string, binds []VolBind, limits def.LimitConfig, executionTimeOut float64) (*swarm.Service, *bytes.Buffer, error) {
+func (c Client) CreateSwarmService(repoTag string, cmdArgs []string, binds []VolBind, limits def.LimitConfig, timeouts def.TimeoutConfig) (*swarm.Service, *bytes.Buffer, error) {
 	var stdout bytes.Buffer
 	var srv *swarm.Service
 
@@ -562,7 +569,7 @@ func (c Client) CreateSwarmService(repoTag string, cmdArgs []string, binds []Vol
 	taken from https://github.com/moby/moby/blob/v1.12.0-rc4/daemon/cluster/executor/container/container.go#L331 */
 	calculatedNanoCPU := (limits.CPUQuota * 1e9) / limits.CPUPeriod
 
-	swarmContext, cancel := context.WithTimeout(context.Background(), time.Duration(executionTimeOut)*time.Second)
+	swarmContext, cancel := context.WithTimeout(context.Background(), time.Duration(timeouts.JobExecution)*time.Second)
 	defer cancel()
 
 	serviceCreateOpts := docker.CreateServiceOptions{
@@ -610,19 +617,8 @@ func (c Client) waitSwarmService(taskContainerId string) (int, error) {
 	return exitCode, err
 }
 
-// containerExists inspect a given container. The inspection will fail, if the container does not exist
-// We need this check to speed up the processing, since we are going through the list of all tasks to find a swarm
-// service the container belongs to
-func (c Client) containerExists(containerId string) bool {
-	_, err := c.c.InspectContainer(containerId)
-	if err != nil {
-		return false
-	}
-	return true
-}
-
 // TerminateContainerOrSwarmService removes a container or a swarm service
-func (c Client) TerminateContainerOrSwarmService(id string) error {
+func (c Client) TerminateContainerOrSwarmService(containerID string, swarmServiceID string) error {
 	swarmOn, err := c.IsSwarmActive()
 	if err != nil {
 		return err
@@ -630,26 +626,19 @@ func (c Client) TerminateContainerOrSwarmService(id string) error {
 
 	// Swarm mode (swarm services)
 	if swarmOn {
-		// Swarm mode (swarm services)
-		if !c.containerExists(id) { // exit if the container does not exist (to save time)
-			return nil
-		}
-
-		serviceID, err := c.getSwarmServiceIDByContainerID(id)
-		if err != nil {
-			return def.Err(err, "could not find a swarm service related to the provided container id: "+id)
-		}
-
-		opts := docker.RemoveServiceOptions{ID: serviceID}
+		opts := docker.RemoveServiceOptions{ID: swarmServiceID}
 		err = c.c.RemoveService(opts)
 		if err != nil {
+			if _, ok := err.(*docker.NoSuchService); ok {
+				return nil
+			}
 			return def.Err(err, "an error has occurred while trying to remove a swarm service")
 		}
 		return nil
 	} else {
 		// Normal Mode (regular containers)
 		removeOpts := docker.RemoveContainerOptions{
-			ID:    id,
+			ID:    containerID,
 			Force: true,
 		}
 
@@ -658,6 +647,7 @@ func (c Client) TerminateContainerOrSwarmService(id string) error {
 			if _, ok := err.(*docker.NoSuchContainer); ok {
 				return nil
 			}
+			return def.Err(err, "an error has occurred while trying to remove a container")
 		}
 		return err
 	}
@@ -665,23 +655,18 @@ func (c Client) TerminateContainerOrSwarmService(id string) error {
 
 // WaitContainerOrSwarmService takes a docker container/swarm service id, monitors it and waits for it to finish. An
 // exit code of the container/swarm service is returned.
-func (c Client) WaitContainerOrSwarmService(id string) (int, error) {
+func (c Client) WaitContainerOrSwarmService(containerID string) (int, error) {
 	swarmOn, err := c.IsSwarmActive()
 	if err != nil {
 		return 1, err
 	}
 
-	exitCode := 0
 	if swarmOn {
 		// Swarm mode (swarm services)
-		if !c.containerExists(id) { // exit if the container does not exist (to save time)
-			return exitCode, nil
-		}
-		exitCode, err = c.waitSwarmService(id)
-		return exitCode, err
+		return c.waitSwarmService(containerID)
 	} else {
 		// Normal Mode (regular containers)
-		return c.c.WaitContainer(id)
+		return c.c.WaitContainer(containerID)
 	}
 }
 

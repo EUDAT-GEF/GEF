@@ -33,7 +33,7 @@ func (p *Pier) DownStreamContainerFile(volumeID string, fileLocation string, w h
 	binds := []dckr.VolBind{
 		dckr.NewVolBind(dckr.VolumeID(volumeID), "/root/volume", false),
 	}
-	containerID, _, err := p.docker.client.StartImage(
+	containerID, swarmServiceID, _, err := p.docker.client.StartImageOrSwarmService(
 		string(p.docker.copyFromVolume.id),
 		p.docker.copyFromVolume.repoTag,
 		[]string{
@@ -43,8 +43,7 @@ func (p *Pier) DownStreamContainerFile(volumeID string, fileLocation string, w h
 		},
 		binds,
 		p.docker.limits,
-		p.docker.timeouts.Preparation,
-		p.docker.timeouts.FileDownload)
+		p.docker.timeouts)
 
 	if err != nil {
 		return def.Err(err, "copying files from the volume to the container failed")
@@ -60,7 +59,7 @@ func (p *Pier) DownStreamContainerFile(volumeID string, fileLocation string, w h
 	tarBallReader := tar.NewReader(tarStream)
 	header, err := tarBallReader.Next()
 	defer func() {
-		err := p.docker.client.TerminateContainerOrSwarmService(string(containerID))
+		err := p.docker.client.TerminateContainerOrSwarmService(string(containerID), swarmServiceID)
 		if err != nil {
 			log.Println("error while forcefully removing container in DownStreamContainerFile", err)
 		}
@@ -94,7 +93,7 @@ func (p *Pier) ListFiles(volumeID db.VolumeID, filePath string) ([]VolumeItem, e
 	}
 
 	// Execute our image (it should produce a JSON file with the list of files)
-	containerID, _, err := p.docker.client.StartImage(
+	containerID, swarmServiceID, _, err := p.docker.client.StartImageOrSwarmService(
 		string(p.docker.fileList.id),
 		p.docker.fileList.repoTag,
 		[]string{
@@ -102,8 +101,7 @@ func (p *Pier) ListFiles(volumeID db.VolumeID, filePath string) ([]VolumeItem, e
 		},
 		volumesToMount,
 		p.docker.limits,
-		p.docker.timeouts.Preparation,
-		p.docker.timeouts.VolumeInspection)
+		p.docker.timeouts)
 
 	if err != nil {
 		return volumeFileList, def.Err(err, "running image failed")
@@ -122,7 +120,7 @@ func (p *Pier) ListFiles(volumeID db.VolumeID, filePath string) ([]VolumeItem, e
 	}
 
 	// Remove a container/swarm service (it was stopped earlier)
-	err = p.docker.client.TerminateContainerOrSwarmService(string(containerID))
+	err = p.docker.client.TerminateContainerOrSwarmService(string(containerID), swarmServiceID)
 	if err != nil {
 		return volumeFileList, def.Err(err, "TerminateContainerOrSwarmService failed")
 	}
