@@ -48,7 +48,7 @@ type ServerConfig struct {
 	TLSKeyFilePath         string
 	B2Access               B2AccessConfig
 	B2Drop                 B2DropConfig
-	Info                   InfoConfig
+	Administration         AdminConfig
 }
 
 // B2AccessConfig exported
@@ -63,8 +63,9 @@ type B2DropConfig struct {
 }
 
 // InfoConfig exported
-type InfoConfig struct {
-	ContactLink string
+type AdminConfig struct {
+	SuperAdminEmail string
+	ContactLink     string
 }
 
 // EventSystemConfig keeps the configuration options needed to make an EventSystem

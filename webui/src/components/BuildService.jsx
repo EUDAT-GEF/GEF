@@ -3,9 +3,10 @@ import PropTypes from 'prop-types';
 import Files from './Files';
 import axios from 'axios';
 import {apiNames} from '../GefAPI';
-import bows from 'bows';
+import Alert from 'react-s-alert';
+import {errHandler} from '../actions/actions'
 
-const log = bows('BuildService');
+const log = console.log;
 
 // there is possibility that the child component is rendered before the fetch of new build is finished?
 class BuildService extends React.Component {
@@ -29,10 +30,7 @@ class BuildService extends React.Component {
         const resultPromise = axios.post(apiNames.builds);
         resultPromise.then(response => {
             this.setState({buildID : response.data.buildID});
-            log('New service URL:', this.state.buildID);
-        }).catch(err => {
-            log("An error occurred during creating new service URL");
-        });
+        }).catch(errHandler());
     }
     render () {
         return <div>

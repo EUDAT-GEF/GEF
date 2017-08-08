@@ -8,6 +8,7 @@ import (
 	"path"
 
 	"net/http"
+	"net/url"
 
 	"github.com/gorilla/sessions"
 )
@@ -43,29 +44,29 @@ func (w Response) ClientError(message string, err error) {
 	if err != nil {
 		errstr = "\n\t" + err.Error()
 	}
-	str := fmt.Sprintf("    API Client ERROR: %s%s", message, errstr)
-	log.Println(str)
+	str := fmt.Sprintf("API Client ERROR: %s%s", message, errstr)
+	log.Println("\t" + str)
 	http.Error(w, str, 400)
 }
 
 // Unauthorized sets a 401 error
 func (w Response) Unauthorized() {
-	str := fmt.Sprintf("    Authentication required")
-	log.Println(str)
+	str := fmt.Sprintf("Authentication required, please log in.")
+	log.Println("\t" + str)
 	http.Error(w, str, 401)
 }
 
 // Forbidden sets a 403 error
-func (w Response) Forbidden() {
-	str := fmt.Sprintf("    Access forbidden")
-	log.Println(str)
-	http.Error(w, str, 401)
+func (w Response) Forbidden(msg string) {
+	str := fmt.Sprintf("Access forbidden: " + msg)
+	log.Println("\t" + str)
+	http.Error(w, str, 403)
 }
 
 // DirectiveError sets a 403 error
 func (w Response) DirectiveError() {
-	str := fmt.Sprintf("    API denied by directive ERROR\n")
-	log.Println(str)
+	str := fmt.Sprintf("API denied by directive ERROR\n")
+	log.Println("\t" + str)
 	http.Error(w, str, 403)
 }
 
@@ -75,15 +76,15 @@ func (w Response) ServerError(message string, err error) {
 	if err != nil {
 		errstr = "\n\t" + err.Error()
 	}
-	str := fmt.Sprintf("    API Server ERROR: %s%s", message, errstr)
-	log.Println(str)
+	str := fmt.Sprintf("API Server ERROR: %s%s", message, errstr)
+	log.Println("\t" + str)
 	http.Error(w, str, 500)
 }
 
 // ServerNewError sets a 500/server error
 func (w Response) ServerNewError(message string) {
-	str := fmt.Sprintf("    API Server ERROR: %s", message)
-	log.Println(str)
+	str := fmt.Sprintf("API Server ERROR: %s", message)
+	log.Println("\t" + str)
 	http.Error(w, str, 500)
 }
 
@@ -161,8 +162,10 @@ func jmap(kv ...interface{}) map[string]interface{} {
 	return m
 }
 
-func urljoin(r *http.Request, suffix string) string {
-	url := *(r.URL)
+func urljoin(r *http.Request, suffix string) (string, error) {
+	url, err := url.Parse(r.URL.String())
+	url.RawQuery = ""
+	url.Fragment = ""
 	url.Path = path.Join(url.Path, suffix)
-	return url.String()
+	return url.String(), err
 }

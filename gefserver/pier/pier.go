@@ -130,7 +130,7 @@ func (p *Pier) LeaveIfInSwarmMode() error {
 }
 
 // BuildService builds a services based on the content of the provided folder
-func (p *Pier) BuildService(buildDir string) (db.Service, error) {
+func (p *Pier) BuildService(userID int64, buildDir string) (db.Service, error) {
 	image, err := p.docker.client.BuildImage(buildDir)
 	if err != nil {
 		return db.Service{}, def.Err(err, "docker BuildImage failed")
@@ -143,7 +143,7 @@ func (p *Pier) BuildService(buildDir string) (db.Service, error) {
 
 	service := NewServiceFromImage(image)
 	service.RepoTag = ServiceImagePrefix + string(image.ID) + ":" + GefImageTag
-	err = p.db.AddService(service)
+	err = p.db.AddService(userID, service)
 	if err != nil {
 		return db.Service{}, def.Err(err, "could not add a new service to the database")
 	}
@@ -203,7 +203,7 @@ func (p *Pier) startTimeOutTicker(jobId db.JobID, timeOut float64) {
 }
 
 // RunService exported
-func (p *Pier) RunService(id db.ServiceID, inputPID string) (db.Job, error) {
+func (p *Pier) RunService(userID int64, id db.ServiceID, inputPID string) (db.Job, error) {
 	service, err := p.db.GetService(id)
 	if err != nil {
 		return db.Job{}, err
@@ -218,7 +218,7 @@ func (p *Pier) RunService(id db.ServiceID, inputPID string) (db.Job, error) {
 		State:     &jobState,
 	}
 
-	err = p.db.AddJob(job)
+	err = p.db.AddJob(userID, job)
 	if err != nil {
 		return job, err
 	}
@@ -387,7 +387,7 @@ func (p *Pier) WaitAndRemoveVolume(id dckr.VolumeID) error {
 }
 
 // RemoveJob removes a job by ID
-func (p *Pier) RemoveJob(jobID db.JobID) (db.Job, error) {
+func (p *Pier) RemoveJob(userID int64, jobID db.JobID) (db.Job, error) {
 	job, err := p.db.GetJob(jobID)
 	if err != nil {
 		return job, def.Err(nil, "not found")
@@ -413,7 +413,7 @@ func (p *Pier) RemoveJob(jobID db.JobID) (db.Job, error) {
 	}
 
 	// Removing the job from the list
-	err = p.db.RemoveJob(jobID)
+	err = p.db.RemoveJob(userID, jobID)
 	if err != nil {
 		return job, def.Err(err, "Could not remove the job")
 	}
@@ -423,7 +423,7 @@ func (p *Pier) RemoveJob(jobID db.JobID) (db.Job, error) {
 
 // BuildServicesFromFolder reads a folder with services, builds images for
 // these services, and adds all the necessary information to the database
-func (p *Pier) BuildServicesFromFolder(servicesFolder string) error {
+func (p *Pier) BuildServicesFromFolder(userID int64, servicesFolder string) error {
 	log.Println("Building services from: " + servicesFolder)
 	files, err := ioutil.ReadDir(servicesFolder)
 	if err != nil {
@@ -449,7 +449,7 @@ func (p *Pier) BuildServicesFromFolder(servicesFolder string) error {
 					log.Print("  failed to inspect image: ", err)
 				}
 
-				err = p.db.AddService(NewServiceFromImage(img))
+				err = p.db.AddService(userID, NewServiceFromImage(img))
 				if err != nil {
 					log.Print("  failed to add service to the database: ", err)
 				}
@@ -460,7 +460,7 @@ func (p *Pier) BuildServicesFromFolder(servicesFolder string) error {
 }
 
 // ImportImage installs a docker tar file as a docker image
-func (p *Pier) ImportImage(imageFilePath string) (db.Service, error) {
+func (p *Pier) ImportImage(userID int64, imageFilePath string) (db.Service, error) {
 	imageID, err := p.docker.client.ImportImageFromTar(imageFilePath)
 	if err != nil {
 		return db.Service{}, def.Err(err, "docker ImportImage failed")
@@ -473,7 +473,7 @@ func (p *Pier) ImportImage(imageFilePath string) (db.Service, error) {
 	}
 
 	service := NewServiceFromImage(image)
-	err = p.db.AddService(service)
+	err = p.db.AddService(userID, service)
 	if err != nil {
 		return db.Service{}, def.Err(err, "could not add a new service to the database")
 	}

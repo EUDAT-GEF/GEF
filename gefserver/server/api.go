@@ -39,7 +39,7 @@ type Server struct {
 	pier                   *pier.Pier
 	db                     *db.Db
 	tmpDir                 string
-	info                   def.InfoConfig
+	administration         def.AdminConfig
 }
 
 // NewServer creates a new Server
@@ -60,7 +60,7 @@ func NewServer(cfg def.ServerConfig, pier *pier.Pier, tmpDir string, database *d
 		pier:                   pier,
 		db:                     database,
 		tmpDir:                 tmpDir,
-		info:                   cfg.Info,
+		administration:         cfg.Administration,
 	}
 
 	routes := []struct {
@@ -135,20 +135,34 @@ func (s *Server) Start() error {
 
 func (s *Server) infoHandler(w http.ResponseWriter, r *http.Request) {
 	Response{w}.Ok(jmap("ServiceName", ServiceName, "Version", Version,
-		"ContactLink", s.info.ContactLink))
+		"ContactLink", s.administration.ContactLink))
 }
 
 func (s *Server) newBuildImageHandler(w http.ResponseWriter, r *http.Request) {
+	allow, user := Authorization{s, w, r}.allowCreateBuild()
+	if user == nil || !allow {
+		return
+	}
+
 	_, buildID, err := def.NewRandomTmpDir(s.tmpDir, buildsTmpDir)
 	if err != nil {
 		Response{w}.ServerError("cannot create tmp subdir", err)
 		return
 	}
-	loc := urljoin(r, buildID)
+	loc, err := urljoin(r, buildID)
+	if err != nil {
+		Response{w}.ServerError("urljoin error", err)
+		return
+	}
 	Response{w}.Location(loc).Created(jmap("Location", loc, "buildID", buildID))
 }
 
 func (s *Server) buildImageHandler(w http.ResponseWriter, r *http.Request) {
+	allow, user := Authorization{s, w, r}.allowUploadIntoBuild()
+	if user == nil || !allow {
+		return
+	}
+
 	vars := mux.Vars(r)
 	buildID := vars["buildID"]
 	buildDir := filepath.Join(s.tmpDir, buildsTmpDir, buildID)
@@ -173,6 +187,7 @@ func (s *Server) buildImageHandler(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 
+		log.Println("\tupload file " + part.FileName())
 		dst, err := os.Create(filepath.Join(buildDir, part.FileName()))
 		if err != nil {
 			Response{w}.ServerError("while creating file to save file part ", err)
@@ -203,7 +218,7 @@ func (s *Server) buildImageHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		service, err = s.pier.BuildService(buildDir)
+		service, err = s.pier.BuildService(user.ID, buildDir)
 		if err != nil {
 			Response{w}.ServerError("build service failed: ", err)
 			return
@@ -213,7 +228,7 @@ func (s *Server) buildImageHandler(w http.ResponseWriter, r *http.Request) {
 		if tarFileFound {
 			log.Println("Docker image file has been detected, trying to import")
 			log.Println(filepath.Join(buildDir, foundImageFileName))
-			service, err = s.pier.ImportImage(filepath.Join(buildDir, foundImageFileName))
+			service, err = s.pier.ImportImage(user.ID, filepath.Join(buildDir, foundImageFileName))
 			if err != nil {
 				Response{w}.ServerError("while importing a Docker image file ", err)
 				return
@@ -230,6 +245,10 @@ func (s *Server) buildImageHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) listServicesHandler(w http.ResponseWriter, r *http.Request) {
+	allow, _ := Authorization{s, w, r}.allowListServices()
+	if !allow {
+		return
+	}
 	services, err := s.db.ListServices()
 	if err != nil {
 		Response{w}.ClientError("cannot get services", err)
@@ -240,8 +259,14 @@ func (s *Server) listServicesHandler(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) inspectServiceHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
+	serviceID := db.ServiceID(vars["serviceID"])
 
-	service, err := s.db.GetService(db.ServiceID(vars["serviceID"]))
+	allow, _ := Authorization{s, w, r}.allowInspectService(serviceID)
+	if !allow {
+		return
+	}
+
+	service, err := s.db.GetService(serviceID)
 	if err != nil {
 		Response{w}.ClientError("cannot get service", err)
 		return
@@ -251,6 +276,13 @@ func (s *Server) inspectServiceHandler(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) editServiceHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
+	serviceID := db.ServiceID(vars["serviceID"])
+
+	allow, user := Authorization{s, w, r}.allowEditService(serviceID)
+	if !allow {
+		return
+	}
+
 	decoder := json.NewDecoder(r.Body)
 	var service db.Service
 	err := decoder.Decode(&service)
@@ -260,18 +292,18 @@ func (s *Server) editServiceHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
-	if vars["serviceID"] != string(service.ID) {
+	if serviceID != service.ID {
 		Response{w}.ServerNewError("update service: ID mismatch")
 		return
 	}
 
-	err = s.db.RemoveService(service.ID)
+	err = s.db.RemoveService(user.ID, service.ID)
 	if err != nil {
 		Response{w}.ClientError("cannot remove service", err)
 		return
 	}
 
-	err = s.db.AddService(service)
+	err = s.db.AddService(user.ID, service)
 	if err != nil {
 		Response{w}.ClientError("cannot add service", err)
 		return
@@ -287,6 +319,11 @@ func (s *Server) executeServiceHandler(w http.ResponseWriter, r *http.Request) {
 		serviceID = vars["serviceID"]
 	}
 	logParam("serviceID", serviceID)
+
+	allow, user := Authorization{s, w, r}.allowCreateJob()
+	if !allow {
+		return
+	}
 
 	input := r.FormValue("pid")
 	if input == "" {
@@ -310,17 +347,26 @@ func (s *Server) executeServiceHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	job, err := s.pier.RunService(service.ID, input)
+	job, err := s.pier.RunService(user.ID, service.ID, input)
 	if err != nil {
 		Response{w}.ServerError("cannot read the reqested file from the archive", err)
 		return
 	}
 
-	loc := urljoin(r, string(job.ID))
+	loc, err := urljoin(r, string(job.ID))
+	if err != nil {
+		Response{w}.ServerError("urljoin error", err)
+		return
+	}
 	Response{w}.Location(loc).Created(jmap("Location", loc, "jobID", job.ID))
 }
 
 func (s *Server) listJobsHandler(w http.ResponseWriter, r *http.Request) {
+	allow, _ := Authorization{s, w, r}.allowListJobs()
+	if !allow {
+		return
+	}
+
 	jobs, err := s.db.ListJobs()
 
 	if err != nil {
@@ -332,7 +378,13 @@ func (s *Server) listJobsHandler(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) inspectJobHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	job, err := s.db.GetJob(db.JobID(vars["jobID"]))
+	jobID := db.JobID(vars["jobID"])
+	allow, _ := Authorization{s, w, r}.allowInspectJob(jobID)
+	if !allow {
+		return
+	}
+
+	job, err := s.db.GetJob(jobID)
 	if err != nil {
 		Response{w}.ClientError("cannot get job", err)
 		return
@@ -342,13 +394,19 @@ func (s *Server) inspectJobHandler(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) removeJobHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	job, err := s.db.GetJob(db.JobID(vars["jobID"]))
+	jobID := db.JobID(vars["jobID"])
+	allow, user := Authorization{s, w, r}.allowInspectJob(jobID)
+	if !allow {
+		return
+	}
+
+	job, err := s.db.GetJob(jobID)
 	if err != nil {
 		Response{w}.ClientError(err.Error(), err)
 		return
 	}
 
-	err = s.db.RemoveJob(db.JobID(vars["jobID"]))
+	err = s.db.RemoveJob(user.ID, jobID)
 	if err != nil {
 		Response{w}.ClientError(err.Error(), err)
 		return
@@ -358,7 +416,13 @@ func (s *Server) removeJobHandler(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) getJobTask(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	job, err := s.db.GetJob(db.JobID(vars["jobID"]))
+	jobID := db.JobID(vars["jobID"])
+	allow, _ := Authorization{s, w, r}.allowGetJobData(jobID)
+	if !allow {
+		return
+	}
+
+	job, err := s.db.GetJob(jobID)
 	if err != nil {
 		Response{w}.ClientError("cannot get task", err)
 		return
@@ -373,6 +437,17 @@ func (s *Server) getJobTask(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) volumeContentHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
+	volumeID := vars["volumeID"]
+	job, err := s.db.GetJobOwningVolume(volumeID)
+	if err != nil {
+		Response{w}.ServerError("downloading volume files failed", err)
+		return
+	}
+	allow, _ := Authorization{s, w, r}.allowGetJobData(job.ID)
+	if !allow {
+		return
+	}
+
 	fileLocation := vars["path"]
 	_, hasContent := r.URL.Query()["content"]
 	fileName := filepath.Base(fileLocation)
@@ -381,15 +456,16 @@ func (s *Server) volumeContentHandler(w http.ResponseWriter, r *http.Request) {
 		err := s.pier.DownStreamContainerFile(vars["volumeID"], filepath.Join("/root/volume/", fileLocation), w)
 		if err != nil {
 			Response{w}.ServerError("downloading volume files failed", err)
+			return
 		}
 
 		Response{w}.Header().Set("Content-Type", r.Header.Get("Content-Type"))
 		Response{w}.Header().Set("Content-Disposition", "attachment; filename="+fileName)
-
 	} else { // Return of list of files in a specific location in a volume
 		volumeFiles, err := s.pier.ListFiles(db.VolumeID(vars["volumeID"]), fileLocation)
 		if err != nil {
 			Response{w}.ServerError("streaming container files failed", err)
+			return
 		}
 		Response{w}.Ok(jmap("volumeID", vars["volumeID"], "volumeContent", volumeFiles))
 	}

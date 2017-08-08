@@ -53,6 +53,7 @@ gef-bundle.js.map
 webui/app/lib/
 
 gefserver/vendor
+coverage*.out
 /ssl/
 /build/
 
