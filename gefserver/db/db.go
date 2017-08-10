@@ -32,6 +32,7 @@ type JobTable struct {
 	ServiceID    string
 	Input        string
 	Created      time.Time
+	Finished      time.Time
 	Error        string
 	Status       string
 	Code         int
@@ -313,6 +314,7 @@ func (d *Db) jobTable2Job(storedJob JobTable) (Job, error) {
 	job.ServiceID = ServiceID(storedJob.ServiceID)
 	job.Input = storedJob.Input
 	job.Created = storedJob.Created
+	job.Finished = storedJob.Finished
 	job.State = &jobState
 	job.InputVolume = VolumeID(storedJob.InputVolume)
 	job.OutputVolume = VolumeID(storedJob.OutputVolume)
@@ -327,6 +329,7 @@ func (d *Db) job2JobTable(job Job) JobTable {
 	storedJob.ServiceID = string(job.ServiceID)
 	storedJob.Input = job.Input
 	storedJob.Created = job.Created
+	storedJob.Finished = job.Finished
 	storedJob.Error = job.State.Error
 	storedJob.Status = job.State.Status
 	storedJob.Code = job.State.Code
@@ -406,6 +409,19 @@ func (d *Db) SetJobOutputVolume(id JobID, outputVolume VolumeID) error {
 	}
 
 	storedJob.OutputVolume = string(outputVolume)
+	_, err = d.db.Update(&storedJob)
+	return err
+}
+
+// SetJobFinishTime sets job finish time
+func (d *Db) SetJobFinishTime(id JobID, finishTime time.Time) error {
+	var storedJob JobTable
+	err := d.db.SelectOne(&storedJob, "SELECT * from jobs WHERE ID=?", string(id))
+	if err != nil {
+		return err
+	}
+
+	storedJob.Finished = finishTime
 	_, err = d.db.Update(&storedJob)
 	return err
 }

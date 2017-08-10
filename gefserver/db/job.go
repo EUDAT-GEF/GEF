@@ -8,6 +8,7 @@ type Job struct {
 	ServiceID    ServiceID
 	Input        string
 	Created      time.Time
+	Finished      time.Time
 	State        *JobState
 	InputVolume  VolumeID
 	OutputVolume VolumeID

@@ -25,7 +25,10 @@ const JobRow = ({tag, value}) => (
     </Row>
 );
 
-const JobStatusIndicator = ({code, tag, message}) => {
+
+
+
+const JobStatusIndicator = ({code, tag, message, jobDuration}) => {
     const inProgressColor = {
         color: '#f45d00'
     }
@@ -50,7 +53,7 @@ const JobStatusIndicator = ({code, tag, message}) => {
     return (
         <Row>
             <Col xs={12} sm={3} md={3} style={{fontWeight: 700}}>{tag}</Col>
-            <Col xs={12} sm={9} md={9} style={messageColor}>{currentProgress} {message}</Col>
+            <Col xs={12} sm={9} md={9} style={messageColor}>{currentProgress} {message} (elapsed time {jobDuration})</Col>
         </Row>
     )
 };
@@ -117,6 +120,19 @@ class Job extends React.Component {
         }
     }
 
+
+    formatJobDuration(durationTime) {
+        var sec_num = parseInt(durationTime, 10);
+        var hours   = Math.floor(sec_num / 3600);
+        var minutes = Math.floor((sec_num - (hours * 3600)) / 60);
+        var seconds = sec_num - (hours * 3600) - (minutes * 60);
+
+        if (hours   < 10) {hours   = "0"+hours;}
+        if (minutes < 10) {minutes = "0"+minutes;}
+        if (seconds < 10) {seconds = "0"+seconds;}
+        return hours+':'+minutes+':'+seconds;
+    }
+
     renderModalWindow(title, body) {
         return (
             <div>
@@ -177,7 +193,9 @@ class Job extends React.Component {
         if (job.State.Error) {
             errorMessage = <JobRow tag="Error" value={job.State.Error}/>
         }
-
+        var date2 = new Date();
+        var executionDuration = date2 - Date.parse(job.Created);
+        console.log(Date.parse(job.Created));
         return (
             <div className="panel panel-default">
                 <div className="panel-body">
@@ -186,9 +204,11 @@ class Job extends React.Component {
                         <JobRow tag="Name" value={title}/>
                         <JobRow tag="Input" value={job.Input}/>
                         <JobRow tag="Service ID" value={job.ServiceID}/>
+                        <JobRow tag="Created" value={job.Created}/>
+                        <JobRow tag="Finished" value={job.Finished}/>
                         <JobRow tag="Service Description" value={service ? service.Description : false}/>
                         <JobRow tag="Service Version" value={service ? service.Version : false}/>
-                        <JobStatusIndicator code={job.State.Code} tag="Status" message={job.State.Status+this.state.progressIndicator}/>
+                        <JobStatusIndicator code={job.State.Code} tag="Status" message={job.State.Status+this.state.progressIndicator} jobDuration={this.formatJobDuration(executionDuration/1000)}/>
                         {errorMessage}
 
                         <Row style={{marginTop:'2em', marginBottom:'1em'}}>
