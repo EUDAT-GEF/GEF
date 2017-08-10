@@ -11,9 +11,10 @@ import (
 
 	// imported for side-effect only (package init)
 	_ "github.com/mattn/go-sqlite3"
-
 	"github.com/pborman/uuid"
 	gorp "gopkg.in/gorp.v1"
+
+	"github.com/EUDAT-GEF/GEF/gefserver/def"
 )
 
 // Column in a table used to keep an internal version number of GORP
@@ -154,6 +155,9 @@ func InitDbForTesting() (Db, string, error) {
 		return Db{}, "", err
 	}
 	db, err := setupDatabase(dataBase)
+	if err != nil {
+		err = def.Err(err, "error in setupDatabase")
+	}
 	return db, filename, err
 }
 
@@ -204,19 +208,22 @@ func setupDatabase(dataBase *sql.DB) (Db, error) {
 
 	db := Db{db: *dataBaseMap}
 	err = initializeDatabaseValues(db)
+	if err != nil {
+		err = def.Err(err, "error in initializeDatabaseValues")
+	}
 	return db, err
 }
 
 func initializeDatabaseValues(d Db) error {
 	_, err := d.AddRole(SuperAdminRoleName, 0, "Super Administrator of the site, with all privileges.")
 	if err != nil {
-		return err
+		return def.Err(err, "error in AddRole:SuperAdmin")
 	}
 
 	description := "The EUDAT community. Use this community if no other is suited for you."
 	_, err = d.AddCommunity("EUDAT", description, true)
 	if err != nil {
-		return err
+		return def.Err(err, "error in AddCommunity:EUDAT")
 	}
 	return nil
 }
@@ -260,7 +267,7 @@ func (d *Db) RemoveJob(userID int64, id JobID) error {
 		return err
 	}
 
-	_, err = d.db.Exec("DELETE FROM Owners WHERE UserID=? AND ObjectType=? AND ObjectID",
+	_, err = d.db.Exec("DELETE FROM Owners WHERE UserID=? AND ObjectType=? AND ObjectID=?",
 		userID, "Job", string(id))
 	if err != nil {
 		return err
@@ -612,7 +619,7 @@ func (d *Db) RemoveService(userID int64, id ServiceID) error {
 		return err
 	}
 
-	_, err = d.db.Exec("DELETE FROM Owners WHERE UserID=? AND ObjectType=? AND ObjectID",
+	_, err = d.db.Exec("DELETE FROM Owners WHERE UserID=? AND ObjectType=? AND ObjectID=?",
 		userID, "Service", string(id))
 	if err != nil {
 		return err

@@ -7,7 +7,7 @@ import actionTypes from '../actions/actionTypes';
 import { reducer as formReducer } from 'redux-form';
 import { syncHistoryWithStore, routerReducer } from 'react-router-redux';
 
-function apiinfo(state = SI([]), action) {
+function apiinfo(state = SI({}), action) {
     switch (action.type) {
         case actionTypes.APIINFO_FETCH_SUCCESS:
             return SI(action.apiinfo);
@@ -108,6 +108,26 @@ function tokens(state = SI([]), action) {
     }
 }
 
+function roles(state = SI({}), action) {
+    switch (action.type) {
+        case actionTypes.ROLES_FETCH_SUCCESS:
+            action.roles.map(r => state = state.set(r.ID,  r));
+            return state;
+        case actionTypes.ROLE_USERS_FETCH_SUCCESS:
+            state = SI.setIn(
+                state,
+                [action.roleID, 'users'],
+                SI(action.roleUsers))
+            return state;
+        case actionTypes.ROLES_FETCH_ERROR:
+            return SI([]);
+        case actionTypes.ROLE_USERS_FETCH_ERROR:
+            return SI([]);
+        default:
+            return state;
+    }
+}
+
 
 const rootReducer = combineReducers({
     apiinfo,
@@ -119,6 +139,7 @@ const rootReducer = combineReducers({
     task,
     user,
     tokens,
+    roles,
     form: formReducer,
     routing: routerReducer
 });

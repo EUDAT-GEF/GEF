@@ -41,10 +41,11 @@ var (
 )
 
 type Role struct {
-	ID          int64
-	Name        string
-	CommunityID int64
-	Description string
+	ID            int64
+	Name          string
+	Description   string
+	CommunityID   int64
+	CommunityName string
 }
 
 // GetCommunityByID gets a community from the database
@@ -97,7 +98,7 @@ func (d *Db) AddCommunity(name, description string, addDefaultRoles bool) (Commu
 		return comm, nil
 	}
 	if !isNoResultsError(err) {
-		return comm, err
+		return comm, def.Err(err, "error in GetCommunityByName:"+name)
 	}
 
 	c := CommunityTable{
@@ -121,44 +122,83 @@ func (d *Db) AddCommunity(name, description string, addDefaultRoles bool) (Commu
 	if addDefaultRoles {
 		_, err := d.AddRole(CommunityAdminRoleName, comm.ID, "Community Administrator")
 		if err != nil {
-			return comm, err
+			return comm, def.Err(err, "error in AddRole/admin")
 		}
 		_, err = d.AddRole(CommunityMemberRoleName, comm.ID, "Community Member")
 		if err != nil {
-			return comm, err
+			return comm, def.Err(err, "error in AddRole/member")
 		}
 	}
 
 	return comm, nil
 }
 
+//  ListRoles returns the list of all roles
+func (d *Db) ListRoles() ([]Role, error) {
+	var roles []Role
+	_, err := d.db.Select(&roles,
+		`SELECT r.ID ID, r.Name Name, r.Description Description
+		FROM roles r
+		WHERE r.CommunityID = ?`,
+		0)
+	if err != nil {
+		return nil, err
+	}
+
+	var communityRoles []Role
+	_, err = d.db.Select(&communityRoles,
+		`SELECT r.ID ID, r.Name Name, r.Description Description, c.ID CommunityID, c.Name CommunityName
+		FROM roles r, communities c
+		WHERE r.CommunityID = c.ID`)
+	if err != nil {
+		return roles, err
+	}
+	roles = append(roles, communityRoles...)
+	return roles, nil
+}
+
+// GetRoleByID gets a role from the database
+func (d *Db) GetRoleUsers(roleID int64) ([]User, error) {
+	var users []User
+	_, err := d.db.Select(
+		&users,
+		`SELECT u.ID ID, u.Name Name, u.Email Email, u.Created Created, u.Updated Updated
+		FROM roles r, userroles ur, users u
+		WHERE r.ID == ? AND r.ID = ur.RoleID AND ur.UserID = u.ID`,
+		roleID)
+	return users, err
+}
+
 // GetRoleByName gets a named role from the database
 func (d *Db) GetRoleByName(name string, communityID int64) (Role, error) {
-	var r RoleTable
-	err := d.db.SelectOne(&r, "SELECT * FROM roles WHERE Name=? AND CommunityID=?", name, communityID)
-	if err != nil {
-		return Role{}, err
+	var r Role
+	var err error
+	if communityID == 0 {
+		err = d.db.SelectOne(&r,
+			"SELECT ID, Name, Description FROM roles WHERE Name=? AND CommunityID=?",
+			name, communityID)
+	} else {
+		err = d.db.SelectOne(&r,
+			`SELECT r.ID ID, r.Name Name, r.Description Description, c.ID CommunityID, c.Name CommunityName
+			FROM roles r, communities c
+			WHERE r.CommunityID = c.ID AND r.Name=? AND r.CommunityID=?`,
+			name, communityID)
 	}
-	return Role{
-		ID:          r.ID,
-		Name:        r.Name,
-		CommunityID: r.CommunityID,
-		Description: r.Description,
-	}, nil
+	return r, err
 }
 
 // AddRole adds a role to the database, but only if it's not already present
 // For roles that have no associated community use communityID: 0
 func (d *Db) AddRole(name string, communityID int64, description string) (Role, error) {
 	if name == SuperAdminRoleName && communityID != 0 {
-		return Role{}, def.Err(nil, "This role name is reserved")
+		return Role{}, def.Err(nil, "The SuperAdmin role name can only be used with communityID 0")
 	}
 	role, err := d.GetRoleByName(name, communityID)
 	if err == nil {
 		return role, nil
 	}
 	if !isNoResultsError(err) {
-		return role, err
+		return role, def.Err(err, "error in GetRoleByName:"+name)
 	}
 
 	r := RoleTable{
@@ -171,53 +211,65 @@ func (d *Db) AddRole(name string, communityID int64, description string) (Role, 
 	if err != nil {
 		return Role{}, err
 	}
-	return Role{
-		ID:          r.ID,
-		Name:        r.Name,
-		CommunityID: r.CommunityID,
-		Description: r.Description,
-	}, nil
+
+	role, err = d.GetRoleByName(name, communityID)
+	if err != nil {
+		return Role{}, def.Err(err, "error in GetRoleByName:"+name)
+	}
+	return role, nil
 }
 
 // AddRoleToUser
 func (d *Db) AddRoleToUser(userID, roleID int64) error {
+	var urs []UserRoleTable
+	_, err := d.db.Select(&urs, `SELECT * FROM userroles WHERE UserID=? AND RoleID=?`, userID, roleID)
+	if len(urs) > 0 {
+		return nil
+	}
 	ur := UserRoleTable{
 		UserID: userID,
 		RoleID: roleID,
 	}
-	err := d.db.Insert(&ur)
+	err = d.db.Insert(&ur)
+	return err
+}
+
+// DeleteRoleFromUser
+func (d *Db) DeleteRoleFromUser(userID, roleID int64) error {
+	_, err := d.db.Exec("DELETE FROM userroles WHERE UserID=? AND RoleID=?", userID, roleID)
 	return err
 }
 
 // GetUserRoles
 func (d *Db) GetUserRoles(userID int64) ([]Role, error) {
-	var urs []UserRoleTable
-	_, err := d.db.Select(&urs, "SELECT * FROM userroles WHERE UserID=? ORDER BY RoleID", userID)
+	var roles []Role
+	_, err := d.db.Select(&roles,
+		`SELECT r.ID ID, r.Name Name, r.Description Description
+		FROM userroles ur, roles r
+		WHERE ur.UserID = ? AND ur.RoleID = r.ID AND r.CommunityID = ?`,
+		userID, 0)
 	if err != nil {
 		return nil, err
 	}
 
-	var roles []Role
-	for _, ur := range urs {
-		var r RoleTable
-		err := d.db.SelectOne(&r, "SELECT * FROM roles WHERE ID=?", ur.RoleID)
-		if err != nil {
-			return roles, err
-		}
-		roles = append(roles, Role{
-			ID:          r.ID,
-			Name:        r.Name,
-			CommunityID: r.CommunityID,
-			Description: r.Description,
-		})
+	var communityRoles []Role
+	_, err = d.db.Select(
+		&communityRoles,
+		`SELECT r.ID ID, r.Name Name, r.Description Description, c.ID CommunityID, c.Name CommunityName
+		FROM userroles ur, roles r, communities c
+		WHERE ur.UserID = ? AND ur.RoleID = r.ID AND r.CommunityID = c.ID`,
+		userID)
+	if err != nil {
+		return roles, err
 	}
+	roles = append(roles, communityRoles...)
 	return roles, nil
 }
 
 func (d *Db) HasSuperAdminRole(userID int64) bool {
 	roles, err := d.GetUserRoles(userID)
 	if err != nil {
-		log.Println(def.Err(err, "HasSuperAdminRole/GetUserRoles failed"))
+		log.Println(def.Err(err, "GetUserRoles failed"))
 		return false
 	}
 	for _, r := range roles {
@@ -230,15 +282,23 @@ func (d *Db) HasSuperAdminRole(userID int64) bool {
 
 func (d *Db) IsServiceOwner(userID int64, serviceID ServiceID) bool {
 	var x OwnerTable
-	err := d.db.SelectOne(&x, "SELECT * FROM owners WHERE UserID=? AND ObjectType=? AND ObjectID=?",
-		userID, "Service", serviceID)
+	err := d.db.SelectOne(&x,
+		"SELECT * FROM owners WHERE UserID=? AND ObjectType=? AND ObjectID=?",
+		userID, "Service", string(serviceID))
+	if err != nil && !isNoResultsError(err) {
+		log.Printf("ERROR in IsServiceOwner: %#v", err)
+	}
 	return err == nil
 }
 
 func (d *Db) IsJobOwner(userID int64, jobID JobID) bool {
 	var x OwnerTable
-	err := d.db.SelectOne(&x, "SELECT * FROM owners WHERE UserID=? AND ObjectType=? AND ObjectID=?",
-		userID, "Job", jobID)
+	err := d.db.SelectOne(&x,
+		"SELECT * FROM owners WHERE UserID=? AND ObjectType=? AND ObjectID=?",
+		userID, "Job", string(jobID))
+	if err != nil && !isNoResultsError(err) {
+		log.Printf("ERROR in IsJobOwner: %#v", err)
+	}
 	return err == nil
 }
 

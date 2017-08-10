@@ -624,18 +624,26 @@ export function userFetchError(errorMessage) {
 
 export function fetchTokens() {
     return function (dispatch, getState)  {
-        dispatch(tokensFetchStart());
         axios.get(apiNames.userTokens)
             .then(response => {
-                dispatch(tokensFetchSuccess(response.data.Tokens || []));
+                dispatch({
+                    type: actionTypes.USER_TOKENS_FETCH_SUCCESS,
+                    tokens: response.data.Tokens || []
+                });
                 if (response.data.Error) {
                     Alert.error("Fething tokens error: " + response.data.Error);
-                    dispatch(tokensFetchError(response.data.Error));
+                    dispatch({
+                        type: actionTypes.USER_TOKENS_FETCH_ERROR,
+                        errorMessage: response.data.Error
+                    });
                 };
             })
             .catch(err => {
                 errHandler("Error fetching user tokens from the server.")(err);
-                dispatch(tokensFetchError(err));
+                dispatch({
+                    type: actionTypes.USER_TOKENS_FETCH_ERROR,
+                    errorMessage: err
+                });
             });
     }
 }
@@ -661,22 +669,56 @@ export function deleteAccessToken(tokenID) {
     }
 }
 
-export function tokensFetchStart() {
-    return {
-        type: actionTypes.USER_TOKENS_FETCH_START
+export function fetchRoles() {
+    return function (dispatch, getState)  {
+        axios.get(apiNames.roles)
+            .then(response => {
+                const data = response.data || {};
+                dispatch({
+                    type: actionTypes.ROLES_FETCH_SUCCESS,
+                    roles: data.Roles
+                });
+            })
+            .catch(err => {
+                errHandler("Error fetching roles.")
+                dispatch({
+                    type: actionTypes.ROLES_FETCH_ERROR,
+                });
+            });
     }
 }
 
-export function tokensFetchSuccess(tokens) {
-    return {
-        type: actionTypes.USER_TOKENS_FETCH_SUCCESS,
-        tokens: tokens
+export function fetchRoleUsers(roleID) {
+    return function (dispatch, getState)  {
+        axios.get(apiNames.roles+"/"+roleID)
+            .then(response => {
+                const data = response.data || {};
+                dispatch({
+                    type: actionTypes.ROLE_USERS_FETCH_SUCCESS,
+                    roleID: roleID,
+                    roleUsers: data.Users
+                });
+            })
+            .catch(errHandler("Error fetching role users."));
     }
 }
 
-export function tokensFetchError(errorMessage) {
-    return {
-        type: actionTypes.USER_TOKENS_FETCH_ERROR,
-        errorMessage: errorMessage
+export function newRoleUser(roleID, userEmail) {
+    return function (dispatch, getState) {
+        const fd = new FormData();
+        fd.append('userEmail', userEmail);
+        axios.post(apiNames.roles+"/"+roleID, fd).then(response => {
+            Alert.info("Role assigned created");
+            dispatch(fetchRoleUsers(roleID));
+        }).catch(errHandler("Error while assigning role to user."));
+    }
+}
+
+export function deleteRoleUser(roleID, userID) {
+    return function (dispatch, getState) {
+        axios.delete(apiNames.roles+'/'+roleID+"/"+userID).then(response => {
+            Alert.info("User role deleted");
+            dispatch(fetchRoleUsers(roleID));
+        }).catch(errHandler("Error while deleting user role."));
     }
 }

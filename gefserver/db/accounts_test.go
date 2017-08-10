@@ -1,6 +1,7 @@
 package db
 
 import (
+	"log"
 	"os"
 	"testing"
 	"time"
@@ -14,6 +15,58 @@ var (
 	name2  = "user2"
 	email2 = "user2@example.com"
 )
+
+func TestRolesUser(t *testing.T) {
+	db, file, err := InitDbForTesting()
+	CheckErr(t, err)
+	defer db.Close()
+	defer os.Remove(file)
+
+	user1 := AddTestUser(t, db, name1, email1)
+
+	superAdminRole, err := db.GetRoleByName(SuperAdminRoleName, 0)
+	CheckErr(t, err)
+
+	err = db.AddRoleToUser(user1.ID, superAdminRole.ID)
+	CheckErr(t, err)
+
+	users, err := db.GetRoleUsers(superAdminRole.ID)
+	CheckErr(t, err)
+	log.Println(users)
+	ExpectEquals(t, len(users), 1)
+	ExpectEquals(t, &users[0], user1)
+
+	roles, err := db.GetUserRoles(user1.ID)
+	CheckErr(t, err)
+	log.Println(roles)
+	ExpectEquals(t, roles[0], superAdminRole)
+}
+
+func TestServiceAndOwnership(t *testing.T) {
+	db, file, err := InitDbForTesting()
+	CheckErr(t, err)
+	defer db.Close()
+	defer os.Remove(file)
+
+	user1 := AddTestUser(t, db, name1, email1)
+
+	service := Service{
+		ID:          ServiceID("service_test_id"),
+		Name:        "service name",
+		RepoTag:     "service repo tag",
+		Description: "service description",
+	}
+	err = db.AddService(user1.ID, service)
+	CheckErr(t, err)
+	Expect(t, db.IsServiceOwner(user1.ID, service.ID))
+
+	err = db.RemoveService(user1.ID, service.ID)
+	CheckErr(t, err)
+	Expect(t, !db.IsServiceOwner(user1.ID, service.ID))
+
+	_, err = db.GetService(service.ID)
+	Expect(t, isNoResultsError(err))
+}
 
 func TestUsersAndTokens(t *testing.T) {
 	db, file, err := InitDbForTesting()
@@ -41,17 +94,21 @@ func TestCommunityAndUserRoles(t *testing.T) {
 	CheckErr(t, err)
 	ExpectEquals(t, cs, []Community{c0, c1, c2})
 
-	r1 := AddTestRole(t, db, c1.ID, "testrole1")
-	r2 := AddTestRole(t, db, c1.ID, "testrole2")
-	r3 := AddTestRole(t, db, c1.ID, "testrole3")
+	r1 := AddTestRole(t, db, c1, "testrole1")
+	r2 := AddTestRole(t, db, c1, "testrole2")
+	r3 := AddTestRole(t, db, c1, "testrole3")
 
-	r1c2 := AddTestRole(t, db, c2.ID, "testrole1c2")
-	r2c2 := AddTestRole(t, db, c2.ID, "testrole2c2")
+	r1c2 := AddTestRole(t, db, c2, "testrole1c2")
+	r2c2 := AddTestRole(t, db, c2, "testrole2c2")
 
 	var roleset = map[int64]int{
 		r1.ID: 0, r2.ID: 0, r3.ID: 0, r1c2.ID: 0, r2c2.ID: 0,
 	}
 	ExpectEquals(t, len(roleset), 5) // all different IDs
+
+	roles, err := db.ListRoles()
+	CheckErr(t, err)
+	ExpectEquals(t, roles[len(roles)-5:], []Role{r1, r2, r3, r1c2, r2c2})
 
 	user1 := AddTestUser(t, db, name1, email1)
 	user2 := AddTestUser(t, db, name2, email2)
@@ -70,7 +127,7 @@ func TestCommunityAndUserRoles(t *testing.T) {
 	db.AddRoleToUser(user2.ID, r1c2.ID)
 	CheckErr(t, err)
 
-	roles, err := db.GetUserRoles(user1.ID)
+	roles, err = db.GetUserRoles(user1.ID)
 	CheckErr(t, err)
 	ExpectEquals(t, roles, []Role{r1, r2, r2c2})
 
@@ -79,14 +136,14 @@ func TestCommunityAndUserRoles(t *testing.T) {
 	ExpectEquals(t, roles, []Role{r2, r3, r1c2})
 }
 
-func AddTestRole(t *testing.T, db Db, communityID int64, name string) Role {
-	r, err := db.AddRole(name, communityID, "description of testrole "+name)
+func AddTestRole(t *testing.T, db Db, community Community, name string) Role {
+	r, err := db.AddRole(name, community.ID, "description of testrole "+name)
 	CheckErr(t, err)
-	r2, err := db.AddRole(name, communityID, "description of testrole "+name)
+	r2, err := db.AddRole(name, community.ID, "description of testrole "+name)
 	CheckErr(t, err)
 	ExpectEquals(t, r, r2)
 
-	r2, err = db.GetRoleByName(name, communityID)
+	r2, err = db.GetRoleByName(name, community.ID)
 	CheckErr(t, err)
 	ExpectEquals(t, r, r2)
 	return r

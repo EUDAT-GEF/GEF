@@ -22,6 +22,7 @@ import BrowseJobsContainer from './containers/JobsContainer';
 import BuildServiceContainer from './containers/BuildServiceContainer';
 import BrowseServicesContainer from './containers/ServicesContainer';
 import {UserContainer, UserProfileContainer} from './containers/UserContainer';
+import {RolesContainer} from './containers/RolesContainer';
 import {FooterContainer} from './containers/FooterContainer';
 
 
@@ -51,6 +52,7 @@ class App extends React.Component {
                         <Router history={history}>
                             <Route path='/' component={Frame}>
                                 <Route path='user' component={UserProfileContainer} />
+                                <Route path='roles' component={RolesContainer} />
                                 <Route path='builds' component={BuildServiceContainer} />
                                 <Route path='services' component={BrowseServicesContainer} >
                                     <Route path=':id' />
