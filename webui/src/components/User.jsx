@@ -15,13 +15,13 @@ const NoUser = () => (
 );
 
 
-const ActiveUser = ({user}) => {
+const ActiveUser = ({user, isSuperAdmin}) => {
     const title = <span>
             <i className="glyphicon glyphicon-user"></i>
             {" "} {user.Name || user.Email}
         </span>;
     const style = {border:'none'};
-    if (user.IsSuperAdmin) {
+    if (isSuperAdmin) {
         style.backgroundColor ='orange';
     }
     return <NavItem className="user">
@@ -49,10 +49,12 @@ export class User extends React.Component {
     }
 
     render() {
-        if (!this.props.user || !this.props.user.Email) {
+        const data = this.props.user || {};
+        const user = data.User || {};
+        if (!user.Email) {
             return <NoUser/>;
         }
-        return <ActiveUser user={this.props.user}/> ;
+        return <ActiveUser user={user} isSuperAdmin={data.IsSuperAdmin}/> ;
     }
 };
 
@@ -75,13 +77,25 @@ export const UserProfile = React.createClass({
         );
     },
 
+    renderRole(communityMap, r) {
+        const c = communityMap[r.CommunityID] || {};
+        return (
+            <li key={r.Name}>
+                {r.Description}
+                {c.ID ? <span> {" (" + c.Name + ")" } </span> : false }
+            </li>
+        );
+    },
+
     render() {
-        const user = this.props.user;
-        if (!user || !user.Email) {
+        const data = this.props.user || {};
+        const user = data.User || {};
+        const roles = data.Roles || [];
+        const communityMap = data.CommunityMap || {};
+        if (!user.Email) {
             return this.renderNoUser();
         }
 
-        const roles = user.Roles || [];
         return (
             <div>
                 <h1>User Profile</h1>
@@ -92,11 +106,12 @@ export const UserProfile = React.createClass({
                     </div>
                     <div className="row">
                         <h3>Roles</h3>
-                        {user.IsSuperAdmin ?
-                            <p><span style={{fontWeight:'bold', color:"red"}}>You are SuperAdministrator.</span></p> :
-                            false}
+                        {data.IsSuperAdmin ?
+                            <li style={{fontWeight:'bold', color:"red"}}>
+                                SuperAdministrator
+                            </li> : false }
                         { roles.length ?
-                            roles.map(r => <li key={r.name}> {r.description} </li>) :
+                            roles.map(this.renderRole.bind(this, communityMap)) :
                             <p>You have no assigned roles</p> }
                     </div>
                     <div className="row">
