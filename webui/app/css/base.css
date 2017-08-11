@@ -164,9 +164,7 @@ input:focus, select:focus, textarea:focus, button:focus, a:focus {
     border-bottom: 1px solid #ddd;
     font-weight: bold;
 }
-.table-bordered {
-    margin-bottom: 0px;
-}
+
 .dataset-page .dataset-table {
   font-family: Monaco, "Lucida Console", monospace;
   font-size: 13px;
