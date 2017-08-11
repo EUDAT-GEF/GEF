@@ -37,5 +37,5 @@ export const Footer = ({Version, ContactLink}) => (
 );
 
 Footer.propTypes = {
-    version: PropTypes.string.isRequired
+    version: PropTypes.string
 };

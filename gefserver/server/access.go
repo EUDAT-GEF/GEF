@@ -32,34 +32,28 @@ func init() {
 	}
 }
 
+// user  related handlers
+
 func (s *Server) userHandler(w http.ResponseWriter, r *http.Request) {
 	user, err := s.getCurrentUser(r)
 	if err != nil {
 		Response{w}.Ok(jmap("Error", err.Error()))
-	} else if user == nil {
-		Response{w}.Ok("{}")
-	} else {
-		roles, err := s.db.GetUserRoles(user.ID)
-		if err != nil {
-			log.Printf("ERROR retrieving user roles: %#v", err)
-		}
-		cmap := make(map[int64]db.Community)
-		for _, r := range roles {
-			if _, ok := cmap[r.ID]; !ok {
-				c, err := s.db.GetCommunityByID(r.CommunityID)
-				if err != nil {
-					log.Printf("ERROR retrieving community for user roles: %#v", err)
-				} else {
-					cmap[c.ID] = c
-				}
-			}
-		}
-		Response{w}.Ok(jmap(
-			"User", user,
-			"IsSuperAdmin", s.isSuperAdmin(user),
-			"Roles", roles,
-			"CommunityMap", cmap))
+		return
 	}
+	if user == nil {
+		Response{w}.Ok("{}")
+		return
+	}
+
+	roles, err := s.db.GetUserRoles(user.ID)
+	if err != nil {
+		Response{w}.ServerError("Get user roles error", err)
+		return
+	}
+	Response{w}.Ok(jmap(
+		"User", user,
+		"IsSuperAdmin", s.isSuperAdmin(user),
+		"Roles", roles))
 }
 
 func (s *Server) logoutHandler(w http.ResponseWriter, r *http.Request) {
@@ -74,8 +68,8 @@ func (s *Server) logoutHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) newTokenHandler(w http.ResponseWriter, r *http.Request) {
-	user := s.getUserOrWriteError(w, r)
-	if user != nil {
+	allow, user := Authorization{s, w, r}.allowCreateToken()
+	if user == nil || !allow {
 		return
 	}
 
@@ -96,8 +90,8 @@ func (s *Server) newTokenHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) listTokenHandler(w http.ResponseWriter, r *http.Request) {
-	user := s.getUserOrWriteError(w, r)
-	if user != nil {
+	allow, user := Authorization{s, w, r}.allowGetTokens()
+	if user == nil || !allow {
 		return
 	}
 
@@ -117,12 +111,12 @@ func (s *Server) removeTokenHandler(w http.ResponseWriter, r *http.Request) {
 	tokenIDStr := vars["tokenID"]
 	tokenID, err := strconv.ParseInt(tokenIDStr, 10, 64)
 	if err != nil {
-		Response{w}.ClientError("token id must be an int", err)
+		Response{w}.ClientError("tokenID must be an int", err)
 		return
 	}
 	token, err := s.db.GetTokenByID(tokenID)
 	if err != nil {
-		Response{w}.ClientError("token error", err)
+		Response{w}.ClientError("db get token error", err)
 		return
 	}
 
@@ -136,7 +130,110 @@ func (s *Server) removeTokenHandler(w http.ResponseWriter, r *http.Request) {
 		Response{w}.ServerError("delete token error", err)
 		return
 	}
-	Response{w}.Ok(jmap("Token", token))
+	Response{w}.Ok("")
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+// role related handlers
+
+func (s *Server) listRolesHandler(w http.ResponseWriter, r *http.Request) {
+	allow, _ := Authorization{s, w, r}.allowListRoles()
+	if !allow {
+		return
+	}
+
+	roles, err := s.db.ListRoles()
+	if err != nil {
+		Response{w}.ServerError("db error", err)
+		return
+	}
+	Response{w}.Ok(jmap("Roles", roles))
+}
+
+func (s *Server) listRoleUsersHandler(w http.ResponseWriter, r *http.Request) {
+	allow, _ := Authorization{s, w, r}.allowListRoleUsers()
+	if !allow {
+		return
+	}
+
+	vars := mux.Vars(r)
+	roleIDStr := vars["roleID"]
+	roleID, err := strconv.ParseInt(roleIDStr, 10, 64)
+	if err != nil {
+		Response{w}.ClientError("roleID must be an int", err)
+		return
+	}
+
+	roles, err := s.db.GetRoleUsers(roleID)
+	if err != nil {
+		Response{w}.ServerError("db error", err)
+		return
+	}
+	Response{w}.Ok(jmap("Users", roles))
+}
+
+func (s *Server) newRoleUserHandler(w http.ResponseWriter, r *http.Request) {
+	allow, _ := Authorization{s, w, r}.allowNewRoleUser()
+	if !allow {
+		return
+	}
+
+	vars := mux.Vars(r)
+	roleIDStr := vars["roleID"]
+	roleID, err := strconv.ParseInt(roleIDStr, 10, 64)
+	if err != nil {
+		Response{w}.ClientError("roleID must be an int", err)
+		return
+	}
+	userEmail := r.FormValue("userEmail")
+	logParam("userEmail", userEmail)
+	user, err := s.db.GetUserByEmail(userEmail)
+	if err != nil {
+		Response{w}.ServerError("db error", err)
+		return
+	}
+	if user == nil {
+		Response{w}.ClientError("User not found", nil)
+		return
+	}
+
+	err = s.db.AddRoleToUser(user.ID, roleID)
+	if err != nil {
+		Response{w}.ServerError("db error", err)
+		return
+	}
+
+	Response{w}.Ok("")
+}
+
+func (s *Server) removeRoleUserHandler(w http.ResponseWriter, r *http.Request) {
+	allow, _ := Authorization{s, w, r}.allowDeleteRoleUser()
+	if !allow {
+		return
+	}
+
+	vars := mux.Vars(r)
+	roleIDStr := vars["roleID"]
+	roleID, err := strconv.ParseInt(roleIDStr, 10, 64)
+	if err != nil {
+		Response{w}.ClientError("roleID must be an int", err)
+		return
+	}
+	userIDStr := vars["userID"]
+	userID, err := strconv.ParseInt(userIDStr, 10, 64)
+	if err != nil {
+		Response{w}.ClientError("userID must be an int", err)
+		return
+	}
+
+	err = s.db.DeleteRoleFromUser(userID, roleID)
+	if err != nil {
+		Response{w}.ServerError("db error", err)
+		return
+	}
+
+	Response{w}.Ok("")
 }
 
 ///////////////////////////////////////////////////////////////////////////////

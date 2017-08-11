@@ -44,7 +44,7 @@ func (w Response) ClientError(message string, err error) {
 	if err != nil {
 		errstr = "\n\t" + err.Error()
 	}
-	str := fmt.Sprintf("API Client ERROR: %s%s", message, errstr)
+	str := fmt.Sprintf("ERROR: %s%s", message, errstr)
 	log.Println("\t" + str)
 	http.Error(w, str, 400)
 }

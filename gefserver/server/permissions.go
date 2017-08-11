@@ -56,6 +56,46 @@ func (a Authorization) allowDeleteToken(token db.Token) (allow bool, user *db.Us
 	return
 }
 
+func (a Authorization) allowListRoles() (allow bool, user *db.User) {
+	allow, user = a.getUserInfo()
+	if user == nil || allow {
+		return
+	}
+	// allow any logged in user to list roles
+	allow = true
+	return
+}
+
+func (a Authorization) allowListRoleUsers() (allow bool, user *db.User) {
+	allow, user = a.getUserInfo()
+	if user == nil || allow {
+		return
+	}
+	// only superadmins can list role users
+	Response{a.w}.Forbidden("Only superadministrators can list role users")
+	return
+}
+
+func (a Authorization) allowNewRoleUser() (allow bool, user *db.User) {
+	allow, user = a.getUserInfo()
+	if user == nil || allow {
+		return
+	}
+	// only superadmins can create role user
+	Response{a.w}.Forbidden("Only superadministrators can create role user")
+	return
+}
+
+func (a Authorization) allowDeleteRoleUser() (allow bool, user *db.User) {
+	allow, user = a.getUserInfo()
+	if user == nil || allow {
+		return
+	}
+	// only superadmins can delete role user
+	Response{a.w}.Forbidden("Only superadministrators can delete role user")
+	return
+}
+
 func (a Authorization) allowCreateBuild() (allow bool, user *db.User) {
 	allow, user = a.getUserInfo()
 	if user == nil || allow {

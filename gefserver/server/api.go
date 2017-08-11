@@ -77,6 +77,11 @@ func NewServer(cfg def.ServerConfig, pier *pier.Pier, tmpDir string, database *d
 		{"GET /user/tokens", server.listTokenHandler, "access discovery"},
 		{"DELETE /user/tokens/{tokenID}", server.removeTokenHandler, "access management"},
 
+		{"GET /roles", server.listRolesHandler, "access discovery"},
+		{"GET /roles/{roleID}", server.listRoleUsersHandler, "access discovery"},
+		{"POST /roles/{roleID}", server.newRoleUserHandler, "access management"},
+		{"DELETE /roles/{roleID}/{userID}", server.removeRoleUserHandler, "access management"},
+
 		{"POST /builds", server.newBuildImageHandler, "service deployment"},
 		{"POST /builds/{buildID}", server.buildImageHandler, "service deployment"},
 

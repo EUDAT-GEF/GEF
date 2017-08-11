@@ -27,7 +27,10 @@ const ActiveUser = ({user, isSuperAdmin}) => {
     return <NavItem className="user">
         <DropdownButton id="usermenu" title={title} style={style}>
             <MenuItem>
-                <Link to="/user"> <i className="fa fa-info"></i> Profile </Link>
+                <Link to="/user"> <i className="glyphicon glyphicon-info-sign"></i> Profile </Link>
+            </MenuItem>
+            <MenuItem>
+                <Link to="/roles"> <i className="glyphicon glyphicon-tasks"></i> Manage Roles </Link>
             </MenuItem>
             <MenuItem divider />
             <MenuItem>
@@ -77,12 +80,11 @@ export const UserProfile = React.createClass({
         );
     },
 
-    renderRole(communityMap, r) {
-        const c = communityMap[r.CommunityID] || {};
+    renderRole(r) {
         return (
-            <li key={r.Name}>
+            <li key={r.ID}>
                 {r.Description}
-                {c.ID ? <span> {" (" + c.Name + ")" } </span> : false }
+                {r.CommunityName ? <span> {" (" + r.CommunityName + ")" } </span> : false }
             </li>
         );
     },
@@ -110,9 +112,7 @@ export const UserProfile = React.createClass({
                             <li style={{fontWeight:'bold', color:"red"}}>
                                 SuperAdministrator
                             </li> : false }
-                        { roles.length ?
-                            roles.map(this.renderRole.bind(this, communityMap)) :
-                            <p>You have no assigned roles</p> }
+                        { roles.map(this.renderRole) }
                     </div>
                     <div className="row">
                         <h3>API Tokens</h3>
@@ -134,7 +134,8 @@ const TokenList = React.createClass({
         };
     },
 
-    submitNewToken({tokenName}) {
+    submitNewToken(event) {
+        const {tokenName} = event;
         this.props.submitNewAccessToken(tokenName, data => {
             this.setState({newtoken: data.Token});
         });
@@ -188,7 +189,7 @@ const TokenList = React.createClass({
 
                 <div style={{marginTop:'2em'}}>
                     <h4>Create new token</h4>
-                    <NewToken onSubmit={this.submitNewToken}/>
+                    <NewTokenForm onSubmit={this.submitNewToken}/>
                 </div>
             </div>
         );
@@ -196,7 +197,7 @@ const TokenList = React.createClass({
 });
 
 
-const NewToken = reduxForm({form: 'NewToken'})( ({handleSubmit}) => {
+const NewToken = ({handleSubmit}) => {
     const inputStyle = {
         height: '34px',
         padding: '6px 12px',
@@ -229,4 +230,5 @@ const NewToken = reduxForm({form: 'NewToken'})( ({handleSubmit}) => {
             </Row>
         </form>
     )
-});
+};
+const NewTokenForm = reduxForm({form: 'NewToken'})(NewToken);
