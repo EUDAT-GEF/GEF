@@ -22,6 +22,8 @@ const successColor = {
 };
 const progressAnimation = <img src="/images/progress-animation.gif" />;
 
+
+
 let allJobs = [];
 let jobStatusUpdateTimer;
 let activeJobs;
@@ -33,15 +35,21 @@ class Jobs extends React.Component {
         super(props);
 
         this.state = {
-            showModal: false,
-            buttonPressed: -1,
             timerOn: true,
         };
 
         this.options = {
             defaultSortName: 'created', // default sort column name
             defaultSortOrder: 'desc',  // default sort order
-            onClickGroupSelected: this.onClickGroupSelected,
+            expandRowBgColor: 'rgb(242, 255, 163)',
+            expandBy: 'row',
+        };
+
+
+         this.selectRow = {
+            mode: 'checkbox',
+            clickToSelect: true,  // click to select, default is false
+            clickToExpand: true  // click to expand row, default is false
         };
 
         jobStatusUpdateTimer = setInterval(this.tick.bind(this), 1000);
@@ -131,21 +139,39 @@ class Jobs extends React.Component {
         console.log(this.refs.table.state.selectedRowKeys)
     }
 
-
-    handleJobRemoval(jobID) {
-        console.log("REMOVING");
-        console.log(jobID);
-        this.props.actions.removeJob(jobID);
+    renderModalWindow(title, body) {
+        return (
+            <div>
+                <Modal show={this.state.showModal} onHide={this.handleModalClose.bind(this)}>
+                    <Modal.Header closeButton>
+                        <Modal.Title>{title}</Modal.Title>
+                    </Modal.Header>
+                    <Modal.Body>
+                        {body}
+                    </Modal.Body>
+                    <Modal.Footer>
+                        <Button onClick={this.handleModalClose.bind(this)}>Close</Button>
+                    </Modal.Footer>
+                </Modal>
+            </div>
+        )
     }
 
 
-
-    onClickGroupSelected(v1,v2) {
-        console.log(v1);
-        console.log(v2);
+    isExpandableRow(row) {
+        return true;
     }
 
-
+    expandComponent(row) {
+        console.log("EXPANDING");
+        console.log(row.id);
+        return (
+            <Row>
+                <Col xs={12} sm={3} md={3} >{row.id}</Col>
+                <Col xs={12} sm={9} md={9} >{row.id}</Col>
+            </Row>
+        );
+    }
 
 
 
@@ -212,8 +238,8 @@ class Jobs extends React.Component {
                         </Col>
                     </Panel>
                     <div>
-                        <BootstrapTable data={allJobs} selectRow={selectRowProp} options={this.options} ref="table">
-                            <TableHeaderColumn dataField='id' isKey dataSort>ID</TableHeaderColumn>
+                        <BootstrapTable data={allJobs} selectRow={this.selectRow} expandComponent={ this.expandComponent } expandableRow={ this.isExpandableRow } options={this.options} expandColumnOptions={ { expandColumnVisible: true } } ref="table">
+                            <TableHeaderColumn dataField='id' isKey dataSort expandable={ true }>ID</TableHeaderColumn>
                             <TableHeaderColumn dataField='title' dataSort>Title</TableHeaderColumn>
                             <TableHeaderColumn dataField='created' dataSort>Created</TableHeaderColumn>
                             <TableHeaderColumn dataField='duration' dataSort>Duration</TableHeaderColumn>
