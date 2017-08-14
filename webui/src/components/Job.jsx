@@ -93,9 +93,9 @@ class Job extends React.Component {
         }
     }
 
-    handleConsoleOutput() {
+    handleConsoleOutput(jobID) {
         this.setState({ buttonPressed: 0 });
-        this.props.actions.consoleOutputFetch(this.props.job.ID);
+        this.props.actions.consoleOutputFetch(jobID);
         this.handleModalOpen();
     }
 
