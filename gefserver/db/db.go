@@ -32,7 +32,7 @@ type JobTable struct {
 	ServiceID    string
 	Input        string
 	Created      time.Time
-	Finished      time.Time
+	Finished     time.Time
 	Error        string
 	Status       string
 	Code         int
