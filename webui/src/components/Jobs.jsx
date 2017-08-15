@@ -23,7 +23,6 @@ const successColor = {
 const progressAnimation = <img src="/images/progress-animation.gif" />;
 
 
-
 let allJobs = [];
 let jobStatusUpdateTimer;
 let activeJobs;
@@ -36,21 +35,10 @@ class Jobs extends React.Component {
 
         this.state = {
             timerOn: true,
-        };
-
-        this.options = {
-            defaultSortName: 'created', // default sort column name
-            defaultSortOrder: 'desc',  // default sort order
-            expandRowBgColor: 'rgb(242, 255, 163)',
-            expandBy: 'row',
+            showModal: false,
         };
 
 
-         this.selectRow = {
-            mode: 'checkbox',
-            clickToSelect: true,  // click to select, default is false
-            clickToExpand: true  // click to expand row, default is false
-        };
 
         jobStatusUpdateTimer = setInterval(this.tick.bind(this), 1000);
     }
@@ -103,19 +91,16 @@ class Jobs extends React.Component {
         return runningJobfound;
     }
 
-    buttonFormatter(cell, row, removeJob) {
-
-
-
-        return (
-            <ButtonGroup>
-                <Button bsSize="xsmall"><Glyphicon glyph="console"/></Button>
-                <Button bsSize="xsmall"><Glyphicon glyph="arrow-down"/></Button>
-                <Button bsSize="xsmall"><Glyphicon glyph="arrow-up"/></Button>
-                <Button bsSize="xsmall" onClick={() => removeJob(row.id)}><Glyphicon glyph="trash"/></Button>
-            </ButtonGroup>
-        );
-    }
+    // buttonFormatter(cell, row, removeJob) {
+    //     return (
+    //         <ButtonGroup>
+    //             <Button bsSize="xsmall"><Glyphicon glyph="console"/></Button>
+    //             <Button bsSize="xsmall" onClick={ () =>  this.handleInspectInputVolume(row.input)}><Glyphicon glyph="arrow-down"/></Button>
+    //             <Button bsSize="xsmall" onClick={ () =>  this.handleInspectInputVolume(row.output)}><Glyphicon glyph="arrow-up"/></Button>
+    //             <Button bsSize="xsmall" onClick={() => removeJob(row.id)}><Glyphicon glyph="trash"/></Button>
+    //         </ButtonGroup>
+    //     );
+    // }
 
     statusFormatter(cell, row) {
         var currentProgress;
@@ -135,55 +120,60 @@ class Jobs extends React.Component {
     }
 
     getSelectedRowKeys() {
-        //Here is your answer
-        console.log(this.refs.table.state.selectedRowKeys)
+        var selectedJobs = this.refs.table.state.selectedRowKeys;
+        console.log(selectedJobs);
+        for (var i = 0; i < selectedJobs.length; ++i) {
+            this.props.actions.removeJob(selectedJobs[i]);
+        }
     }
 
-    renderModalWindow(title, body) {
-        return (
-            <div>
-                <Modal show={this.state.showModal} onHide={this.handleModalClose.bind(this)}>
-                    <Modal.Header closeButton>
-                        <Modal.Title>{title}</Modal.Title>
-                    </Modal.Header>
-                    <Modal.Body>
-                        {body}
-                    </Modal.Body>
-                    <Modal.Footer>
-                        <Button onClick={this.handleModalClose.bind(this)}>Close</Button>
-                    </Modal.Footer>
-                </Modal>
-            </div>
-        )
+    handleInspectVolume(volumeID) {
+        this.setState({ buttonPressed: 1 });
+        this.props.actions.inspectVolume(volumeID);
+        this.handleModalOpen();
     }
 
+    handleModalClose() {
+        this.setState({ showModal: false });
+    }
 
-    isExpandableRow(row) {
-        return true;
+    handleModalOpen() {
+        this.setState({ showModal: true });
     }
 
     expandComponent(row) {
-        console.log("EXPANDING");
-        console.log(row.id);
         return (
-            <Row>
-                <Col xs={12} sm={3} md={3} >{row.id}</Col>
-                <Col xs={12} sm={9} md={9} >{row.id}</Col>
-            </Row>
+            <div>
+                <div>
+                    <span><pre>{(row && row.console && row.console.length) ? row.console : "No information"}</pre></span>
+                </div>
+                <div className="text-center">
+                    <div className="btn-group" role="group" aria-label="toolbar">
+                        <Button onClick={ () => this.handleInspectVolume(row.input)}><Glyphicon glyph="arrow-down"/> Inspect input volume</Button>
+                        <Button onClick={ () => this.handleInspectVolume(row.output)}><Glyphicon glyph="arrow-up"/> Inspect output volume</Button>
+                        <Button onClick={ () => this.props.actions.removeJob(row.id)}><Glyphicon glyph="trash"/> Remove job</Button>
+                    </div>
+                </div>
+            </div>
         );
     }
 
-
-
     render() {
+        const options = {
+            defaultSortName: 'created', // default sort column name
+            defaultSortOrder: 'desc',  // default sort order
+            expandBy: 'row',
+        };
+        const selectRow = {
+            mode: 'checkbox',
+            clickToSelect: true,  // click to select, default is false
+            clickToExpand: true  // click to expand row, default is false
+        };
 
         allJobs = [];
         activeJobs = 0;
         inactiveJobs = 0;
         failedJobs = 0;
-
-
-
 
         if (this.props.jobs) {
             return (
@@ -201,10 +191,6 @@ class Jobs extends React.Component {
                             (service && service.ID && service.ID.length) ? service.ID : "unknown service";
                         let title = "Job from " + serviceName;
 
-
-
-
-
                         let execDuration = "";
                         if (job.State.Code == -1) {
                             let currentDate = new Date();
@@ -219,16 +205,33 @@ class Jobs extends React.Component {
                             }
                         }
 
+                        let ConsoleOutput = "";
+                        if (job.Tasks) {
+                            for (var t = 0; t < job.Tasks.length; ++t) {
+                                if (job.Tasks[t].Name == "Service execution") {
+                                    ConsoleOutput = job.Tasks[t].ConsoleOutput;
+                                    break;
+                                }
+                            }
+                        }
+
                         let createdDate = new Date(job.Created);
                         let fmtCreatedDate = createdDate.toLocaleDateString('en-GB');
                         let fmtCreatedTime = createdDate.toLocaleTimeString('en-GB');
 
-                        allJobs.push({"title": title, "id": job.ID, "created": fmtCreatedDate + " " + fmtCreatedTime, "duration": this.formatJobDuration(execDuration/1000), "status": job.State.Status, "code": job.State.Code});
-
-
-
+                        allJobs.push(
+                            {
+                                "title": title, "id": job.ID,
+                                "created": fmtCreatedDate + " " + fmtCreatedTime,
+                                "duration": this.formatJobDuration(execDuration/1000),
+                                "status": job.State.Status,
+                                "code": job.State.Code,
+                                "console": ConsoleOutput,
+                                "input": job.InputVolume,
+                                "output": job.OutputVolume
+                            }
+                        );
                     })}
-                    {/*<Job key={job.ID} job={job} service={service} title={title}/>*/}
                     <Panel>
                         <Col sm={8}>
                             Out of {this.props.jobs.length} jobs <span style={inProgressColor}>{activeJobs} are active</span>, <span style={successColor}>{inactiveJobs} are finished successfully</span>,  <span style={errorColor}>{failedJobs} failed</span>
@@ -238,16 +241,27 @@ class Jobs extends React.Component {
                         </Col>
                     </Panel>
                     <div>
-                        <BootstrapTable data={allJobs} selectRow={this.selectRow} expandComponent={ this.expandComponent } expandableRow={ this.isExpandableRow } options={this.options} expandColumnOptions={ { expandColumnVisible: true } } ref="table">
+                        <BootstrapTable data={allJobs} selectRow={selectRow}  expandComponent={this.expandComponent.bind(this)} expandableRow={() => {return true}} options={options} expandColumnOptions={{ expandColumnVisible: true }} ref="table">
                             <TableHeaderColumn dataField='id' isKey dataSort expandable={ true }>ID</TableHeaderColumn>
                             <TableHeaderColumn dataField='title' dataSort>Title</TableHeaderColumn>
                             <TableHeaderColumn dataField='created' dataSort>Created</TableHeaderColumn>
                             <TableHeaderColumn dataField='duration' dataSort>Duration</TableHeaderColumn>
                             <TableHeaderColumn dataField='status' dataSort dataFormat={this.statusFormatter}>Status</TableHeaderColumn>
-                            <TableHeaderColumn dataField="button" dataFormat={this.buttonFormatter} formatExtraData={this.props.actions.removeJob}>Operations</TableHeaderColumn>
                         </BootstrapTable>
                     </div>
-
+                    <div>
+                        <Modal show={this.state.showModal} onHide={this.handleModalClose.bind(this)}>
+                            <Modal.Header closeButton>
+                                <Modal.Title>Volume Inspection</Modal.Title>
+                            </Modal.Header>
+                            <Modal.Body>
+                                <FileTree/>
+                            </Modal.Body>
+                            <Modal.Footer>
+                                <Button onClick={this.handleModalClose.bind(this)}>Close</Button>
+                            </Modal.Footer>
+                        </Modal>
+                    </div>
                 </div>
             );
         } else {
