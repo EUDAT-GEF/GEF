@@ -37,9 +37,6 @@ class Jobs extends React.Component {
             timerOn: true,
             showModal: false,
         };
-
-
-
         jobStatusUpdateTimer = setInterval(this.tick.bind(this), 1000);
     }
 
@@ -91,17 +88,6 @@ class Jobs extends React.Component {
         return runningJobfound;
     }
 
-    // buttonFormatter(cell, row, removeJob) {
-    //     return (
-    //         <ButtonGroup>
-    //             <Button bsSize="xsmall"><Glyphicon glyph="console"/></Button>
-    //             <Button bsSize="xsmall" onClick={ () =>  this.handleInspectInputVolume(row.input)}><Glyphicon glyph="arrow-down"/></Button>
-    //             <Button bsSize="xsmall" onClick={ () =>  this.handleInspectInputVolume(row.output)}><Glyphicon glyph="arrow-up"/></Button>
-    //             <Button bsSize="xsmall" onClick={() => removeJob(row.id)}><Glyphicon glyph="trash"/></Button>
-    //         </ButtonGroup>
-    //     );
-    // }
-
     statusFormatter(cell, row) {
         var currentProgress;
         var messageColor;
@@ -121,7 +107,6 @@ class Jobs extends React.Component {
 
     getSelectedRowKeys() {
         var selectedJobs = this.refs.table.state.selectedRowKeys;
-        console.log(selectedJobs);
         for (var i = 0; i < selectedJobs.length; ++i) {
             this.props.actions.removeJob(selectedJobs[i]);
         }
@@ -162,12 +147,12 @@ class Jobs extends React.Component {
         const options = {
             defaultSortName: 'created', // default sort column name
             defaultSortOrder: 'desc',  // default sort order
-            expandBy: 'row',
+            expandBy: 'row'
         };
         const selectRow = {
             mode: 'checkbox',
-            clickToSelect: true,  // click to select, default is false
-            clickToExpand: true  // click to expand row, default is false
+            clickToSelect: true,
+            clickToExpand: true
         };
 
         allJobs = [];
