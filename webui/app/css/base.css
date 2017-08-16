@@ -354,7 +354,7 @@ code {
 /*** Scrollable console in a modal window ***/
 pre {
     height: auto;
-    max-height: 500px;
+    max-height: 300px;
     overflow: auto;
     background-color: #eeeeee;
     word-break: normal !important;

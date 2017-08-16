@@ -131,7 +131,7 @@ class FileTree extends React.Component {
         }
         else {
             return (
-                <div>Press Inspect to see files</div>
+                <div>No files to be displayed</div>
             )
         }
     }

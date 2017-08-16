@@ -367,6 +367,11 @@ func (p *Pier) runJob(job *db.Job, service db.Service, inputPID string) {
 	if err != nil {
 		log.Println(err)
 	}
+
+	err = p.db.SetJobFinishTime(job.ID, time.Now())
+	if err != nil {
+		log.Println(err)
+	}
 }
 
 // RemoveVolumeInUse removes a volume that may seem to be in use

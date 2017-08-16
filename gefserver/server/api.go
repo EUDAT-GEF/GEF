@@ -400,7 +400,7 @@ func (s *Server) inspectJobHandler(w http.ResponseWriter, r *http.Request) {
 func (s *Server) removeJobHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	jobID := db.JobID(vars["jobID"])
-	allow, user := Authorization{s, w, r}.allowInspectJob(jobID)
+	allow, user := Authorization{s, w, r}.allowRemoveJob(jobID)
 	if !allow {
 		return
 	}

@@ -8,6 +8,7 @@ type Job struct {
 	ServiceID    ServiceID
 	Input        string
 	Created      time.Time
+	Finished     time.Time
 	State        *JobState
 	InputVolume  VolumeID
 	OutputVolume VolumeID
@@ -50,13 +51,13 @@ type ContainerID string
 
 // Task contains tasks related to a specific job (used to serialize JSON)
 type Task struct {
-	ID            string
-	Name          string
-	ContainerID   ContainerID
-	SwarmServiceID  string
-	Error         string
-	ExitCode      int
-	ConsoleOutput string
+	ID             string
+	Name           string
+	ContainerID    ContainerID
+	SwarmServiceID string
+	Error          string
+	ExitCode       int
+	ConsoleOutput  string
 }
 
 // LatestOutput used to serialize console output to JSON

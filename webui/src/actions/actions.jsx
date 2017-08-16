@@ -296,18 +296,20 @@ export function fetchJobs() {
     }
 }
 
-export function removeJob(jobID) {
+export function removeJobs(jobIDList) {
     return function (dispatch, getState)  {
         dispatch(jobRemovalStart());
-        const resultPromise = axios.delete( apiNames.jobs + "/" + jobID);
-        resultPromise.then(response => {
-            log('removed job:', response.data);
-            dispatch(jobRemovalSuccess(response.data));
-            dispatch(fetchJobs());
-        }).catch(err => {
-            errHandler("Cannot remove job.")(err);
-            dispatch(jobRemovalError(err));
-        })
+        for (var i = 0; i < jobIDList.length; ++i) {
+            var resultPromise = axios.delete(apiNames.jobs + "/" + jobIDList[i]);
+            resultPromise.then(response => {
+                log('removed job:', response.data);
+                dispatch(jobRemovalSuccess(response.data));
+                dispatch(fetchJobs());
+            }).catch(err => {
+                errHandler("Cannot remove job.")(err);
+                dispatch(jobRemovalError(err));
+            })
+        }
     }
 }
 
