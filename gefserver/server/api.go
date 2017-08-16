@@ -15,7 +15,6 @@ import (
 	"github.com/EUDAT-GEF/GEF/gefserver/def"
 	"github.com/EUDAT-GEF/GEF/gefserver/pier"
 	"github.com/gorilla/mux"
-	"fmt"
 )
 
 const (
@@ -413,7 +412,6 @@ func (s *Server) removeJobHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err = s.db.RemoveJob(user.ID, jobID)
-	fmt.Println()
 	if err != nil {
 		Response{w}.ClientError(err.Error(), err)
 		return
