@@ -304,10 +304,7 @@ export function removeJobs(jobIDList) {
             resultPromise.then(response => {
                 log('removed job:', response.data);
                 dispatch(jobRemovalSuccess(response.data));
-                // Update the list after the last job has been removed
-                if (i==jobIDList.length) {
-                    dispatch(fetchJobs());
-                }
+                dispatch(fetchJobs());
             }).catch(err => {
                 errHandler("Cannot remove job.")(err);
                 dispatch(jobRemovalError(err));
