@@ -15,6 +15,7 @@ import (
 	"github.com/EUDAT-GEF/GEF/gefserver/def"
 	"github.com/EUDAT-GEF/GEF/gefserver/pier"
 	"github.com/gorilla/mux"
+	"fmt"
 )
 
 const (
@@ -400,7 +401,7 @@ func (s *Server) inspectJobHandler(w http.ResponseWriter, r *http.Request) {
 func (s *Server) removeJobHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	jobID := db.JobID(vars["jobID"])
-	allow, user := Authorization{s, w, r}.allowInspectJob(jobID)
+	allow, user := Authorization{s, w, r}.allowRemoveJob(jobID)
 	if !allow {
 		return
 	}
@@ -412,6 +413,7 @@ func (s *Server) removeJobHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err = s.db.RemoveJob(user.ID, jobID)
+	fmt.Println()
 	if err != nil {
 		Response{w}.ClientError(err.Error(), err)
 		return

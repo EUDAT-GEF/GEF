@@ -74,15 +74,11 @@ class Jobs extends React.Component {
         return hours+':'+minutes+':'+seconds;
     }
 
-
     hasJobsRunning() {
         var runningJobfound = false;
         this.props.jobs.map((job) => {
-
-            if (job.State.Code == -1) {
-                console.log(job.State);
+            if (job.State.Code < 0) {
                 runningJobfound = true;
-
             }
         });
         return runningJobfound;
@@ -105,11 +101,8 @@ class Jobs extends React.Component {
         );
     }
 
-    getSelectedRowKeys() {
-        var selectedJobs = this.refs.table.state.selectedRowKeys;
-        for (var i = 0; i < selectedJobs.length; ++i) {
-            this.props.actions.removeJob(selectedJobs[i]);
-        }
+    removeSelectedJobs() {
+        this.props.actions.removeJobs(this.refs.table.state.selectedRowKeys);
     }
 
     handleInspectVolume(volumeID) {
@@ -136,11 +129,74 @@ class Jobs extends React.Component {
                     <div className="btn-group" role="group" aria-label="toolbar">
                         <Button onClick={ () => this.handleInspectVolume(row.input)}><Glyphicon glyph="arrow-down"/> Inspect input volume</Button>
                         <Button onClick={ () => this.handleInspectVolume(row.output)}><Glyphicon glyph="arrow-up"/> Inspect output volume</Button>
-                        <Button onClick={ () => this.props.actions.removeJob(row.id)}><Glyphicon glyph="trash"/> Remove job</Button>
+                        <Button onClick={ () => this.props.actions.removeJobs([row.id])}><Glyphicon glyph="trash"/> Remove job</Button>
                     </div>
                 </div>
             </div>
         );
+    }
+
+
+    populateTable() {
+        var allJobs = [];
+        var activeJobs = 0;
+        var inactiveJobs = 0;
+        var failedJobs = 0;
+
+        this.props.jobs.map((job) => {
+            let service = null;
+            for (var i = 0; i < this.props.services.length; ++i) {
+                if (job.ServiceID == this.props.services[i].ID) {
+                    service = this.props.services[i];
+                    break;
+                }
+            }
+            let serviceName = (service && service.Name && service.Name.length) ? service.Name :
+                (service && service.ID && service.ID.length) ? service.ID : "unknown service";
+            let title = "Job from " + serviceName;
+
+            let execDuration = "";
+            if (job.State.Code == -1) {
+                let currentDate = new Date();
+                execDuration = currentDate - Date.parse(job.Created);
+                activeJobs += 1;
+            } else {
+                execDuration = Date.parse(job.Finished) - Date.parse(job.Created);
+                if (job.State.Code == 0) {
+                    inactiveJobs += 1;
+                } else {
+                    failedJobs += 1;
+                }
+            }
+
+            let ConsoleOutput = "";
+            if (job.Tasks) {
+                for (var t = 0; t < job.Tasks.length; ++t) {
+                    if (job.Tasks[t].Name == "Service execution") {
+                        ConsoleOutput = job.Tasks[t].ConsoleOutput;
+                        break;
+                    }
+                }
+            }
+
+            let createdDate = new Date(job.Created);
+            let fmtCreatedDate = createdDate.toLocaleDateString('en-GB');
+            let fmtCreatedTime = createdDate.toLocaleTimeString('en-GB');
+
+            allJobs.push(
+                {
+                    "title": title, "id": job.ID,
+                    "created": fmtCreatedDate + " " + fmtCreatedTime,
+                    "duration": this.formatJobDuration(execDuration/1000),
+                    "status": job.State.Status,
+                    "code": job.State.Code,
+                    "console": ConsoleOutput,
+                    "input": job.InputVolume,
+                    "output": job.OutputVolume
+                }
+            );
+        });
+        return [allJobs, activeJobs, inactiveJobs, failedJobs];
     }
 
     render() {
@@ -155,74 +211,22 @@ class Jobs extends React.Component {
             clickToExpand: true
         };
 
-        allJobs = [];
-        activeJobs = 0;
-        inactiveJobs = 0;
-        failedJobs = 0;
-
         if (this.props.jobs) {
+            var tableData = this.populateTable();
+            var allJobs = tableData[0];
+            var activeJobs = tableData[1];
+            var inactiveJobs = tableData[2];
+            var failedJobs = tableData[3];
+
             return (
                 <div>
                     <h3>Browse Jobs</h3>
-                    {this.props.jobs.map((job) => {
-                        let service = null;
-                        for (var i = 0; i < this.props.services.length; ++i) {
-                            if (job.ServiceID == this.props.services[i].ID) {
-                                service = this.props.services[i];
-                                break;
-                            }
-                        }
-                        let serviceName = (service && service.Name && service.Name.length) ? service.Name :
-                            (service && service.ID && service.ID.length) ? service.ID : "unknown service";
-                        let title = "Job from " + serviceName;
-
-                        let execDuration = "";
-                        if (job.State.Code == -1) {
-                            let currentDate = new Date();
-                            execDuration = currentDate - Date.parse(job.Created);
-                            activeJobs += 1;
-                        } else {
-                            execDuration = Date.parse(job.Finished) - Date.parse(job.Created);
-                            if (job.State.Code == 0) {
-                                inactiveJobs += 1;
-                            } else {
-                                failedJobs += 1;
-                            }
-                        }
-
-                        let ConsoleOutput = "";
-                        if (job.Tasks) {
-                            for (var t = 0; t < job.Tasks.length; ++t) {
-                                if (job.Tasks[t].Name == "Service execution") {
-                                    ConsoleOutput = job.Tasks[t].ConsoleOutput;
-                                    break;
-                                }
-                            }
-                        }
-
-                        let createdDate = new Date(job.Created);
-                        let fmtCreatedDate = createdDate.toLocaleDateString('en-GB');
-                        let fmtCreatedTime = createdDate.toLocaleTimeString('en-GB');
-
-                        allJobs.push(
-                            {
-                                "title": title, "id": job.ID,
-                                "created": fmtCreatedDate + " " + fmtCreatedTime,
-                                "duration": this.formatJobDuration(execDuration/1000),
-                                "status": job.State.Status,
-                                "code": job.State.Code,
-                                "console": ConsoleOutput,
-                                "input": job.InputVolume,
-                                "output": job.OutputVolume
-                            }
-                        );
-                    })}
                     <Panel>
                         <Col sm={8}>
                             Out of {this.props.jobs.length} jobs <span style={inProgressColor}>{activeJobs} are active</span>, <span style={successColor}>{inactiveJobs} are finished successfully</span>,  <span style={errorColor}>{failedJobs} failed</span>
                         </Col>
                         <Col sm={4}>
-                            <Button onClick={this.getSelectedRowKeys.bind(this)} className="btn pull-right"><Glyphicon glyph="trash"/> Remove selected jobs</Button>
+                            <Button onClick={this.removeSelectedJobs.bind(this)} className="btn pull-right"><Glyphicon glyph="trash"/> Remove selected jobs</Button>
                         </Col>
                     </Panel>
                     <div>
