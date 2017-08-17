@@ -1,5 +1,5 @@
 #!/bin/bash
-# echo Copying files...
+echo Copying files...
 
 CSS_DIR=app/lib/css
 FONTS_DIR=app/lib/fonts

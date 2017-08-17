@@ -57,7 +57,7 @@ pack: dependencies webui certificate
 	cp gefserver/config.json ./build/bin
 	cp -r services ./build/
 	cp -r ssl ./build/
-	tar -cvzf gef-0.2.0.tar.gz build/*
+	tar -cvzf gef-0.3.0.tar.gz build/*
 	rm -rf build
 
 dependencies: $(GITHUBSRC)/golang/lint/golint \
