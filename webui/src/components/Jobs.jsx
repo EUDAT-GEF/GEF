@@ -8,9 +8,6 @@ import { bindActionCreators } from 'redux'
 import * as actions from '../actions/actions';
 import FileTree from './FileTree'
 
-const selectRowProp = {
-    mode: 'checkbox'
-};
 const inProgressColor = {
     color: '#f45d00'
 };
@@ -21,13 +18,7 @@ const successColor = {
     color: '#337ab7'
 };
 const progressAnimation = <img src="/images/progress-animation.gif" />;
-
-
-let allJobs = [];
 let jobStatusUpdateTimer;
-let activeJobs;
-let inactiveJobs;
-let failedJobs;
 
 class Jobs extends React.Component {
     constructor(props) {
@@ -76,11 +67,13 @@ class Jobs extends React.Component {
 
     hasJobsRunning() {
         var runningJobfound = false;
-        this.props.jobs.map((job) => {
-            if (job.State.Code < 0) {
-                runningJobfound = true;
-            }
-        });
+        if (this.props.jobs) {
+            this.props.jobs.map((job) => {
+                if (job.State.Code < 0) {
+                    runningJobfound = true;
+                }
+            });
+        }
         return runningJobfound;
     }
 
@@ -142,7 +135,6 @@ class Jobs extends React.Component {
         var activeJobs = 0;
         var inactiveJobs = 0;
         var failedJobs = 0;
-
         this.props.jobs.map((job) => {
             let service = null;
             for (var i = 0; i < this.props.services.length; ++i) {
@@ -187,7 +179,7 @@ class Jobs extends React.Component {
                 {
                     "title": title, "id": job.ID,
                     "created": fmtCreatedDate + " " + fmtCreatedTime,
-                    "duration": this.formatJobDuration(execDuration/1000),
+                    "duration": this.formatJobDuration(execDuration / 1000),
                     "status": job.State.Status,
                     "code": job.State.Code,
                     "console": ConsoleOutput,
@@ -196,6 +188,7 @@ class Jobs extends React.Component {
                 }
             );
         });
+
         return [allJobs, activeJobs, inactiveJobs, failedJobs];
     }
 

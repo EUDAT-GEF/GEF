@@ -231,11 +231,19 @@ func (p *Pier) RunService(userID int64, id db.ServiceID, inputPID string) (db.Jo
 	return job, err
 }
 
+func (p *Pier) writeJobFinishTimeOnReturn(id db.JobID) {
+	err := p.db.SetJobFinishTime(id, time.Now())
+	if err != nil {
+		log.Println(err)
+	}
+}
+
 func (p *Pier) runJob(job *db.Job, service db.Service, inputPID string) {
 	err2str := func(err error) string {
 		if err == nil {
 			return ""
 		}
+		p.writeJobFinishTimeOnReturn(job.ID)
 		return err.Error()
 	}
 
@@ -252,6 +260,7 @@ func (p *Pier) runJob(job *db.Job, service db.Service, inputPID string) {
 			if err != nil {
 				log.Println(err)
 			}
+			p.writeJobFinishTimeOnReturn(job.ID)
 			return
 		}
 		err = p.db.SetJobInputVolume(job.ID, db.VolumeID(inputVolume.ID))
@@ -288,6 +297,7 @@ func (p *Pier) runJob(job *db.Job, service db.Service, inputPID string) {
 			if err != nil {
 				log.Println(err)
 			}
+			p.writeJobFinishTimeOnReturn(job.ID)
 			return
 		}
 
@@ -297,6 +307,7 @@ func (p *Pier) runJob(job *db.Job, service db.Service, inputPID string) {
 			if err != nil {
 				log.Println(err)
 			}
+			p.writeJobFinishTimeOnReturn(job.ID)
 			return
 		}
 	}
@@ -313,6 +324,7 @@ func (p *Pier) runJob(job *db.Job, service db.Service, inputPID string) {
 			if err != nil {
 				log.Println(err)
 			}
+			p.writeJobFinishTimeOnReturn(job.ID)
 			return
 		}
 		err = p.db.SetJobOutputVolume(job.ID, db.VolumeID(outputVolume.ID))
@@ -350,6 +362,7 @@ func (p *Pier) runJob(job *db.Job, service db.Service, inputPID string) {
 			if err != nil {
 				log.Println(err)
 			}
+			p.writeJobFinishTimeOnReturn(job.ID)
 			return
 		}
 
@@ -359,6 +372,7 @@ func (p *Pier) runJob(job *db.Job, service db.Service, inputPID string) {
 			if err != nil {
 				log.Println(err)
 			}
+			p.writeJobFinishTimeOnReturn(job.ID)
 			return
 		}
 	}
@@ -367,11 +381,7 @@ func (p *Pier) runJob(job *db.Job, service db.Service, inputPID string) {
 	if err != nil {
 		log.Println(err)
 	}
-
-	err = p.db.SetJobFinishTime(job.ID, time.Now())
-	if err != nil {
-		log.Println(err)
-	}
+	p.writeJobFinishTimeOnReturn(job.ID)
 }
 
 // RemoveVolumeInUse removes a volume that may seem to be in use

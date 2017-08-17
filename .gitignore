@@ -58,4 +58,4 @@ coverage*.out
 /build/
 
 gefserver/gef_db.bin
-gef-0.2.0.tar.gz
+gef-0.3.0.tar.gz
