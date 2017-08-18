@@ -17,6 +17,10 @@ import (
 	"github.com/EUDAT-GEF/GEF/gefserver/def"
 	"github.com/EUDAT-GEF/GEF/gefserver/pier"
 	"github.com/EUDAT-GEF/GEF/gefserver/server"
+
+	"reflect"
+
+	"strings"
 )
 
 func TestServer(t *testing.T) {
@@ -156,6 +160,27 @@ func TestServer(t *testing.T) {
 		exitCode = int(job["State"].(map[string]interface{})["Code"].(float64))
 	}
 	jobOutputVolume := job["OutputVolume"].(string)
+
+	// test the job console output
+	var console interface{}
+	switch reflect.TypeOf(job["Tasks"]).Kind() {
+	case reflect.Slice:
+		s := reflect.ValueOf(job["Tasks"])
+		if s.Len()>1 {
+			taskMap := s.Index(1).Interface().(map[string]interface{})
+
+			for key, value := range taskMap {
+				if key == "ConsoleOutput" {
+					console = value
+					break
+				}
+			}
+		}
+	}
+
+	Expect(t, console == "'/test.txt' -> '/mydata/output/test.txt'\n" ||
+		strings.HasSuffix(console.(string),
+			"/logs is an experimental feature introduced in Docker 1.13. Unfortunately, it is not yet supported by the Docker client we use"))
 
 	// test get the job file system output
 	volURL := baseURL + "volumes/" + jobOutputVolume + "/"

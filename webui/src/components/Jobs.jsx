@@ -162,8 +162,7 @@ class Jobs extends React.Component {
             let title = "Job from " + serviceName;
 
             let jobStartTime = new Date(job.Created);
-            let jobDurationTime = new Date(job.Duration);
-            let jobFinishTime = new Date(jobStartTime.getTime() + jobDurationTime.getTime());
+            let jobFinishTime = new Date(jobStartTime.getTime() + 1000 * job.Duration);
             if (job.State.Code < 0) {
                 activeJobs += 1;
             } else {
