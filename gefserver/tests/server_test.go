@@ -10,7 +10,6 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 	"time"
 
@@ -18,6 +17,8 @@ import (
 	"github.com/EUDAT-GEF/GEF/gefserver/def"
 	"github.com/EUDAT-GEF/GEF/gefserver/pier"
 	"github.com/EUDAT-GEF/GEF/gefserver/server"
+
+	"strings"
 )
 
 func TestServer(t *testing.T) {
@@ -158,12 +159,13 @@ func TestServer(t *testing.T) {
 	}
 	jobOutputVolume := job["OutputVolume"].(string)
 
-	// test get the job console output
-	res, code = getRes(t, gefurl(baseURL+"jobs/"+jobID+"/output", userToken))
-	ExpectEquals(t, code, 403)
-	res, code = getRes(t, gefurl(baseURL+"jobs/"+jobID+"/output", memberToken))
-	ExpectEquals(t, code, 200)
-	console := res["ServiceExecution"].(map[string]interface{})["ConsoleOutput"]
+	// test the job console output
+	var console interface{}
+	tasks := job["Tasks"].([]interface{})
+	if len(tasks) > 1 {
+		console = tasks[1].(map[string]interface{})["ConsoleOutput"]
+	}
+
 	Expect(t, console == "'/test.txt' -> '/mydata/output/test.txt'\n" ||
 		strings.HasSuffix(console.(string),
 			"/logs is an experimental feature introduced in Docker 1.13. Unfortunately, it is not yet supported by the Docker client we use"))

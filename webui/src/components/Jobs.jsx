@@ -94,6 +94,20 @@ class Jobs extends React.Component {
         );
     }
 
+    finishedFormatter(cell, row) {
+        var finishedTime;
+
+
+        if (row.code < 0) {
+            finishedTime = "running";
+        } else {
+            finishedTime = row.finished;
+        }
+        return (
+            <div>{finishedTime}</div>
+        );
+    }
+
     removeSelectedJobs() {
         this.props.actions.removeJobs(this.refs.table.state.selectedRowKeys);
     }
@@ -147,13 +161,11 @@ class Jobs extends React.Component {
                 (service && service.ID && service.ID.length) ? service.ID : "unknown service";
             let title = "Job from " + serviceName;
 
-            let execDuration = "";
-            if (job.State.Code == -1) {
-                let currentDate = new Date();
-                execDuration = currentDate - Date.parse(job.Created);
+            let jobStartTime = new Date(job.Created);
+            let jobFinishTime = new Date(jobStartTime.getTime() + 1000 * job.Duration);
+            if (job.State.Code < 0) {
                 activeJobs += 1;
             } else {
-                execDuration = Date.parse(job.Finished) - Date.parse(job.Created);
                 if (job.State.Code == 0) {
                     inactiveJobs += 1;
                 } else {
@@ -175,11 +187,15 @@ class Jobs extends React.Component {
             let fmtCreatedDate = createdDate.toLocaleDateString('en-GB');
             let fmtCreatedTime = createdDate.toLocaleTimeString('en-GB');
 
+            let fmtFinishedDate = jobFinishTime.toLocaleDateString('en-GB');
+            let fmtFinishedTime = jobFinishTime.toLocaleTimeString('en-GB');
+
             allJobs.push(
                 {
                     "title": title, "id": job.ID,
                     "created": fmtCreatedDate + " " + fmtCreatedTime,
-                    "duration": this.formatJobDuration(execDuration / 1000),
+                    "duration": this.formatJobDuration(job.Duration),
+                    "finished": fmtFinishedDate + " " + fmtFinishedTime,
                     "status": job.State.Status,
                     "code": job.State.Code,
                     "console": ConsoleOutput,
@@ -227,6 +243,7 @@ class Jobs extends React.Component {
                             <TableHeaderColumn dataField='id' isKey dataSort expandable={ true }>ID</TableHeaderColumn>
                             <TableHeaderColumn dataField='title' dataSort>Title</TableHeaderColumn>
                             <TableHeaderColumn dataField='created' dataSort>Created</TableHeaderColumn>
+                            <TableHeaderColumn dataField='finished' dataSort dataFormat={this.finishedFormatter}>Finished</TableHeaderColumn>
                             <TableHeaderColumn dataField='duration' dataSort>Duration</TableHeaderColumn>
                             <TableHeaderColumn dataField='status' dataSort dataFormat={this.statusFormatter}>Status</TableHeaderColumn>
                         </BootstrapTable>
