@@ -18,8 +18,6 @@ import (
 	"github.com/EUDAT-GEF/GEF/gefserver/pier"
 	"github.com/EUDAT-GEF/GEF/gefserver/server"
 
-	"reflect"
-
 	"strings"
 )
 
@@ -163,19 +161,9 @@ func TestServer(t *testing.T) {
 
 	// test the job console output
 	var console interface{}
-	switch reflect.TypeOf(job["Tasks"]).Kind() {
-	case reflect.Slice:
-		s := reflect.ValueOf(job["Tasks"])
-		if s.Len()>1 {
-			taskMap := s.Index(1).Interface().(map[string]interface{})
-
-			for key, value := range taskMap {
-				if key == "ConsoleOutput" {
-					console = value
-					break
-				}
-			}
-		}
+	tasks := job["Tasks"].([]interface{})
+	if len(tasks) > 1 {
+		console = tasks[1].(map[string]interface{})["ConsoleOutput"]
 	}
 
 	Expect(t, console == "'/test.txt' -> '/mydata/output/test.txt'\n" ||
