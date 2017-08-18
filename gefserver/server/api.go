@@ -93,7 +93,6 @@ func NewServer(cfg def.ServerConfig, pier *pier.Pier, tmpDir string, database *d
 		{"GET /jobs", server.listJobsHandler, "data discovery"},
 		{"GET /jobs/{jobID}", server.inspectJobHandler, "data discovery"},
 		{"DELETE /jobs/{jobID}", server.removeJobHandler, "data cleanup"},
-		{"GET /jobs/{jobID}/output", server.getJobTask, "data retrieval"},
 
 		{"GET /volumes/{volumeID}/{path:.*}", server.volumeContentHandler, "data retrieval"},
 	}
@@ -417,27 +416,6 @@ func (s *Server) removeJobHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	Response{w}.Ok(jmap("Job", job))
-}
-
-func (s *Server) getJobTask(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	jobID := db.JobID(vars["jobID"])
-	allow, _ := Authorization{s, w, r}.allowGetJobData(jobID)
-	if !allow {
-		return
-	}
-
-	job, err := s.db.GetJob(jobID)
-	if err != nil {
-		Response{w}.ClientError("cannot get task", err)
-		return
-	}
-	var latestOutput db.LatestOutput
-	if len(job.Tasks) > 0 {
-		latestOutput.Name = job.Tasks[len(job.Tasks)-1].Name
-		latestOutput.ConsoleOutput = job.Tasks[len(job.Tasks)-1].ConsoleOutput
-	}
-	Response{w}.Ok(jmap("ServiceExecution", latestOutput))
 }
 
 func (s *Server) volumeContentHandler(w http.ResponseWriter, r *http.Request) {

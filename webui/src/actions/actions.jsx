@@ -219,33 +219,6 @@ export function inspectVolumeError(errorMessage) {
     }
 }
 
-export function consoleOutputFetchStart() {
-    return {
-        type: actionTypes.CONSOLE_OUTPUT_FETCH_START
-    }
-}
-
-export function consoleOutputFetchSuccess(data) {
-    return {
-        type: actionTypes.CONSOLE_OUTPUT_FETCH_SUCCESS,
-        data: data
-    }
-}
-
-export function consoleOutputFetchEmpty() {
-    return {
-        type: actionTypes.CONSOLE_OUTPUT_FETCH_EMPTY,
-        data: []
-    }
-}
-
-export function consoleOutputFetchError(errorMessage) {
-    return {
-        type: actionTypes.CONSOLE_OUTPUT_FETCH_ERROR,
-        errorMessage: errorMessage
-    }
-}
-
 export function ioAddStart() {
     return {
         type: actionTypes.IO_ADD_START
@@ -370,24 +343,6 @@ export function inspectVolume(volumeId) {
             }).catch(err => {
                 errHandler()(err);
                 dispatch(inspectVolumeError(err));
-            })
-        }
-    }
-}
-
-export function consoleOutputFetch(jobId) {
-    return function (dispatch, getState) {
-        dispatch(consoleOutputFetchStart());
-
-        if (!jobId) {
-            dispatch(consoleOutputFetchEmpty());
-        } else {
-            const resultPromise = axios.get( apiNames.jobs + '/' + jobId + "/output");
-            resultPromise.then(response => {
-                dispatch(consoleOutputFetchSuccess(response.data))
-            }).catch(err => {
-                errHandler()(err);
-                dispatch(consoleOutputFetchError(err));
             })
         }
     }

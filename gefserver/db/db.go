@@ -32,7 +32,7 @@ type JobTable struct {
 	ServiceID    string
 	Input        string
 	Created      time.Time
-	Finished     time.Time
+	Duration     int64
 	Error        string
 	Status       string
 	Code         int
@@ -314,7 +314,13 @@ func (d *Db) jobTable2Job(storedJob JobTable) (Job, error) {
 	job.ServiceID = ServiceID(storedJob.ServiceID)
 	job.Input = storedJob.Input
 	job.Created = storedJob.Created
-	job.Finished = storedJob.Finished
+
+	if jobState.Code < 0 {
+		job.Duration = time.Now().Unix() - job.Created.Unix()
+	} else {
+		job.Duration = storedJob.Duration
+	}
+
 	job.State = &jobState
 	job.InputVolume = VolumeID(storedJob.InputVolume)
 	job.OutputVolume = VolumeID(storedJob.OutputVolume)
@@ -329,13 +335,20 @@ func (d *Db) job2JobTable(job Job) JobTable {
 	storedJob.ServiceID = string(job.ServiceID)
 	storedJob.Input = job.Input
 	storedJob.Created = job.Created
-	storedJob.Finished = job.Finished
+	storedJob.Duration = job.Duration
 	storedJob.Error = job.State.Error
 	storedJob.Status = job.State.Status
 	storedJob.Code = job.State.Code
 	storedJob.InputVolume = string(job.InputVolume)
 	storedJob.OutputVolume = string(job.OutputVolume)
 	return storedJob
+}
+
+func (d *Db) updateJobDurationTime(job Job) {
+	err := d.SetJobDurationTime(job.ID, time.Now().Unix()-job.Created.Unix())
+	if err != nil {
+		log.Println(err)
+	}
 }
 
 // ListJobs returns a list of all jobs ready to be converted into JSON
@@ -413,15 +426,15 @@ func (d *Db) SetJobOutputVolume(id JobID, outputVolume VolumeID) error {
 	return err
 }
 
-// SetJobFinishTime sets job finish time
-func (d *Db) SetJobFinishTime(id JobID, finishTime time.Time) error {
+// SetJobDurationTime sets job finish time
+func (d *Db) SetJobDurationTime(id JobID, duration int64) error {
 	var storedJob JobTable
 	err := d.db.SelectOne(&storedJob, "SELECT * from jobs WHERE ID=?", string(id))
 	if err != nil {
 		return err
 	}
 
-	storedJob.Finished = finishTime
+	storedJob.Duration = duration
 	_, err = d.db.Update(&storedJob)
 	return err
 }

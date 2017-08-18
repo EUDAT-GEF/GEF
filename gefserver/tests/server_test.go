@@ -10,7 +10,6 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 	"time"
 
@@ -157,16 +156,6 @@ func TestServer(t *testing.T) {
 		exitCode = int(job["State"].(map[string]interface{})["Code"].(float64))
 	}
 	jobOutputVolume := job["OutputVolume"].(string)
-
-	// test get the job console output
-	res, code = getRes(t, gefurl(baseURL+"jobs/"+jobID+"/output", userToken))
-	ExpectEquals(t, code, 403)
-	res, code = getRes(t, gefurl(baseURL+"jobs/"+jobID+"/output", memberToken))
-	ExpectEquals(t, code, 200)
-	console := res["ServiceExecution"].(map[string]interface{})["ConsoleOutput"]
-	Expect(t, console == "'/test.txt' -> '/mydata/output/test.txt'\n" ||
-		strings.HasSuffix(console.(string),
-			"/logs is an experimental feature introduced in Docker 1.13. Unfortunately, it is not yet supported by the Docker client we use"))
 
 	// test get the job file system output
 	volURL := baseURL + "volumes/" + jobOutputVolume + "/"
