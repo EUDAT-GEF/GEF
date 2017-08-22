@@ -29,9 +29,11 @@ const ActiveUser = ({user, isSuperAdmin}) => {
             <MenuItem>
                 <Link to="/user"> <i className="glyphicon glyphicon-info-sign"></i> Profile </Link>
             </MenuItem>
-            <MenuItem>
-                <Link to="/roles"> <i className="glyphicon glyphicon-tasks"></i> Manage Roles </Link>
-            </MenuItem>
+            { isSuperAdmin ?
+                <MenuItem>
+                    <Link to="/roles"> <i className="glyphicon glyphicon-tasks"></i> Manage Roles </Link>
+                </MenuItem>:false
+            }
             <MenuItem divider />
             <MenuItem>
                 <a onClick={()=>window.location.href = wuiNames.logout}>
