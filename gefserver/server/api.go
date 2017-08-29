@@ -101,13 +101,13 @@ func NewServer(cfg def.ServerConfig, pier *pier.Pier, tmpDir string, database *d
 	apirouter := router.PathPrefix(apiRootPath).Subrouter()
 	for _, hdl := range routes {
 		methodPath := strings.SplitN(hdl.route, " ", 2)
-		apirouter.HandleFunc(methodPath[1], decorate(hdl.handler, hdl.description)).Methods(methodPath[0])
+		apirouter.HandleFunc(methodPath[1], server.decorate(hdl.handler, hdl.description)).Methods(methodPath[0])
 	}
 	wuirouter := router.PathPrefix(wuiRootPath).Subrouter()
 	{
-		wuirouter.HandleFunc("/login", decorate(server.oauthLoginHandler, "user login")).Methods("GET")
+		wuirouter.HandleFunc("/login", server.decorate(server.oauthLoginHandler, "user login")).Methods("GET")
 		wuirouter.HandleFunc("/b2access", server.oauthCallbackHandler).Methods("GET")
-		wuirouter.HandleFunc("/logout", decorate(server.logoutHandler, "user logout")).Methods("GET")
+		wuirouter.HandleFunc("/logout", server.decorate(server.logoutHandler, "user logout")).Methods("GET")
 	}
 	router.PathPrefix("/").Handler(http.FileServer(singlePageAppDir("../webui/app/")))
 
