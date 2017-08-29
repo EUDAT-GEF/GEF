@@ -19,7 +19,7 @@ func (s *Server) decorate(fn func(http.ResponseWriter, *http.Request), actionTyp
 		logRequest(r)
 		user, err := s.getCurrentUser(r)
 		if err != nil {
-			Response{w}.ServerError("User error", err)
+			log.Println("User error: ", err)
 		}
 
 		allow, closefn := signalEvent(actionType, user, r)
