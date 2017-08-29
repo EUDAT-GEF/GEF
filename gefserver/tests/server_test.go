@@ -193,14 +193,13 @@ func TestServer(t *testing.T) {
 	// ExpectEquals(t, code, 200)
 	// ExpectEquals(t, content, "Hi there")
 
-
 	// test service removal
 	servicesURL := baseURL + "services/"
 
-	res, code = deleteRes(t, gefurl(servicesURL + serviceID, userToken))
+	res, code = deleteRes(t, gefurl(servicesURL+serviceID, userToken))
 	ExpectEquals(t, code, 403)
 
-	res, code = deleteRes(t, gefurl(servicesURL + serviceID, superToken))
+	res, code = deleteRes(t, gefurl(servicesURL+serviceID, superToken))
 	ExpectEquals(t, code, 200)
 }
 

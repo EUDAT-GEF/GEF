@@ -63,7 +63,7 @@ type ServiceTable struct {
 	Description string
 	Version     string
 	Created     time.Time
-	Deleted   bool
+	Deleted     bool
 	Size        int64
 	Revision    int
 }

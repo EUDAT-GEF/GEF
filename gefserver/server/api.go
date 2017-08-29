@@ -332,7 +332,7 @@ func (s *Server) removeServiceHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = s.db.RemoveService(user.ID,serviceID)
+	err = s.db.RemoveService(user.ID, serviceID)
 	if err != nil {
 		Response{w}.ClientError("cannot remove service", err)
 		return
