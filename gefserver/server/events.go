@@ -10,12 +10,19 @@ import (
 	"strings"
 	"sync/atomic"
 	"time"
+
+	"github.com/EUDAT-GEF/GEF/gefserver/db"
 )
 
-func decorate(fn func(http.ResponseWriter, *http.Request), actionType string) func(http.ResponseWriter, *http.Request) {
+func (s *Server) decorate(fn func(http.ResponseWriter, *http.Request), actionType string) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		logRequest(r)
-		allow, closefn := signalEvent(actionType, r)
+		user, err := s.getCurrentUser(r)
+		if err != nil {
+			Response{w}.ServerError("User error", err)
+		}
+
+		allow, closefn := signalEvent(actionType, user, r)
 		if !allow {
 			Response{w}.DirectiveError()
 		} else {
@@ -34,7 +41,7 @@ var eventSys eventSystem
 
 type eventPayload struct {
 	Event       event                  `json:"event"`
-	User        user                   `json:"user"`
+	User        *db.User               `json:"user"`
 	Resource    resource               `json:"resource"`
 	Environment map[string]interface{} `json:"environment"`
 }
@@ -44,11 +51,6 @@ type event struct {
 	Time      string `json:"time"`   // iso string
 	Action    string `json:"action"` // one of: "DataAnalysis"...
 	Preceding bool   `json:"preceding"`
-}
-
-type user struct {
-	Email string `json:"email"` // "email@example.com",
-	Name  string `json:"name"`  // "John Smith",
 }
 
 type resource struct {
@@ -71,7 +73,7 @@ func InitEventSystem(address string) {
 	}
 }
 
-func (es eventSystem) dispatch(action string, r *http.Request, preceding bool) bool {
+func (es eventSystem) dispatch(action string, user *db.User, r *http.Request, preceding bool) bool {
 	if es.address == "" {
 		return true
 	}
@@ -83,10 +85,7 @@ func (es eventSystem) dispatch(action string, r *http.Request, preceding bool) b
 			Action:    action,
 			Preceding: preceding,
 		},
-		User: user{
-			Email: "",
-			Name:  "",
-		},
+		User: user,
 		Resource: resource{
 			URL:    r.RequestURI,
 			Method: r.Method,
@@ -116,12 +115,12 @@ func (es eventSystem) dispatch(action string, r *http.Request, preceding bool) b
 	return true
 }
 
-func signalEvent(action string, r *http.Request) (allow bool, closefn func()) {
+func signalEvent(action string, user *db.User, r *http.Request) (allow bool, closefn func()) {
 	fn := func() {}
-	ret := eventSys.dispatch(action, r, true)
+	ret := eventSys.dispatch(action, user, r, true)
 	if ret {
 		fn = func() {
-			eventSys.dispatch(action, r, false)
+			eventSys.dispatch(action, user, r, false)
 		}
 	}
 	return ret, fn
