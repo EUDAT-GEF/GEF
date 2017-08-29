@@ -340,7 +340,6 @@ export function removeService(serviceID) {
     return function (dispatch, getState) {
         dispatch(serviceRemoveStart());
         const selectedService = getState().selectedService;
-        console.log(selectedService.Service);
         const resultPromise = axios.delete( apiNames.services + '/' + serviceID);
         resultPromise.then(response => {
             log('deleted service:', response.data);
