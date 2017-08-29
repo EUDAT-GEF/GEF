@@ -88,6 +88,7 @@ func NewServer(cfg def.ServerConfig, pier *pier.Pier, tmpDir string, database *d
 		{"GET /services", server.listServicesHandler, "service discovery"},
 		{"GET /services/{serviceID}", server.inspectServiceHandler, "service discovery"},
 		{"PUT /services/{serviceID}", server.editServiceHandler, "service modification"},
+		{"DELETE /services/{serviceID}", server.removeServiceHandler, "service removal"},
 
 		{"POST /jobs", server.executeServiceHandler, "data analysis"},
 		{"GET /jobs", server.listJobsHandler, "data discovery"},
@@ -306,6 +307,38 @@ func (s *Server) editServiceHandler(w http.ResponseWriter, r *http.Request) {
 		Response{w}.ClientError("cannot remove service", err)
 		return
 	}
+
+	err = s.db.AddService(user.ID, service)
+	if err != nil {
+		Response{w}.ClientError("cannot add service", err)
+		return
+	}
+
+	Response{w}.Ok(jmap("Service", service))
+}
+
+func (s *Server) removeServiceHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	serviceID := db.ServiceID(vars["serviceID"])
+
+	allow, user := Authorization{s, w, r}.allowRemoveService(serviceID)
+	if !allow {
+		return
+	}
+
+	service, err := s.db.GetService(serviceID)
+	if err != nil {
+		Response{w}.ClientError("cannot find service", err)
+		return
+	}
+
+	err = s.db.RemoveService(user.ID,serviceID)
+	if err != nil {
+		Response{w}.ClientError("cannot remove service", err)
+		return
+	}
+
+	service.Deleted = true
 
 	err = s.db.AddService(user.ID, service)
 	if err != nil {

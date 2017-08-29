@@ -139,6 +139,19 @@ func (a Authorization) allowEditService(serviceID db.ServiceID) (allow bool, use
 	return
 }
 
+func (a Authorization) allowRemoveService(serviceID db.ServiceID) (allow bool, user *db.User) {
+	allow, user = a.getUserInfo()
+	if user == nil || allow {
+		return
+	}
+	if a.s.db.IsServiceOwner(user.ID, serviceID) {
+		allow = true // a service's owner can remove the job
+		return
+	}
+	Response{a.w}.Forbidden("A service can only be removed by its owner")
+	return
+}
+
 func (a Authorization) allowCreateJob() (allow bool, user *db.User) {
 	allow, user = a.getUserInfo()
 	if user == nil || allow {

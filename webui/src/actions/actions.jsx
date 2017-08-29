@@ -79,6 +79,26 @@ export function serviceFetchError(errorMessage) {
     }
 }
 
+export function serviceRemoveStart() {
+    return {
+        type: actionTypes.SERVICE_REMOVE_START
+    }
+}
+
+export function serviceRemoveSuccess(service) {
+    return {
+        type: actionTypes.SERVICE_REMOVE_SUCCESS,
+        service: service
+    }
+}
+
+export function serviceRemoveError(errorMessage) {
+    return {
+        type: actionTypes.SERVICE_REMOVE_ERROR,
+        errorMessage: errorMessage
+    }
+}
+
 export function serviceUpdateStart() {
     return {
         type: actionTypes.SERVICE_UPDATE_START
@@ -312,6 +332,23 @@ export function fetchService(serviceID) {
         }).catch(err => {
             errHandler()(err);
             dispatch(serviceFetchError(err));
+        })
+    }
+}
+
+export function removeService(serviceID) {
+    return function (dispatch, getState) {
+        dispatch(serviceRemoveStart());
+        const selectedService = getState().selectedService;
+        console.log(selectedService.Service);
+        const resultPromise = axios.delete( apiNames.services + '/' + serviceID);
+        resultPromise.then(response => {
+            log('deleted service:', response.data);
+            dispatch(serviceRemoveSuccess(response.data));
+            dispatch(fetchServices());
+        }).catch(err => {
+            errHandler()(err);
+            dispatch(serviceRemoveError(err));
         })
     }
 }
