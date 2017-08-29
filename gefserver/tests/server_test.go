@@ -192,12 +192,31 @@ func TestServer(t *testing.T) {
 	// content, code := getResString(t, gefurlFileContent(fileURL, memberToken))
 	// ExpectEquals(t, code, 200)
 	// ExpectEquals(t, content, "Hi there")
+
+
+	// test service removal
+	servicesURL := baseURL + "services/"
+
+	res, code = deleteRes(t, gefurl(servicesURL + serviceID, userToken))
+	ExpectEquals(t, code, 403)
+
+	res, code = deleteRes(t, gefurl(servicesURL + serviceID, superToken))
+	ExpectEquals(t, code, 200)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
+func deleteRes(t *testing.T, url string) (map[string]interface{}, int) {
+	body, code := getBody(t, url, "DELETE")
+	defer body.Close()
+	if code >= 400 {
+		return nil, code
+	}
+	return readJSON(t, body), code
+}
+
 func getRes(t *testing.T, url string) (map[string]interface{}, int) {
-	body, code := getBody(t, url)
+	body, code := getBody(t, url, "GET")
 	defer body.Close()
 	if code >= 400 {
 		return nil, code
@@ -206,7 +225,7 @@ func getRes(t *testing.T, url string) (map[string]interface{}, int) {
 }
 
 func getResString(t *testing.T, url string) (string, int) {
-	body, code := getBody(t, url)
+	body, code := getBody(t, url, "GET")
 	defer body.Close()
 	if code >= 400 {
 		return "", code
@@ -275,8 +294,8 @@ func uploadDir(t *testing.T, uri string, path string) (map[string]interface{}, i
 	return readJSON(t, res.Body), res.StatusCode
 }
 
-func getBody(t *testing.T, url string) (io.ReadCloser, int) {
-	request, err := http.NewRequest("GET", url, nil)
+func getBody(t *testing.T, url string, method string) (io.ReadCloser, int) {
+	request, err := http.NewRequest(method, url, nil)
 	CheckErr(t, err)
 	res, err := http.DefaultClient.Do(request)
 	CheckErr(t, err)
