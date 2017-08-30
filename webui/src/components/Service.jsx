@@ -244,6 +244,10 @@ class Service extends React.Component {
         this.setState({showModal: true});
     }
 
+    handleRemoveService() {
+        this.props.removeService(this.props.service.ID)
+    }
+
     componentDidMount() {
         this.props.fetchService(this.props.service.ID);
     }
@@ -273,6 +277,9 @@ class Service extends React.Component {
                             <button type="submit" className="btn btn-default" onClick={this.handleModalOpen.bind(this)}>
                                 <span className="glyphicon glyphicon-edit" aria-hidden="true"></span> Edit Metadata
                             </button>
+                            <button type="button" className="btn btn-default" onClick={this.handleRemoveService.bind(this)}>
+                                <span className="glyphicon glyphicon-trash" aria-hidden="true"></span> Remove
+                            </button>
 
                             <div style={{height: "1em"}}></div>
                         </div>
@@ -301,6 +308,7 @@ class Service extends React.Component {
 Service.propTypes = {
     service: PropTypes.object.isRequired,
     fetchService: PropTypes.func.isRequired,
+    removeService: PropTypes.func.isRequired,
     fetchServices: PropTypes.func.isRequired,
     selectedService: PropTypes.object.isRequired,
     services: PropTypes.object.isRequired,

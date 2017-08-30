@@ -36,6 +36,7 @@ class Services extends React.Component {
     constructor(props) {
         super(props);
         this.fetchService = this.props.fetchService.bind(this);
+        this.removeService = this.props.removeService.bind(this);
         this.fetchServices = this.props.fetchServices.bind(this);
         this.handleSubmit = this.props.handleSubmit.bind(this);
         this.handleUpdate = this.props.handleUpdate.bind(this);
@@ -60,6 +61,7 @@ class Services extends React.Component {
                                             service={service}
                                             services={this.props.services}
                                             fetchService={this.fetchService}
+                                            removeService={this.removeService}
                                             fetchServices={this.fetchServices}
                                             selectedService={this.props.selectedService}
                                             handleSubmit={this.handleSubmit}
@@ -92,6 +94,7 @@ class Services extends React.Component {
 Services.propTypes = {
     fetchServices: PropTypes.func.isRequired,
     fetchService: PropTypes.func.isRequired,
+    removeService: PropTypes.func.isRequired,
     services: PropTypes.array, // can be null
     selectedService: PropTypes.object.isRequired,
     handleSubmit: PropTypes.func.isRequired,

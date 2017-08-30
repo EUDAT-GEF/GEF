@@ -20,6 +20,7 @@ type Service struct {
 	Version     string
 	Cmd         []string
 	Created     time.Time
+	Deleted     bool
 	Size        int64
 	Input       []IOPort
 	Output      []IOPort

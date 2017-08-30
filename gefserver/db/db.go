@@ -63,6 +63,7 @@ type ServiceTable struct {
 	Description string
 	Version     string
 	Created     time.Time
+	Deleted     bool
 	Size        int64
 	Revision    int
 }
@@ -517,6 +518,7 @@ func (d *Db) serviceTable2Service(storedService ServiceTable) (Service, error) {
 	service.Version = storedService.Version
 	service.Cmd = storedCmd
 	service.Created = storedService.Created
+	service.Deleted = storedService.Deleted
 	service.Size = storedService.Size
 	service.Input = inputPorts
 	service.Input = inputPorts
@@ -535,6 +537,7 @@ func (d *Db) service2ServiceTable(service Service) ServiceTable {
 	storedService.Description = service.Description
 	storedService.Version = service.Version
 	storedService.Created = service.Created
+	storedService.Deleted = service.Deleted
 	storedService.Size = service.Size
 	return storedService
 }
@@ -660,7 +663,7 @@ func (d *Db) RemoveService(userID int64, id ServiceID) error {
 func (d *Db) ListServices() ([]Service, error) {
 	var services []Service
 	var servicesFromTable []ServiceTable
-	_, err := d.db.Select(&servicesFromTable, "SELECT * FROM services ORDER BY ID")
+	_, err := d.db.Select(&servicesFromTable, "SELECT * FROM services WHERE Deleted=? ORDER BY Name", false)
 	if err != nil {
 		return services, err
 	}

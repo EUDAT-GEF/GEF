@@ -1,5 +1,8 @@
 import Services from '../components/Services';
-import {fetchServices, fetchService, handleUpdateService, addIOPort, removeIOPort, handleSubmitJob} from '../actions/actions';
+import {
+    fetchServices, fetchService, handleUpdateService, addIOPort, removeIOPort, handleSubmitJob,
+    removeService
+} from '../actions/actions';
 
 import {connect} from 'react-redux';
 
@@ -19,6 +22,10 @@ const mapDispatchToProps = (dispatch) => {
         },
         fetchService: (serviceID) => {
             const action = fetchService(serviceID);
+            dispatch(action);
+        },
+        removeService: (serviceID) => {
+            const action = removeService(serviceID);
             dispatch(action);
         },
         handleUpdate: (e) => {
