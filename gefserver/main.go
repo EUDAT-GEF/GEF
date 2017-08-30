@@ -35,13 +35,13 @@ func main() {
 	if err != nil {
 		log.Fatal("FATAL: ", def.Err(err, "Cannot create Pier"))
 	}
-	err = p.SetDockerConnection(config.Docker, config.Limits, config.Timeouts, config.Pier.InternalServicesFolder)
+	err = p.SetDockerConnection(config.Docker, config.Pier.InternalServicesFolder)
 	if err != nil {
 		log.Fatal("FATAL: ", def.Err(err, "Cannot set docker connection"))
 	}
 
 	server.InitEventSystem(config.EventSystem.Address)
-	server, err := server.NewServer(config.Server, p, config.TmpDir, &d)
+	server, err := server.NewServer(config, p, &d)
 	if err != nil {
 		log.Fatal("FATAL: ", def.Err(err, "Cannot create API server"))
 	}

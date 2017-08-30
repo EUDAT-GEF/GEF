@@ -40,27 +40,31 @@ type Server struct {
 	db                     *db.Db
 	tmpDir                 string
 	administration         def.AdminConfig
+	limits                 def.LimitConfig
+	timeouts               def.TimeoutConfig
 }
 
 // NewServer creates a new Server
-func NewServer(cfg def.ServerConfig, pier *pier.Pier, tmpDir string, database *db.Db) (*Server, error) {
-	tmpDir, err := def.MakeTmpDir(tmpDir)
+func NewServer(cfg def.Configuration, pier *pier.Pier, database *db.Db) (*Server, error) {
+	tmpDir, err := def.MakeTmpDir(cfg.TmpDir)
 	if err != nil {
 		return nil, def.Err(err, "creating temporary directory failed")
 	}
 
 	server := &Server{
 		Server: http.Server{
-			Addr:         cfg.Address,
-			ReadTimeout:  time.Duration(cfg.ReadTimeoutSecs) * time.Second,
-			WriteTimeout: time.Duration(cfg.WriteTimeoutSecs) * time.Second,
+			Addr:         cfg.Server.Address,
+			ReadTimeout:  time.Duration(cfg.Server.ReadTimeoutSecs) * time.Second,
+			WriteTimeout: time.Duration(cfg.Server.WriteTimeoutSecs) * time.Second,
 		},
-		TLSCertificateFilePath: cfg.TLSCertificateFilePath,
-		TLSKeyFilePath:         cfg.TLSKeyFilePath,
+		TLSCertificateFilePath: cfg.Server.TLSCertificateFilePath,
+		TLSKeyFilePath:         cfg.Server.TLSKeyFilePath,
 		pier:                   pier,
 		db:                     database,
 		tmpDir:                 tmpDir,
-		administration:         cfg.Administration,
+		administration:         cfg.Server.Administration,
+		limits:                 cfg.Limits,
+		timeouts:               cfg.Timeouts,
 	}
 
 	routes := []struct {
@@ -112,7 +116,7 @@ func NewServer(cfg def.ServerConfig, pier *pier.Pier, tmpDir string, database *d
 	}
 	router.PathPrefix("/").Handler(http.FileServer(singlePageAppDir("../webui/app/")))
 
-	initB2Access(cfg.B2Access)
+	initB2Access(cfg.Server.B2Access)
 
 	server.Server.Handler = router
 
@@ -384,7 +388,7 @@ func (s *Server) executeServiceHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	job, err := s.pier.RunService(user.ID, service.ID, input)
+	job, err := s.pier.RunService(user.ID, service.ID, input, s.limits, s.timeouts)
 	if err != nil {
 		Response{w}.ServerError("cannot read the reqested file from the archive", err)
 		return
@@ -469,7 +473,7 @@ func (s *Server) volumeContentHandler(w http.ResponseWriter, r *http.Request) {
 	fileName := filepath.Base(fileLocation)
 
 	if hasContent { // Download a file from a volume
-		err := s.pier.DownStreamContainerFile(vars["volumeID"], filepath.Join("/root/volume/", fileLocation), w)
+		err := s.pier.DownStreamContainerFile(vars["volumeID"], filepath.Join("/root/volume/", fileLocation), s.limits, s.timeouts, w)
 		if err != nil {
 			Response{w}.ServerError("downloading volume files failed", err)
 			return
@@ -478,7 +482,7 @@ func (s *Server) volumeContentHandler(w http.ResponseWriter, r *http.Request) {
 		Response{w}.Header().Set("Content-Type", r.Header.Get("Content-Type"))
 		Response{w}.Header().Set("Content-Disposition", "attachment; filename="+fileName)
 	} else { // Return of list of files in a specific location in a volume
-		volumeFiles, err := s.pier.ListFiles(db.VolumeID(vars["volumeID"]), fileLocation)
+		volumeFiles, err := s.pier.ListFiles(db.VolumeID(vars["volumeID"]), fileLocation, s.limits, s.timeouts)
 		if err != nil {
 			Response{w}.ServerError("streaming container files failed", err)
 			return
