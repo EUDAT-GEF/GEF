@@ -277,7 +277,7 @@ class Service extends React.Component {
                             <button type="submit" className="btn btn-default" onClick={this.handleModalOpen.bind(this)}>
                                 <span className="glyphicon glyphicon-edit" aria-hidden="true"></span> Edit Metadata
                             </button>
-                            <button type="submit" className="btn btn-default" onClick={this.handleRemoveService.bind(this)}>
+                            <button type="button" className="btn btn-default" onClick={this.handleRemoveService.bind(this)}>
                                 <span className="glyphicon glyphicon-trash" aria-hidden="true"></span> Remove
                             </button>
 

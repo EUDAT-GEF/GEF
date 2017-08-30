@@ -35,7 +35,6 @@ const Header = () => (
 class Services extends React.Component {
     constructor(props) {
         super(props);
-        console.log(this.props);
         this.fetchService = this.props.fetchService.bind(this);
         this.removeService = this.props.removeService.bind(this);
         this.fetchServices = this.props.fetchServices.bind(this);
