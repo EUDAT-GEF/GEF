@@ -103,3 +103,33 @@ NameVirtualHost *:443
     ProxyPassReverse / https://127.0.0.1:8443/
 </VirtualHost>
 ~~~~
+
+API description
+--------------------
+| URL | Method | Input | Output | Description |
+| ---: |:-------- | :------ | :------- | :------ |
+| /api/info | GET |  | API version information in JSON | Information about API (welcome page), can be used to check if backend is running |
+| /api/builds | POST |  | JSON object with information about the location and build ID | Creates a temporary folder when an image has to be created. It returns a buildID identifier and a folder location. This folder is used to store a Dockerfile and files needed for the image. BuildID is a string like a UID in Java (which is generated when required and it is unique) |
+| /api/builds/{buildID} | POST | {buildID} build identifier and a multipart request body containing files (Dockerfile, files that have to be in the image) | JSON object with information about the image and the corresponding service | Builds an image provided a buildID (which points to the folder with the Dockerfile), returns JSON with the information about the image and the new service (partly taken from the metadata) |
+| /api/services | GET |  | JSON with the list of all services | Lists all available services  |
+| /api/services/{serviceID} | GET | {serviceID} an id of a service | JSON with information about a specific service | Returns information about a specific service |
+| /api/services/{serviceID} | PUT | {serviceID} an id of a service, form data with new service metadata | JSON with information about a specific service | Modifies metadata of a specific service |
+| /api/services/{serviceID} | DELETE | {serviceID} an id of a service | JSON with service information | Deletes a specific job |
+| /api/jobs | POST | serviceID and pid | JSON object with information about the location and jobID | Executes a job. We submit a form to this URL when we want to run a job. PID is resolved, files are downloaded and saved to an input volume |
+| /api/jobs | GET |  | JSON with the list of jobs | Lists available jobs |
+| /api/jobs/{jobID} | GET | {jobID} id of a job | JSON with job information | Information about a specific job |
+| /api/jobs/{jobID} | DELETE | {jobID} id of a job | JSON with job information | Deletes a specific job |
+| /api/volumes/{volumeID}/{path:.*} | GET | {volumeID} is an id of a volume, {path} is a path inside this volume (root folder by default) | JSON object (nested) with the list of the files and folders in a given volume | Lists all files and folders (recursively) in a given volume |
+
+User management API
+--------------------
+| URL | Method | Input | Output | Description |
+| ---: |:-------- | :------ | :------- | :------ |
+| /api/user | GET |  | JSON with the information about the current user | Returns information about the current user |
+| /api/user/tokens | POST | Form data with the name of a token {tokenName} | JSON with the new token | Adds a new token for the current user |
+| /api/user/tokens | GET |  | JSON with the list of all user tokens | List all tokens for the current user |
+| /api//user/tokens/{tokenID} | DELETE | {tokenID} an id of a token | Server response code | Removes a specific token from the current user |
+| /api/roles | GET |  | JSON with the list of all roles | Lists all available roles |
+| /api/roles/{roleID} | GET | {roleID} an id of a role | JSON with the list of users | Returns a list of users to which a certain role was assigned |
+| /api/roles/{roleID} | POST | {roleID} an id of a role | Server response code | Assigns a specific role to the current user |
+| /api/roles/{roleID}/{userID} | DELETE | {roleID} an id of a role assigned to the user with the user id {userID} | Server response code | Removes a role from a user |
