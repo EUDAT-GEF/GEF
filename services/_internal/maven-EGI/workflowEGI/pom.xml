@@ -1,0 +1,119 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>it.infn.ct</groupId>
+  <artifactId>jocci-create-resource</artifactId>
+  <packaging>jar</packaging>
+  <version>1.0</version>
+  <name>jocci-create-resource</name>
+  <description>This module uses jOCCI APIs for training purposes</description>
+    <licenses>
+        <license>
+            <name>Apache Software Foundation Version 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0</url>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+        	<name>Giuseppe LA ROCCA</name>
+	        <email>giuseppe.larocca@egi.eu</email>
+        	<organization>EGI.eu</organization>
+	        <organizationUrl>www.egi.eu</organizationUrl>
+        	<properties>
+	        <organizationLogoUrl>
+			https://www.egi.eu/export/sites/egi/news-and-media/press/EGI_Logo_RGB_315x250px.gif
+		</organizationLogoUrl>
+	        </properties>
+	</developer>
+    </developers>
+    <url>http://maven.apache.org</url>
+
+    <properties>
+      <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    	<maven.compiler.source>1.7</maven.compiler.source>
+	    <maven.compiler.target>1.7</maven.compiler.target>
+    </properties>
+    
+    <dependencies>
+
+    <dependency>
+      <groupId>com.googlecode.json-simple</groupId>
+      <artifactId>json-simple</artifactId>
+      <version>1.1.1</version>
+    </dependency>
+
+    <dependency>
+        <groupId>org.italiangrid</groupId>
+        <artifactId>voms-clients</artifactId>
+        <version>3.0.6</version>
+    </dependency>
+
+    <dependency>
+    	<groupId>org.slf4j</groupId>
+        <artifactId>slf4j-jdk14</artifactId>
+        <version>1.7.12</version>
+    </dependency>
+
+    <dependency>
+      <groupId>joda-time</groupId>
+      <artifactId>joda-time</artifactId>
+      <version>2.9.2</version>
+    </dependency>
+
+    <dependency>
+        <groupId>log4j</groupId>
+        <artifactId>log4j</artifactId>
+        <version>1.2.17</version>
+    </dependency>
+
+    <dependency>
+    	<groupId>cz.cesnet.cloud</groupId>
+        <artifactId>jocci-api</artifactId>
+        <version>0.2.5</version>
+        <scope>compile</scope>
+    </dependency>
+
+    </dependencies>
+
+    <repositories>
+       <repository>
+           <id>MVN repository</id>
+           <url>http://mvnrepository.com</url>
+       </repository>
+    </repositories>
+
+  <build> 
+  <!-- Maven Assembly Plugin -->
+  <plugins>
+	<plugin>
+	<groupId>org.apache.maven.plugins</groupId>
+	<artifactId>maven-assembly-plugin</artifactId>
+	<configuration>
+	<archive>
+        <!-- MainClass in mainfest make a executable jar -->
+	<manifest>
+		<addClasspath>true</addClasspath>
+                <classpathPrefix>${basedir}/libs/</classpathPrefix>
+	       	<mainClass>it.infn.ct.workflow</mainClass>
+	</manifest>
+	</archive>
+	<!-- get all project dependencies -->
+        <descriptorRefs>
+		<descriptorRef>jar-with-dependencies</descriptorRef>
+        </descriptorRefs>
+	</configuration>
+
+	<executions>
+	<execution>
+		<id>make-assembly</id>
+		<phase>package</phase> 
+		<goals>
+		<goal>single</goal>
+		</goals>
+	</execution>
+	</executions>
+	</plugin>
+  </plugins>
+  </build>
+</project>
