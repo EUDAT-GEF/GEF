@@ -72,7 +72,6 @@ import cz.cesnet.cloud.occi.infrastructure.Storage;
 import org.apache.commons.codec.binary.Base64;
 
 public class InstantiateVM
-
 {
     // Create cloud resources in the selected cloud provider.
     // Available resources that can be created via API are the following:
@@ -98,7 +97,7 @@ public class InstantiateVM
     public static String OS_TPL = null;
     public static String PUBLIC_KEY_PATH = null;
     public static String CONTEXT_PATH = null;
-	public static String instantiatedVmId = null;
+    public static String instantiatedVmId = null;
     public static List<String> MIXIN = null;
     public static List<String> CONTEXT = null;
     
@@ -106,14 +105,15 @@ public class InstantiateVM
 
     // Creating a new VM in the OCCI_ENDPOINT_HOST cloud resource
 
-    public static String doCreate (Properties properties, EntityBuilder eb, Model model, Client client)
-    {
+	public static String doCreate (Properties properties, EntityBuilder eb, Model model, Client client)
+	{
+	
 	URI uri_location = null;
-        String networkInterfaceLocation = "";
-        String networkInterfaceLocation_stripped = "";
+	String networkInterfaceLocation = "";
+	String networkInterfaceLocation_stripped = "";
 	Resource vm_resource = null;
 
- 	System.out.println();
+	System.out.println();
 
 	try {
 

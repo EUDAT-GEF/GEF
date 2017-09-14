@@ -43,6 +43,7 @@ public class VOMSProxyInit
 		Boolean ENABLE_RFC = true;
 		
 		try {
+			
 			if (isEmpty(VONAME) && 
                            (isEmpty(VOMS_PROXY_FILEPATH)) &&
 			   (isEmpty(VOMS_LIFETIME)) &&
@@ -79,6 +80,6 @@ public class VOMSProxyInit
                                 });
 
 		        //VomsProxyInfo.main(new String[]{"--all"});
-		} catch (Exception exc){ System.out.println (exc.toString()); }		
+			} catch (Exception exc){ System.out.println (exc.toString()); }		
 	}
 }

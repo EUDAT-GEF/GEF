@@ -45,7 +45,7 @@ type dockerConnection struct {
 	stageIn        internalImage
 	fileList       internalImage
 	copyFromVolume internalImage
-	mavenEGI	   internalImage
+	mavenEGI       internalImage
 }
 
 type internalImage struct {

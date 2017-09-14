@@ -30,7 +30,8 @@ SOFTWARE.
  * @author JSON.org
  * @version 2015-12-09
  */
-public class HTTPTokener extends JSONTokener {
+public class HTTPTokener extends JSONTokener 
+    {
 
     /**
      * Construct an HTTPTokener from a string.

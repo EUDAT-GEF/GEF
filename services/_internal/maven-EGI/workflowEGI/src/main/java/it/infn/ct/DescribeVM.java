@@ -65,20 +65,18 @@ public class DescribeVM
 		{
 			System.out.println("[ VM DESCRIPTION ]");
 				
-		        List<Entity> entities = client.describe(URI.create(properties.getProperty("OCCI_RESOURCE_ID")));
-				String[] Attributes = entities.get(0).toText().split(";");
+			List<Entity> entities = client.describe(URI.create(properties.getProperty("OCCI_RESOURCE_ID")));
+			String[] Attributes = entities.get(0).toText().split(";");
 
-				System.out.println("Avant extraction de l'IP public");
+			for (int i=0; i<Attributes.length; i++)
+				{
+					if (Attributes[i].contains("occi.networkinterface.address"))
+					{							
+						publicIP = Attributes[i].replace("occi.networkinterface.address=","");
+					}
+			}			
 
-				for (int i=0; i<Attributes.length; i++)
-					{												
-						if (Attributes[i].contains("occi.networkinterface.address"))
-						{							
-							publicIP = Attributes[i].replace("occi.networkinterface.address=","");
-						}
-				}			System.out.println("[ VM DESCRIPTION - bis ]");
-
-    		for (Entity entity : entities) {
+			for (Entity entity : entities) {
 
 				Map<Attribute, String> map = entity.getAttributes();
 
@@ -89,8 +87,6 @@ public class DescribeVM
 					if (vmState != null) System.out.println("occi.compute.state = " + vmState);
 
 				}
-
-
 		}
 		 
 		
@@ -184,39 +180,32 @@ public class DescribeVM
 			System.out.println("[ RESOURCE_TPL DESCRIPTION ]");
 			List<Mixin> mixins = model.findRelatedMixins(properties.getProperty("RESOURCE"));
 
-                        if (!mixins.isEmpty())
-       	        	        for (Mixin mixin : mixins) {
+			if (!mixins.isEmpty())
+				for (Mixin mixin : mixins) {
 					if (mixin.getTerm().equals(properties.getProperty("OCCI_RESOURCE_ID"))) {
 						System.out.println("[[ " + mixin.getLocation() + " ]]");
 						System.out.println("title: \t\t" + mixin.getTitle());
-                                                System.out.println("term: \t\t" + mixin.getTerm());
+						System.out.println("term: \t\t" + mixin.getTerm());
 						String locations = (mixin.getLocation()).toString();
-
 						String segments[] = locations.split("/");
-                       	                        System.out.println("location: \t" 
-						+ "/" + segments[segments.length - 1] + "/");
+						System.out.println("location: \t" + "/" + segments[segments.length - 1] + "/");
 					}
 				}
 		}
 
 	} catch (CommunicationException | RenderingException | AmbiguousIdentifierException ex) {
-		throw new RuntimeException(ex);
+		throw new RuntimeException(ex);}
 	}
 
-    }
+	public static String[] describe (String vmID)
+	{
 
-    public static String[] describe (String vmID)
-    {
-    System.out.println("Debut de la description ici...");
-    System.out.println("vmID dans describe: " + vmID);
 	// [ Setting preferences here! ]
 	String AUTH = "x509"; 
-        String OCCI_ENDPOINT_HOST = "https://carach5.ics.muni.cz:11443"; // <= Change here!
-        //String OCCI_ENDPOINT_HOST = "http://stack-server.ct.infn.it:8787/occi1.1"; // <= Change here!
-        //String OCCI_ENDPOINT_HOST = "https://rocci.iihe.ac.be:11443"; // <= Change here!
+	String OCCI_ENDPOINT_HOST = "https://carach5.ics.muni.cz:11443"; 
 
-        String TRUSTED_CERT_REPOSITORY_PATH = "/etc/grid-security/certificates";
-        String PROXY_PATH = "/tmp/x509up_u5040"; // <= Change here!
+	String TRUSTED_CERT_REPOSITORY_PATH = "/etc/grid-security/certificates";
+	String PROXY_PATH = "/tmp/x509up_u5040"; // <= Change here!
 
 	Boolean verbose = true;
 
@@ -320,12 +309,11 @@ public class DescribeVM
 		Client client = new HTTPClient(URI.create(OCCI_ENDPOINT_HOST),
                                 authentication, MediaType.TEXT_PLAIN, false);
 
-            	//Connect client
-            	client.connect();
+        //Connect client
+		client.connect();
 		
 		Model model = client.getModel();
-                EntityBuilder eb = new EntityBuilder(model);
-    	System.out.println("Avant doDescribe");
+		EntityBuilder eb = new EntityBuilder(model);
 
 		if  (ACTION.equals("describe")) 
 			doDescribe(properties, client, model);
