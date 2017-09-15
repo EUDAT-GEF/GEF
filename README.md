@@ -227,7 +227,7 @@ CheckInterval | 10 | Timeouts are checked on a timer, here you can set its inter
 ### Packaging GEF Source Code For Deployment<a name="packaging_code"></a>
 
 For packaging the GEF source code into a binary you will only need to have the GEF source code and `docker` installed on your machine. After the GEF source code is modified you can build a 64-bit Linux binary
-by running the `make pack` command. The command will create an archive which you can unpack and run it on a server as described in the installation instructions above. After that do `cd build/bin` and run `./gefserver`. The GEF server should be running now.
+by running the `make pack` command. The command will create an archive which you can unpack and run it on a server as described in the installation instructions above. After that do `cd build/bin` and run `./gef_linux`. The GEF server should be running now.
 
 GEF User Roles<a name="user_roles"></a>
 --------------
