@@ -1,7 +1,7 @@
 GEF
 ===
 
-<img src="https://github.com/EUDAT-GEF/GEF/doc/images/EUDAT-logo.png" alt="official EUDAT logo" align="right" width="80" height="50">
+<img src="https://raw.githubusercontent.com/EUDAT-GEF/GEF/f9b329be1ea5fe6e4c52b8b8516fa03f76a41685/doc/images/EUDAT-logo.png" alt="official EUDAT logo" align="right" width="80" height="50">
 
 The EUDAT Generic Execution Framework
 
@@ -74,7 +74,7 @@ GEF Architecture
 
 This section includes a description of the main GEF components and how they interact with each other, and a brief overview of the most important technologies involved. The basic architecture of the GEF is comprised of a frontend and a backend. The GEF frontend consists of a web user interface written in JavaScript conforming to the ECMAScript 6 specification and uses the [React](https://facebook.github.io/react/) library for building the user interface in combination with [Redux](http://redux.js.org/) for state management and [Bootstrap](https://react-bootstrap.github.io/) user interface design templates. The GEF backend is written in Go and functions as page server to the web user interface and as client to a Docker Swarm represented by a manager node, interfacing with it through the Docker HTTP/HTTPS Remote API. Thus, the backend relies on the [Docker](https://www.docker.com/) application containerization technology for data processing. Within the swarm, one or more manager nodes are responsible for distributing tasks to the worker nodes. A swarm may consist of a single manager node that functions as a worker node and can be scaled up, but no upper limit to the swarm size is documented. The GEF was designed in a modular way allowing the GEF backend to be exchanged if different (containerization) technologies are to be employed. The prerequisite for any processing of data is a GEF service provided by the respective scientific community. This service needs to contain the installed software tools required for the desired computation. The GEF can enact such services close to the data storage location if the GEF deployment node where computation takes place is Docker-enabled. The following diagram illustrates the different GEF components and how they interact with each other:
 
-![alt text](https://user-images.githubusercontent.com/17616266/30423128-3a142efa-9942-11e7-83aa-cb14bbb3259d.png)
+![alt text](https://raw.githubusercontent.com/EUDAT-GEF/GEF/f9b329be1ea5fe6e4c52b8b8516fa03f76a41685/doc/images/GEF_arch_diagram.png)
 
 Please note that the GEF frontend, GEF backend, and the Docker Swarm manager node to which the GEF backend is a client interact via HTTP/HTTPS. This allows colocation of all components as well as the distributed deployment depicted here. Also note that although Docker Swarm was chosen in this diagram, the GEF backend can still operate with a single Docker Server without having to rely on the swarm mode. The GEF service repository shown in a subdued tone is a future component that is still being conceptualized.
 
