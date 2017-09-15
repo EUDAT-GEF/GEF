@@ -1,7 +1,7 @@
 GEF
 ===
 
-<img src="https://user-images.githubusercontent.com/17616266/30423134-3f594120-9942-11e7-9ce0-bf189aceb067.png" alt="official EUDAT logo" align="right" width="80" height="50">
+<img src="https://github.com/EUDAT-GEF/GEF/doc/images/EUDAT-logo.png" alt="official EUDAT logo" align="right" width="80" height="50">
 
 The EUDAT Generic Execution Framework
 
