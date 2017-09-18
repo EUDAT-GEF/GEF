@@ -266,6 +266,7 @@ func (d *Db) GetUserRoles(userID int64) ([]Role, error) {
 	return roles, nil
 }
 
+// HasSuperAdminRole checks if a a user has super admin privileges
 func (d *Db) HasSuperAdminRole(userID int64) bool {
 	roles, err := d.GetUserRoles(userID)
 	if err != nil {
@@ -280,6 +281,7 @@ func (d *Db) HasSuperAdminRole(userID int64) bool {
 	return false
 }
 
+// IsServiceOwner checks if a certain user owns a certain service
 func (d *Db) IsServiceOwner(userID int64, serviceID ServiceID) bool {
 	var x OwnerTable
 	err := d.db.SelectOne(&x,
@@ -291,6 +293,7 @@ func (d *Db) IsServiceOwner(userID int64, serviceID ServiceID) bool {
 	return err == nil
 }
 
+// IsJobOwner checks if a certain user owns a certain job
 func (d *Db) IsJobOwner(userID int64, jobID JobID) bool {
 	var x OwnerTable
 	err := d.db.SelectOne(&x,
@@ -300,6 +303,17 @@ func (d *Db) IsJobOwner(userID int64, jobID JobID) bool {
 		log.Printf("ERROR in IsJobOwner: %#v", err)
 	}
 	return err == nil
+}
+
+// CountUsersRunningJobs returns a number of running jobs owned by a specific user
+func (d *Db) CountUsersRunningJobs(userID int64) int64 {
+	count, err := d.db.SelectInt(
+		"SELECT count(*) FROM owners INNER JOIN jobs on owners.ObjectID = jobs.ID WHERE owners.UserID=? AND jobs.Code<0", userID)
+
+	if err != nil && !isNoResultsError(err) {
+		log.Printf("ERROR in CountUsersRunningJobs: %#v", err)
+	}
+	return count
 }
 
 ///////////////////////////////////////////////////////////////////////////////

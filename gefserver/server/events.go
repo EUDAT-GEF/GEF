@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/EUDAT-GEF/GEF/gefserver/db"
+	"github.com/EUDAT-GEF/GEF/gefserver/def"
 )
 
 func (s *Server) decorate(fn func(http.ResponseWriter, *http.Request), actionType string) func(http.ResponseWriter, *http.Request) {
@@ -21,8 +22,15 @@ func (s *Server) decorate(fn func(http.ResponseWriter, *http.Request), actionTyp
 		if err != nil {
 			log.Println("User error: ", err)
 		}
+		var userEnv environment
+		userEnv.Timeouts = s.timeouts
+		userEnv.Limits = s.limits
 
-		allow, closefn := signalEvent(actionType, user, r)
+		var sysStatistics statistics
+		sysStatistics.UsersRunningJobs = s.db.CountUsersRunningJobs(user.ID)
+		sysStatistics.TotalRunningJobs = s.db.CountRunningJobs()
+
+		allow, closefn := signalEvent(actionType, user, userEnv, sysStatistics, r)
 		if !allow {
 			Response{w}.DirectiveError()
 		} else {
@@ -40,10 +48,11 @@ type eventSystem struct {
 var eventSys eventSystem
 
 type eventPayload struct {
-	Event       event                  `json:"event"`
-	User        *db.User               `json:"user"`
-	Resource    resource               `json:"resource"`
-	Environment map[string]interface{} `json:"environment"`
+	Event       event       `json:"event"`
+	User        *db.User    `json:"user"`
+	Resource    resource    `json:"resource"`
+	Environment environment `json:"environment"`
+	Statistics  statistics  `json:"statistics"`
 }
 
 type event struct {
@@ -56,6 +65,16 @@ type event struct {
 type resource struct {
 	URL    string `json:"uri"`    // "/api/jobs",
 	Method string `json:"method"` // "POST",
+}
+
+type environment struct {
+	Timeouts def.TimeoutConfig `json:"timeouts"`
+	Limits   def.LimitConfig   `json:"limits"`
+}
+
+type statistics struct {
+	UsersRunningJobs int64 `json:"usersRunningJobs"`
+	TotalRunningJobs int64 `json:"totalRunningJobs"`
 }
 
 // InitEventSystem initializes the event system, or disables it if the address
@@ -73,9 +92,10 @@ func InitEventSystem(address string) {
 	}
 }
 
-func (es eventSystem) dispatch(action string, user *db.User, r *http.Request, preceding bool) bool {
+func (es eventSystem) dispatch(action string, user *db.User, userEnv environment, sysStatistics statistics, r *http.Request, preceding bool) (bool, http.Response) {
+	var resp1 http.Response
 	if es.address == "" {
-		return true
+		return true, resp1
 	}
 
 	payload := eventPayload{
@@ -90,13 +110,15 @@ func (es eventSystem) dispatch(action string, user *db.User, r *http.Request, pr
 			URL:    r.RequestURI,
 			Method: r.Method,
 		},
-		Environment: map[string]interface{}{},
+		Environment: userEnv,
+		Statistics: sysStatistics,
 	}
 	json, err := json.Marshal(payload)
 	if err != nil {
 		log.Printf("event system: json marshal ERROR: %#v\n", err)
 	} else {
 		resp, err := http.Post(es.address, "application/json", bytes.NewBuffer(json))
+		resp1 = *resp
 		if err != nil {
 			if e, ok := err.(*url.Error); ok {
 				if e, ok := e.Err.(*net.OpError); ok {
@@ -105,22 +127,31 @@ func (es eventSystem) dispatch(action string, user *db.User, r *http.Request, pr
 				log.Printf("event system: post url ERROR: %#v\n", e)
 			}
 			log.Printf("event system: post ERROR: %#v\n", err)
-			return true
+			return true, resp1
 		}
 		if 400 <= resp.StatusCode && resp.StatusCode < 500 {
 			log.Printf("event system: post client ERROR: %#v\n", resp)
-			return false
+			return false, resp1
 		}
+
 	}
-	return true
+	return true, resp1
 }
 
-func signalEvent(action string, user *db.User, r *http.Request) (allow bool, closefn func()) {
+func signalEvent(action string, user *db.User, userEnv environment, sysStatistics statistics, r *http.Request) (allow bool, closefn func()) {
 	fn := func() {}
-	ret := eventSys.dispatch(action, user, r, true)
+	ret, resp := eventSys.dispatch(action, user, userEnv, sysStatistics, r, true)
+
+	defer resp.Body.Close()
+	newEnv := environment{}
+	err := json.NewDecoder(resp.Body).Decode(&newEnv)
+
+	//log.Println(resp)
+	log.Println(newEnv)
+	log.Println(err)
 	if ret {
 		fn = func() {
-			eventSys.dispatch(action, user, r, false)
+			eventSys.dispatch(action, user, userEnv, sysStatistics, r, false)
 		}
 	}
 	return ret, fn
