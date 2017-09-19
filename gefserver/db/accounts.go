@@ -305,17 +305,6 @@ func (d *Db) IsJobOwner(userID int64, jobID JobID) bool {
 	return err == nil
 }
 
-// CountUsersRunningJobs returns a number of running jobs owned by a specific user
-func (d *Db) CountUsersRunningJobs(userID int64) int64 {
-	count, err := d.db.SelectInt(
-		"SELECT count(*) FROM owners INNER JOIN jobs on owners.ObjectID = jobs.ID WHERE owners.UserID=? AND jobs.Code<0", userID)
-
-	if err != nil && !isNoResultsError(err) {
-		log.Printf("ERROR in CountUsersRunningJobs: %#v", err)
-	}
-	return count
-}
-
 ///////////////////////////////////////////////////////////////////////////////
 
 // AddUser adds a user to the database

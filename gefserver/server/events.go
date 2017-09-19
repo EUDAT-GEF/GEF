@@ -27,7 +27,11 @@ func (s *Server) decorate(fn func(http.ResponseWriter, *http.Request), actionTyp
 		userEnv.Limits = s.limits
 
 		var sysStatistics statistics
-		sysStatistics.UsersRunningJobs = s.db.CountUsersRunningJobs(user.ID)
+
+		sysStatistics.UserRunningJobs = 0
+		if user != nil {
+			sysStatistics.UserRunningJobs = s.db.CountUserRunningJobs(user.ID)
+		}
 		sysStatistics.TotalRunningJobs = s.db.CountRunningJobs()
 
 		allow, closefn := signalEvent(actionType, user, userEnv, sysStatistics, r)
@@ -73,7 +77,7 @@ type environment struct {
 }
 
 type statistics struct {
-	UsersRunningJobs int64 `json:"usersRunningJobs"`
+	UserRunningJobs int64 `json:"userRunningJobs"`
 	TotalRunningJobs int64 `json:"totalRunningJobs"`
 }
 

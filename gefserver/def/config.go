@@ -75,11 +75,11 @@ type EventSystemConfig struct {
 
 // LimitConfig keeps the configuration options to limit resources used by a docker container while its execution
 type LimitConfig struct {
-	CPUShares  int64
-	CPUPeriod  int64
-	CPUQuota   int64
-	Memory     int64
-	MemorySwap int64
+	CPUShares  int64 `json:"CPUShares"`
+	CPUPeriod  int64 `json:"CPUPeriod"`
+	CPUQuota   int64 `json:"CPUQuota"`
+	Memory     int64 `json:"memory"`
+	MemorySwap int64 `json:"memorySwap"`
 }
 
 // TimeoutConfig specifies timeout parameters (in seconds)
