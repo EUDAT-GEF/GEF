@@ -96,10 +96,9 @@ func InitEventSystem(address string) {
 	}
 }
 
-func (es eventSystem) dispatch(action string, user *db.User, userEnv environment, sysStatistics statistics, r *http.Request, preceding bool) (bool, http.Response) {
-	var droolsResp http.Response
+func (es eventSystem) dispatch(action string, user *db.User, userEnv environment, sysStatistics statistics, r *http.Request, preceding bool) (bool, *http.Response) {
 	if es.address == "" {
-		return true, droolsResp
+		return true, nil
 	}
 
 	payload := eventPayload{
@@ -117,12 +116,12 @@ func (es eventSystem) dispatch(action string, user *db.User, userEnv environment
 		Environment: userEnv,
 		Statistics:  sysStatistics,
 	}
+
 	json, err := json.Marshal(payload)
 	if err != nil {
 		log.Printf("event system: json marshal ERROR: %#v\n", err)
 	} else {
 		resp, err := http.Post(es.address, "application/json", bytes.NewBuffer(json))
-		droolsResp = *resp
 		if err != nil {
 			if e, ok := err.(*url.Error); ok {
 				if e, ok := e.Err.(*net.OpError); ok {
@@ -131,30 +130,32 @@ func (es eventSystem) dispatch(action string, user *db.User, userEnv environment
 				log.Printf("event system: post url ERROR: %#v\n", e)
 			}
 			log.Printf("event system: post ERROR: %#v\n", err)
-			return true, droolsResp
+			return true,  resp
 		}
 		if 400 <= resp.StatusCode && resp.StatusCode < 500 {
 			log.Printf("event system: post client ERROR: %#v\n", resp)
-			return false, droolsResp
+			return false, resp
 		}
-
+		return true, resp
 	}
-	return true, droolsResp
+	return true, nil
 }
 
 func signalEvent(action string, user *db.User, userEnv environment, sysStatistics statistics, r *http.Request) (allow bool, closefn func()) {
 	fn := func() {}
 	ret, resp := eventSys.dispatch(action, user, userEnv, sysStatistics, r, true)
+	if resp != nil {
+		defer resp.Body.Close()
 
-	defer resp.Body.Close()
-	newEnv := environment{}
-	err := json.NewDecoder(resp.Body).Decode(&newEnv)
-	if err != nil {
-		log.Printf("event system response parsing error: %#v\n", err)
-	}
-	if ret {
-		fn = func() {
-			eventSys.dispatch(action, user, userEnv, sysStatistics, r, false)
+		newEnv := environment{}
+		err := json.NewDecoder(resp.Body).Decode(&newEnv)
+		if err != nil {
+			log.Printf("event system response parsing error: %#v\n", err)
+		}
+		if ret {
+			fn = func() {
+				eventSys.dispatch(action, user, userEnv, sysStatistics, r, false)
+			}
 		}
 	}
 	return ret, fn
