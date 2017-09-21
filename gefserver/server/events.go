@@ -149,10 +149,9 @@ func signalEvent(action string, user *db.User, userEnv environment, sysStatistic
 	defer resp.Body.Close()
 	newEnv := environment{}
 	err := json.NewDecoder(resp.Body).Decode(&newEnv)
-
-	//log.Println(resp)
-	log.Println(newEnv)
-	log.Println(err)
+	if err != nil {
+		log.Printf("event system response parsing error: %#v\n", err)
+	}
 	if ret {
 		fn = func() {
 			eventSys.dispatch(action, user, userEnv, sysStatistics, r, false)
