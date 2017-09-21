@@ -21,6 +21,8 @@ var (
 	email1 = "user1@example.com"
 	name2  = "user2"
 	email2 = "user2@example.com"
+	name3  = "user3"
+	email3 = "user3@example.com"
 )
 
 func TestClient(t *testing.T) {
@@ -203,6 +205,13 @@ func MakeMember(t *testing.T, d db.Db, communityName string, userID int64) {
 	CheckErr(t, err)
 	member, err := d.GetRoleByName(db.CommunityMemberRoleName, c.ID)
 	d.AddRoleToUser(userID, member.ID)
+}
+
+func MakeAdmin(t *testing.T, d db.Db, communityName string, userID int64) {
+	c, err := d.GetCommunityByName(communityName)
+	CheckErr(t, err)
+	admin, err := d.GetRoleByName(db.CommunityAdminRoleName, c.ID)
+	d.AddRoleToUser(userID, admin.ID)
 }
 
 func SetSuperAdmin(t *testing.T, d db.Db, userID int64) {
