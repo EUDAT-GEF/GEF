@@ -28,7 +28,7 @@ type VolumeItem struct {
 }
 
 // DownStreamContainerFile exported
-func (p *Pier) DownStreamContainerFile(volumeID string, fileLocation string, w http.ResponseWriter) error {
+func (p *Pier) DownStreamContainerFile(volumeID string, fileLocation string, limits def.LimitConfig, timeouts def.TimeoutConfig, w http.ResponseWriter) error {
 	// Copy the file from the volume to a new container
 	binds := []dckr.VolBind{
 		dckr.NewVolBind(dckr.VolumeID(volumeID), "/root/volume", false),
@@ -42,8 +42,8 @@ func (p *Pier) DownStreamContainerFile(volumeID string, fileLocation string, w h
 			"/root",
 		},
 		binds,
-		p.docker.limits,
-		p.docker.timeouts)
+		limits,
+		timeouts)
 
 	if err != nil {
 		return def.Err(err, "copying files from the volume to the container failed")
@@ -81,7 +81,7 @@ func (p *Pier) DownStreamContainerFile(volumeID string, fileLocation string, w h
 }
 
 // ListFiles exported
-func (p *Pier) ListFiles(volumeID db.VolumeID, filePath string) ([]VolumeItem, error) {
+func (p *Pier) ListFiles(volumeID db.VolumeID, filePath string, limits def.LimitConfig, timeouts def.TimeoutConfig) ([]VolumeItem, error) {
 	var volumeFileList []VolumeItem
 	if string(volumeID) == "" {
 		return volumeFileList, def.Err(nil, "volume name has not been specified")
@@ -100,8 +100,8 @@ func (p *Pier) ListFiles(volumeID db.VolumeID, filePath string) ([]VolumeItem, e
 			p.docker.fileList.cmd[0], filePath, "r",
 		},
 		volumesToMount,
-		p.docker.limits,
-		p.docker.timeouts)
+		limits,
+		timeouts)
 
 	if err != nil {
 		return volumeFileList, def.Err(err, "running image failed")

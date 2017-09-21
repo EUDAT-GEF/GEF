@@ -44,12 +44,12 @@ func TestServer(t *testing.T) {
 	pier, err := pier.NewPier(&db, config.TmpDir, config.Timeouts)
 	CheckErr(t, err)
 
-	err = pier.SetDockerConnection(config.Docker, config.Limits, config.Timeouts, internalServicesFolder)
+	err = pier.SetDockerConnection(config.Docker, internalServicesFolder)
 	CheckErr(t, err)
 
 	var srv *httptest.Server
 	{
-		s, err := server.NewServer(config.Server, pier, config.TmpDir, &db)
+		s, err := server.NewServer(config, pier, &db)
 		CheckErr(t, err)
 		srv = httptest.NewServer(s.Server.Handler)
 	}

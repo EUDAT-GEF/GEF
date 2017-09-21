@@ -42,7 +42,7 @@ func setSwarmMode(activate bool) {
 		os.Exit(1)
 	}
 
-	err = pier.SetDockerConnection(config.Docker, config.Limits, config.Timeouts, internalServicesFolder)
+	err = pier.SetDockerConnection(config.Docker, internalServicesFolder)
 	if err != nil {
 		log.Fatal(def.Err(err, "setting docker connection failed"))
 		os.Exit(1)

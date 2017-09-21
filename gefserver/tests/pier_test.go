@@ -36,7 +36,7 @@ func TestClient(t *testing.T) {
 	pier, err := pier.NewPier(&db, config.TmpDir, config.Timeouts)
 	CheckErr(t, err)
 
-	err = pier.SetDockerConnection(config.Docker, config.Limits, config.Timeouts, internalServicesFolder)
+	err = pier.SetDockerConnection(config.Docker, internalServicesFolder)
 	CheckErr(t, err)
 
 	before, err := db.ListServices()
@@ -68,7 +68,7 @@ func TestClient(t *testing.T) {
 		return
 	}
 
-	job, err := pier.RunService(user.ID, service.ID, testPID)
+	job, err := pier.RunService(user.ID, service.ID, testPID, config.Limits, config.Timeouts)
 	CheckErr(t, err)
 	for job.State.Code == -1 {
 		job, err = db.GetJob(job.ID)
@@ -107,7 +107,7 @@ func TestExecution(t *testing.T) {
 	p, err := pier.NewPier(&db, config.TmpDir, config.Timeouts)
 	CheckErr(t, err)
 
-	err = p.SetDockerConnection(config.Docker, config.Limits, config.Timeouts, internalServicesFolder)
+	err = p.SetDockerConnection(config.Docker, internalServicesFolder)
 	CheckErr(t, err)
 
 	service, err := p.BuildService(user.ID, "./clone_test")
@@ -115,7 +115,7 @@ func TestExecution(t *testing.T) {
 	log.Print("test service built: ", service.ID, " ", service.ImageID)
 	// log.Printf("test service built: %#v", service)
 
-	job, err := p.RunService(user.ID, service.ID, testPID)
+	job, err := p.RunService(user.ID, service.ID, testPID, config.Limits, config.Timeouts)
 	CheckErr(t, err)
 
 	log.Print("test job: ", job.ID)
@@ -134,7 +134,7 @@ func TestExecution(t *testing.T) {
 	}
 	ExpectEquals(t, job.State.Error, "")
 
-	files, err := p.ListFiles(job.OutputVolume, "")
+	files, err := p.ListFiles(job.OutputVolume, "", config.Limits, config.Timeouts)
 	CheckErr(t, err)
 
 	ExpectEquals(t, len(files), 1)
@@ -157,7 +157,7 @@ func TestJobTimeOut(t *testing.T) {
 	p, err := pier.NewPier(&db, config.TmpDir, config.Timeouts)
 	CheckErr(t, err)
 
-	err = p.SetDockerConnection(config.Docker, config.Limits, config.Timeouts, internalServicesFolder)
+	err = p.SetDockerConnection(config.Docker, internalServicesFolder)
 	CheckErr(t, err)
 
 	service, err := p.BuildService(user.ID, "./timeout_test")
@@ -165,7 +165,7 @@ func TestJobTimeOut(t *testing.T) {
 	log.Print("test service built: ", service.ID, " ", service.ImageID)
 	// log.Printf("test service built: %#v", service)
 
-	timedOutjob, err := p.RunService(user.ID, service.ID, testPID)
+	timedOutjob, err := p.RunService(user.ID, service.ID, testPID, config.Limits, config.Timeouts)
 	CheckErr(t, err)
 
 	log.Print("test timed out job: ", timedOutjob.ID)

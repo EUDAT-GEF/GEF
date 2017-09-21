@@ -283,6 +283,28 @@ func (d *Db) RemoveJobTask(taskID string) error {
 	return err
 }
 
+// CountRunningJobs returns a number of jobs currently running
+func (d *Db) CountRunningJobs() int64 {
+	count, err := d.db.SelectInt(
+		"SELECT count(*) FROM jobs WHERE jobs.Code<0")
+
+	if err != nil && !isNoResultsError(err) {
+		log.Printf("ERROR in CountRunningJobs: %#v", err)
+	}
+	return count
+}
+
+// CountUserRunningJobs returns a number of running jobs owned by a specific user
+func (d *Db) CountUserRunningJobs(userID int64) int64 {
+	count, err := d.db.SelectInt(
+		"SELECT count(*) FROM owners INNER JOIN jobs on owners.ObjectID = jobs.ID WHERE owners.UserID=? AND jobs.Code<0", userID)
+
+	if err != nil { //&& !isNoResultsError(err) {
+		log.Printf("ERROR in CountUserRunningJobs: %#v", err)
+	}
+	return count
+}
+
 // jobTable2Job performs mapping of the database job table to its JSON representation
 func (d *Db) jobTable2Job(storedJob JobTable) (Job, error) {
 	var job Job

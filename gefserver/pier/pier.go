@@ -40,8 +40,6 @@ type Pier struct {
 
 type dockerConnection struct {
 	client         dckr.Client
-	limits         def.LimitConfig
-	timeouts       def.TimeoutConfig
 	stageIn        internalImage
 	fileList       internalImage
 	copyFromVolume internalImage
@@ -66,7 +64,7 @@ func NewPier(dataBase *db.Db, tmpDir string, timeOuts def.TimeoutConfig) (*Pier,
 }
 
 // SetDockerConnection instantiates the docker client and sets the pier's docker connection
-func (p *Pier) SetDockerConnection(config def.DockerConfig, limits def.LimitConfig, timeouts def.TimeoutConfig, internalServicesFolder string) error {
+func (p *Pier) SetDockerConnection(config def.DockerConfig, internalServicesFolder string) error {
 	client, err := dckr.NewClient(config)
 	if err != nil {
 		return def.Err(err, "Cannot create docker client for config:", config)
@@ -109,8 +107,6 @@ func (p *Pier) SetDockerConnection(config def.DockerConfig, limits def.LimitConf
 
 	p.docker = &dockerConnection{
 		client,
-		limits,
-		timeouts,
 		stageInImage,
 		fileListImage,
 		copyFromVolumeImage,
@@ -202,7 +198,7 @@ func (p *Pier) startTimeOutTicker(jobId db.JobID, timeOut float64) {
 }
 
 // RunService exported
-func (p *Pier) RunService(userID int64, id db.ServiceID, inputPID string) (db.Job, error) {
+func (p *Pier) RunService(userID int64, id db.ServiceID, inputPID string, limits def.LimitConfig, timeouts def.TimeoutConfig) (db.Job, error) {
 	service, err := p.db.GetService(id)
 	if err != nil {
 		return db.Job{}, err
@@ -226,7 +222,7 @@ func (p *Pier) RunService(userID int64, id db.ServiceID, inputPID string) (db.Jo
 		return job, def.Err(err, "no input data was provided")
 	}
 
-	go p.runJob(&job, service, inputPID)
+	go p.runJob(&job, service, inputPID, limits, timeouts)
 
 	return job, err
 }
@@ -238,7 +234,7 @@ func (p *Pier) updateJobDurationTime(job db.Job) {
 	}
 }
 
-func (p *Pier) runJob(job *db.Job, service db.Service, inputPID string) {
+func (p *Pier) runJob(job *db.Job, service db.Service, inputPID string, limits def.LimitConfig, timeouts def.TimeoutConfig) {
 	err2str := func(err error) string {
 		if err == nil {
 			return ""
@@ -283,8 +279,8 @@ func (p *Pier) runJob(job *db.Job, service db.Service, inputPID string) {
 			p.docker.stageIn.repoTag,
 			append(p.docker.stageIn.cmd, inputPID),
 			binds,
-			p.docker.limits,
-			p.docker.timeouts,
+			limits,
+			timeouts,
 			true)
 
 		dbErr := p.db.AddJobTask(job.ID, "Data staging", string(containerID), swarmServiceID, err2str(err), exitCode, output)
@@ -348,8 +344,8 @@ func (p *Pier) runJob(job *db.Job, service db.Service, inputPID string) {
 			service.RepoTag,
 			service.Cmd,
 			binds,
-			p.docker.limits,
-			p.docker.timeouts,
+			limits,
+			timeouts,
 			true)
 
 		dbErr := p.db.AddJobTask(job.ID, "Service execution", string(containerID), swarmServiceID, err2str(err), exitCode, output)
