@@ -26,7 +26,7 @@
 		}
 	},
 	"EventSystem": {
-		"Address": "http://localhost:8088"
+		"Address": ""
 	},
 	"Limits": {
 		"CpuShares": 1024,

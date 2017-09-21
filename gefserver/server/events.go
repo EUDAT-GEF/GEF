@@ -77,7 +77,7 @@ type environment struct {
 }
 
 type statistics struct {
-	UserRunningJobs int64 `json:"userRunningJobs"`
+	UserRunningJobs  int64 `json:"userRunningJobs"`
 	TotalRunningJobs int64 `json:"totalRunningJobs"`
 }
 
@@ -97,9 +97,9 @@ func InitEventSystem(address string) {
 }
 
 func (es eventSystem) dispatch(action string, user *db.User, userEnv environment, sysStatistics statistics, r *http.Request, preceding bool) (bool, http.Response) {
-	var resp1 http.Response
+	var droolsResp http.Response
 	if es.address == "" {
-		return true, resp1
+		return true, droolsResp
 	}
 
 	payload := eventPayload{
@@ -115,14 +115,14 @@ func (es eventSystem) dispatch(action string, user *db.User, userEnv environment
 			Method: r.Method,
 		},
 		Environment: userEnv,
-		Statistics: sysStatistics,
+		Statistics:  sysStatistics,
 	}
 	json, err := json.Marshal(payload)
 	if err != nil {
 		log.Printf("event system: json marshal ERROR: %#v\n", err)
 	} else {
 		resp, err := http.Post(es.address, "application/json", bytes.NewBuffer(json))
-		resp1 = *resp
+		droolsResp = *resp
 		if err != nil {
 			if e, ok := err.(*url.Error); ok {
 				if e, ok := e.Err.(*net.OpError); ok {
@@ -131,15 +131,15 @@ func (es eventSystem) dispatch(action string, user *db.User, userEnv environment
 				log.Printf("event system: post url ERROR: %#v\n", e)
 			}
 			log.Printf("event system: post ERROR: %#v\n", err)
-			return true, resp1
+			return true, droolsResp
 		}
 		if 400 <= resp.StatusCode && resp.StatusCode < 500 {
 			log.Printf("event system: post client ERROR: %#v\n", resp)
-			return false, resp1
+			return false, droolsResp
 		}
 
 	}
-	return true, resp1
+	return true, droolsResp
 }
 
 func signalEvent(action string, user *db.User, userEnv environment, sysStatistics statistics, r *http.Request) (allow bool, closefn func()) {
