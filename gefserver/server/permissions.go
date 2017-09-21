@@ -101,8 +101,17 @@ func (a Authorization) allowCreateBuild() (allow bool, user *db.User) {
 	if user == nil || allow {
 		return
 	}
-	// only superadmins can create builds
-	Response{a.w}.Forbidden("Only superadministrators can create builds")
+	roles, err := a.s.db.GetUserRoles(user.ID)
+	if err == nil {
+		for _, r := range roles {
+			if r.Name == db.CommunityAdminRoleName {
+				allow = true // community admins can create builds
+				return
+			}
+		}
+	}
+	// only community admins can create builds
+	Response{a.w}.Forbidden("Only community administrators can create builds")
 	return
 }
 
@@ -111,8 +120,17 @@ func (a Authorization) allowUploadIntoBuild() (allow bool, user *db.User) {
 	if user == nil || allow {
 		return
 	}
-	// only superadmins can upload data into builds
-	Response{a.w}.Forbidden("Only superadministrators can create services")
+	roles, err := a.s.db.GetUserRoles(user.ID)
+	if err == nil {
+		for _, r := range roles {
+			if r.Name == db.CommunityAdminRoleName {
+				allow = true // community admins can upload data into builds
+				return
+			}
+		}
+	}
+	// only community admins can upload data into builds
+	Response{a.w}.Forbidden("Only community administrators can upload data into builds")
 	return
 }
 
@@ -157,17 +175,16 @@ func (a Authorization) allowCreateJob() (allow bool, user *db.User) {
 	if user == nil || allow {
 		return
 	}
-	// roles, err := a.s.db.GetUserRoles(user.ID)
-	// if err == nil {
-	// 	for _, r := range roles {
-	// 		if r.Name == db.CommunityMemberRoleName {
-	// 			allow = true // community members can create jobs
-	// 			return
-	// 		}
-	// 	}
-	// }
-	// Response{a.w}.Forbidden("Only community members can create jobs")
-	allow = true // anyone can create jobs (for the moment?)
+	roles, err := a.s.db.GetUserRoles(user.ID)
+	if err == nil {
+		for _, r := range roles {
+			if r.Name == db.CommunityMemberRoleName || r.Name == db.CommunityAdminRoleName {
+				allow = true // community members and admins can create jobs
+				return
+			}
+		}
+	}
+	Response{a.w}.Forbidden("Only community members and administrators can create jobs")
 	return
 }
 
