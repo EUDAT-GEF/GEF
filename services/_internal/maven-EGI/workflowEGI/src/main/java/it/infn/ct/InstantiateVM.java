@@ -118,7 +118,11 @@ public class InstantiateVM
 		try 
 		{
 
+<<<<<<< HEAD
 			if (properties.getProperty("RESOURCE").equals("compute")) 
+=======
+			if properties.getProperty("RESOURCE").equals("compute")
+>>>>>>> 1098d207ae9ed8e9e1670143fc84e89a2ba54dc6
 			{
 
 				String segments[] = properties.getProperty("OCCI_OS_TPL").split("#");
@@ -185,6 +189,7 @@ public class InstantiateVM
 				// Set VM title
 				compute.setTitle(properties.getProperty("OCCI_CORE_TITLE"));
 				URI location = client.create(compute);
+<<<<<<< HEAD
 
 				return location.toString();		
 
@@ -292,10 +297,10 @@ public class InstantiateVM
 			for (int i=0; i<RESOURCE.size(); i++) 
 			{
 				if ((!RESOURCE.get(i).equals("compute")) && 
-					(!RESOURCE.get(i).equals("storage")) &&
-					(!RESOURCE.get(i).equals("network")) &&
-					(!RESOURCE.get(i).equals("os_tpl")) &&
-					(!RESOURCE.get(i).equals("resource_tpl")))
+				(!RESOURCE.get(i).equals("storage")) &&
+				(!RESOURCE.get(i).equals("network")) &&
+				(!RESOURCE.get(i).equals("os_tpl")) &&
+				(!RESOURCE.get(i).equals("resource_tpl")))
 					properties.setProperty("OCCI_VM_RESOURCE_ID", RESOURCE.get(i));
 				else 
 				{ 
@@ -308,7 +313,7 @@ public class InstantiateVM
 			for (int i=0; i<MIXIN.size(); i++) 
 			{
 				if (MIXIN.get(i).contains("template") || 
-					MIXIN.get(i).contains("os_tpl")) 
+				MIXIN.get(i).contains("os_tpl")) 
 					properties.setProperty("OCCI_OS_TPL", MIXIN.get(i));
 
 				if (MIXIN.get(i).contains("resource_tpl")) 
@@ -331,6 +336,150 @@ public class InstantiateVM
 					String _OCCI_STORAGE_SIZE = ATTRIBUTES.get(i)
 					.substring(ATTRIBUTES.get(i).lastIndexOf("=") + 1);
 
+=======
+
+				return location.toString();		
+
+			} // end 'compute'
+			
+			if properties.getProperty("RESOURCE").equals("storage")
+			{
+	 			System.out.println("[+] Creating a volume storage");
+
+				// Creating a storage instance
+				Storage storage = eb.getStorage();
+	 			storage.setTitle(properties.getProperty("OCCI_CORE_TITLE"));
+				storage.setSize(properties.getProperty("OCCI_STORAGE_SIZE"));
+
+				URI storageLocation = client.create(storage);
+				
+				List<URI> list = client.list("storage");
+				List<URI> storageURIs = new ArrayList<URI>();
+
+				for URI uri : list 
+				{
+					if uri.toString().contains("storage") 
+						storageURIs.add(uri);
+				}
+						
+				System.out.println("URI = " + storageLocation);
+			} 
+
+		} 
+
+		catch FileNotFoundException ex 
+		{throw new RuntimeException(ex);}
+
+		catch IOException ex 
+		{throw new RuntimeException(ex);}
+
+		catch (EntityBuildingException | AmbiguousIdentifierException |
+			InvalidAttributeValueException | CommunicationException ex) 
+		{throw new RuntimeException(ex);}
+
+		return "";
+	}
+
+	public static String instantiateVM(String[] OCCI_INPUT_LIST)
+	{
+
+		OCCI_ENDPOINT_HOST = OCCI_INPUT_LIST[1];
+		RES_TPL = OCCI_INPUT_LIST[2];
+		OS_TPL = OCCI_INPUT_LIST[3];
+		PUBLIC_KEY_PATH = OCCI_INPUT_LIST[4];
+		CONTEXT_PATH = OCCI_INPUT_LIST[5];
+
+		MIXIN = Arrays.asList(RES_TPL, OS_TPL);
+
+		CONTEXT = Arrays.asList("public_key="+PUBLIC_KEY_PATH, "user_data="+CONTEXT_PATH); 
+
+		System.out.println("OCCI_ENDPOINT_HOST: "+OCCI_ENDPOINT_HOST);
+
+		Boolean result = false;
+		String networkInterfaceLocation = "";
+		String networkInterfaceLocation_stripped = "";
+		Resource vm_resource = null;
+		URI uri_location = null;
+
+		if verbose 
+		{
+			System.out.println();
+			if ACTION != null && !ACTION.isEmpty() 
+				System.out.println("[ACTION] = " + ACTION);
+			else	
+				System.out.println("[ACTION] = Get dump model");
+			System.out.println("AUTH = " + AUTH);
+			if OCCI_ENDPOINT_HOST != null && !OCCI_ENDPOINT_HOST.isEmpty()
+				System.out.println("OCCI_ENDPOINT_HOST = " + OCCI_ENDPOINT_HOST);
+			if RESOURCE != null && !RESOURCE.isEmpty()
+				System.out.println("RESOURCE = " + RESOURCE);
+			if MIXIN != null && !MIXIN.isEmpty()
+				System.out.println("MIXIN = " + MIXIN);
+			if TRUSTED_CERT_REPOSITORY_PATH != null && !TRUSTED_CERT_REPOSITORY_PATH.isEmpty() 
+				System.out.println("TRUSTED_CERT_REPOSITORY_PATH = " + TRUSTED_CERT_REPOSITORY_PATH);
+			if PROXY_PATH != null && !PROXY_PATH.isEmpty()
+				System.out.println("PROXY_PATH = " + PROXY_PATH);
+			if CONTEXT != null && !CONTEXT.isEmpty()
+				System.out.println("CONTEXT = " + CONTEXT);
+			if OCCI_PUBLICKEY_NAME != null && !OCCI_PUBLICKEY_NAME.isEmpty()
+				System.out.println("OCCI_PUBLICKEY_NAME = " + OCCI_PUBLICKEY_NAME);
+			if ATTRIBUTES != null && !ATTRIBUTES.isEmpty() 
+				System.out.println("ATTRIBUTES = " + ATTRIBUTES);
+			if verbose System.out.println("Verbose = True ");
+			else System.out.println("Verbose = False ");
+		}
+
+		Properties properties = new Properties();
+
+		if ACTION != null && !ACTION.isEmpty()
+			properties.setProperty("ACTION", ACTION);
+
+		if OCCI_ENDPOINT_HOST != null && !OCCI_ENDPOINT_HOST.isEmpty()
+			properties.setProperty("OCCI_ENDPOINT_HOST", OCCI_ENDPOINT_HOST);
+
+		if RESOURCE != null && !RESOURCE.isEmpty() 
+			for int i=0; i<RESOURCE.size(); i++ 
+			{
+				if (!RESOURCE.get(i).equals("compute") && 
+				!RESOURCE.get(i).equals("storage") &&
+				!RESOURCE.get(i).equals("network") &&
+				!RESOURCE.get(i).equals("os_tpl") &&
+				!RESOURCE.get(i).equals("resource_tpl"))
+					properties.setProperty("OCCI_VM_RESOURCE_ID", RESOURCE.get(i));
+				else 
+				{ 
+					properties.setProperty("RESOURCE", RESOURCE.get(i));
+					properties.setProperty("OCCI_VM_RESOURCE_ID", "empty");
+				}
+			}
+			
+		if MIXIN != null && !MIXIN.isEmpty() 
+			for int i=0; i<MIXIN.size(); i++ 
+			{
+				if MIXIN.get(i).contains("template") || MIXIN.get(i).contains("os_tpl") 
+					properties.setProperty("OCCI_OS_TPL", MIXIN.get(i));
+
+				if MIXIN.get(i).contains("resource_tpl") 
+					properties.setProperty("OCCI_RESOURCE_TPL", MIXIN.get(i));
+			}
+
+		if ATTRIBUTES != null && !ATTRIBUTES.isEmpty()
+			for int i=0; i<ATTRIBUTES.size(); i++ 
+			{
+				if ATTRIBUTES.get(i).contains("occi.core.title") 
+				{
+					String _OCCI_CORE_TITLE = ATTRIBUTES.get(i)
+					.substring(ATTRIBUTES.get(i).lastIndexOf("=") + 1);
+
+					properties.setProperty("OCCI_CORE_TITLE", _OCCI_CORE_TITLE);
+				}
+
+				if ATTRIBUTES.get(i).contains("occi.storage.size")
+				{
+					String _OCCI_STORAGE_SIZE = ATTRIBUTES.get(i)
+					.substring(ATTRIBUTES.get(i).lastIndexOf("=") + 1);
+
+>>>>>>> 1098d207ae9ed8e9e1670143fc84e89a2ba54dc6
 					properties.setProperty("OCCI_STORAGE_SIZE", _OCCI_STORAGE_SIZE);
 				}
 			}
@@ -338,6 +487,7 @@ public class InstantiateVM
 		properties.setProperty("TRUSTED_CERT_REPOSITORY_PATH", TRUSTED_CERT_REPOSITORY_PATH);
 		properties.setProperty("PROXY_PATH", PROXY_PATH);
 
+<<<<<<< HEAD
 		if (CONTEXT != null && !CONTEXT.isEmpty()) 
 		{
 			for (int i=0; i<CONTEXT.size(); i++) 
@@ -346,12 +496,26 @@ public class InstantiateVM
 				properties.setProperty("PUBLIC_KEY_FILE", CONTEXT.get(i));
 
 				if (CONTEXT.get(i).contains("user_data")) 
+=======
+		if CONTEXT != null && !CONTEXT.isEmpty() 
+		{
+			for int i=0; i<CONTEXT.size(); i++
+			{
+				if CONTEXT.get(i).contains("public_key")
+				properties.setProperty("PUBLIC_KEY_FILE", CONTEXT.get(i));
+
+				if CONTEXT.get(i).contains("user_data")
+>>>>>>> 1098d207ae9ed8e9e1670143fc84e89a2ba54dc6
 				properties.setProperty("USER_DATA", CONTEXT.get(i));
 				//properties.setProperty("PUBLIC_KEY_FILE", PUBLIC_KEY_FILE);
 			}
 		}
 
+<<<<<<< HEAD
 		if (OCCI_PUBLICKEY_NAME != null && !OCCI_PUBLICKEY_NAME.isEmpty())
+=======
+		if OCCI_PUBLICKEY_NAME != null && !OCCI_PUBLICKEY_NAME.isEmpty()
+>>>>>>> 1098d207ae9ed8e9e1670143fc84e89a2ba54dc6
 			properties.setProperty("OCCI_PUBLICKEY_NAME", OCCI_PUBLICKEY_NAME);
 		properties.setProperty("OCCI_AUTH", AUTH);
 

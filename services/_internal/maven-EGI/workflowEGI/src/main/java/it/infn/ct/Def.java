@@ -33,6 +33,7 @@ public class Def
         } 
         catch (FileNotFoundException e) 
         {e.printStackTrace();}
+<<<<<<< HEAD
 
         catch (IOException e) 
         {e.printStackTrace();} 
@@ -41,6 +42,16 @@ public class Def
         {e.printStackTrace();}
 
        
+=======
+
+        catch (IOException e) 
+        {e.printStackTrace();} 
+
+        catch (ParseException e) 
+        {e.printStackTrace();}
+
+
+>>>>>>> 1098d207ae9ed8e9e1670143fc84e89a2ba54dc6
         try (FileWriter file = new FileWriter(jsonfile)) 
         {
             file.write(jsonObject.toJSONString());
@@ -57,7 +68,8 @@ public class Def
 
         String endpoint = "", resource_tpl = "", os_tpl = "", publicKey = "", contextualisation = "", proxy = "";
         String[] egiList = {};
-        try {
+        try 
+        {
 
             Object obj = parser.parse(new FileReader(jsonfile));
 

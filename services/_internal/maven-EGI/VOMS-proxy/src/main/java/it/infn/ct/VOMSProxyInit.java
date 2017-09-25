@@ -28,7 +28,11 @@ public class VOMSProxyInit
 
 	public static boolean isEmpty(String str)
 	{
+<<<<<<< HEAD
 		if (str != null && !str.isEmpty()) return false; 
+=======
+		if str != null && !str.isEmpty() return false; 
+>>>>>>> 1098d207ae9ed8e9e1670143fc84e89a2ba54dc6
 		else return true; 
 	}
 
@@ -46,16 +50,24 @@ public class VOMSProxyInit
 		{
 
 			if (isEmpty(VONAME) && 
+<<<<<<< HEAD
 			(isEmpty(VOMS_PROXY_FILEPATH)) &&
 			(isEmpty(VOMS_LIFETIME)) &&
 			(isEmpty(VOMSES_DIR)) &&
 			(isEmpty(X509_CERT_DIR))) 
+=======
+			isEmpty(VOMS_PROXY_FILEPATH) &&
+			isEmpty(VOMS_LIFETIME) &&
+			isEmpty(VOMSES_DIR) &&
+			isEmpty(X509_CERT_DIR)) 
+>>>>>>> 1098d207ae9ed8e9e1670143fc84e89a2ba54dc6
 				throw new Exception ("[ ARGUMENTS EXCEPTION ]");
 
 			Properties p = new Properties(System.getProperties());
 			p.setProperty("X509_USER_PROXY", VOMS_PROXY_FILEPATH);
 			System.setProperties(p);
 
+<<<<<<< HEAD
 			if (ENABLE_RFC)
 			VomsProxyInit.main(new String[]
 			{
@@ -81,6 +93,33 @@ public class VOMSProxyInit
 				"-limited",
 				"-debug"
 			});
+=======
+			if ENABLE_RFC
+				VomsProxyInit.main(new String[]
+				{
+					"-voms", VONAME,
+					"-vomses", VOMSES_DIR,
+					"-out", VOMS_PROXY_FILEPATH,
+					"-certdir", X509_CERT_DIR,
+					"-vomslife", VOMS_LIFETIME,
+					"-ignorewarn",
+					"-limited",
+					"-rfc",
+					"-debug"
+				});
+			else
+				VomsProxyInit.main(new String[]
+				{
+					"-voms", VONAME,
+					"-vomses", VOMSES_DIR,
+					"-out", VOMS_PROXY_FILEPATH,
+					"-certdir", X509_CERT_DIR,
+					"-vomslife", VOMS_LIFETIME,
+					"-ignorewarn",
+					"-limited",
+					"-debug"
+				});
+>>>>>>> 1098d207ae9ed8e9e1670143fc84e89a2ba54dc6
 
 		}
 		catch (Exception exc)
