@@ -25,15 +25,15 @@ import java.util.Properties;
 public class VOMSProxyInit
 {
 	private static Logger log = Logger.getLogger(VOMSProxyInit.class);
-  
-        public static boolean isEmpty(String str)
-        {
-		if (str != null && !str.isEmpty()) return false; 
+
+	public static boolean isEmpty(String str)
+	{
+		if str != null && !str.isEmpty() return false; 
 		else return true; 
-        }
-	
+	}
+
 	/* M	A	I	N */
- 	public static void main (String[] args)
+	public static void main (String[] args)
 	{			
 		String VONAME = "fedcloud.egi.eu"; // <= Change here!
 		String VOMS_PROXY_FILEPATH = "/tmp/x509up_u5040"; // <= Change here!
@@ -41,22 +41,24 @@ public class VOMSProxyInit
 		String VOMSES_DIR = "/etc/vomses/";
 		String X509_CERT_DIR = "/etc/grid-security/certificates/";
 		Boolean ENABLE_RFC = true;
-		
-		try {
-			
+
+		try 
+		{
+
 			if (isEmpty(VONAME) && 
-                           (isEmpty(VOMS_PROXY_FILEPATH)) &&
-			   (isEmpty(VOMS_LIFETIME)) &&
-			   (isEmpty(VOMSES_DIR)) &&
-			   (isEmpty(X509_CERT_DIR))) 
-                                throw new Exception ("[ ARGUMENTS EXCEPTION ]");
-			
+			isEmpty(VOMS_PROXY_FILEPATH) &&
+			isEmpty(VOMS_LIFETIME) &&
+			isEmpty(VOMSES_DIR) &&
+			isEmpty(X509_CERT_DIR)) 
+				throw new Exception ("[ ARGUMENTS EXCEPTION ]");
+
 			Properties p = new Properties(System.getProperties());
- 			p.setProperty("X509_USER_PROXY", VOMS_PROXY_FILEPATH);
+			p.setProperty("X509_USER_PROXY", VOMS_PROXY_FILEPATH);
 			System.setProperties(p);
-			
-			if (ENABLE_RFC)
-				VomsProxyInit.main(new String[]{
+
+			if ENABLE_RFC
+				VomsProxyInit.main(new String[]
+				{
 					"-voms", VONAME,
 					"-vomses", VOMSES_DIR,
 					"-out", VOMS_PROXY_FILEPATH,
@@ -68,18 +70,20 @@ public class VOMSProxyInit
 					"-debug"
 				});
 			else
-				VomsProxyInit.main(new String[]{
-                                        "-voms", VONAME,
-                                        "-vomses", VOMSES_DIR,
-                                        "-out", VOMS_PROXY_FILEPATH,
-                                        "-certdir", X509_CERT_DIR,
-                                        "-vomslife", VOMS_LIFETIME,
+				VomsProxyInit.main(new String[]
+				{
+					"-voms", VONAME,
+					"-vomses", VOMSES_DIR,
+					"-out", VOMS_PROXY_FILEPATH,
+					"-certdir", X509_CERT_DIR,
+					"-vomslife", VOMS_LIFETIME,
 					"-ignorewarn",
 					"-limited",
-                                        "-debug"
-                                });
+					"-debug"
+				});
 
-		        //VomsProxyInfo.main(new String[]{"--all"});
-			} catch (Exception exc){ System.out.println (exc.toString()); }		
+		}
+		catch (Exception exc)
+		{System.out.println (exc.toString());}		
 	}
 }

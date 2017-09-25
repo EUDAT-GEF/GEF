@@ -23,33 +23,31 @@ public class Def
         JSONParser parser = new JSONParser();
         JSONObject jsonObject = null;
 
-        try {
-
+        try
+        {
             Object obj = parser.parse(new FileReader(jsonfile));
             jsonObject = (JSONObject) obj;
             jsonObject.put("vmId",vmId);
             jsonObject.put("publicIP",publicIP);
             jsonObject.put("vmState",vmState);
-            System.out.println("jsonObject: "+jsonObject);
+        } 
+        catch (FileNotFoundException e) 
+        {e.printStackTrace();}
 
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (ParseException e) {
-            e.printStackTrace();
-        }
+        catch (IOException e) 
+        {e.printStackTrace();} 
 
-       
-        try (FileWriter file = new FileWriter(jsonfile)) {
+        catch (ParseException e) 
+        {e.printStackTrace();}
 
+
+        try (FileWriter file = new FileWriter(jsonfile)) 
+        {
             file.write(jsonObject.toJSONString());
             file.flush();
-            System.out.println("jsonObjectFromFile : " + jsonObject);
-
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+        }
+        catch (IOException e) 
+        {e.printStackTrace();}
 
     }
 
@@ -59,7 +57,8 @@ public class Def
 
         String endpoint = "", resource_tpl = "", os_tpl = "", publicKey = "", contextualisation = "", proxy = "";
         String[] egiList = {};
-        try {
+        try 
+        {
 
             Object obj = parser.parse(new FileReader(jsonfile));
 
@@ -74,16 +73,16 @@ public class Def
 
             egiList = new String[]{proxy,endpoint,resource_tpl,os_tpl,publicKey,contextualisation};
 
-        //return egiList;
+        } 
+        catch (FileNotFoundException e) 
+        {e.printStackTrace();}
 
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (ParseException e) {
-            e.printStackTrace();
-        }
-        //String[] hello = {"hello","goodbye"};
+        catch (IOException e) 
+        {e.printStackTrace();}
+
+        catch (ParseException e) 
+        {e.printStackTrace();}
+
         return egiList;
     }
 }

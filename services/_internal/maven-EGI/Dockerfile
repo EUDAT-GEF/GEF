@@ -2,8 +2,8 @@ FROM zenika/alpine-maven
 
 # Install bash to allow manual inspection i.e docker run -it $IMAGE_NAME /bin/bash
 RUN apk add --update bash && rm -rf /var/cache/apk/* \
-    apk upgrade && \
-    apk add --update autoconf gcc
+	apk upgrade && \
+	apk add --update autoconf gcc
 
 # Curl set up
 RUN apk add --update curl && \
