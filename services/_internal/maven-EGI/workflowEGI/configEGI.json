@@ -1,8 +1,8 @@
 {
-	"endpoint": "https://carach5.ics.muni.cz:11443",
-	"resource_tpl": "resource_tpl#extra_large",
-	"os_tpl": "http://occi.carach5.ics.muni.cz/occi/infrastructure/os_tpl#uuid_07fbd366_bbd2_5ca4_8f47_82c23ebc7d23_warg_default_shared_228",
-	"publicKey": "file:/root/.ssh/fedcloud.pub",
-	"contextualisation": "file:/root/.ssh/EGI-EUDAT-Integration.yml",
-	"proxy": "/tmp/x509up_u5040"
+	"endpoint": "URL endpoint from EGI AppDB",
+	"resource_tpl": "Resource URL from EGI AppDB",
+	"os_tpl": "OS URL from EGI AppDB - Only Ubuntu Xenial has been tested on this workflow",
+	"publicKey": "Path of your public key within the docker container",
+	"contextualisation": "Path of the contextualisation file within the docker container",
+	"proxy": "Proxy address name e.g /tmp/x509up_u****"
 }
