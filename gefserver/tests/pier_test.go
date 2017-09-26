@@ -29,25 +29,28 @@ func TestClient(t *testing.T) {
 	config, err := def.ReadConfigFile(configFilePath)
 	CheckErr(t, err)
 
+	// overwrite this because when testing we're in a different working directory
+	config.Pier.InternalServicesFolder = internalServicesFolder
+
 	db, file, err := db.InitDbForTesting()
 	CheckErr(t, err)
 	defer db.Close()
 	defer os.Remove(file)
 	user, _ := AddUserWithToken(t, db, name1, email1)
 
-	pier, err := pier.NewPier(&db, config.TmpDir, config.Timeouts)
+	pier, err := pier.NewPier(&db, config.Pier, config.TmpDir, config.Timeouts)
 	CheckErr(t, err)
 
-	err = pier.SetDockerConnection(config.Docker, internalServicesFolder)
+	connID, err := pier.AddDockerConnection(0, config.Docker)
 	CheckErr(t, err)
 
 	before, err := db.ListServices()
 	CheckErr(t, err)
 
-	service, err := pier.BuildService(user.ID, "./clone_test")
+	service, err := pier.BuildService(connID, user.ID, "./clone_test")
 	CheckErr(t, err)
-	log.Print("test service built:", service.ID, " ", service.ImageID)
-	// log.Printf("test service built: %#v", service)
+	log.Print("test service built: ", service.ID, " ", service.ImageID)
+	log.Printf("test service built: %#v", service)
 
 	after, err := db.ListServices()
 	CheckErr(t, err)
@@ -100,19 +103,22 @@ func TestExecution(t *testing.T) {
 	config, err := def.ReadConfigFile(configFilePath)
 	CheckErr(t, err)
 
+	// overwrite this because when testing we're in a different working directory
+	config.Pier.InternalServicesFolder = internalServicesFolder
+
 	db, dbfile, err := db.InitDbForTesting()
 	CheckErr(t, err)
 	defer db.Close()
 	defer os.Remove(dbfile)
 	user, _ := AddUserWithToken(t, db, name1, email1)
 
-	p, err := pier.NewPier(&db, config.TmpDir, config.Timeouts)
+	p, err := pier.NewPier(&db, config.Pier, config.TmpDir, config.Timeouts)
 	CheckErr(t, err)
 
-	err = p.SetDockerConnection(config.Docker, internalServicesFolder)
+	connID, err := p.AddDockerConnection(0, config.Docker)
 	CheckErr(t, err)
 
-	service, err := p.BuildService(user.ID, "./clone_test")
+	service, err := p.BuildService(connID, user.ID, "./clone_test")
 	CheckErr(t, err)
 	log.Print("test service built: ", service.ID, " ", service.ImageID)
 	// log.Printf("test service built: %#v", service)
@@ -150,19 +156,22 @@ func TestJobTimeOut(t *testing.T) {
 	config.Timeouts.JobExecution = 3  // forcing a small time out
 	config.Timeouts.CheckInterval = 2 // forcing a small check interval
 
+	// overwrite this because when testing we're in a different working directory
+	config.Pier.InternalServicesFolder = internalServicesFolder
+
 	db, dbfile, err := db.InitDbForTesting()
 	CheckErr(t, err)
 	defer db.Close()
 	defer os.Remove(dbfile)
 	user, _ := AddUserWithToken(t, db, name1, email1)
 
-	p, err := pier.NewPier(&db, config.TmpDir, config.Timeouts)
+	p, err := pier.NewPier(&db, config.Pier, config.TmpDir, config.Timeouts)
 	CheckErr(t, err)
 
-	err = p.SetDockerConnection(config.Docker, internalServicesFolder)
+	connID, err := p.AddDockerConnection(0, config.Docker)
 	CheckErr(t, err)
 
-	service, err := p.BuildService(user.ID, "./timeout_test")
+	service, err := p.BuildService(connID, user.ID, "./timeout_test")
 	CheckErr(t, err)
 	log.Print("test service built: ", service.ID, " ", service.ImageID)
 	// log.Printf("test service built: %#v", service)

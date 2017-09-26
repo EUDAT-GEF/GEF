@@ -31,11 +31,13 @@ func main() {
 	defer d.Close()
 
 	var p *pier.Pier
-	p, err = pier.NewPier(&d, config.TmpDir, config.Timeouts)
+	p, err = pier.NewPier(&d, config.Pier, config.TmpDir, config.Timeouts)
 	if err != nil {
 		log.Fatal("FATAL: ", def.Err(err, "Cannot create Pier"))
 	}
-	err = p.SetDockerConnection(config.Docker, config.Pier.InternalServicesFolder)
+
+	// add the main docker connection with no owner (UserID = 0)
+	_, err = p.AddDockerConnection(0, config.Docker)
 	if err != nil {
 		log.Fatal("FATAL: ", def.Err(err, "Cannot set docker connection"))
 	}

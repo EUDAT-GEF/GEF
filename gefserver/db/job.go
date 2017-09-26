@@ -5,6 +5,7 @@ import "time"
 // Job stores the information about a service execution (used to serialize JSON)
 type Job struct {
 	ID           JobID
+	ConnectionID ConnectionID
 	ServiceID    ServiceID
 	Input        string
 	Created      time.Time

@@ -26,9 +26,25 @@ type Db struct {
 	db gorp.DbMap
 }
 
+// ConnectionID is the type used to identify a docker connection
+type ConnectionID int
+
+// ConnectionTable stores the information about a docker connection (used to store data in a database)
+type ConnectionTable struct {
+	ID          int
+	Endpoint    string // unique key
+	Description string
+	TLSVerify   bool
+	CertPath    string
+	KeyPath     string
+	CAPath      string
+	Revision    int
+}
+
 // JobTable stores the information about a service execution (used to store data in a database)
 type JobTable struct {
 	ID           string
+	ConnectionID int
 	ServiceID    string
 	Input        string
 	Created      time.Time
@@ -56,16 +72,17 @@ type TaskTable struct {
 
 // ServiceTable describes metadata for a GEF service (used to store data in a database)
 type ServiceTable struct {
-	ID          string
-	ImageID     string
-	Name        string
-	RepoTag     string
-	Description string
-	Version     string
-	Created     time.Time
-	Deleted     bool
-	Size        int64
-	Revision    int
+	ID           string
+	ConnectionID int
+	ImageID      string
+	Name         string
+	RepoTag      string
+	Description  string
+	Version      string
+	Created      time.Time
+	Deleted      bool
+	Size         int64
+	Revision     int
 }
 
 // IOPortTable is used to store info about service inputs and outputs in a database
@@ -167,6 +184,12 @@ func setupDatabase(dataBase *sql.DB) (Db, error) {
 	// For each table GORP has a special field to keep information about data version
 	dataBaseMap := &gorp.DbMap{Db: dataBase, Dialect: gorp.SqliteDialect{}}
 
+	connectionTable := dataBaseMap.AddTableWithName(ConnectionTable{}, "Connections").SetKeys(true, "ID")
+	{
+		connectionTable.SetVersionCol(gorpVersionColumn)
+		connectionTable.ColMap("Endpoint").SetUnique(true)
+	}
+
 	dataBaseMap.AddTableWithName(JobTable{}, "Jobs").SetKeys(false, "ID").SetVersionCol(gorpVersionColumn)
 
 	dataBaseMap.AddTableWithName(TaskTable{}, "Tasks").SetKeys(false, "ID").SetVersionCol(gorpVersionColumn)
@@ -242,6 +265,126 @@ func (d *Db) Close() {
 	d.db.Db.Close()
 }
 
+// AddConnection adds a connection to the database
+func (d *Db) AddConnection(userID int64, connection def.DockerConfig) (ConnectionID, error) {
+	var ct ConnectionTable
+	err := d.db.SelectOne(&ct,
+		"SELECT * FROM connections WHERE Endpoint=?",
+		connection.Endpoint)
+
+	if err != nil && !isNoResultsError(err) {
+		return 0, def.Err(err, "db inquiry about docker connections failed: %v", err)
+	}
+
+	ct.Endpoint = connection.Endpoint
+	ct.Description = connection.Description
+	ct.TLSVerify = connection.TLSVerify
+	ct.CertPath = connection.CertPath
+	ct.KeyPath = connection.KeyPath
+	ct.CAPath = connection.CAPath
+
+	if isNoResultsError(err) {
+		err = d.db.Insert(&ct)
+		if err != nil {
+			return 0, def.Err(err, "db inserting docker connection failed: %v", err)
+		}
+
+		ownership := OwnerTable{
+			UserID:     userID,
+			ObjectType: "Connection",
+			ObjectID:   string(ct.ID),
+		}
+		err = d.db.Insert(&ownership)
+		if err != nil {
+			return 0, def.Err(err, "db inserting connection ownership failed")
+		}
+	} else {
+		d.db.Update(&ct)
+	}
+
+	return ConnectionID(ct.ID), nil
+}
+
+// RemoveConnection removes a connection to the database
+func (d *Db) RemoveConnection(connectionID ConnectionID) error {
+	_, err := d.db.Exec("DELETE FROM connections WHERE ID=?", connectionID)
+	if err != nil {
+		return err
+	}
+
+	_, err = d.db.Exec("DELETE FROM Owners WHERE ObjectType=? AND ObjectID=?",
+		"Connection", string(connectionID))
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// GetConnections returns a map of all connections ready to be converted into JSON
+func (d *Db) GetConnections() (map[ConnectionID]def.DockerConfig, error) {
+	var connectionTable []ConnectionTable
+	_, err := d.db.Select(&connectionTable, "SELECT * FROM connections ORDER BY ID")
+	if err != nil {
+		return nil, err
+	}
+
+	connections := make(map[ConnectionID]def.DockerConfig)
+	for _, c := range connectionTable {
+		connections[ConnectionID(c.ID)] = def.DockerConfig{
+			Endpoint:    c.Endpoint,
+			Description: c.Description,
+			TLSVerify:   c.TLSVerify,
+			CertPath:    c.CertPath,
+			KeyPath:     c.KeyPath,
+			CAPath:      c.CAPath,
+		}
+	}
+
+	return connections, err
+}
+
+// GetFirstConnectionID returns the default (first) connection id
+func (d *Db) GetFirstConnectionID() (ConnectionID, error) {
+	var connectionIDs []int
+	_, err := d.db.Select(&connectionIDs, "SELECT ID FROM connections ORDER BY ID LIMIT 1")
+	if err != nil {
+		return 0, err
+	}
+	if len(connectionIDs) < 1 {
+		return 0, def.Err(nil, "Cannot find any connection id in the database")
+	}
+
+	return ConnectionID(connectionIDs[0]), nil
+}
+
+// GetConnectionOwners does what it says
+func (d *Db) GetConnectionOwners(connectionID ConnectionID) ([]int64, error) {
+	var ownersTable []OwnerTable
+	_, err := d.db.Select(&ownersTable,
+		"SELECT * FROM owners WHERE ObjectType=? AND ObjectID=?",
+		"Connection", string(connectionID))
+	if err != nil && !isNoResultsError(err) {
+		log.Printf("ERROR in GetConnectionOwners: %#v", err)
+	}
+	owners := make([]int64, 0, len(ownersTable))
+	for _, o := range ownersTable {
+		owners = append(owners, o.UserID)
+	}
+	return owners, err
+}
+
+// IsConnectionOwner checks if a certain user owns a certain connection
+func (d *Db) IsConnectionOwner(userID int64, connectionID ConnectionID) bool {
+	var x OwnerTable
+	err := d.db.SelectOne(&x,
+		"SELECT * FROM owners WHERE UserID=? AND ObjectType=? AND ObjectID=?",
+		userID, "Connection", string(connectionID))
+	if err != nil && !isNoResultsError(err) {
+		log.Printf("ERROR in IsConnectionOwner: %#v", err)
+	}
+	return err == nil
+}
+
 // AddJob adds a job to the database
 func (d *Db) AddJob(userID int64, job Job) error {
 	storedJob := d.job2JobTable(job)
@@ -258,7 +401,7 @@ func (d *Db) AddJob(userID int64, job Job) error {
 }
 
 // RemoveJob removes a job and all corresponding tasks from the database
-func (d *Db) RemoveJob(userID int64, id JobID) error {
+func (d *Db) RemoveJob(id JobID) error {
 	_, err := d.db.Exec("DELETE FROM Tasks WHERE jobID=?", string(id))
 	if err != nil {
 		return err
@@ -269,8 +412,8 @@ func (d *Db) RemoveJob(userID int64, id JobID) error {
 		return err
 	}
 
-	_, err = d.db.Exec("DELETE FROM Owners WHERE UserID=? AND ObjectType=? AND ObjectID=?",
-		userID, "Job", string(id))
+	_, err = d.db.Exec("DELETE FROM Owners WHERE ObjectType=? AND ObjectID=?",
+		"Job", string(id))
 	if err != nil {
 		return err
 	}
@@ -334,6 +477,7 @@ func (d *Db) jobTable2Job(storedJob JobTable) (Job, error) {
 	jobState.Code = storedJob.Code
 
 	job.ID = JobID(storedJob.ID)
+	job.ConnectionID = ConnectionID(storedJob.ConnectionID)
 	job.ServiceID = ServiceID(storedJob.ServiceID)
 	job.Input = storedJob.Input
 	job.Created = storedJob.Created
@@ -355,6 +499,7 @@ func (d *Db) jobTable2Job(storedJob JobTable) (Job, error) {
 func (d *Db) job2JobTable(job Job) JobTable {
 	var storedJob JobTable
 	storedJob.ID = string(job.ID)
+	storedJob.ConnectionID = int(job.ConnectionID)
 	storedJob.ServiceID = string(job.ServiceID)
 	storedJob.Input = job.Input
 	storedJob.Created = job.Created
@@ -533,6 +678,7 @@ func (d *Db) serviceTable2Service(storedService ServiceTable) (Service, error) {
 	}
 
 	service.ID = ServiceID(storedService.ID)
+	service.ConnectionID = ConnectionID(storedService.ConnectionID)
 	service.ImageID = ImageID(storedService.ImageID)
 	service.Name = storedService.Name
 	service.RepoTag = storedService.RepoTag
@@ -553,6 +699,7 @@ func (d *Db) serviceTable2Service(storedService ServiceTable) (Service, error) {
 func (d *Db) service2ServiceTable(service Service) ServiceTable {
 	var storedService ServiceTable
 	storedService.ID = string(service.ID)
+	storedService.ConnectionID = int(service.ConnectionID)
 	storedService.ImageID = string(service.ImageID)
 	storedService.Name = service.Name
 	storedService.RepoTag = service.RepoTag
@@ -600,14 +747,16 @@ func (d *Db) AddService(userID int64, service Service) error {
 	// Before adding a service we need to check if the service with the same name already exists.
 	// If it does, we remove it and add a new one
 	var servicesFromTable []ServiceTable
-	_, err := d.db.Select(&servicesFromTable, "SELECT * FROM services WHERE Name=?", service.Name)
+	_, err := d.db.Select(&servicesFromTable,
+		"SELECT * FROM services WHERE Name=? AND ConnectionID=?",
+		service.Name, service.ConnectionID)
 	if err != nil {
 		return err
 	}
 
 	if len(servicesFromTable) > 0 {
 		for _, s := range servicesFromTable {
-			err = d.RemoveService(userID, ServiceID(s.ID))
+			err = d.RemoveService(ServiceID(s.ID))
 			if err != nil {
 				return err
 			}
@@ -654,7 +803,7 @@ func (d *Db) AddCmd(service Service) error {
 }
 
 // RemoveService removes a service and the corresponding IOPorts from the database
-func (d *Db) RemoveService(userID int64, id ServiceID) error {
+func (d *Db) RemoveService(id ServiceID) error {
 	// remove linked ports
 	_, err := d.db.Exec("DELETE FROM IOPorts WHERE ServiceID=?", string(id))
 	if err != nil {
@@ -673,8 +822,8 @@ func (d *Db) RemoveService(userID int64, id ServiceID) error {
 		return err
 	}
 
-	_, err = d.db.Exec("DELETE FROM Owners WHERE UserID=? AND ObjectType=? AND ObjectID=?",
-		userID, "Service", string(id))
+	_, err = d.db.Exec("DELETE FROM Owners WHERE ObjectType=? AND ObjectID=?",
+		"Service", string(id))
 	if err != nil {
 		return err
 	}

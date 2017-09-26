@@ -25,6 +25,9 @@ func TestServer(t *testing.T) {
 	config, err := def.ReadConfigFile(configFilePath)
 	CheckErr(t, err)
 
+	// overwrite this because when testing we're in a different working directory
+	config.Pier.InternalServicesFolder = internalServicesFolder
+
 	db, dbfile, err := db.InitDbForTesting()
 	CheckErr(t, err)
 	defer db.Close()
@@ -45,10 +48,11 @@ func TestServer(t *testing.T) {
 	MakeAdmin(t, db, "EUDAT", admin.ID)
 	adminToken := token.Secret
 
-	pier, err := pier.NewPier(&db, config.TmpDir, config.Timeouts)
+	pier, err := pier.NewPier(&db, config.Pier, config.TmpDir, config.Timeouts)
 	CheckErr(t, err)
 
-	err = pier.SetDockerConnection(config.Docker, internalServicesFolder)
+	// connID, err := pier.AddDockerConnection(0, config.Docker)
+	_, err = pier.AddDockerConnection(0, config.Docker)
 	CheckErr(t, err)
 
 	var srv *httptest.Server
