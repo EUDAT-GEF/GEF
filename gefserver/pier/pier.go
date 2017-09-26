@@ -32,8 +32,9 @@ var JobTimeOutAndRemovalError = "Job execution timeout exceeded and container re
 
 // Pier is a master struct for gef-docker abstractions
 type Pier struct {
-	docker   *dockerConnection
 	db       *db.Db
+	docker   map[db.ConnectionID]dockerConnection
+	config   def.PierConfig
 	tmpDir   string
 	timeOuts def.TimeoutConfig
 }
@@ -52,27 +53,59 @@ type internalImage struct {
 }
 
 // NewPier creates a new pier with all the needed setup
-func NewPier(dataBase *db.Db, tmpDir string, timeOuts def.TimeoutConfig) (*Pier, error) {
+func NewPier(database *db.Db, pierConfig def.PierConfig, tmpDir string, timeOuts def.TimeoutConfig) (*Pier, error) {
 	pier := Pier{
-		db:       dataBase,
-		docker:   nil,
+		db:       database,
+		docker:   make(map[db.ConnectionID]dockerConnection),
+		config:   pierConfig,
 		tmpDir:   tmpDir,
 		timeOuts: timeOuts,
+	}
+	connections, err := database.GetConnections()
+	if err != nil {
+		return nil, def.Err(err, "error creating pier")
+	}
+	for cID, c := range connections {
+		userIDs, err := database.GetConnectionOwners(cID)
+		if err != nil {
+			return nil, def.Err(err, "error retrieving connection owners")
+		}
+		userID := int64(0)
+		if len(userIDs) > 0 {
+			userID = userIDs[0]
+		}
+		cNewID, err := pier.AddDockerConnection(userID, c)
+		if err != nil {
+			return nil, def.Err(err, "error creating pier")
+		}
+		if cID != cNewID {
+			return nil, def.Err(nil, "internal error: mismatching connection ids")
+		}
 	}
 	log.Println("Pier created")
 	return &pier, nil
 }
 
-// SetDockerConnection instantiates the docker client and sets the pier's docker connection
-func (p *Pier) SetDockerConnection(config def.DockerConfig, internalServicesFolder string) error {
+// GetConnections returns all docker connections
+func (p *Pier) GetConnections() (map[db.ConnectionID]def.DockerConfig, error) {
+	return p.db.GetConnections()
+}
+
+// AddDockerConnection instantiates the docker client and sets the pier's docker connection
+func (p *Pier) AddDockerConnection(userID int64, config def.DockerConfig) (db.ConnectionID, error) {
 	client, err := dckr.NewClient(config)
 	if err != nil {
-		return def.Err(err, "Cannot create docker client for config:", config)
+		return 0, def.Err(err, "Cannot create docker client for config:", config)
+	}
+
+	connID, err := p.db.AddConnection(userID, config)
+	if err != nil {
+		return connID, def.Err(err, "DB error while adding docker connection:", config)
 	}
 
 	buildInternalImage := func(docker dckr.Client, name string) (internalImage, error) {
 		log.Print("building internal service: " + name)
-		path := filepath.Join(internalServicesFolder, name)
+		path := filepath.Join(p.config.InternalServicesFolder, name)
 		abspath, err := filepath.Abs(path)
 		var newImage internalImage
 		if err != nil {
@@ -84,7 +117,7 @@ func (p *Pier) SetDockerConnection(config def.DockerConfig, internalServicesFold
 		}
 		err = docker.TagImage(string(img.ID), InternalImagePrefix+string(img.ID), GefImageTag)
 		if err != nil {
-			return newImage, def.Err(err, "could not tag an internal service: %s", string(img.ID))
+			return newImage, def.Err(err, "could not tag internal service: %s", string(img.ID))
 		}
 		newImage.id = img.ID
 		newImage.cmd = img.Cmd
@@ -94,49 +127,61 @@ func (p *Pier) SetDockerConnection(config def.DockerConfig, internalServicesFold
 
 	stageInImage, err := buildInternalImage(client, "volume-stage-in")
 	if err != nil {
-		return err
+		return connID, err
 	}
 	fileListImage, err := buildInternalImage(client, "volume-filelist")
 	if err != nil {
-		return err
+		return connID, err
 	}
 	copyFromVolumeImage, err := buildInternalImage(client, "copy-from-volume")
 	if err != nil {
-		return err
+		return connID, err
 	}
 
-	p.docker = &dockerConnection{
+	p.docker[connID] = dockerConnection{
 		client,
 		stageInImage,
 		fileListImage,
 		copyFromVolumeImage,
 	}
-	return nil
+	return connID, nil
 }
 
 // InitiateSwarmMode switches a node to the Swarm Mode
-func (p *Pier) InitiateSwarmMode(listenAddr string, advertiseAddr string) (string, error) {
-	return p.docker.client.InitiateSwarmMode(listenAddr, advertiseAddr)
+func (p *Pier) InitiateSwarmMode(connectionID db.ConnectionID, listenAddr string, advertiseAddr string) (string, error) {
+	docker, found := p.docker[connectionID]
+	if !found {
+		return "", def.Err(nil, "Cannot find docker connection")
+	}
+	return docker.client.InitiateSwarmMode(listenAddr, advertiseAddr)
 }
 
 // LeaveIfInSwarmMode deactivates the Swarm Mode, if it was on
-func (p *Pier) LeaveIfInSwarmMode() error {
-	return p.docker.client.LeaveIfInSwarmMode()
+func (p *Pier) LeaveIfInSwarmMode(connectionID db.ConnectionID) error {
+	docker, found := p.docker[connectionID]
+	if !found {
+		return def.Err(nil, "Cannot find docker connection")
+	}
+	return docker.client.LeaveIfInSwarmMode()
 }
 
 // BuildService builds a services based on the content of the provided folder
-func (p *Pier) BuildService(userID int64, buildDir string) (db.Service, error) {
-	image, err := p.docker.client.BuildImage(buildDir)
+func (p *Pier) BuildService(connectionID db.ConnectionID, userID int64, buildDir string) (db.Service, error) {
+	docker, found := p.docker[connectionID]
+	if !found {
+		return db.Service{}, def.Err(nil, "Cannot find docker connection")
+	}
+	image, err := docker.client.BuildImage(buildDir)
 	if err != nil {
 		return db.Service{}, def.Err(err, "docker BuildImage failed")
 	}
 	log.Println("Tagging the image")
-	err = p.docker.client.TagImage(string(image.ID), ServiceImagePrefix+string(image.ID), GefImageTag)
+	err = docker.client.TagImage(string(image.ID), ServiceImagePrefix+string(image.ID), GefImageTag)
 	if err != nil {
 		return db.Service{}, def.Err(err, "could not tag a service image: %s", string(image.ID))
 	}
 
-	service := NewServiceFromImage(image)
+	service := NewServiceFromImage(connectionID, image)
 	service.RepoTag = ServiceImagePrefix + string(image.ID) + ":" + GefImageTag
 	err = p.db.AddService(userID, service)
 	if err != nil {
@@ -180,8 +225,14 @@ func (p *Pier) startTimeOutTicker(jobId db.JobID, timeOut float64) {
 			}
 			ticker.Stop()
 
+			docker, found := p.docker[job.ConnectionID]
+			if !found {
+				log.Println("ERROR: startTimeOutTicker: ConnectionID cannot be found")
+				return
+			}
+
 			for _, task := range job.Tasks {
-				err = p.docker.client.TerminateContainerOrSwarmService(string(task.ContainerID), task.SwarmServiceID)
+				err = docker.client.TerminateContainerOrSwarmService(string(task.ContainerID), task.SwarmServiceID)
 				if err != nil {
 					log.Println(err)
 					err = p.db.SetJobState(job.ID, db.NewJobStateError(JobTimeOutAndRemovalError, 1))
@@ -194,7 +245,6 @@ func (p *Pier) startTimeOutTicker(jobId db.JobID, timeOut float64) {
 			break
 		}
 	}
-
 }
 
 // RunService exported
@@ -206,11 +256,12 @@ func (p *Pier) RunService(userID int64, id db.ServiceID, inputPID string, limits
 
 	jobState := db.NewJobStateOk("Created", -1)
 	job := db.Job{
-		ID:        db.JobID(uuid.New()),
-		ServiceID: service.ID,
-		Created:   time.Now(),
-		Input:     inputPID,
-		State:     &jobState,
+		ID:           db.JobID(uuid.New()),
+		ConnectionID: service.ConnectionID,
+		ServiceID:    service.ID,
+		Created:      time.Now(),
+		Input:        inputPID,
+		State:        &jobState,
 	}
 
 	err = p.db.AddJob(userID, job)
@@ -243,6 +294,12 @@ func (p *Pier) runJob(job *db.Job, service db.Service, inputPID string, limits d
 		return err.Error()
 	}
 
+	docker, found := p.docker[service.ConnectionID]
+	if !found {
+		log.Println("ERROR: runJob: connectionID not found; ", service.ConnectionID, docker)
+		return
+	}
+
 	var err error
 	var inputVolume dckr.Volume
 	{
@@ -250,7 +307,7 @@ func (p *Pier) runJob(job *db.Job, service db.Service, inputPID string, limits d
 		if err != nil {
 			log.Println(err)
 		}
-		inputVolume, err = p.docker.client.NewVolume()
+		inputVolume, err = docker.client.NewVolume()
 		if err != nil {
 			err = p.db.SetJobState(job.ID, db.NewJobStateError("Error while creating new input volume", 1))
 			if err != nil {
@@ -274,10 +331,10 @@ func (p *Pier) runJob(job *db.Job, service db.Service, inputPID string, limits d
 			dckr.NewVolBind(inputVolume.ID, "/volume", false),
 		}
 
-		containerID, swarmServiceID, exitCode, output, err := p.docker.client.ExecuteImage(
-			string(p.docker.stageIn.id),
-			p.docker.stageIn.repoTag,
-			append(p.docker.stageIn.cmd, inputPID),
+		containerID, swarmServiceID, exitCode, output, err := docker.client.ExecuteImage(
+			string(docker.stageIn.id),
+			docker.stageIn.repoTag,
+			append(docker.stageIn.cmd, inputPID),
 			binds,
 			limits,
 			timeouts,
@@ -314,7 +371,7 @@ func (p *Pier) runJob(job *db.Job, service db.Service, inputPID string, limits d
 		if err != nil {
 			log.Println(err)
 		}
-		outputVolume, err = p.docker.client.NewVolume()
+		outputVolume, err = docker.client.NewVolume()
 		if err != nil {
 			err = p.db.SetJobState(job.ID, db.NewJobStateError("Error while creating new output volume", 1))
 			if err != nil {
@@ -339,7 +396,7 @@ func (p *Pier) runJob(job *db.Job, service db.Service, inputPID string, limits d
 			dckr.NewVolBind(inputVolume.ID, service.Input[0].Path, true),
 			dckr.NewVolBind(outputVolume.ID, service.Output[0].Path, false),
 		}
-		containerID, swarmServiceID, exitCode, output, err := p.docker.client.ExecuteImage(
+		containerID, swarmServiceID, exitCode, output, err := docker.client.ExecuteImage(
 			string(service.ImageID),
 			service.RepoTag,
 			service.Cmd,
@@ -380,10 +437,13 @@ func (p *Pier) runJob(job *db.Job, service db.Service, inputPID string, limits d
 	p.updateJobDurationTime(*job)
 }
 
-// RemoveVolumeInUse removes a volume that may seem to be in use
-func (p *Pier) WaitAndRemoveVolume(id dckr.VolumeID) error {
+func (p *Pier) waitAndRemoveVolume(connectionID db.ConnectionID, id dckr.VolumeID) error {
+	docker, found := p.docker[connectionID]
+	if !found {
+		return def.Err(nil, "Cannot find docker connection")
+	}
 	for {
-		err := p.docker.client.RemoveVolume(id)
+		err := docker.client.RemoveVolume(id)
 		if err == nil || err == dckr.NoSuchVolume {
 			break
 		}
@@ -403,27 +463,32 @@ func (p *Pier) RemoveJob(userID int64, jobID db.JobID) (db.Job, error) {
 		return job, def.Err(nil, "not found")
 	}
 
+	docker, found := p.docker[job.ConnectionID]
+	if !found {
+		return job, def.Err(nil, "Cannot find docker connection")
+	}
+
 	if len(job.Tasks) > 0 {
 		theLastContainer := job.Tasks[len(job.Tasks)-1].ContainerID
 		theLastSwarmService := job.Tasks[len(job.Tasks)-1].SwarmServiceID
-		err = p.docker.client.TerminateContainerOrSwarmService(string(theLastContainer), theLastSwarmService)
+		err = docker.client.TerminateContainerOrSwarmService(string(theLastContainer), theLastSwarmService)
 		if err != nil {
 			return job, def.Err(err, "Cannot remove a container/swarm service")
 		}
 	}
 
 	// Removing volumes
-	err = p.WaitAndRemoveVolume(dckr.VolumeID(job.InputVolume))
+	err = p.waitAndRemoveVolume(job.ConnectionID, dckr.VolumeID(job.InputVolume))
 	if err != nil {
 		return job, err
 	}
-	err = p.WaitAndRemoveVolume(dckr.VolumeID(job.OutputVolume))
+	err = p.waitAndRemoveVolume(job.ConnectionID, dckr.VolumeID(job.OutputVolume))
 	if err != nil {
 		return job, err
 	}
 
 	// Removing the job from the list
-	err = p.db.RemoveJob(userID, jobID)
+	err = p.db.RemoveJob(jobID)
 	if err != nil {
 		return job, def.Err(err, "Could not remove the job")
 	}
@@ -432,19 +497,23 @@ func (p *Pier) RemoveJob(userID int64, jobID db.JobID) (db.Job, error) {
 }
 
 // ImportImage installs a docker tar file as a docker image
-func (p *Pier) ImportImage(userID int64, imageFilePath string) (db.Service, error) {
-	imageID, err := p.docker.client.ImportImageFromTar(imageFilePath)
+func (p *Pier) ImportImage(connectionID db.ConnectionID, userID int64, imageFilePath string) (db.Service, error) {
+	docker, found := p.docker[connectionID]
+	if !found {
+		return db.Service{}, def.Err(nil, "Cannot find docker connection")
+	}
+	imageID, err := docker.client.ImportImageFromTar(imageFilePath)
 	if err != nil {
 		return db.Service{}, def.Err(err, "docker ImportImage failed")
 	}
 
-	image, err := p.docker.client.InspectImage(imageID)
+	image, err := docker.client.InspectImage(imageID)
 
 	if err != nil {
 		return db.Service{}, err
 	}
 
-	service := NewServiceFromImage(image)
+	service := NewServiceFromImage(connectionID, image)
 	err = p.db.AddService(userID, service)
 	if err != nil {
 		return db.Service{}, def.Err(err, "could not add a new service to the database")
@@ -454,14 +523,15 @@ func (p *Pier) ImportImage(userID int64, imageFilePath string) (db.Service, erro
 }
 
 // NewServiceFromImage extracts metadata and creates a valid GEF service
-func NewServiceFromImage(image dckr.Image) db.Service {
+func NewServiceFromImage(connectionID db.ConnectionID, image dckr.Image) db.Service {
 	srv := db.Service{
-		ID:      db.ServiceID(uuid.New()),
-		ImageID: db.ImageID(image.ID),
-		RepoTag: image.RepoTag,
-		Created: image.Created,
-		Size:    image.Size,
-		Cmd:     image.Cmd,
+		ID:           db.ServiceID(uuid.New()),
+		ConnectionID: connectionID,
+		ImageID:      db.ImageID(image.ID),
+		RepoTag:      image.RepoTag,
+		Created:      image.Created,
+		Size:         image.Size,
+		Cmd:          image.Cmd,
 	}
 
 	for k, v := range image.Labels {

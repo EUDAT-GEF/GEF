@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -166,6 +167,22 @@ func (s *Server) newBuildImageHandler(w http.ResponseWriter, r *http.Request) {
 	Response{w}.Location(loc).Created(jmap("Location", loc, "buildID", buildID))
 }
 
+func (s *Server) getConnectionIDParam(r *http.Request) (db.ConnectionID, error) {
+	vars := mux.Vars(r)
+	connectionIDString := vars["connectionID"]
+	if connectionIDString == "" {
+		return s.db.GetFirstConnectionID()
+	}
+	connectionID, err := strconv.Atoi(connectionIDString)
+	if err != nil {
+		return 0, def.Err(err, "bad connectionID parameter")
+	}
+	if connectionID < 1 {
+		return 0, def.Err(nil, "connectionID parameter should be > 0")
+	}
+	return db.ConnectionID(connectionID), nil
+}
+
 func (s *Server) buildImageHandler(w http.ResponseWriter, r *http.Request) {
 	allow, user := Authorization{s, w, r}.allowUploadIntoBuild()
 	if user == nil || !allow {
@@ -175,6 +192,11 @@ func (s *Server) buildImageHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	buildID := vars["buildID"]
 	buildDir := filepath.Join(s.tmpDir, buildsTmpDir, buildID)
+
+	connectionID, err := s.getConnectionIDParam(r)
+	if err != nil {
+		Response{w}.ClientError("bad connectionID", err)
+	}
 
 	mr, err := r.MultipartReader()
 	if err != nil {
@@ -227,7 +249,7 @@ func (s *Server) buildImageHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		service, err = s.pier.BuildService(user.ID, buildDir)
+		service, err = s.pier.BuildService(connectionID, user.ID, buildDir)
 		if err != nil {
 			Response{w}.ServerError("build service failed: ", err)
 			return
@@ -237,7 +259,7 @@ func (s *Server) buildImageHandler(w http.ResponseWriter, r *http.Request) {
 		if tarFileFound {
 			log.Println("Docker image file has been detected, trying to import")
 			log.Println(filepath.Join(buildDir, foundImageFileName))
-			service, err = s.pier.ImportImage(user.ID, filepath.Join(buildDir, foundImageFileName))
+			service, err = s.pier.ImportImage(connectionID, user.ID, filepath.Join(buildDir, foundImageFileName))
 			if err != nil {
 				Response{w}.ServerError("while importing a Docker image file ", err)
 				return
@@ -306,12 +328,19 @@ func (s *Server) editServiceHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = s.db.RemoveService(user.ID, service.ID)
+	oldService, err := s.db.GetService(service.ID)
+	if err != nil {
+		Response{w}.ClientError("cannot retrieve old version of the service", err)
+		return
+	}
+
+	err = s.db.RemoveService(service.ID)
 	if err != nil {
 		Response{w}.ClientError("cannot remove service", err)
 		return
 	}
 
+	service.ConnectionID = oldService.ConnectionID
 	err = s.db.AddService(user.ID, service)
 	if err != nil {
 		Response{w}.ClientError("cannot add service", err)
@@ -336,7 +365,7 @@ func (s *Server) removeServiceHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = s.db.RemoveService(user.ID, serviceID)
+	err = s.db.RemoveService(serviceID)
 	if err != nil {
 		Response{w}.ClientError("cannot remove service", err)
 		return
@@ -436,7 +465,7 @@ func (s *Server) inspectJobHandler(w http.ResponseWriter, r *http.Request) {
 func (s *Server) removeJobHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	jobID := db.JobID(vars["jobID"])
-	allow, user := Authorization{s, w, r}.allowRemoveJob(jobID)
+	allow, _ := Authorization{s, w, r}.allowRemoveJob(jobID)
 	if !allow {
 		return
 	}
@@ -447,7 +476,7 @@ func (s *Server) removeJobHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = s.db.RemoveJob(user.ID, jobID)
+	err = s.db.RemoveJob(jobID)
 	if err != nil {
 		Response{w}.ClientError(err.Error(), err)
 		return

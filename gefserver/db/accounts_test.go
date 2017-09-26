@@ -51,16 +51,17 @@ func TestServiceAndOwnership(t *testing.T) {
 	user1 := AddTestUser(t, db, name1, email1)
 
 	service := Service{
-		ID:          ServiceID("service_test_id"),
-		Name:        "service name",
-		RepoTag:     "service repo tag",
-		Description: "service description",
+		ID:           ServiceID("service_test_id"),
+		ConnectionID: ConnectionID(1),
+		Name:         "service name",
+		RepoTag:      "service repo tag",
+		Description:  "service description",
 	}
 	err = db.AddService(user1.ID, service)
 	CheckErr(t, err)
 	Expect(t, db.IsServiceOwner(user1.ID, service.ID))
 
-	err = db.RemoveService(user1.ID, service.ID)
+	err = db.RemoveService(service.ID)
 	CheckErr(t, err)
 	Expect(t, !db.IsServiceOwner(user1.ID, service.ID))
 

@@ -12,18 +12,19 @@ type Bind struct {
 
 // Service describes metadata for a GEF service (used to serialize JSON)
 type Service struct {
-	ID          ServiceID
-	ImageID     ImageID
-	Name        string
-	RepoTag     string
-	Description string
-	Version     string
-	Cmd         []string
-	Created     time.Time
-	Deleted     bool
-	Size        int64
-	Input       []IOPort
-	Output      []IOPort
+	ID           ServiceID
+	ConnectionID ConnectionID
+	ImageID      ImageID
+	Name         string
+	RepoTag      string
+	Description  string
+	Version      string
+	Cmd          []string
+	Created      time.Time
+	Deleted      bool
+	Size         int64
+	Input        []IOPort
+	Output       []IOPort
 }
 
 // ServiceID exported
