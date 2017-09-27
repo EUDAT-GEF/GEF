@@ -22,7 +22,7 @@ This documentation includes:
    3. [GEF Service Metadata](#service_metadata)
 2. [The GEF Testing Instance](#testing_instance)
 3. [GEF Architecture](#architecture)
-   1. [What Does GEF Service Deployment Close to the Data Really Mean?](#deployment_close_to_the_data)
+   1. [What Does GEF Service Deployment Close to the Data Really Mean?](#deployment_close_to_the_data)
 4. [Installing the GEF](#installing)
    1. [GEF Server Installation and Deployment](#server_installation)
    2. [GEF Server Installation from Sources and Deployment](#server_installation_sources)
