@@ -22,8 +22,12 @@ This documentation includes:
    3. [GEF Service Metadata](#service_metadata)
 2. [The GEF Testing Instance](#testing_instance)
 3. [GEF Architecture](#architecture)
+<<<<<<< HEAD
    1. [What Does GEF Service Deployment Close to the Data Really Mean?](#deployment_close_to_the_data)
    2. [Known Issues](#known_issues)
+=======
+   1. [What Does GEF Service Deployment Close to the Data Really Mean?](#deployment_close_to_the_data)
+>>>>>>> included an architecture section on data transfers
 4. [Installing the GEF](#installing)
    1. [GEF Server Installation and Deployment](#server_installation)
    2. [GEF Server Installation from Sources and Deployment](#server_installation_sources)
@@ -89,6 +93,7 @@ Please note that the GEF frontend, GEF backend, and the Docker Swarm manager nod
 
 It is up to the user to choose a machine with a Docker installation or a Docker Swarm to connect the GEF backend to and to configure the GEF accordingly. The actual proximity of this chosen location and the storage location of the input data is the main factor in determining the data transfer distance and cost. This distance can be across the entire globe or within a local network. Ideally for leveraging the architecture of the GEF to minimize data transfers, the Docker installation where GEF services are invoked is located on the same machine as the input data, but we expect that in most cases it will only be in the vicinity of it. With the current internal configuration of the GEF even in this ideal case, input data still need to be transferred into the container where data-processing takes place. This means there is always a data transfer that currently cannot be avoided. In the near future, site administrators will be able to configure their GEF backend to access folders on the installation machine directly. But by default, this feature will be disabled for security reasons.
 
+<<<<<<< HEAD
 ### Known Issues<a name="known_issues"></a>
 
 Since the GEF is still in development, it is expected that it will still undergo changes until the project ends. You can follow the known issues that we are working on via Github. And to start with, please be aware of the following:
@@ -96,6 +101,8 @@ Since the GEF is still in development, it is expected that it will still undergo
 - we have tested the GEF GUI with several internet browsers and we recommend using the latest versions of 'Google Chrome' or 'Mozilla Firefox'. Older versions of these browsers and 'Apple Safari' have exhibited unexpected behaviour when viewing the GEF pages.
 
 
+=======
+>>>>>>> included an architecture section on data transfers
 ## Installing the GEF<a name="architecture"></a>
 
 If you want to install the GEF yourself and build your own services, either use the 64-bit Linux binary we provide or follow the installation instructions below. This will allow you to build your own GEF service with a Dockerfile and execute it. Please refer to the original Docker [documentation](https://docs.docker.com/engine/reference/builder/) for more information on Dockerfiles. Also be aware of the best practices published [here](https://docs.docker.com/engine/userguide/eng-image/dockerfile_best-practices/). Building GEF services from Dockerfiles is explained below.
