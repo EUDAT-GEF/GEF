@@ -22,6 +22,7 @@ This documentation includes:
    3. [GEF Service Metadata](#service_metadata)
 2. [The GEF Testing Instance](#testing_instance)
 3. [GEF Architecture](#architecture)
+   1. [What Does GEF Service Deployment Close to the Data Really Mean?](#deployment_close_to_the_data)
 4. [Installing the GEF](#installing)
    1. [GEF Server Installation and Deployment](#server_installation)
    2. [GEF Server Installation from Sources and Deployment](#server_installation_sources)
@@ -82,6 +83,10 @@ This section includes a description of the main GEF components and how they inte
 ![alt text](https://raw.githubusercontent.com/EUDAT-GEF/GEF/f9b329be1ea5fe6e4c52b8b8516fa03f76a41685/doc/images/GEF_arch_diagram.png)
 
 Please note that the GEF frontend, GEF backend, and the Docker Swarm manager node to which the GEF backend is a client interact via HTTP/HTTPS. This allows colocation of all components as well as the distributed deployment depicted here. Also note that although Docker Swarm was chosen in this diagram, the GEF backend can still operate with a single Docker Server without having to rely on the swarm mode. The GEF service repository shown in a subdued tone is a future component that is still being conceptualized.
+
+### What Does GEF Service Deployment Close to the Data Really Mean?<a name="deployment_close_to_the_data"></a>
+
+It is up to the user to choose a machine with a Docker installation or a Docker Swarm to connect the GEF backend to and to configure the GEF accordingly. The actual proximity of this chosen location and the storage location of the input data is the main factor in determining the data transfer distance and cost. This distance can be across the entire globe or within a local network. Ideally for leveraging the architecture of the GEF to minimize data transfers, the Docker installation where GEF services are invoked is located on the same machine as the input data, but we expect that in most cases it will only be in the vicinity of it. With the current internal configuration of the GEF even in this ideal case, input data still need to be transferred into the container where data-processing takes place. This means there is always a data transfer that currently cannot be avoided. In the near future, site administrators will be able to configure their GEF backend to access folders on the installation machine directly. But by default, this feature will be disabled for security reasons.
 
 ## Installing the GEF<a name="architecture"></a>
 
