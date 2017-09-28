@@ -12,6 +12,8 @@ The GEF is a software developed in the frame of [EUDAT 2020](https://eudat.eu) a
 
 The software has grown to a beta release version that is capable of processing data stored in [B2SHARE](https://b2share.eudat.eu) and [B2DROP](https://www.eudat.eu/services/b2drop). Support for [B2SAFE](https://github.com/EUDAT-B2SAFE/B2SAFE-core) will follow in the remaining time of the project. The GEF is still in development and will only reach its full functionality at the end of the EUDAT 2020 project.
 
+Please be aware that while this repository is licensed under the GNU General Public License v2.0, usage of operational EUDAT services like the ones mentioned above (B2SHARE, B2SAFE, ...) is bound to the [EUDAT Services Terms of Use](http://hdl.handle.net/11304/e43b2e3f-83c5-4e3f-b8b7-18d38d37a6cd).
+
 ---
 
 This documentation includes:
