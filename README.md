@@ -100,7 +100,7 @@ Since the GEF is still in development, it is expected that it will still undergo
 
 ## Installing the GEF<a name="installing"></a>
 
-If you want to install the GEF yourself and build your own services, either use the 64-bit Linux binary you can build (see **Packaging GEF Source Code for Deployment** section) or follow the installation instructions below. This will allow you to build your own GEF service with a Dockerfile and execute it. Please refer to the original Docker [documentation](https://docs.docker.com/engine/reference/builder/) for more information on Dockerfiles. Also be aware of the best practices published [here](https://docs.docker.com/engine/userguide/eng-image/dockerfile_best-practices/). Building GEF services from Dockerfiles is explained below.
+If you want to install the GEF yourself and build your own services, either use the 64-bit Linux binary you can build (see [Packaging GEF Source Code for Deployment](#packaging_code) section) or follow the installation instructions below. This will allow you to build your own GEF service with a Dockerfile and execute it. Please refer to the original Docker [documentation](https://docs.docker.com/engine/reference/builder/) for more information on Dockerfiles. Also be aware of the best practices published [here](https://docs.docker.com/engine/userguide/eng-image/dockerfile_best-practices/). Building GEF services from Dockerfiles is explained below.
 
 
 ### GEF Server Installation and Deployment<a name="server_installation"></a>
