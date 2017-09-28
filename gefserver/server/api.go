@@ -167,7 +167,6 @@ func (s *Server) newBuildImageHandler(w http.ResponseWriter, r *http.Request, e 
 	Response{w}.Location(loc).Created(jmap("Location", loc, "buildID", buildID))
 }
 
-<<<<<<< HEAD
 func (s *Server) getConnectionIDParam(r *http.Request) (db.ConnectionID, error) {
 	vars := mux.Vars(r)
 	connectionIDString := vars["connectionID"]
