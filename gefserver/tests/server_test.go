@@ -49,6 +49,7 @@ func TestServer(t *testing.T) {
 	adminToken := token.Secret
 
 	pier, err := pier.NewPier(&db, config.Pier, config.TmpDir, config.Timeouts)
+
 	CheckErr(t, err)
 
 	// connID, err := pier.AddDockerConnection(0, config.Docker)
