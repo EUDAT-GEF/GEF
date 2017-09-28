@@ -15,7 +15,7 @@ import (
 	"github.com/EUDAT-GEF/GEF/gefserver/def"
 )
 
-func (s *Server) decorate(fn func(http.ResponseWriter, *http.Request), actionType string) func(http.ResponseWriter, *http.Request) {
+func (s *Server) decorate(fn func(http.ResponseWriter, *http.Request, environment), actionType string) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		logRequest(r)
 		user, err := s.getCurrentUser(r)
@@ -34,12 +34,12 @@ func (s *Server) decorate(fn func(http.ResponseWriter, *http.Request), actionTyp
 		}
 		sysStatistics.TotalRunningJobs = s.db.CountRunningJobs()
 
-		allow, closefn := signalEvent(actionType, user, userEnv, sysStatistics, r)
+		allow, closefn, env := signalEvent(actionType, user, userEnv, sysStatistics, r)
 		if !allow {
 			Response{w}.DirectiveError()
 		} else {
 			defer closefn()
-			fn(w, r)
+			fn(w, r, env)
 		}
 	}
 }
@@ -130,7 +130,7 @@ func (es eventSystem) dispatch(action string, user *db.User, userEnv environment
 				log.Printf("event system: post url ERROR: %#v\n", e)
 			}
 			log.Printf("event system: post ERROR: %#v\n", err)
-			return true,  resp
+			return true, resp
 		}
 		if 400 <= resp.StatusCode && resp.StatusCode < 500 {
 			log.Printf("event system: post client ERROR: %#v\n", resp)
@@ -141,13 +141,14 @@ func (es eventSystem) dispatch(action string, user *db.User, userEnv environment
 	return true, nil
 }
 
-func signalEvent(action string, user *db.User, userEnv environment, sysStatistics statistics, r *http.Request) (allow bool, closefn func()) {
+func signalEvent(action string, user *db.User, userEnv environment, sysStatistics statistics, r *http.Request) (allow bool, closefn func(), env environment) {
 	fn := func() {}
+	newEnv := environment{}
 	ret, resp := eventSys.dispatch(action, user, userEnv, sysStatistics, r, true)
 	if resp != nil {
 		defer resp.Body.Close()
 
-		newEnv := environment{}
+
 		err := json.NewDecoder(resp.Body).Decode(&newEnv)
 		if err != nil {
 			log.Printf("event system response parsing error: %#v\n", err)
@@ -158,5 +159,5 @@ func signalEvent(action string, user *db.User, userEnv environment, sysStatistic
 			}
 		}
 	}
-	return ret, fn
+	return ret, fn, newEnv
 }

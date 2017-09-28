@@ -34,7 +34,7 @@ func init() {
 
 // user  related handlers
 
-func (s *Server) userHandler(w http.ResponseWriter, r *http.Request) {
+func (s *Server) userHandler(w http.ResponseWriter, r *http.Request, e environment) {
 	user, err := s.getCurrentUser(r)
 	if err != nil {
 		Response{w}.Ok(jmap("Error", err.Error()))
@@ -56,7 +56,7 @@ func (s *Server) userHandler(w http.ResponseWriter, r *http.Request) {
 		"Roles", roles))
 }
 
-func (s *Server) logoutHandler(w http.ResponseWriter, r *http.Request) {
+func (s *Server) logoutHandler(w http.ResponseWriter, r *http.Request, e environment) {
 	session, err := cookieStore.Get(r, sessionName)
 	if err != nil {
 		Response{w}.ServerError("Cookie store error", err)
@@ -67,7 +67,7 @@ func (s *Server) logoutHandler(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/", 302)
 }
 
-func (s *Server) newTokenHandler(w http.ResponseWriter, r *http.Request) {
+func (s *Server) newTokenHandler(w http.ResponseWriter, r *http.Request, e environment) {
 	allow, user := Authorization{s, w, r}.allowCreateToken()
 	if user == nil || !allow {
 		return
@@ -89,7 +89,7 @@ func (s *Server) newTokenHandler(w http.ResponseWriter, r *http.Request) {
 	Response{w}.Created(jmap("Token", token))
 }
 
-func (s *Server) listTokenHandler(w http.ResponseWriter, r *http.Request) {
+func (s *Server) listTokenHandler(w http.ResponseWriter, r *http.Request, e environment) {
 	allow, user := Authorization{s, w, r}.allowGetTokens()
 	if user == nil || !allow {
 		return
@@ -106,7 +106,7 @@ func (s *Server) listTokenHandler(w http.ResponseWriter, r *http.Request) {
 	Response{w}.Ok(jmap("Tokens", tokens))
 }
 
-func (s *Server) removeTokenHandler(w http.ResponseWriter, r *http.Request) {
+func (s *Server) removeTokenHandler(w http.ResponseWriter, r *http.Request, e environment) {
 	vars := mux.Vars(r)
 	tokenIDStr := vars["tokenID"]
 	tokenID, err := strconv.ParseInt(tokenIDStr, 10, 64)
@@ -137,7 +137,7 @@ func (s *Server) removeTokenHandler(w http.ResponseWriter, r *http.Request) {
 
 // role related handlers
 
-func (s *Server) listRolesHandler(w http.ResponseWriter, r *http.Request) {
+func (s *Server) listRolesHandler(w http.ResponseWriter, r *http.Request, e environment) {
 	allow, _ := Authorization{s, w, r}.allowListRoles()
 	if !allow {
 		return
@@ -151,7 +151,7 @@ func (s *Server) listRolesHandler(w http.ResponseWriter, r *http.Request) {
 	Response{w}.Ok(jmap("Roles", roles))
 }
 
-func (s *Server) listRoleUsersHandler(w http.ResponseWriter, r *http.Request) {
+func (s *Server) listRoleUsersHandler(w http.ResponseWriter, r *http.Request, e environment) {
 	allow, _ := Authorization{s, w, r}.allowListRoleUsers()
 	if !allow {
 		return
@@ -173,7 +173,7 @@ func (s *Server) listRoleUsersHandler(w http.ResponseWriter, r *http.Request) {
 	Response{w}.Ok(jmap("Users", roles))
 }
 
-func (s *Server) newRoleUserHandler(w http.ResponseWriter, r *http.Request) {
+func (s *Server) newRoleUserHandler(w http.ResponseWriter, r *http.Request, e environment) {
 	allow, _ := Authorization{s, w, r}.allowNewRoleUser()
 	if !allow {
 		return
@@ -207,7 +207,7 @@ func (s *Server) newRoleUserHandler(w http.ResponseWriter, r *http.Request) {
 	Response{w}.Ok("")
 }
 
-func (s *Server) removeRoleUserHandler(w http.ResponseWriter, r *http.Request) {
+func (s *Server) removeRoleUserHandler(w http.ResponseWriter, r *http.Request, e environment) {
 	allow, _ := Authorization{s, w, r}.allowDeleteRoleUser()
 	if !allow {
 		return
@@ -327,7 +327,7 @@ func initB2Access(cfg def.B2AccessConfig) {
 	userInfoURL = cfg.BaseURL + "oauth2/userinfo"
 }
 
-func (s *Server) oauthLoginHandler(w http.ResponseWriter, r *http.Request) {
+func (s *Server) oauthLoginHandler(w http.ResponseWriter, r *http.Request, e environment) {
 	statebuf := make([]byte, 16)
 	rand.Read(statebuf)
 	state := base64.URLEncoding.EncodeToString(statebuf)
