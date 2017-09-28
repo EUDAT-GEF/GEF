@@ -70,7 +70,7 @@ func NewServer(cfg def.Configuration, pier *pier.Pier, database *db.Db) (*Server
 
 	routes := []struct {
 		route       string
-		handler     func(http.ResponseWriter, *http.Request)
+		handler     func(http.ResponseWriter, *http.Request, environment)
 		description string
 	}{
 		{"GET /", server.infoHandler, "misc"},
@@ -143,12 +143,12 @@ func (s *Server) Start() error {
 	return s.Server.ListenAndServeTLS(s.TLSCertificateFilePath, s.TLSKeyFilePath)
 }
 
-func (s *Server) infoHandler(w http.ResponseWriter, r *http.Request) {
+func (s *Server) infoHandler(w http.ResponseWriter, r *http.Request, e environment) {
 	Response{w}.Ok(jmap("ServiceName", ServiceName, "Version", Version,
 		"ContactLink", s.administration.ContactLink))
 }
 
-func (s *Server) newBuildImageHandler(w http.ResponseWriter, r *http.Request) {
+func (s *Server) newBuildImageHandler(w http.ResponseWriter, r *http.Request, e environment) {
 	allow, user := Authorization{s, w, r}.allowCreateBuild()
 	if user == nil || !allow {
 		return
@@ -183,7 +183,7 @@ func (s *Server) getConnectionIDParam(r *http.Request) (db.ConnectionID, error) 
 	return db.ConnectionID(connectionID), nil
 }
 
-func (s *Server) buildImageHandler(w http.ResponseWriter, r *http.Request) {
+func (s *Server) buildImageHandler(w http.ResponseWriter, r *http.Request, e environment) {
 	allow, user := Authorization{s, w, r}.allowUploadIntoBuild()
 	if user == nil || !allow {
 		return
@@ -275,7 +275,7 @@ func (s *Server) buildImageHandler(w http.ResponseWriter, r *http.Request) {
 	Response{w}.Ok(jmap("Service", service))
 }
 
-func (s *Server) listServicesHandler(w http.ResponseWriter, r *http.Request) {
+func (s *Server) listServicesHandler(w http.ResponseWriter, r *http.Request, e environment) {
 	allow, _ := Authorization{s, w, r}.allowListServices()
 	if !allow {
 		return
@@ -288,7 +288,7 @@ func (s *Server) listServicesHandler(w http.ResponseWriter, r *http.Request) {
 	Response{w}.Ok(jmap("Services", services))
 }
 
-func (s *Server) inspectServiceHandler(w http.ResponseWriter, r *http.Request) {
+func (s *Server) inspectServiceHandler(w http.ResponseWriter, r *http.Request, e environment) {
 	vars := mux.Vars(r)
 	serviceID := db.ServiceID(vars["serviceID"])
 
@@ -305,7 +305,7 @@ func (s *Server) inspectServiceHandler(w http.ResponseWriter, r *http.Request) {
 	Response{w}.Ok(jmap("Service", service))
 }
 
-func (s *Server) editServiceHandler(w http.ResponseWriter, r *http.Request) {
+func (s *Server) editServiceHandler(w http.ResponseWriter, r *http.Request, e environment) {
 	vars := mux.Vars(r)
 	serviceID := db.ServiceID(vars["serviceID"])
 
@@ -350,7 +350,7 @@ func (s *Server) editServiceHandler(w http.ResponseWriter, r *http.Request) {
 	Response{w}.Ok(jmap("Service", service))
 }
 
-func (s *Server) removeServiceHandler(w http.ResponseWriter, r *http.Request) {
+func (s *Server) removeServiceHandler(w http.ResponseWriter, r *http.Request, e environment) {
 	vars := mux.Vars(r)
 	serviceID := db.ServiceID(vars["serviceID"])
 
@@ -382,7 +382,7 @@ func (s *Server) removeServiceHandler(w http.ResponseWriter, r *http.Request) {
 	Response{w}.Ok(jmap("Service", service))
 }
 
-func (s *Server) executeServiceHandler(w http.ResponseWriter, r *http.Request) {
+func (s *Server) executeServiceHandler(w http.ResponseWriter, r *http.Request, e environment) {
 	serviceID := r.FormValue("serviceID")
 	if serviceID == "" {
 		vars := mux.Vars(r)
@@ -431,7 +431,7 @@ func (s *Server) executeServiceHandler(w http.ResponseWriter, r *http.Request) {
 	Response{w}.Location(loc).Created(jmap("Location", loc, "jobID", job.ID))
 }
 
-func (s *Server) listJobsHandler(w http.ResponseWriter, r *http.Request) {
+func (s *Server) listJobsHandler(w http.ResponseWriter, r *http.Request, e environment) {
 	allow, _ := Authorization{s, w, r}.allowListJobs()
 	if !allow {
 		return
@@ -446,7 +446,7 @@ func (s *Server) listJobsHandler(w http.ResponseWriter, r *http.Request) {
 	Response{w}.Ok(jmap("Jobs", jobs))
 }
 
-func (s *Server) inspectJobHandler(w http.ResponseWriter, r *http.Request) {
+func (s *Server) inspectJobHandler(w http.ResponseWriter, r *http.Request, e environment) {
 	vars := mux.Vars(r)
 	jobID := db.JobID(vars["jobID"])
 	allow, _ := Authorization{s, w, r}.allowInspectJob(jobID)
@@ -462,7 +462,7 @@ func (s *Server) inspectJobHandler(w http.ResponseWriter, r *http.Request) {
 	Response{w}.Ok(jmap("Job", job))
 }
 
-func (s *Server) removeJobHandler(w http.ResponseWriter, r *http.Request) {
+func (s *Server) removeJobHandler(w http.ResponseWriter, r *http.Request, e environment) {
 	vars := mux.Vars(r)
 	jobID := db.JobID(vars["jobID"])
 	allow, _ := Authorization{s, w, r}.allowRemoveJob(jobID)
@@ -484,7 +484,7 @@ func (s *Server) removeJobHandler(w http.ResponseWriter, r *http.Request) {
 	Response{w}.Ok(jmap("Job", job))
 }
 
-func (s *Server) volumeContentHandler(w http.ResponseWriter, r *http.Request) {
+func (s *Server) volumeContentHandler(w http.ResponseWriter, r *http.Request, e environment) {
 	vars := mux.Vars(r)
 	volumeID := vars["volumeID"]
 	job, err := s.db.GetJobOwningVolume(volumeID)
