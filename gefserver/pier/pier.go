@@ -255,7 +255,7 @@ func (p *Pier) startTimeOutTicker(jobId db.JobID, timeOut float64) {
 }
 
 // RunService exported
-func (p *Pier) RunService(userID int64, id db.ServiceID, inputPID string, limits def.LimitConfig, timeouts def.TimeoutConfig) (db.Job, error) {
+func (p *Pier) RunService(userID int64, id db.ServiceID, inputSrc string, limits def.LimitConfig, timeouts def.TimeoutConfig) (db.Job, error) {
 	service, err := p.db.GetService(id)
 	if err != nil {
 		return db.Job{}, err
@@ -267,7 +267,7 @@ func (p *Pier) RunService(userID int64, id db.ServiceID, inputPID string, limits
 		ConnectionID: service.ConnectionID,
 		ServiceID:    service.ID,
 		Created:      time.Now(),
-		Input:        inputPID,
+		Input:        inputSrc,
 		State:        &jobState,
 	}
 
@@ -276,11 +276,11 @@ func (p *Pier) RunService(userID int64, id db.ServiceID, inputPID string, limits
 		return job, err
 	}
 
-	if len(inputPID) == 0 {
+	if len(inputSrc) == 0 {
 		return job, def.Err(err, "no input data was provided")
 	}
 
-	go p.runJob(&job, service, inputPID, limits, timeouts)
+	go p.runJob(&job, service, inputSrc, limits, timeouts)
 
 	return job, err
 }
@@ -292,7 +292,7 @@ func (p *Pier) updateJobDurationTime(job db.Job) {
 	}
 }
 
-func (p *Pier) runJob(job *db.Job, service db.Service, inputPID string, limits def.LimitConfig, timeouts def.TimeoutConfig) {
+func (p *Pier) runJob(job *db.Job, service db.Service, inputSrc string, limits def.LimitConfig, timeouts def.TimeoutConfig) {
 	err2str := func(err error) string {
 		if err == nil {
 			return ""
@@ -338,10 +338,18 @@ func (p *Pier) runJob(job *db.Job, service db.Service, inputPID string, limits d
 			dckr.NewVolBind(inputVolume.ID, "/volume", false),
 		}
 
+		inputArray := strings.Split(inputSrc, "\n")
+		var stagingCmd []string
+		stagingCmd = append(docker.stageIn.cmd)
+		for i := range inputArray {
+			stagingCmd = append(stagingCmd, inputArray[i])
+		}
+
 		containerID, swarmServiceID, exitCode, output, err := docker.client.ExecuteImage(
 			string(docker.stageIn.id),
 			docker.stageIn.repoTag,
-			append(docker.stageIn.cmd, inputPID),
+			//append(docker.stageIn.cmd, inputSrc),
+			stagingCmd,
 			binds,
 			limits,
 			timeouts,

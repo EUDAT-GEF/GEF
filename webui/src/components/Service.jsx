@@ -3,7 +3,7 @@
  */
 import React from 'react';
 import PropTypes from 'prop-types';
-import { Row, Col, Grid, Table, Button, Modal, OverlayTrigger, FormGroup, ControlLabel } from 'react-bootstrap';
+import { Row, Col, Grid, Table, Button, Modal, OverlayTrigger, FormGroup, ControlLabel, Glyphicon } from 'react-bootstrap';
 import {Field, FieldArray, reduxForm, initialize} from 'redux-form';
 // this is a detailed view of a service, user will be able to execute service in this view
 
@@ -24,9 +24,9 @@ const tagValueRow  = (tag, value) => (
 );
 
 const JobCreatorForm = (props) => {
-    const { handleSubmit, pristine, reset, submitting, service } = props;
+    const { handleSubmit, handleModalOpen, handleRemoveService, pristine, reset, submitting, service } = props;
     const inputStyle = {
-        height: '34px',
+        height: '70px',
         padding: '6px 12px',
         fontSize: '14px',
         lineHeight: '1.42857143',
@@ -36,6 +36,9 @@ const JobCreatorForm = (props) => {
         border: '1px solid #ccc',
         borderRadius: '4px',
     }
+    const toolbarStyle = {
+        padding: '5px',
+    }
     return (
         <form onSubmit={handleSubmit}>
             <Row>
@@ -44,13 +47,15 @@ const JobCreatorForm = (props) => {
                 </Col>
                 <Col xs={12} sm={9} md={9} >
                     <div className="input-group">
-                        <Field name="pid" component="input" type="text" placeholder="Put your PID or URL"
-                               style={inputStyle} className="form-control"/>
-                        <span className="input-group-btn">
-                            <button type="submit" className="btn btn-default" onClick={handleSubmit} disabled={pristine || submitting}>
-                                <span className="glyphicon glyphicon-play" aria-hidden="true"></span> Submit
-                            </button>
-                        </span>
+                        <Field name="pid" component="textarea" placeholder="Put your PIDs or URLs here (one per line)" style={inputStyle} className="form-control"/>
+
+                        <div className="text-center">
+                            <div className="btn-group" role="group" aria-label="toolbar" style={toolbarStyle}>
+                                <Button onClick={handleSubmit} disabled={pristine || submitting}><Glyphicon glyph="play"/> Start a New Job</Button>
+                                <Button onClick={handleModalOpen}><Glyphicon glyph="edit"/> Edit Metadata</Button>
+                                <Button onClick={handleRemoveService}><Glyphicon glyph="trash"/> Remove the Service</Button>
+                            </div>
+                        </div>
                     </div>
                 </Col>
             </Row>
@@ -273,15 +278,7 @@ class Service extends React.Component {
                             {tagValueRow("ID", ID)}
                             {tagValueRow("Description", Description)}
                             {tagValueRow("Version", Version)}
-                            <JobCreator handleSubmit={this.handleSubmit} service={this.props.selectedService.Service}/>
-                            <button type="submit" className="btn btn-default" onClick={this.handleModalOpen.bind(this)}>
-                                <span className="glyphicon glyphicon-edit" aria-hidden="true"></span> Edit Metadata
-                            </button>
-                            <button type="button" className="btn btn-default" onClick={this.handleRemoveService.bind(this)}>
-                                <span className="glyphicon glyphicon-trash" aria-hidden="true"></span> Remove
-                            </button>
-
-                            <div style={{height: "1em"}}></div>
+                            <JobCreator handleSubmit={this.handleSubmit} handleModalOpen={this.handleModalOpen.bind(this)} handleRemoveService={this.handleRemoveService.bind(this)} service={this.props.selectedService.Service}/>
                         </div>
                     </div>
 
