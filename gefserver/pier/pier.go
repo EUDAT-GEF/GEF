@@ -293,6 +293,8 @@ func (p *Pier) updateJobDurationTime(job db.Job) {
 }
 
 func (p *Pier) runJob(job *db.Job, service db.Service, inputSrc string, limits def.LimitConfig, timeouts def.TimeoutConfig) {
+	inputArray := strings.Split(inputSrc, "\n")
+
 	err2str := func(err error) string {
 		if err == nil {
 			return ""
@@ -308,24 +310,28 @@ func (p *Pier) runJob(job *db.Job, service db.Service, inputSrc string, limits d
 	}
 
 	var err error
-	var inputVolume dckr.Volume
+	var inputVolumes []dckr.Volume
 	{
-		err = p.db.SetJobState(job.ID, db.NewJobStateOk("Creating a new input volume", -1))
-		if err != nil {
-			log.Println(err)
-		}
-		inputVolume, err = docker.client.NewVolume()
-		if err != nil {
-			err = p.db.SetJobState(job.ID, db.NewJobStateError("Error while creating new input volume", 1))
+		for i := range inputArray {
+			err = p.db.SetJobState(job.ID, db.NewJobStateOk("Creating a new input volume #"+string(i+1), -1))
 			if err != nil {
 				log.Println(err)
 			}
-			p.updateJobDurationTime(*job)
-			return
-		}
-		err = p.db.SetJobInputVolume(job.ID, db.VolumeID(inputVolume.ID))
-		if err != nil {
-			log.Println(err)
+			var curInputVolume dckr.Volume
+			curInputVolume, err = docker.client.NewVolume()
+			inputVolumes = append(inputVolumes, curInputVolume)
+			if err != nil {
+				err = p.db.SetJobState(job.ID, db.NewJobStateError("Error while creating new input volume #"+string(i+1), 1))
+				if err != nil {
+					log.Println(err)
+				}
+				p.updateJobDurationTime(*job)
+				return
+			}
+			err = p.db.AddJobInputVolume(job.ID, db.VolumeID(curInputVolume.ID))
+			if err != nil {
+				log.Println(err)
+			}
 		}
 	}
 
@@ -334,70 +340,70 @@ func (p *Pier) runJob(job *db.Job, service db.Service, inputSrc string, limits d
 		if err != nil {
 			log.Println(err)
 		}
-		binds := []dckr.VolBind{
-			dckr.NewVolBind(inputVolume.ID, "/volume", false),
-		}
 
-		inputArray := strings.Split(inputSrc, "\n")
-		var stagingCmd []string
-		stagingCmd = append(docker.stageIn.cmd)
 		for i := range inputArray {
-			stagingCmd = append(stagingCmd, inputArray[i])
-		}
-
-		containerID, swarmServiceID, exitCode, output, err := docker.client.ExecuteImage(
-			string(docker.stageIn.id),
-			docker.stageIn.repoTag,
-			//append(docker.stageIn.cmd, inputSrc),
-			stagingCmd,
-			binds,
-			limits,
-			timeouts,
-			true)
-
-		dbErr := p.db.AddJobTask(job.ID, "Data staging", string(containerID), swarmServiceID, err2str(err), exitCode, output)
-		if dbErr != nil {
-			log.Println(dbErr)
-		}
-
-		if err != nil {
-			err = p.db.SetJobState(job.ID, db.NewJobStateError("Data staging failed", 1))
-			if err != nil {
-				log.Println(err)
+			binds := []dckr.VolBind{
+				dckr.NewVolBind(inputVolumes[i].ID, "/volume", false),
 			}
-			p.updateJobDurationTime(*job)
-			return
-		}
 
-		if exitCode != 0 {
-			msg := fmt.Sprintf("Data staging failed (exitCode = %v)", exitCode)
-			err = p.db.SetJobState(job.ID, db.NewJobStateOk(msg, 1))
-			if err != nil {
-				log.Println(err)
+			containerID, swarmServiceID, exitCode, output, err := docker.client.ExecuteImage(
+				string(docker.stageIn.id),
+				docker.stageIn.repoTag,
+				append(docker.stageIn.cmd, inputArray[i]),
+				binds,
+				limits,
+				timeouts,
+				true)
+
+			dbErr := p.db.AddJobTask(job.ID, "Data staging #"+string(i+1), string(containerID), swarmServiceID, err2str(err), exitCode, output)
+			if dbErr != nil {
+				log.Println(dbErr)
 			}
-			p.updateJobDurationTime(*job)
-			return
+
+			if err != nil {
+				err = p.db.SetJobState(job.ID, db.NewJobStateError("Data staging #"+string(i+1)+" failed", 1))
+				if err != nil {
+					log.Println(err)
+				}
+				p.updateJobDurationTime(*job)
+				return
+			}
+
+			if exitCode != 0 {
+				msg := fmt.Sprintf("Data staging #"+string(i+1)+" failed (exitCode = %v)", exitCode)
+				err = p.db.SetJobState(job.ID, db.NewJobStateOk(msg, 1))
+				if err != nil {
+					log.Println(err)
+				}
+				p.updateJobDurationTime(*job)
+				return
+			}
 		}
 	}
 
-	var outputVolume dckr.Volume
+	var outputVolumes []dckr.Volume
 	{
-		err = p.db.SetJobState(job.ID, db.NewJobStateOk("Creating a new output volume", -1))
-		if err != nil {
-			log.Println(err)
-		}
-		outputVolume, err = docker.client.NewVolume()
-		if err != nil {
-			err = p.db.SetJobState(job.ID, db.NewJobStateError("Error while creating new output volume", 1))
+		for i := range service.Output {
+			err = p.db.SetJobState(job.ID, db.NewJobStateOk("Creating a new output volume #"+string(i+1), -1))
 			if err != nil {
 				log.Println(err)
 			}
-			p.updateJobDurationTime(*job)
-			return
-		}
-		err = p.db.SetJobOutputVolume(job.ID, db.VolumeID(outputVolume.ID))
-		if err != nil {
-			log.Println(err)
+
+			var curOutputVolume dckr.Volume
+			curOutputVolume, err = docker.client.NewVolume()
+			outputVolumes = append(outputVolumes, curOutputVolume)
+			if err != nil {
+				err = p.db.SetJobState(job.ID, db.NewJobStateError("Error while creating new output volume #"+string(i+1), 1))
+				if err != nil {
+					log.Println(err)
+				}
+				p.updateJobDurationTime(*job)
+				return
+			}
+			err = p.db.SetJobOutputVolume(job.ID, db.VolumeID(curOutputVolume.ID))
+			if err != nil {
+				log.Println(err)
+			}
 		}
 	}
 
@@ -407,10 +413,15 @@ func (p *Pier) runJob(job *db.Job, service db.Service, inputSrc string, limits d
 		if err != nil {
 			log.Println(err)
 		}
-		binds := []dckr.VolBind{
-			dckr.NewVolBind(inputVolume.ID, service.Input[0].Path, true),
-			dckr.NewVolBind(outputVolume.ID, service.Output[0].Path, false),
+
+		var binds []dckr.VolBind
+		for i := range inputArray {
+			binds = append(binds, dckr.NewVolBind(inputVolumes[i].ID, service.Input[i].Path, true))
 		}
+		for i := range service.Output {
+			binds = append(binds, dckr.NewVolBind(outputVolumes[i].ID, service.Output[i].Path, false))
+		}
+
 		containerID, swarmServiceID, exitCode, output, err := docker.client.ExecuteImage(
 			string(service.ImageID),
 			service.RepoTag,
