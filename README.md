@@ -112,7 +112,7 @@ Follow these instructions to set up your own GEF server instance with a GEF 64-b
 - Inspect and change the default server configuration in the  `./config.json` (see section on `config.json`)
 - Create a new self-signed certificate for the GEF server (with `make certificate`) or edit `config.json` to use your own (see section on `config.json`)
 - Define the `GEF_SECRET_KEY` environment variable (a random string is preferred, remember it and keep it in a safe location), e.g. with `export GEF_SECRET_KEY="E60su8IL6VY6Ca2"`
-- Define the `GEF_B2ACCESS_CONSUMER_KEY` and `GEF_B2ACCESS_SECRET_KEY` environment variables for connection to the B2ACCESS service. Since the development instance of B2ACCESS is used, random keys can be used here.
+- Define the `GEF_B2ACCESS_CONSUMER_KEY` and `GEF_B2ACCESS_SECRET_KEY` environment variables for connection to the B2ACCESS service. Please check [this link](https://github.com/EUDAT-Training/B2SHARE-Training/blob/master/deploy/06_Services_configuration.md#registering-your-b2access-oauth-20-client) for details on registering a B2ACESS OAuth client, then export the newly registered username and password as `GEF_B2ACCESS_CONSUMER_KEY` and `GEF_B2ACCESS_SECRET_KEY` environment variables.
 - Run `./gef_linux` to start the GEF.
 - The GEF Server is now running and the user interface can be reached on default port 8443. Go to `https://localhost:8443` to see whether the GEF user interface is online.
 - Adjust your webserver configuration to map this port to the HTTPS port 443 to make the GEF visible from the outside.
