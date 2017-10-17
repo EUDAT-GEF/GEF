@@ -328,7 +328,7 @@ func (p *Pier) runJob(job *db.Job, service db.Service, inputSrc string, limits d
 				p.updateJobDurationTime(*job)
 				return
 			}
-			err = p.db.AddJobInputVolume(job.ID, db.VolumeID(curInputVolume.ID))
+			err = p.db.AddJobVolume(job.ID, db.VolumeID(curInputVolume.ID), true)
 			if err != nil {
 				log.Println(err)
 			}
@@ -400,7 +400,7 @@ func (p *Pier) runJob(job *db.Job, service db.Service, inputSrc string, limits d
 				p.updateJobDurationTime(*job)
 				return
 			}
-			err = p.db.SetJobOutputVolume(job.ID, db.VolumeID(curOutputVolume.ID))
+			err = p.db.AddJobVolume(job.ID, db.VolumeID(curOutputVolume.ID), false)
 			if err != nil {
 				log.Println(err)
 			}
@@ -463,21 +463,23 @@ func (p *Pier) runJob(job *db.Job, service db.Service, inputSrc string, limits d
 	p.updateJobDurationTime(*job)
 }
 
-func (p *Pier) waitAndRemoveVolume(connectionID db.ConnectionID, id dckr.VolumeID) error {
+func (p *Pier) waitAndRemoveVolume(connectionID db.ConnectionID, volumeIdList []db.JobVolume) error {
 	docker, found := p.docker[connectionID]
 	if !found {
 		return def.Err(nil, "Cannot find docker connection")
 	}
 	for {
-		err := docker.client.RemoveVolume(id)
-		if err == nil || err == dckr.NoSuchVolume {
-			break
-		}
+		for i := range volumeIdList {
+			err := docker.client.RemoveVolume(dckr.VolumeID(volumeIdList[i].VolumeID))
+			if err == nil || err == dckr.NoSuchVolume {
+				break
+			}
 
-		if err != dckr.VolumeInUse {
-			return def.Err(err, "Input volume cannot be removed")
+			if err != dckr.VolumeInUse {
+				return def.Err(err, "Data volume cannot be removed")
+			}
+			time.Sleep(10 * time.Millisecond)
 		}
-		time.Sleep(10 * time.Millisecond)
 	}
 	return nil
 }
@@ -504,11 +506,11 @@ func (p *Pier) RemoveJob(userID int64, jobID db.JobID) (db.Job, error) {
 	}
 
 	// Removing volumes
-	err = p.waitAndRemoveVolume(job.ConnectionID, dckr.VolumeID(job.InputVolume))
+	err = p.waitAndRemoveVolume(job.ConnectionID, job.InputVolume)
 	if err != nil {
 		return job, err
 	}
-	err = p.waitAndRemoveVolume(job.ConnectionID, dckr.VolumeID(job.OutputVolume))
+	err = p.waitAndRemoveVolume(job.ConnectionID, job.OutputVolume)
 	if err != nil {
 		return job, err
 	}

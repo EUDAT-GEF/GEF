@@ -578,6 +578,8 @@ func (d *Db) GetJob(id JobID) (Job, error) {
 	job, err = d.jobTable2Job(jobFromTable)
 	return job, err
 }
+//err := d.db.SelectOne(&dbjob, "SELECT jobs.* FROM jobs INNER JOIN volumes ON jobs.ID = volumes.JobID WHERE volumes.ID=?", volumeID)
+
 
 // SetJobState sets a job state
 func (d *Db) SetJobState(id JobID, state JobState) error {
@@ -594,33 +596,13 @@ func (d *Db) SetJobState(id JobID, state JobState) error {
 	return err
 }
 
-// SetJobInputVolume sets a job input volume
-func (d *Db) AddJobInputVolume(id JobID, inputVolume VolumeID) error {
+// AddJobVolume sets a job input/output volume
+func (d *Db) AddJobVolume(id JobID, inputVolume VolumeID, isInput bool) error {
 	var storedVolumes VolumeTable
-	//err := d.db.SelectOne(&storedVolumes, "SELECT * FROM volumes WHERE JobID=?", string(id))
-	//if err != nil {
-	//	return err
-	//}
-
 	storedVolumes.ID = string(inputVolume)
 	storedVolumes.JobID = string(id)
-	storedVolumes.IsInput = true
-	//_, err = d.db.Update(&storedJob)
-	//return err
+	storedVolumes.IsInput = isInput
 	return d.db.Insert(&storedVolumes)
-}
-
-// AddJobOutputVolume sets a job output volume
-func (d *Db) AddJobOutputVolume(id JobID, outputVolume VolumeID) error {
-	var storedJob JobTable
-	err := d.db.SelectOne(&storedJob, "SELECT * from jobs WHERE ID=?", string(id))
-	if err != nil {
-		return err
-	}
-
-	storedJob.OutputVolume = string(outputVolume)
-	_, err = d.db.Update(&storedJob)
-	return err
 }
 
 // SetJobDurationTime sets job finish time
@@ -895,8 +877,7 @@ func (d *Db) GetService(id ServiceID) (Service, error) {
 // GetJobOwningVolume returns a service ready to be converted into JSON
 func (d *Db) GetJobOwningVolume(volumeID string) (Job, error) {
 	var dbjob JobTable
-	err := d.db.SelectOne(&dbjob, "SELECT * FROM jobs WHERE InputVolume=? OR OutputVolume=?",
-		volumeID, volumeID)
+	err := d.db.SelectOne(&dbjob, "SELECT jobs.* FROM jobs INNER JOIN volumes ON jobs.ID = volumes.JobID WHERE volumes.ID=?", volumeID)
 	if err != nil {
 		return Job{}, err
 	}

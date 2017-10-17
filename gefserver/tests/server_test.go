@@ -19,7 +19,17 @@ import (
 	"github.com/EUDAT-GEF/GEF/gefserver/server"
 
 	"strings"
+	"fmt"
+	"reflect"
 )
+
+
+
+// JobVolume points to volumes bound to a particular job
+type JobVolume struct {
+	VolumeID string
+	Name string
+}
 
 func TestServer(t *testing.T) {
 	config, err := def.ReadConfigFile(configFilePath)
@@ -186,7 +196,39 @@ func TestServer(t *testing.T) {
 		ExpectNotNil(t, job)
 		exitCode = int(job["State"].(map[string]interface{})["Code"].(float64))
 	}
-	jobOutputVolume := job["OutputVolume"].(string)
+
+	fmt.Println("OUTPUT")
+	fmt.Println(reflect.ValueOf(job["OutputVolume"]))
+
+	val := reflect.ValueOf(job["OutputVolume"])
+	//vr := reflect.ValueOf(job["OutputVolume"])
+	//
+	//
+	//fmt.Println(vr.Index(0).Interface())
+	//
+	//m := reflect.ma
+	//
+	//for  _, value := range vr.ma {
+	//	fmt.Println(value)
+	//}
+
+	i := val.Index(0).Interface()
+	a := i.(map[string]interface{})
+
+	//jobOutputVolume := val.([]map[string]string)
+	fmt.Println(a)
+	//fmt.Println(jobOutputVolume[0])
+
+	var volumeID string
+	for  _, value := range a {
+		fmt.Println(value)
+		volumeID = value.(string)
+	}
+
+
+
+	//v, _ := jobOutputVolume.(map[string]string)
+	//fmt.Println(v)
 
 	// test the job console output
 	var console interface{}
@@ -200,7 +242,9 @@ func TestServer(t *testing.T) {
 			"/logs is an experimental feature introduced in Docker 1.13. Unfortunately, it is not yet supported by the Docker client we use"))
 
 	// test get the job file system output
-	volURL := baseURL + "volumes/" + jobOutputVolume + "/"
+	volURL := baseURL + "volumes/" + volumeID + "/"
+
+	fmt.Println(volURL)
 	res, code = getRes(t, gefurl(volURL, userToken))
 	ExpectEquals(t, code, 403)
 	res, code = getRes(t, gefurl(volURL, memberToken))

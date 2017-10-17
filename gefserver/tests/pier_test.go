@@ -142,7 +142,7 @@ func TestExecution(t *testing.T) {
 	}
 	ExpectEquals(t, job.State.Error, "")
 
-	files, err := p.ListFiles(job.OutputVolume, "", config.Limits, config.Timeouts)
+	files, err := p.ListFiles(job.OutputVolume[0].VolumeID, "", config.Limits, config.Timeouts)
 	CheckErr(t, err)
 
 	ExpectEquals(t, len(files), 1)

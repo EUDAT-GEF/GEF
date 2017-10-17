@@ -199,8 +199,8 @@ class Jobs extends React.Component {
                     "status": job.State.Status,
                     "code": job.State.Code,
                     "console": ConsoleOutput,
-                    "input": job.InputVolume,
-                    "output": job.OutputVolume
+                    "input": job.InputVolume[0].VolumeID,
+                    "output": job.OutputVolume[0].VolumeID
                 }
             );
         });
