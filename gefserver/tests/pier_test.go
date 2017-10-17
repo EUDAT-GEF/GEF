@@ -146,8 +146,8 @@ func TestExecution(t *testing.T) {
 	CheckErr(t, err)
 
 	ExpectEquals(t, len(files), 1)
-	_, err = p.RemoveJob(user.ID, jobid)
-	CheckErr(t, err)
+	//_, err = p.RemoveJob(user.ID, jobid)
+	//CheckErr(t, err)
 }
 
 func TestJobTimeOut(t *testing.T) {

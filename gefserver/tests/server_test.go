@@ -220,9 +220,14 @@ func TestServer(t *testing.T) {
 	//fmt.Println(jobOutputVolume[0])
 
 	var volumeID string
-	for  _, value := range a {
-		fmt.Println(value)
-		volumeID = value.(string)
+	for  i, value := range a {
+		if i=="VolumeID" {
+			fmt.Println(value)
+
+			volumeID = value.(string)
+			break
+		}
+
 	}
 
 
