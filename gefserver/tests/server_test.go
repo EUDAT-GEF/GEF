@@ -20,7 +20,6 @@ import (
 
 	"strings"
 	"fmt"
-	"reflect"
 )
 
 
@@ -197,43 +196,7 @@ func TestServer(t *testing.T) {
 		exitCode = int(job["State"].(map[string]interface{})["Code"].(float64))
 	}
 
-	fmt.Println("OUTPUT")
-	fmt.Println(reflect.ValueOf(job["OutputVolume"]))
-
-	val := reflect.ValueOf(job["OutputVolume"])
-	//vr := reflect.ValueOf(job["OutputVolume"])
-	//
-	//
-	//fmt.Println(vr.Index(0).Interface())
-	//
-	//m := reflect.ma
-	//
-	//for  _, value := range vr.ma {
-	//	fmt.Println(value)
-	//}
-
-	i := val.Index(0).Interface()
-	a := i.(map[string]interface{})
-
-	//jobOutputVolume := val.([]map[string]string)
-	fmt.Println(a)
-	//fmt.Println(jobOutputVolume[0])
-
-	var volumeID string
-	for  i, value := range a {
-		if i=="VolumeID" {
-			fmt.Println(value)
-
-			volumeID = value.(string)
-			break
-		}
-
-	}
-
-
-
-	//v, _ := jobOutputVolume.(map[string]string)
-	//fmt.Println(v)
+	firstOutputVolume := job["OutputVolume"].([]interface{})[0].(map[string]interface{})["VolumeID"].(string)
 
 	// test the job console output
 	var console interface{}
@@ -247,7 +210,7 @@ func TestServer(t *testing.T) {
 			"/logs is an experimental feature introduced in Docker 1.13. Unfortunately, it is not yet supported by the Docker client we use"))
 
 	// test get the job file system output
-	volURL := baseURL + "volumes/" + volumeID + "/"
+	volURL := baseURL + "volumes/" + firstOutputVolume + "/"
 
 	fmt.Println(volURL)
 	res, code = getRes(t, gefurl(volURL, userToken))

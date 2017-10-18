@@ -468,8 +468,8 @@ func (p *Pier) waitAndRemoveVolume(connectionID db.ConnectionID, volumeIdList []
 	if !found {
 		return def.Err(nil, "Cannot find docker connection")
 	}
-	for {
-		for i := range volumeIdList {
+	for i := range volumeIdList {
+		for {
 			err := docker.client.RemoveVolume(dckr.VolumeID(volumeIdList[i].VolumeID))
 			if err == nil || err == dckr.NoSuchVolume {
 				break

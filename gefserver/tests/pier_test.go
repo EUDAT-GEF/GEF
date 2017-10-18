@@ -121,13 +121,11 @@ func TestExecution(t *testing.T) {
 	service, err := p.BuildService(connID, user.ID, "./clone_test")
 	CheckErr(t, err)
 	log.Print("test service built: ", service.ID, " ", service.ImageID)
-	// log.Printf("test service built: %#v", service)
 
 	job, err := p.RunService(user.ID, service.ID, testPID, config.Limits, config.Timeouts)
 	CheckErr(t, err)
 
 	log.Print("test job: ", job.ID)
-	// log.Printf("test job: %#v", job)
 	jobid := job.ID
 
 	for job.State.Code == -1 {
@@ -144,10 +142,10 @@ func TestExecution(t *testing.T) {
 
 	files, err := p.ListFiles(job.OutputVolume[0].VolumeID, "", config.Limits, config.Timeouts)
 	CheckErr(t, err)
-
 	ExpectEquals(t, len(files), 1)
-	//_, err = p.RemoveJob(user.ID, jobid)
-	//CheckErr(t, err)
+
+	_, err = p.RemoveJob(user.ID, jobid)
+	CheckErr(t, err)
 }
 
 func TestJobTimeOut(t *testing.T) {
