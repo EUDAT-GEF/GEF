@@ -127,6 +127,8 @@ class Jobs extends React.Component {
     }
 
     expandComponent(row) {
+        let inCounter = -1;
+        let outCounter = -1;
         return (
             <div>
                 <div>
@@ -134,9 +136,24 @@ class Jobs extends React.Component {
                 </div>
                 <div className="text-center">
                     <div className="btn-group" role="group" aria-label="toolbar">
-                        <Button onClick={ () => this.handleInspectVolume(row.input)}><Glyphicon glyph="arrow-down"/> Inspect input volume</Button>
-                        <Button onClick={ () => this.handleInspectVolume(row.output)}><Glyphicon glyph="arrow-up"/> Inspect output volume</Button>
+                        { row.input.map((input) => {
+                            inCounter++;
+                            return (
+                                <Button onClick={() => this.handleInspectVolume(input["VolumeID"])}><Glyphicon
+                                    glyph="arrow-down"/> Input #{inCounter+1}</Button>
+                            )})
+                        }
+
+                        { row.output.map((output) => {
+                            outCounter++;
+                            return (
+                                <Button onClick={() => this.handleInspectVolume(output["VolumeID"])}><Glyphicon
+                                    glyph="arrow-up"/> Output #{outCounter+1}</Button>
+                            )})
+                        }
+                        
                         <Button onClick={ () => this.props.actions.removeJobs([row.id])}><Glyphicon glyph="trash"/> Remove job</Button>
+
                     </div>
                 </div>
             </div>
@@ -190,6 +207,9 @@ class Jobs extends React.Component {
             let fmtFinishedDate = jobFinishTime.toLocaleDateString('en-GB');
             let fmtFinishedTime = jobFinishTime.toLocaleTimeString('en-GB');
 
+            let inputVolumes = job.InputVolume ? job.InputVolume : [];
+            let outputVolumes = job.OutputVolume ? job.OutputVolume : [];
+
             allJobs.push(
                 {
                     "title": title, "id": job.ID,
@@ -199,8 +219,8 @@ class Jobs extends React.Component {
                     "status": job.State.Status,
                     "code": job.State.Code,
                     "console": ConsoleOutput,
-                    "input": job.InputVolume[0].VolumeID,
-                    "output": job.OutputVolume[0].VolumeID
+                    "input": inputVolumes,
+                    "output": outputVolumes
                 }
             );
         });

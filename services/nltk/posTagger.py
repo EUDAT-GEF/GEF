@@ -1,7 +1,7 @@
 import sys, os, nltk, glob
 
 tmpBody = "Sentence; POS tags\n"
-textFiles = glob.glob("/root/input/*.txt")
+textFiles = glob.glob("/root/input?/*.txt")
 
 for fi in range(len(textFiles)):
     inputFile = open(textFiles[fi], "r")

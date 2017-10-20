@@ -18,16 +18,14 @@ import (
 	"github.com/EUDAT-GEF/GEF/gefserver/pier"
 	"github.com/EUDAT-GEF/GEF/gefserver/server"
 
-	"strings"
 	"fmt"
+	"strings"
 )
-
-
 
 // JobVolume points to volumes bound to a particular job
 type JobVolume struct {
 	VolumeID string
-	Name string
+	Name     string
 }
 
 func TestServer(t *testing.T) {

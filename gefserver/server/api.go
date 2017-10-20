@@ -16,7 +16,6 @@ import (
 	"github.com/EUDAT-GEF/GEF/gefserver/def"
 	"github.com/EUDAT-GEF/GEF/gefserver/pier"
 	"github.com/gorilla/mux"
-	"fmt"
 )
 
 const (
@@ -444,7 +443,6 @@ func (s *Server) listJobsHandler(w http.ResponseWriter, r *http.Request, e envir
 		Response{w}.ClientError("cannot get jobs", err)
 		return
 	}
-	fmt.Println(jobs)
 	Response{w}.Ok(jmap("Jobs", jobs))
 }
 

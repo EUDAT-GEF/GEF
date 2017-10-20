@@ -578,8 +578,8 @@ func (d *Db) GetJob(id JobID) (Job, error) {
 	job, err = d.jobTable2Job(jobFromTable)
 	return job, err
 }
-//err := d.db.SelectOne(&dbjob, "SELECT jobs.* FROM jobs INNER JOIN volumes ON jobs.ID = volumes.JobID WHERE volumes.ID=?", volumeID)
 
+//err := d.db.SelectOne(&dbjob, "SELECT jobs.* FROM jobs INNER JOIN volumes ON jobs.ID = volumes.JobID WHERE volumes.ID=?", volumeID)
 
 // SetJobState sets a job state
 func (d *Db) SetJobState(id JobID, state JobState) error {

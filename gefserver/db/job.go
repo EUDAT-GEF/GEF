@@ -22,10 +22,11 @@ type JobState struct {
 	Error  string
 	Code   int
 }
+
 // JobVolume points to volumes bound to a particular job
 type JobVolume struct {
 	VolumeID VolumeID
-	Name string
+	Name     string
 }
 
 // NewJobStateOk creates a new JobState with no error
