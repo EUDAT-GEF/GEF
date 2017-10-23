@@ -36,22 +36,28 @@
     
     <dependencies>
         <dependency>
-            <groupId>org.italiangrid</groupId>
-            <artifactId>voms-clients</artifactId>
-            <version>3.0.6</version>
+          <groupId>org.italiangrid</groupId>
+          <artifactId>voms-clients</artifactId>
+          <version>3.0.6</version>
         </dependency>
 
         <dependency>
-            <groupId>log4j</groupId>
-            <artifactId>log4j</artifactId>
-            <version>1.2.17</version>
+          <groupId>com.googlecode.json-simple</groupId>
+          <artifactId>json-simple</artifactId>
+          <version>1.1.1</version>
+        </dependency>
+    
+        <dependency>
+          <groupId>log4j</groupId>
+          <artifactId>log4j</artifactId>
+          <version>1.2.17</version>
         </dependency>
     </dependencies>
 
     <repositories>
        <repository>
-           <id>MVN repository</id>
-           <url>http://mvnrepository.com</url>
+         <id>MVN repository</id>
+         <url>http://mvnrepository.com</url>
        </repository>
     </repositories>
 
@@ -64,11 +70,11 @@
 	<configuration>
 	<archive>
         <!-- MainClass in mainfest make a executable jar -->
-	<manifest>
-		<addClasspath>true</addClasspath>
-                <classpathPrefix>${basedir}/libs/</classpathPrefix>
-	       	<mainClass>it.infn.ct.VOMSProxyInit</mainClass>
-	</manifest>
+    <manifest>
+      <addClasspath>true</addClasspath>
+      <classpathPrefix>${basedir}/libs/</classpathPrefix>
+      <mainClass>it.infn.ct.VOMSProxyInit</mainClass>
+    </manifest>
 	</archive>
 	<!-- get all project dependencies -->
         <descriptorRefs>
