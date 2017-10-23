@@ -62,17 +62,43 @@ public class DescribeVM
 
 		try 
 		{
+<<<<<<< HEAD
 			if (properties.getProperty("OCCI_RESOURCE_ID").contains("compute"))
 			{
 				List<Entity> entities = client.describe(URI.create(properties.getProperty("OCCI_RESOURCE_ID")));
 				String[] Attributes = entities.get(0).toText().split(";");
 
 				for (int i=0; i<Attributes.length; i++)
+=======
+<<<<<<< HEAD
+			System.out.println();
+
+			if (properties.getProperty("OCCI_RESOURCE_ID").contains("compute"))
+			{
+				System.out.println("[ VM DESCRIPTION ]");
+
+				List<Entity> entities = client.describe(URI.create(properties.getProperty("OCCI_RESOURCE_ID")));
+				String[] Attributes = entities.get(0).toText().split(";");
+
+				for (int i=0; i<Attributes.length; i++)
+=======
+
+			if properties.getProperty("OCCI_RESOURCE_ID").contains("compute")
+			{
+				System.out.println("[ VM DESCRIPTION ]");
+
+				List<Entity> entities = client.describe(URI.create(properties.getProperty("OCCI_RESOURCE_ID")));
+				String[] Attributes = entities.get(0).toText().split(";");
+
+				for int i=0; i<Attributes.length; i++
+>>>>>>> 1098d207ae9ed8e9e1670143fc84e89a2ba54dc6
+>>>>>>> 291681728effedb5c5b45f3231aaa23b3d3b0d6c
 				{
-					if (Attributes[i].contains("occi.networkinterface.address"))
+					if Attributes[i].contains("occi.networkinterface.address")
 					{							
 						publicIP = Attributes[i].replaceAll("[^\\d.]", "").substring(2);//Attributes[i].replace("occi.networkinterface.address=","");
 					}
+<<<<<<< HEAD
 				}
 
 				for (Entity entity : entities)
@@ -98,6 +124,36 @@ public class DescribeVM
 				{
 					ID = entity.getId();
 
+=======
+				}			
+<<<<<<< HEAD
+
+				for (Entity entity : entities)
+				{
+				Map<Attribute, String> map = entity.getAttributes();
+
+				for (Map.Entry<Attribute, String> entry : map.entrySet()) 
+				{
+					vmState = map.get(new Attribute("occi.compute.state"));
+				}
+
+				if (vmState != null) System.out.println("occi.compute.state = " + vmState);
+				}
+			}
+
+
+			if (properties.getProperty("OCCI_RESOURCE_ID").contains("storage")) 
+			{
+				System.out.println("[ STORAGE DESCRIPTION ]");
+				System.out.println("[[ " + properties.getProperty("OCCI_RESOURCE_ID") + " ]]");
+				List<Entity> entities = client.describe(URI.create(properties.getProperty("OCCI_RESOURCE_ID")));
+
+				String title = "", size = "", state = "", ID = "";
+				for (Entity entity : entities) 
+				{
+					ID = entity.getId();
+
+>>>>>>> 291681728effedb5c5b45f3231aaa23b3d3b0d6c
 					Map<Attribute, String> map = entity.getAttributes();
 
 					for (Map.Entry<Attribute, String> entry : map.entrySet()) 
@@ -105,8 +161,52 @@ public class DescribeVM
 						title = map.get(new Attribute("occi.core.title"));
 						size = map.get(new Attribute("occi.storage.size"));
 						state = map.get(new Attribute("occi.storage.state"));
+<<<<<<< HEAD
 					}
 
+=======
+						//System.out.println(entry.getKey() + " - " + entry.getValue());
+					}
+
+=======
+
+				for Entity entity : entities
+				{
+					Map<Attribute, String> map = entity.getAttributes();
+
+					for (Map.Entry<Attribute, String> entry : map.entrySet()) 
+					{
+						vmState = map.get(new Attribute("occi.compute.state"));
+					}
+
+					if (vmState != null) System.out.println("occi.compute.state = " + vmState);
+				}
+			}
+
+
+			if properties.getProperty("OCCI_RESOURCE_ID").contains("storage") 
+			{
+				System.out.println("[ STORAGE DESCRIPTION ]");
+				System.out.println("[[ " + properties.getProperty("OCCI_RESOURCE_ID") + " ]]");
+				List<Entity> entities = client.describe(URI.create(properties.getProperty("OCCI_RESOURCE_ID")));
+
+				String title = "", size = "", state = "", ID = "";
+
+				for Entity entity : entities
+				{
+					ID = entity.getId();
+
+					Map<Attribute, String> map = entity.getAttributes();
+
+					for Map.Entry<Attribute, String> entry : map.entrySet() 
+					{
+						title = map.get(new Attribute("occi.core.title"));
+						size = map.get(new Attribute("occi.storage.size"));
+						state = map.get(new Attribute("occi.storage.state"));
+					}
+
+>>>>>>> 1098d207ae9ed8e9e1670143fc84e89a2ba54dc6
+>>>>>>> 291681728effedb5c5b45f3231aaa23b3d3b0d6c
 					System.out.println("\n>> location: " + "/storage/" + ID);
 					System.out.println("occi.core.id = " + ID);
 					System.out.println("occi.core.title = " + title);
@@ -115,7 +215,15 @@ public class DescribeVM
 				}
 			}
 
+<<<<<<< HEAD
 			if (properties.getProperty("OCCI_RESOURCE_ID").contains("network")) 
+=======
+<<<<<<< HEAD
+			if (properties.getProperty("OCCI_RESOURCE_ID").contains("network")) 
+=======
+			if properties.getProperty("OCCI_RESOURCE_ID").contains("network")
+>>>>>>> 1098d207ae9ed8e9e1670143fc84e89a2ba54dc6
+>>>>>>> 291681728effedb5c5b45f3231aaa23b3d3b0d6c
 			{
 				System.out.println("[ NETWORK DESCRIPTION ]");
 				System.out.println("[[ " + properties.getProperty("OCCI_RESOURCE_ID") + " ]]");
@@ -124,12 +232,28 @@ public class DescribeVM
 				String title = "", size = "", state = "", ID = "", summary = "", allocation = "";
 				String address = "", vlan = "", netid = "", netvlan = "", phydev = "", bridge = "";
 
+<<<<<<< HEAD
 				for (Entity entity : entities) 
+=======
+<<<<<<< HEAD
+				for (Entity entity : entities) 
+=======
+				for Entity entity : entities 
+>>>>>>> 1098d207ae9ed8e9e1670143fc84e89a2ba54dc6
+>>>>>>> 291681728effedb5c5b45f3231aaa23b3d3b0d6c
 				{
 					ID = entity.getId();
 
 					Map<Attribute, String> map = entity.getAttributes();
+<<<<<<< HEAD
 					for (Map.Entry<Attribute, String> entry : map.entrySet()) 
+=======
+<<<<<<< HEAD
+					for (Map.Entry<Attribute, String> entry : map.entrySet()) 
+=======
+					for Map.Entry<Attribute, String> entry : map.entrySet()
+>>>>>>> 1098d207ae9ed8e9e1670143fc84e89a2ba54dc6
+>>>>>>> 291681728effedb5c5b45f3231aaa23b3d3b0d6c
 					{
 						title = map.get(new Attribute("occi.core.title"));
 						size = map.get(new Attribute("occi.network.size"));
@@ -159,7 +283,15 @@ public class DescribeVM
 				}
 			}
 
+<<<<<<< HEAD
 			if (properties.getProperty("RESOURCE").equals("os_tpl"))
+=======
+<<<<<<< HEAD
+			if (properties.getProperty("RESOURCE").equals("os_tpl"))
+=======
+			if properties.getProperty("RESOURCE").equals("os_tpl")
+>>>>>>> 1098d207ae9ed8e9e1670143fc84e89a2ba54dc6
+>>>>>>> 291681728effedb5c5b45f3231aaa23b3d3b0d6c
 			{
 				System.out.println("[ OS_TPL DESCRIPTION ]");
 				System.out.println("[[ " + properties.getProperty("OCCI_RESOURCE_ID") + " ]]");
@@ -167,6 +299,10 @@ public class DescribeVM
 				.substring(properties.getProperty("OCCI_RESOURCE_ID").lastIndexOf("#") + 1);
 				List<Mixin> mixins = model.findRelatedMixins("os_tpl");
 
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+>>>>>>> 291681728effedb5c5b45f3231aaa23b3d3b0d6c
 				for (Mixin mixin : mixins)
 				{
 					if ( ((mixin.getTerm()).contains(TERM)) ) 
@@ -196,7 +332,43 @@ public class DescribeVM
 						String segments[] = locations.split("/");
 						System.out.println("location: \t" + "/" + segments[segments.length - 1] + "/");
 						}
+<<<<<<< HEAD
 					}
+=======
+					}
+=======
+				for Mixin mixin : mixins
+				{
+					if mixin.getTerm()).contains(TERM)
+					{
+						System.out.println("title: \t\t" + mixin.getTitle());
+						System.out.println("term: \t\t" + mixin.getTerm());
+						System.out.println("location: \t" + mixin.getLocation());
+					}
+				}
+			} 
+
+			if properties.getProperty("RESOURCE").equals("resource_tpl")
+			{
+				// Getting the description of all the available template(s)
+				System.out.println("[ RESOURCE_TPL DESCRIPTION ]");
+				List<Mixin> mixins = model.findRelatedMixins(properties.getProperty("RESOURCE"));
+
+				if !mixins.isEmpty()
+					for Mixin mixin : mixins 
+					{
+						if mixin.getTerm().equals(properties.getProperty("OCCI_RESOURCE_ID"))
+						{
+							System.out.println("[[ " + mixin.getLocation() + " ]]");
+							System.out.println("title: \t\t" + mixin.getTitle());
+							System.out.println("term: \t\t" + mixin.getTerm());
+							String locations = (mixin.getLocation()).toString();
+							String segments[] = locations.split("/");
+							System.out.println("location: \t" + "/" + segments[segments.length - 1] + "/");
+						}
+					}
+>>>>>>> 1098d207ae9ed8e9e1670143fc84e89a2ba54dc6
+>>>>>>> 291681728effedb5c5b45f3231aaa23b3d3b0d6c
 			}
 		}
 		catch (CommunicationException | RenderingException | AmbiguousIdentifierException ex) 
@@ -206,6 +378,7 @@ public class DescribeVM
 	public static String[] describe (String vmID, JSONObject egiInput)
 	{
 
+<<<<<<< HEAD
 		// Setting 
 
 		String AUTH = (String) egiInput.get("auth");
@@ -214,6 +387,16 @@ public class DescribeVM
 		String TRUSTED_CERT_REPOSITORY_PATH = (String) egiInput.get("trustedCertificatesPath");
 
 		Boolean verbose = false;
+=======
+		// [ Setting preferences here! ]
+		String AUTH = "x509"; 
+		String OCCI_ENDPOINT_HOST = "https://carach5.ics.muni.cz:11443"; 
+
+		String TRUSTED_CERT_REPOSITORY_PATH = "/etc/grid-security/certificates";
+		String PROXY_PATH = "/tmp/x509up_u5040"; 
+
+		Boolean verbose = true;
+>>>>>>> 291681728effedb5c5b45f3231aaa23b3d3b0d6c
 
 		String ACTION = "describe";	
 
@@ -223,14 +406,31 @@ public class DescribeVM
 		List<String> RESOURCE = Arrays.asList("compute",
 		vmID); 
 
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+>>>>>>> 291681728effedb5c5b45f3231aaa23b3d3b0d6c
 		if (verbose) 
 		{
 			System.out.println();
 			if (ACTION != null && !ACTION.isEmpty()) 
+<<<<<<< HEAD
+=======
+=======
+		if verbose 
+		{
+			System.out.println();
+			if ACTION != null && !ACTION.isEmpty() 
+>>>>>>> 1098d207ae9ed8e9e1670143fc84e89a2ba54dc6
+>>>>>>> 291681728effedb5c5b45f3231aaa23b3d3b0d6c
 				System.out.println("[ACTION] = " + ACTION);
 			else	
 				System.out.println("[ACTION] = Get dump model");
 				System.out.println("AUTH = " + AUTH);
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+>>>>>>> 291681728effedb5c5b45f3231aaa23b3d3b0d6c
 			if (OCCI_ENDPOINT_HOST != null && !OCCI_ENDPOINT_HOST.isEmpty()) 
 				System.out.println("OCCI_ENDPOINT_HOST = " + OCCI_ENDPOINT_HOST);
 			if (RESOURCE != null && !RESOURCE.isEmpty()) 
@@ -240,11 +440,29 @@ public class DescribeVM
 			if (PROXY_PATH != null && !PROXY_PATH.isEmpty()) 
 				System.out.println("PROXY_PATH = " + PROXY_PATH);
 			if (verbose) 
+<<<<<<< HEAD
+=======
+=======
+			if OCCI_ENDPOINT_HOST != null && !OCCI_ENDPOINT_HOST.isEmpty() 
+				System.out.println("OCCI_ENDPOINT_HOST = " + OCCI_ENDPOINT_HOST);
+			if RESOURCE != null && !RESOURCE.isEmpty()
+				System.out.println("RESOURCE = " + RESOURCE);
+			if TRUSTED_CERT_REPOSITORY_PATH != null && !TRUSTED_CERT_REPOSITORY_PATH.isEmpty() 
+				System.out.println("TRUSTED_CERT_REPOSITORY_PATH = " + TRUSTED_CERT_REPOSITORY_PATH);
+			if PROXY_PATH != null && !PROXY_PATH.isEmpty()
+				System.out.println("PROXY_PATH = " + PROXY_PATH);
+			if verbose
+>>>>>>> 1098d207ae9ed8e9e1670143fc84e89a2ba54dc6
+>>>>>>> 291681728effedb5c5b45f3231aaa23b3d3b0d6c
 				System.out.println("Verbose = ON ");
 			else System.out.println("Verbose = OFF ");
 		}
 
 		Properties properties = new Properties();
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+>>>>>>> 291681728effedb5c5b45f3231aaa23b3d3b0d6c
 		if (ACTION != null && !ACTION.isEmpty())
 			properties.setProperty("ACTION", ACTION);
 		if (OCCI_ENDPOINT_HOST != null && !OCCI_ENDPOINT_HOST.isEmpty())
@@ -265,6 +483,31 @@ public class DescribeVM
 				properties.setProperty("RESOURCE", RESOURCE.get(i));
 			}
 		}
+<<<<<<< HEAD
+=======
+=======
+		if ACTION != null && !ACTION.isEmpty()
+			properties.setProperty("ACTION", ACTION);
+		if OCCI_ENDPOINT_HOST != null && !OCCI_ENDPOINT_HOST.isEmpty()
+			properties.setProperty("OCCI_ENDPOINT_HOST", OCCI_ENDPOINT_HOST);
+
+		if RESOURCE != null && !RESOURCE.isEmpty() 
+			for (int i=0; i<RESOURCE.size(); i++)
+			{
+				if (!RESOURCE.get(i).equals("compute") && 
+				!RESOURCE.get(i).equals("storage") &&
+				!RESOURCE.get(i).equals("network")) &&
+				!RESOURCE.get(i).equals("os_tpl") &&
+				!RESOURCE.get(i).equals("resource_tpl")) 
+					properties.setProperty("OCCI_RESOURCE_ID", RESOURCE.get(i));
+
+				else 
+				{ 
+					properties.setProperty("RESOURCE", RESOURCE.get(i));
+				}
+			}
+>>>>>>> 1098d207ae9ed8e9e1670143fc84e89a2ba54dc6
+>>>>>>> 291681728effedb5c5b45f3231aaa23b3d3b0d6c
 
 		properties.setProperty("TRUSTED_CERT_REPOSITORY_PATH", TRUSTED_CERT_REPOSITORY_PATH);
 		properties.setProperty("PROXY_PATH", PROXY_PATH);
@@ -285,7 +528,15 @@ public class DescribeVM
 			Model model = client.getModel();
 			EntityBuilder eb = new EntityBuilder(model);
 
+<<<<<<< HEAD
 			if  (ACTION.equals("describe")) 
+=======
+<<<<<<< HEAD
+			if  (ACTION.equals("describe")) 
+=======
+			if  ACTION.equals("describe") 
+>>>>>>> 1098d207ae9ed8e9e1670143fc84e89a2ba54dc6
+>>>>>>> 291681728effedb5c5b45f3231aaa23b3d3b0d6c
 				doDescribe(properties, client, model);
 		} 
 		catch (CommunicationException ex ) 

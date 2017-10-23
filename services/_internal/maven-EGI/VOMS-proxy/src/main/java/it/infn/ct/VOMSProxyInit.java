@@ -27,13 +27,24 @@ import org.json.simple.JSONObject;
 public class VOMSProxyInit
 {
 	private static Logger log = Logger.getLogger(VOMSProxyInit.class);
+<<<<<<< HEAD
 	public static String configEGI = "/home/configEGI.json";//"/Users/pivan/CERFACS/GEF/GEF_push_copy_20_09/services/_internal/maven-EGI/configEGI_local.json";
 	public static boolean isEmpty(String str)
 	{
+=======
+
+	public static boolean isEmpty(String str)
+	{
+<<<<<<< HEAD
+>>>>>>> 291681728effedb5c5b45f3231aaa23b3d3b0d6c
 		if (str != null && !str.isEmpty()) return false; 
+=======
+		if str != null && !str.isEmpty() return false; 
+>>>>>>> 1098d207ae9ed8e9e1670143fc84e89a2ba54dc6
 		else return true; 
 	}
 
+<<<<<<< HEAD
 	public static void main (String[] args)
 	{
 		// Get input from EGI
@@ -47,20 +58,49 @@ public class VOMSProxyInit
 		String X509_CERT_DIR = (String) egiInput.get("trustedCertificatesPath");
 		Boolean ENABLE_RFC = true;
 		
+=======
+	/* M	A	I	N */
+	public static void main (String[] args)
+	{			
+		String VONAME = "fedcloud.egi.eu"; // <= Change here!
+		String VOMS_PROXY_FILEPATH = "/tmp/x509up_u5040"; // <= Change here!
+		String VOMS_LIFETIME = "24:00";
+		String VOMSES_DIR = "/etc/vomses/";
+		String X509_CERT_DIR = "/etc/grid-security/certificates/";
+		Boolean ENABLE_RFC = true;
+
+>>>>>>> 291681728effedb5c5b45f3231aaa23b3d3b0d6c
 		try 
 		{
 
 			if (isEmpty(VONAME) && 
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+>>>>>>> 291681728effedb5c5b45f3231aaa23b3d3b0d6c
 			(isEmpty(VOMS_PROXY_FILEPATH)) &&
 			(isEmpty(VOMS_LIFETIME)) &&
 			(isEmpty(VOMSES_DIR)) &&
 			(isEmpty(X509_CERT_DIR))) 
+<<<<<<< HEAD
+=======
+=======
+			isEmpty(VOMS_PROXY_FILEPATH) &&
+			isEmpty(VOMS_LIFETIME) &&
+			isEmpty(VOMSES_DIR) &&
+			isEmpty(X509_CERT_DIR)) 
+>>>>>>> 1098d207ae9ed8e9e1670143fc84e89a2ba54dc6
+>>>>>>> 291681728effedb5c5b45f3231aaa23b3d3b0d6c
 				throw new Exception ("[ ARGUMENTS EXCEPTION ]");
 
 			Properties p = new Properties(System.getProperties());
 			p.setProperty("X509_USER_PROXY", VOMS_PROXY_FILEPATH);
 			System.setProperties(p);
 
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+>>>>>>> 291681728effedb5c5b45f3231aaa23b3d3b0d6c
 			if (ENABLE_RFC)
 			VomsProxyInit.main(new String[]
 			{
@@ -74,6 +114,7 @@ public class VOMSProxyInit
 				"-rfc",
 				"-debug"
 			});
+<<<<<<< HEAD
 			else
 			VomsProxyInit.main(new String[]
 			{
@@ -86,6 +127,47 @@ public class VOMSProxyInit
 				"-limited",
 				"-debug"
 			});
+=======
+			else
+			VomsProxyInit.main(new String[]
+			{
+				"-voms", VONAME,
+				"-vomses", VOMSES_DIR,
+				"-out", VOMS_PROXY_FILEPATH,
+				"-certdir", X509_CERT_DIR,
+				"-vomslife", VOMS_LIFETIME,
+				"-ignorewarn",
+				"-limited",
+				"-debug"
+			});
+=======
+			if ENABLE_RFC
+				VomsProxyInit.main(new String[]
+				{
+					"-voms", VONAME,
+					"-vomses", VOMSES_DIR,
+					"-out", VOMS_PROXY_FILEPATH,
+					"-certdir", X509_CERT_DIR,
+					"-vomslife", VOMS_LIFETIME,
+					"-ignorewarn",
+					"-limited",
+					"-rfc",
+					"-debug"
+				});
+			else
+				VomsProxyInit.main(new String[]
+				{
+					"-voms", VONAME,
+					"-vomses", VOMSES_DIR,
+					"-out", VOMS_PROXY_FILEPATH,
+					"-certdir", X509_CERT_DIR,
+					"-vomslife", VOMS_LIFETIME,
+					"-ignorewarn",
+					"-limited",
+					"-debug"
+				});
+>>>>>>> 1098d207ae9ed8e9e1670143fc84e89a2ba54dc6
+>>>>>>> 291681728effedb5c5b45f3231aaa23b3d3b0d6c
 
 		}
 		catch (Exception exc)
