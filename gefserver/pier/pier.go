@@ -139,16 +139,12 @@ func (p *Pier) AddDockerConnection(userID int64, config def.DockerConfig) (db.Co
 		return connID, err
 	}
 
-<<<<<<< HEAD
 	mavenEGIImage, err := buildInternalImage(client, "maven-EGI")
 	if err != nil {
-		return err
+		return connID, err
 	}
 
-	p.docker = &dockerConnection{
-=======
 	p.docker[connID] = dockerConnection{
->>>>>>> 1d5ea457208af27cd4d485609b3717ba54e7f881
 		client,
 		stageInImage,
 		fileListImage,
