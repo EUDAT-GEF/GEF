@@ -1,8 +1,0 @@
-{
-	"endpoint": "URL endpoint from EGI AppDB",
-	"resource_tpl": "Resource URL from EGI AppDB",
-	"os_tpl": "OS URL from EGI AppDB - Only Ubuntu Xenial has been tested on this workflow",
-	"publicKey": "Path of your public key within the docker container",
-	"contextualisation": "Path of the contextualisation file within the docker container",
-	"proxy": "Proxy address name e.g /tmp/x509up_u****"
-}

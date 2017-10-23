@@ -34,7 +34,7 @@ public class Def
         } 
         catch (FileNotFoundException e) 
         {e.printStackTrace();}
-<<<<<<< HEAD
+
 
         catch (IOException e) 
         {e.printStackTrace();} 
@@ -42,27 +42,6 @@ public class Def
         catch (ParseException e) 
         {e.printStackTrace();}
 
-=======
-<<<<<<< HEAD
-
-        catch (IOException e) 
-        {e.printStackTrace();} 
-
-        catch (ParseException e) 
-        {e.printStackTrace();}
-
-       
-=======
-
-        catch (IOException e) 
-        {e.printStackTrace();} 
-
-        catch (ParseException e) 
-        {e.printStackTrace();}
-
-
->>>>>>> 1098d207ae9ed8e9e1670143fc84e89a2ba54dc6
->>>>>>> 291681728effedb5c5b45f3231aaa23b3d3b0d6c
         try (FileWriter file = new FileWriter(jsonfile)) 
         {
             file.write(jsonObject.toJSONString());
@@ -70,27 +49,14 @@ public class Def
         }
         catch (IOException e) 
         {e.printStackTrace();}
-<<<<<<< HEAD
-=======
-
->>>>>>> 291681728effedb5c5b45f3231aaa23b3d3b0d6c
     }
 
     public static JSONObject getJson (String jsonfile)
     {
         JSONParser parser = new JSONParser();
-<<<<<<< HEAD
         JSONObject jsonObject = new JSONObject();
         try 
         {
-=======
-
-        String endpoint = "", resource_tpl = "", os_tpl = "", publicKey = "", contextualisation = "", proxy = "";
-        String[] egiList = {};
-        try 
-        {
-
->>>>>>> 291681728effedb5c5b45f3231aaa23b3d3b0d6c
             Object obj = parser.parse(new FileReader(jsonfile));
             jsonObject = (JSONObject) obj;
         } 
@@ -100,23 +66,9 @@ public class Def
         catch (IOException e) 
         {e.printStackTrace();}
 
-<<<<<<< HEAD
         catch (ParseException e) 
         {e.printStackTrace();}
 
         return jsonObject;
-=======
-        } 
-        catch (FileNotFoundException e) 
-        {e.printStackTrace();}
-
-        catch (IOException e) 
-        {e.printStackTrace();}
-
-        catch (ParseException e) 
-        {e.printStackTrace();}
-
-        return egiList;
->>>>>>> 291681728effedb5c5b45f3231aaa23b3d3b0d6c
     }
 }
