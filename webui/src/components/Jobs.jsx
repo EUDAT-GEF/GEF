@@ -151,7 +151,7 @@ class Jobs extends React.Component {
                                     glyph="arrow-up"/> Output #{outCounter+1}</Button>
                             )})
                         }
-                        
+
                         <Button onClick={ () => this.props.actions.removeJobs([row.id])}><Glyphicon glyph="trash"/> Remove job</Button>
 
                     </div>

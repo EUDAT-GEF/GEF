@@ -3,7 +3,7 @@
  */
 import React from 'react';
 import PropTypes from 'prop-types';
-import { Row, Col, Grid, Table, Button, Modal, OverlayTrigger, FormGroup, ControlLabel, Glyphicon } from 'react-bootstrap';
+import { Row, Col, Grid, Table, Button, Modal, OverlayTrigger, FormGroup, ControlLabel, Glyphicon, ListGroup, ListGroupItem } from 'react-bootstrap';
 import {Field, FieldArray, reduxForm, initialize} from 'redux-form';
 // this is a detailed view of a service, user will be able to execute service in this view
 
@@ -55,6 +55,12 @@ const JobCreatorForm = (props) => {
                                 <Button onClick={handleModalOpen}><Glyphicon glyph="edit"/> Edit Metadata</Button>
                                 <Button onClick={handleRemoveService}><Glyphicon glyph="trash"/> Remove the Service</Button>
                             </div>
+
+                            <ListGroup>
+                                <ListGroupItem href="#link1">Link 1  <Button onClick={handleModalOpen}><Glyphicon glyph="edit"/> Edit Metadata</Button></ListGroupItem>
+                                <ListGroupItem href="#link2">Link 2</ListGroupItem>
+
+                            </ListGroup>
                         </div>
                     </div>
                 </Col>

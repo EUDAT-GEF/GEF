@@ -18,15 +18,8 @@ import (
 	"github.com/EUDAT-GEF/GEF/gefserver/pier"
 	"github.com/EUDAT-GEF/GEF/gefserver/server"
 
-	"fmt"
 	"strings"
 )
-
-// JobVolume points to volumes bound to a particular job
-type JobVolume struct {
-	VolumeID string
-	Name     string
-}
 
 func TestServer(t *testing.T) {
 	config, err := def.ReadConfigFile(configFilePath)
@@ -210,7 +203,6 @@ func TestServer(t *testing.T) {
 	// test get the job file system output
 	volURL := baseURL + "volumes/" + firstOutputVolume + "/"
 
-	fmt.Println(volURL)
 	res, code = getRes(t, gefurl(volURL, userToken))
 	ExpectEquals(t, code, 403)
 	res, code = getRes(t, gefurl(volURL, memberToken))
