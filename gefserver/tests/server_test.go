@@ -25,6 +25,9 @@ func TestServer(t *testing.T) {
 	config, err := def.ReadConfigFile(configFilePath)
 	CheckErr(t, err)
 
+	// overwrite this because when testing we're in a different working directory
+	config.Pier.InternalServicesFolder = internalServicesFolder
+
 	db, dbfile, err := db.InitDbForTesting()
 	CheckErr(t, err)
 	defer db.Close()
@@ -41,15 +44,20 @@ func TestServer(t *testing.T) {
 	MakeMember(t, db, "EUDAT", member.ID)
 	memberToken := token.Secret
 
-	pier, err := pier.NewPier(&db, config.TmpDir, config.Timeouts)
+	admin, token := AddUserWithToken(t, db, name3, email3)
+	MakeAdmin(t, db, "EUDAT", admin.ID)
+	adminToken := token.Secret
+
+	pier, err := pier.NewPier(&db, config.Pier, config.TmpDir, config.Timeouts)
 	CheckErr(t, err)
 
-	err = pier.SetDockerConnection(config.Docker, config.Limits, config.Timeouts, internalServicesFolder)
+	// connID, err := pier.AddDockerConnection(0, config.Docker)
+	_, err = pier.AddDockerConnection(0, config.Docker)
 	CheckErr(t, err)
 
 	var srv *httptest.Server
 	{
-		s, err := server.NewServer(config.Server, pier, config.TmpDir, &db)
+		s, err := server.NewServer(config, pier, &db)
 		CheckErr(t, err)
 		srv = httptest.NewServer(s.Server.Handler)
 	}
@@ -62,17 +70,19 @@ func TestServer(t *testing.T) {
 	ExpectEquals(t, code, 200)
 	ExpectEquals(t, info["Version"], server.Version)
 
-	// test get user info
+	// test get anonymous user info
 	userData, code := getRes(t, gefurl(baseURL+"user", ""))
 	ExpectEquals(t, code, 200)
 	ExpectEquals(t, userData, make(map[string]interface{}))
 
+	// test get superadmin info
 	userData, code = getRes(t, gefurl(baseURL+"user", superToken))
 	ExpectEquals(t, code, 200)
 	user := userData["User"].(map[string]interface{})
 	ExpectEquals(t, user["Name"], "admin")
 	ExpectEquals(t, userData["IsSuperAdmin"], true)
 
+	// test get simple user info
 	userData, code = getRes(t, gefurl(baseURL+"user", userToken))
 	ExpectEquals(t, code, 200)
 	user = userData["User"].(map[string]interface{})
@@ -80,6 +90,7 @@ func TestServer(t *testing.T) {
 	ExpectEquals(t, user["Email"], email1)
 	ExpectEquals(t, userData["IsSuperAdmin"], false)
 
+	// test get member info
 	userData, code = getRes(t, gefurl(baseURL+"user", memberToken))
 	ExpectEquals(t, code, 200)
 	user = userData["User"].(map[string]interface{})
@@ -91,12 +102,28 @@ func TestServer(t *testing.T) {
 	ExpectEquals(t, userRole["Name"], "Member")
 	ExpectEquals(t, userRole["CommunityID"], 1.0) // json represents numbers as floats
 
+	// test get admin info
+	userData, code = getRes(t, gefurl(baseURL+"user", adminToken))
+	ExpectEquals(t, code, 200)
+	user = userData["User"].(map[string]interface{})
+	ExpectEquals(t, user["Name"], name3)
+	ExpectEquals(t, user["Email"], email3)
+	ExpectEquals(t, userData["IsSuperAdmin"], false)
+	userRoleList = userData["Roles"].([]interface{})
+	userRole = userRoleList[0].(map[string]interface{})
+	ExpectEquals(t, userRole["Name"], "Administrator")
+	ExpectEquals(t, userRole["CommunityID"], 1.0) // json represents numbers as floats
+
 	// test create a build
 	build, code := postRes(t, gefurl(baseURL+"builds", ""), nil)
 	ExpectEquals(t, code, 401)
 	build, code = postRes(t, gefurl(baseURL+"builds", userToken), nil)
 	ExpectEquals(t, code, 403)
+	build, code = postRes(t, gefurl(baseURL+"builds", memberToken), nil)
+	ExpectEquals(t, code, 403)
 	build, code = postRes(t, gefurl(baseURL+"builds", superToken), nil)
+	ExpectEquals(t, code, 201)
+	build, code = postRes(t, gefurl(baseURL+"builds", adminToken), nil)
 	ExpectEquals(t, code, 201)
 
 	// test make a service
@@ -105,7 +132,9 @@ func TestServer(t *testing.T) {
 	ExpectEquals(t, code, 401)
 	res, code = uploadDir(t, gefurl(buildURL, userToken), "./clone_test")
 	ExpectEquals(t, code, 403)
-	res, code = uploadDir(t, gefurl(buildURL, superToken), "./clone_test")
+	res, code = uploadDir(t, gefurl(buildURL, memberToken), "./clone_test")
+	ExpectEquals(t, code, 403)
+	res, code = uploadDir(t, gefurl(buildURL, adminToken), "./clone_test")
 	ExpectEquals(t, code, 200)
 	service := res["Service"].(map[string]interface{})
 
@@ -125,10 +154,10 @@ func TestServer(t *testing.T) {
 	}
 	jobLink, code := postRes(t, gefurl(baseURL+"jobs", ""), jobParams)
 	ExpectEquals(t, code, 401)
-	// TODO: reenable this test after changing the permissions
-	// -- now any logged in users can create jobs
-	// jobLink, code = postRes(t, gefurl(baseURL+"jobs", userToken), jobParams)
-	// ExpectEquals(t, code, 403)
+	jobLink, code = postRes(t, gefurl(baseURL+"jobs", userToken), jobParams)
+	ExpectEquals(t, code, 403)
+	jobLink, code = postRes(t, gefurl(baseURL+"jobs", adminToken), jobParams)
+	ExpectEquals(t, code, 201)
 	jobLink, code = postRes(t, gefurl(baseURL+"jobs", memberToken), jobParams)
 	ExpectEquals(t, code, 201)
 

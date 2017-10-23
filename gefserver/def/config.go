@@ -75,21 +75,21 @@ type EventSystemConfig struct {
 
 // LimitConfig keeps the configuration options to limit resources used by a docker container while its execution
 type LimitConfig struct {
-	CPUShares  int64
-	CPUPeriod  int64
-	CPUQuota   int64
-	Memory     int64
-	MemorySwap int64
+	CPUShares  int64 `json:"CPUShares"`
+	CPUPeriod  int64 `json:"CPUPeriod"`
+	CPUQuota   int64 `json:"CPUQuota"`
+	Memory     int64 `json:"memory"`
+	MemorySwap int64 `json:"memorySwap"`
 }
 
 // TimeoutConfig specifies timeout parameters (in seconds)
 type TimeoutConfig struct {
-	DataStaging      float64
-	VolumeInspection float64
-	FileDownload     float64
-	Preparation      float64
-	JobExecution     float64
-	CheckInterval    float64 // how often (in seconds) we need to check a job's execution time
+	DataStaging      float64 `json:"dataStaging"`
+	VolumeInspection float64 `json:"volumeInspection"`
+	FileDownload     float64 `json:"fileDownload"`
+	Preparation      float64 `json:"preparation"`
+	JobExecution     float64 `json:"jobExecution"`
+	CheckInterval    float64 `json:"checkInterval"` // how often (in seconds) we need to check a job's execution time
 }
 
 func (c DockerConfig) String() string {

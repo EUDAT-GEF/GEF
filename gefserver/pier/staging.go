@@ -28,29 +28,38 @@ type VolumeItem struct {
 }
 
 // DownStreamContainerFile exported
-func (p *Pier) DownStreamContainerFile(volumeID string, fileLocation string, w http.ResponseWriter) error {
+func (p *Pier) DownStreamContainerFile(volumeID string, fileLocation string, limits def.LimitConfig, timeouts def.TimeoutConfig, w http.ResponseWriter) error {
+	job, err := p.db.GetJobOwningVolume(string(volumeID))
+	if err != nil {
+		return err
+	}
+	docker, found := p.docker[job.ConnectionID]
+	if !found {
+		return def.Err(nil, "Cannot find docker connection")
+	}
+
 	// Copy the file from the volume to a new container
 	binds := []dckr.VolBind{
 		dckr.NewVolBind(dckr.VolumeID(volumeID), "/root/volume", false),
 	}
-	containerID, swarmServiceID, _, err := p.docker.client.StartImageOrSwarmService(
-		string(p.docker.copyFromVolume.id),
-		p.docker.copyFromVolume.repoTag,
+	containerID, swarmServiceID, _, err := docker.client.StartImageOrSwarmService(
+		string(docker.copyFromVolume.id),
+		docker.copyFromVolume.repoTag,
 		[]string{
-			p.docker.copyFromVolume.cmd[0],
+			docker.copyFromVolume.cmd[0],
 			filepath.Join("/root/volume/", fileLocation),
 			"/root",
 		},
 		binds,
-		p.docker.limits,
-		p.docker.timeouts)
+		limits,
+		timeouts)
 
 	if err != nil {
 		return def.Err(err, "copying files from the volume to the container failed")
 	}
 
 	// Stream the file from the container
-	tarStream, err := p.docker.client.GetTarStream(string(containerID), fileLocation)
+	tarStream, err := docker.client.GetTarStream(string(containerID), fileLocation)
 
 	if err != nil {
 		return def.Err(err, "GetTarStream failed")
@@ -59,7 +68,7 @@ func (p *Pier) DownStreamContainerFile(volumeID string, fileLocation string, w h
 	tarBallReader := tar.NewReader(tarStream)
 	header, err := tarBallReader.Next()
 	defer func() {
-		err := p.docker.client.TerminateContainerOrSwarmService(string(containerID), swarmServiceID)
+		err := docker.client.TerminateContainerOrSwarmService(string(containerID), swarmServiceID)
 		if err != nil {
 			log.Println("error while forcefully removing container in DownStreamContainerFile", err)
 		}
@@ -81,7 +90,16 @@ func (p *Pier) DownStreamContainerFile(volumeID string, fileLocation string, w h
 }
 
 // ListFiles exported
-func (p *Pier) ListFiles(volumeID db.VolumeID, filePath string) ([]VolumeItem, error) {
+func (p *Pier) ListFiles(volumeID db.VolumeID, filePath string, limits def.LimitConfig, timeouts def.TimeoutConfig) ([]VolumeItem, error) {
+	job, err := p.db.GetJobOwningVolume(string(volumeID))
+	if err != nil {
+		return nil, err
+	}
+	docker, found := p.docker[job.ConnectionID]
+	if !found {
+		return nil, def.Err(nil, "Cannot find docker connection")
+	}
+
 	var volumeFileList []VolumeItem
 	if string(volumeID) == "" {
 		return volumeFileList, def.Err(nil, "volume name has not been specified")
@@ -93,34 +111,34 @@ func (p *Pier) ListFiles(volumeID db.VolumeID, filePath string) ([]VolumeItem, e
 	}
 
 	// Execute our image (it should produce a JSON file with the list of files)
-	containerID, swarmServiceID, _, err := p.docker.client.StartImageOrSwarmService(
-		string(p.docker.fileList.id),
-		p.docker.fileList.repoTag,
+	containerID, swarmServiceID, _, err := docker.client.StartImageOrSwarmService(
+		string(docker.fileList.id),
+		docker.fileList.repoTag,
 		[]string{
-			p.docker.fileList.cmd[0], filePath, "r",
+			docker.fileList.cmd[0], filePath, "r",
 		},
 		volumesToMount,
-		p.docker.limits,
-		p.docker.timeouts)
+		limits,
+		timeouts)
 
 	if err != nil {
 		return volumeFileList, def.Err(err, "running image failed")
 	}
 
 	// Stop but do not remove the container
-	_, err = p.docker.client.WaitContainerOrSwarmService(string(containerID))
+	_, err = docker.client.WaitContainerOrSwarmService(string(containerID))
 	if err != nil {
 		return volumeFileList, def.Err(err, "WaitContainerOrSwarmService failed")
 	}
 
 	// Reading the JSON file
-	volumeFileList, err = p.readJSON(string(containerID), "/root/_filelist.json")
+	volumeFileList, err = p.readJSON(docker.client, string(containerID), "/root/_filelist.json")
 	if err != nil {
 		return volumeFileList, def.Err(err, "readJson failed")
 	}
 
 	// Remove a container/swarm service (it was stopped earlier)
-	err = p.docker.client.TerminateContainerOrSwarmService(string(containerID), swarmServiceID)
+	err = docker.client.TerminateContainerOrSwarmService(string(containerID), swarmServiceID)
 	if err != nil {
 		return volumeFileList, def.Err(err, "TerminateContainerOrSwarmService failed")
 	}
@@ -129,9 +147,9 @@ func (p *Pier) ListFiles(volumeID db.VolumeID, filePath string) ([]VolumeItem, e
 }
 
 // readJSON reads a JSON file with the list of files (in a volume) from a container
-func (p *Pier) readJSON(containerID string, filePath string) ([]VolumeItem, error) {
+func (p *Pier) readJSON(dockerClient dckr.Client, containerID string, filePath string) ([]VolumeItem, error) {
 	var volumeFileList []VolumeItem
-	tarStream, err := p.docker.client.GetTarStream(containerID, filePath)
+	tarStream, err := dockerClient.GetTarStream(containerID, filePath)
 	if err != nil {
 		return nil, def.Err(err, "GetTarStream(%s) failed", filePath)
 	}

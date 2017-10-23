@@ -266,6 +266,7 @@ func (d *Db) GetUserRoles(userID int64) ([]Role, error) {
 	return roles, nil
 }
 
+// HasSuperAdminRole checks if a a user has super admin privileges
 func (d *Db) HasSuperAdminRole(userID int64) bool {
 	roles, err := d.GetUserRoles(userID)
 	if err != nil {
@@ -280,6 +281,7 @@ func (d *Db) HasSuperAdminRole(userID int64) bool {
 	return false
 }
 
+// IsServiceOwner checks if a certain user owns a certain service
 func (d *Db) IsServiceOwner(userID int64, serviceID ServiceID) bool {
 	var x OwnerTable
 	err := d.db.SelectOne(&x,
@@ -291,6 +293,7 @@ func (d *Db) IsServiceOwner(userID int64, serviceID ServiceID) bool {
 	return err == nil
 }
 
+// IsJobOwner checks if a certain user owns a certain job
 func (d *Db) IsJobOwner(userID int64, jobID JobID) bool {
 	var x OwnerTable
 	err := d.db.SelectOne(&x,

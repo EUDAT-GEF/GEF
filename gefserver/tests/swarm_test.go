@@ -36,26 +36,37 @@ func setSwarmMode(activate bool) {
 		os.Exit(1)
 	}
 
-	pier, err := pier.NewPier(&db.Db{}, config.TmpDir, config.Timeouts)
+	// overwrite this because when testing we're in a different working directory
+	config.Pier.InternalServicesFolder = internalServicesFolder
+
+	db, file, err := db.InitDbForTesting()
+	if err != nil {
+		log.Fatal(def.Err(err, "creating test db failed"))
+		os.Exit(1)
+	}
+	defer db.Close()
+	defer os.Remove(file)
+
+	pier, err := pier.NewPier(&db, config.Pier, config.TmpDir, config.Timeouts)
 	if err != nil {
 		log.Fatal(def.Err(err, "creating new pier failed"))
 		os.Exit(1)
 	}
 
-	err = pier.SetDockerConnection(config.Docker, config.Limits, config.Timeouts, internalServicesFolder)
+	connID, err := pier.AddDockerConnection(0, config.Docker)
 	if err != nil {
 		log.Fatal(def.Err(err, "setting docker connection failed"))
 		os.Exit(1)
 	}
 
 	if activate {
-		_, err = pier.InitiateSwarmMode("127.0.0.1", "127.0.0.1")
+		_, err = pier.InitiateSwarmMode(connID, "127.0.0.1", "127.0.0.1")
 		if err != nil {
 			log.Fatal(def.Err(err, "switching to the swarm mode or leaving swarm failed"))
 			os.Exit(1)
 		}
 	} else {
-		err = pier.LeaveIfInSwarmMode()
+		err = pier.LeaveIfInSwarmMode(connID)
 		if err != nil {
 			log.Fatal(def.Err(err, "leaving swarm failed"))
 			os.Exit(1)

@@ -30,6 +30,13 @@ func ExpectEquals(t *testing.T, left, right interface{}) {
 	}
 }
 
+func ExpectNotEquals(t *testing.T, left, right interface{}) {
+	if reflect.DeepEqual(left, right) {
+		t.Logf("Equals (should not be):\n%#v\n%#v\n@%s", left, right, caller())
+		t.FailNow()
+	}
+}
+
 func ExpectNotNil(t *testing.T, value interface{}) {
 	if value == nil {
 		t.Log("Unexpected NIL value", caller())
