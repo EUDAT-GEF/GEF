@@ -132,10 +132,10 @@ Follow these instructions to build the GEF from sources and deploy a GEF server:
 - Set a GOPATH, e.g. with `export GOPATH=/Users/myself/Projects/Go`.
 - Use `go get` to clone the GEF repository with `go get -u github.com/EUDAT-GEF/GEF`.
 - Go to the downloaded repository location with `cd $GOPATH/src/github.com/EUDAT-GEF/GEF`.
-- Build the project with `make build`.
 - Create a new self-signed certificate for the GEF server (with `make certificate`) or edit `config.json` to use your own (see section on `config.json`)
 - Define the `GEF_SECRET_KEY` environment variable (a random string is preferred, remember it and keep it in a safe location), e.g. with `export GEF_SECRET_KEY="E60su8IL6VY6Ca2"`
 - Define the `GEF_B2ACCESS_CONSUMER_KEY` and `GEF_B2ACCESS_SECRET_KEY` environment variables for connection to the B2ACCESS service. Since the development instance of B2ACCESS is used, random keys can be used here.
+- Build the project with `make build`.
 - Start the GEF with `make run_gef`.
 - The GEF Server is now running and the user interface can be reached on default port 8443. Go to `https://localhost:8443` to see whether the GEF user interface is online.
 - Adjust your webserver configuration to map this port to the HTTPS port 443 to make the GEF visible from the outside.
