@@ -368,6 +368,7 @@ public class InstantiateVM
 			EntityBuilder eb = new EntityBuilder(model);
 
 			instantiatedVmId = doCreate(properties, eb, model, client, egiInput);
+			System.out.println("VM ID: "+instantiatedVmId);
 			return instantiatedVmId;
 		}
 		catch (CommunicationException ex) 
