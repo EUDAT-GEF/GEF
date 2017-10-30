@@ -44,7 +44,6 @@ type dockerConnection struct {
 	stageIn        internalImage
 	fileList       internalImage
 	copyFromVolume internalImage
-	mavenEGI       internalImage
 }
 
 type internalImage struct {
@@ -139,17 +138,11 @@ func (p *Pier) AddDockerConnection(userID int64, config def.DockerConfig) (db.Co
 		return connID, err
 	}
 
-	mavenEGIImage, err := buildInternalImage(client, "maven-EGI")
-	if err != nil {
-		return connID, err
-	}
-
 	p.docker[connID] = dockerConnection{
 		client,
 		stageInImage,
 		fileListImage,
 		copyFromVolumeImage,
-		mavenEGIImage,
 	}
 	return connID, nil
 }
