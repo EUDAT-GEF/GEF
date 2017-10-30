@@ -1,3 +1,0 @@
-#!/bin/sh
-echo "This is a simple ASCII file!" > /tmp/log.txt
-echo "The time is now $(date -R)!" >> /tmp/log.txt
