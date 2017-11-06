@@ -383,6 +383,12 @@ func (s *Server) removeServiceHandler(w http.ResponseWriter, r *http.Request, e 
 }
 
 func (s *Server) executeServiceHandler(w http.ResponseWriter, r *http.Request, e environment) {
+	input := r.FormValue("pid")
+	if input == "" {
+		vars := mux.Vars(r)
+		input = vars["pid"]
+	}
+
 	serviceID := r.FormValue("serviceID")
 	if serviceID == "" {
 		vars := mux.Vars(r)
@@ -395,25 +401,36 @@ func (s *Server) executeServiceHandler(w http.ResponseWriter, r *http.Request, e
 		return
 	}
 
-	input := r.FormValue("pid")
-	if input == "" {
-		vars := mux.Vars(r)
-		input = vars["pid"]
-	}
-	logParam("pid", input)
-
 	if serviceID == "" {
 		Response{w}.ServerNewError("execute docker image: serviceID required")
-		return
-	}
-	if input == "" {
-		Response{w}.ServerNewError("execute docker image: pid required")
 		return
 	}
 
 	service, err := s.db.GetService(db.ServiceID(serviceID))
 	if err != nil {
 		Response{w}.ClientError("cannot get service", err)
+		return
+	}
+
+	// getting multiple inputs
+	if input == "" {
+		var allInputs []string
+		for _, value := range service.Input {
+			inputName := "pid_" + value.ID
+			currentInput := r.FormValue(inputName)
+			if currentInput == "" {
+				vars := mux.Vars(r)
+				currentInput = vars[inputName]
+			}
+			allInputs = append(allInputs, currentInput)
+		}
+		input = strings.Join(allInputs, "\n")
+	}
+
+	logParam("input", input)
+
+	if input == "" {
+		Response{w}.ServerNewError("execute docker image: pid required")
 		return
 	}
 

@@ -3,7 +3,7 @@
  */
 import React from 'react';
 import PropTypes from 'prop-types';
-import { Row, Col, Grid, Table, Button, Modal, OverlayTrigger, FormGroup, ControlLabel, Glyphicon, ListGroup, ListGroupItem } from 'react-bootstrap';
+import { Row, Col, Grid, Table, Button, Modal, OverlayTrigger, FormGroup, ControlLabel, Glyphicon } from 'react-bootstrap';
 import {Field, FieldArray, reduxForm, initialize} from 'redux-form';
 // this is a detailed view of a service, user will be able to execute service in this view
 
@@ -24,10 +24,10 @@ const tagValueRow  = (tag, value) => (
 );
 
 const JobCreatorForm = (props) => {
-    const { handleSubmit, handleModalOpen, handleRemoveService, pristine, reset, submitting, service } = props;
+    const { handleSubmit, handleServiceEditModalOpen, handleRemoveService, pristine, reset, submitting, service } = props;
     const inputStyle = {
-        height: '70px',
-        padding: '6px 12px',
+        // height: '20px',
+        padding: '4px 2px',
         fontSize: '14px',
         lineHeight: '1.42857143',
         color: '#555',
@@ -39,6 +39,12 @@ const JobCreatorForm = (props) => {
     const toolbarStyle = {
         padding: '5px',
     }
+
+    let srcList = [];
+    if (service.Input) {
+        srcList = service.Input;
+    }
+    let outCounter=-1;
     return (
         <form onSubmit={handleSubmit}>
             <Row>
@@ -47,20 +53,20 @@ const JobCreatorForm = (props) => {
                 </Col>
                 <Col xs={12} sm={9} md={9} >
                     <div className="input-group">
-                        <Field name="pid" component="textarea" placeholder="Put your PIDs or URLs here (one per line)" style={inputStyle} className="form-control"/>
+
+                        {srcList.map((out) => {
+                            outCounter++;
+                            return (
+                            <Field name={`pid_${out.ID}`} component="input" placeholder={`Put your #${outCounter+1} PID or URL here`} style={inputStyle} className="form-control" key={`pid_${out.ID}`}/>
+                            )
+                        })}
 
                         <div className="text-center">
                             <div className="btn-group" role="group" aria-label="toolbar" style={toolbarStyle}>
                                 <Button onClick={handleSubmit} disabled={pristine || submitting}><Glyphicon glyph="play"/> Start a New Job</Button>
-                                <Button onClick={handleModalOpen}><Glyphicon glyph="edit"/> Edit Metadata</Button>
+                                <Button onClick={handleServiceEditModalOpen}><Glyphicon glyph="edit"/> Edit Metadata</Button>
                                 <Button onClick={handleRemoveService}><Glyphicon glyph="trash"/> Remove the Service</Button>
                             </div>
-
-                            <ListGroup>
-                                <ListGroupItem href="#link1">Link 1  <Button onClick={handleModalOpen}><Glyphicon glyph="edit"/> Edit Metadata</Button></ListGroupItem>
-                                <ListGroupItem href="#link2">Link 2</ListGroupItem>
-
-                            </ListGroup>
                         </div>
                     </div>
                 </Col>
@@ -119,7 +125,6 @@ const InputTable = ({service, handleRemoveIO}) => {
 };
 
 const OutputTable = ({service, handleRemoveIO}) => {
-
     let outCounter = -1;
     let outputs = [];
     let srcList = [];
@@ -243,16 +248,16 @@ class Service extends React.Component {
         this.handleRemoveIO = this.props.handleRemoveIO.bind(this);
 
         this.state = {
-            showModal: false,
+            showServiceEditModal: false,
         };
     }
 
-    handleModalClose() {
-        this.setState({ showModal: false });
+    handleServiceEditModalClose() {
+        this.setState({ showServiceEditModal: false });
     }
 
-    handleModalOpen() {
-        this.setState({showModal: true});
+    handleServiceEditModalOpen() {
+        this.setState({showServiceEditModal: true});
     }
 
     handleRemoveService() {
@@ -284,12 +289,12 @@ class Service extends React.Component {
                             {tagValueRow("ID", ID)}
                             {tagValueRow("Description", Description)}
                             {tagValueRow("Version", Version)}
-                            <JobCreator handleSubmit={this.handleSubmit} handleModalOpen={this.handleModalOpen.bind(this)} handleRemoveService={this.handleRemoveService.bind(this)} service={this.props.selectedService.Service}/>
+                            <JobCreator handleSubmit={this.handleSubmit} handleServiceEditModalOpen={this.handleServiceEditModalOpen.bind(this)} handleRemoveService={this.handleRemoveService.bind(this)} service={this.props.selectedService.Service}/>
                         </div>
                     </div>
 
                     <div>
-                        <Modal show={this.state.showModal} onHide={this.handleModalClose.bind(this)} className="metadata-modal">
+                        <Modal show={this.state.showServiceEditModal} onHide={this.handleServiceEditModalClose.bind(this)} className="metadata-modal">
                             <Modal.Header closeButton>
                                 <Modal.Title>{this.props.selectedService.Service.Name}</Modal.Title>
                             </Modal.Header>
@@ -298,7 +303,7 @@ class Service extends React.Component {
                             </Modal.Body>
                             <Modal.Footer>
                                 <Button className="btn btn-primary" onClick={this.handleUpdate}>Save</Button>
-                                <Button onClick={this.handleModalClose.bind(this)}>Close</Button>
+                                <Button onClick={this.handleServiceEditModalClose.bind(this)}>Close</Button>
                             </Modal.Footer>
                         </Modal>
                     </div>
