@@ -6,10 +6,11 @@ import (
 	"testing"
 	"time"
 
+	"strings"
+
 	"github.com/EUDAT-GEF/GEF/gefserver/db"
 	"github.com/EUDAT-GEF/GEF/gefserver/def"
 	"github.com/EUDAT-GEF/GEF/gefserver/pier"
-	"strings"
 )
 
 const testPIDbinary = "11304/a3d012ca-4e23-425e-9e2a-1e6a195b966f"
@@ -174,13 +175,11 @@ func TestJobTimeOut(t *testing.T) {
 	service, err := p.BuildService(connID, user.ID, "./timeout_test")
 	CheckErr(t, err)
 	log.Print("test service built: ", service.ID, " ", service.ImageID)
-	// log.Printf("test service built: %#v", service)
 
 	timedOutjob, err := p.RunService(user.ID, service.ID, testPIDbinary, config.Limits, config.Timeouts)
 	CheckErr(t, err)
 
 	log.Print("test timed out job: ", timedOutjob.ID)
-	// log.Printf("test timed out job: %#v", timedOutjob)
 	timedOutJobId := timedOutjob.ID
 
 	for timedOutjob.State.Code == -1 {
