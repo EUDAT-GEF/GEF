@@ -25,6 +25,7 @@ func TestAgainInSwarm(t *testing.T) {
 	TestClient(t)
 	TestExecution(t)
 	TestJobTimeOut(t)
+	TestMultipleInputsAndOutputs(t)
 	TestServer(t)
 	setSwarmMode(false) // leaving a swarm
 }

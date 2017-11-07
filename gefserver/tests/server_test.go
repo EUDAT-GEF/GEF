@@ -150,7 +150,7 @@ func TestServer(t *testing.T) {
 	// test create a job
 	jobParams := map[string]string{
 		"serviceID": serviceID,
-		"pid":       testPID,
+		"pid":       testPIDbinary,
 	}
 	jobLink, code := postRes(t, gefurl(baseURL+"jobs", ""), jobParams)
 	ExpectEquals(t, code, 401)
