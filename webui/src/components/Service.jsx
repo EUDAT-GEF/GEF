@@ -68,14 +68,14 @@ const JobCreatorForm = (props) => {
                             inputCounter++;
                             console.log("INPUT =");
                             console.log(inputSrc);
-                            if (inputSrc.Type=="url") {
+                            if (inputSrc.Type.toLowerCase()=="url") {
                                 return (
                                     <Field name={`pid_${inputSrc.ID}`} component="input"
                                            placeholder={`Input source #${inputCounter + 1}: insert PID or URL`}
                                            style={urlStyle} className="form-control" key={`pid_${inputSrc.ID}`}/>
                                 )
                             }
-                            if (inputSrc.Type=="string") {
+                            if (inputSrc.Type.toLowerCase()=="string") {
                                 return (
                                     <Field name={`pid_${inputSrc.ID}`} component="textarea"
                                            placeholder={`Input source #${inputCounter + 1}: insert your content`}

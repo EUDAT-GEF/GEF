@@ -99,7 +99,7 @@ type IOPortTable struct {
 	Path      string
 	IsInput   bool
 	ServiceID string
-	Type string
+	Type      string
 	Revision  int
 }
 

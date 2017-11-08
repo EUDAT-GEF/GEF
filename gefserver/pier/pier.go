@@ -292,8 +292,6 @@ func (p *Pier) updateJobDurationTime(job db.Job) {
 }
 
 func (p *Pier) runJob(job *db.Job, service db.Service, inputSrc []string, limits def.LimitConfig, timeouts def.TimeoutConfig) {
-	//inputArray := strings.Split(inputSrc, "\n")
-
 	err2str := func(err error) string {
 		if err == nil {
 			return ""
