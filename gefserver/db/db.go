@@ -46,7 +46,6 @@ type JobTable struct {
 	ID           string
 	ConnectionID int
 	ServiceID    string
-	Input        string
 	Created      time.Time
 	Duration     int64 // duration time in seconds
 	Error        string
@@ -61,6 +60,7 @@ type VolumeTable struct {
 	IsInput    bool
 	JobID      string
 	IOPortName string
+	Content    string
 	Revision   int
 }
 
@@ -99,6 +99,7 @@ type IOPortTable struct {
 	Path      string
 	IsInput   bool
 	ServiceID string
+	Type string
 	Revision  int
 }
 
@@ -507,7 +508,6 @@ func (d *Db) jobTable2Job(storedJob JobTable) (Job, error) {
 	job.ID = JobID(storedJob.ID)
 	job.ConnectionID = ConnectionID(storedJob.ConnectionID)
 	job.ServiceID = ServiceID(storedJob.ServiceID)
-	job.Input = storedJob.Input
 	job.Created = storedJob.Created
 
 	if jobState.Code < 0 {
@@ -529,7 +529,6 @@ func (d *Db) job2JobTable(job Job) JobTable {
 	storedJob.ID = string(job.ID)
 	storedJob.ConnectionID = int(job.ConnectionID)
 	storedJob.ServiceID = string(job.ServiceID)
-	storedJob.Input = job.Input
 	storedJob.Created = job.Created
 	storedJob.Duration = job.Duration
 	storedJob.Error = job.State.Error
@@ -579,8 +578,6 @@ func (d *Db) GetJob(id JobID) (Job, error) {
 	return job, err
 }
 
-//err := d.db.SelectOne(&dbjob, "SELECT jobs.* FROM jobs INNER JOIN volumes ON jobs.ID = volumes.JobID WHERE volumes.ID=?", volumeID)
-
 // SetJobState sets a job state
 func (d *Db) SetJobState(id JobID, state JobState) error {
 	var storedJob JobTable
@@ -597,11 +594,13 @@ func (d *Db) SetJobState(id JobID, state JobState) error {
 }
 
 // AddJobVolume sets a job input/output volume
-func (d *Db) AddJobVolume(id JobID, inputVolume VolumeID, isInput bool) error {
+func (d *Db) AddJobVolume(id JobID, volume VolumeID, isInput bool, portName string, content string) error {
 	var storedVolumes VolumeTable
-	storedVolumes.ID = string(inputVolume)
+	storedVolumes.ID = string(volume)
 	storedVolumes.JobID = string(id)
 	storedVolumes.IsInput = isInput
+	storedVolumes.IOPortName = portName
+	storedVolumes.Content = content
 	return d.db.Insert(&storedVolumes)
 }
 
@@ -653,6 +652,7 @@ func (d *Db) serviceTable2Service(storedService ServiceTable) (Service, error) {
 		curInput.ID = i.ID
 		curInput.Name = i.Name
 		curInput.Path = i.Path
+		curInput.Type = i.Type
 
 		inputPorts = append(inputPorts, curInput)
 	}
@@ -668,6 +668,7 @@ func (d *Db) serviceTable2Service(storedService ServiceTable) (Service, error) {
 		curOutput.ID = o.ID
 		curOutput.Name = o.Name
 		curOutput.Path = o.Path
+		curOutput.Type = o.Type
 
 		outputPorts = append(outputPorts, curOutput)
 	}
@@ -727,6 +728,7 @@ func (d *Db) AddIOPort(service Service) error {
 	var err error
 	for _, p := range service.Input {
 		var curInputPort IOPortTable
+		curInputPort.Type = p.Type
 		curInputPort.Path = p.Path
 		curInputPort.Name = p.Name
 		curInputPort.ID = p.ID
@@ -740,6 +742,7 @@ func (d *Db) AddIOPort(service Service) error {
 
 	for _, p := range service.Output {
 		var curOutputPort IOPortTable
+		curOutputPort.Type = p.Type
 		curOutputPort.Path = p.Path
 		curOutputPort.Name = p.Name
 		curOutputPort.ID = p.ID

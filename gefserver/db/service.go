@@ -40,4 +40,5 @@ type IOPort struct {
 	ID   string
 	Name string
 	Path string
+	Type string
 }

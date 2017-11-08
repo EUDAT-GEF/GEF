@@ -25,8 +25,18 @@ const tagValueRow  = (tag, value) => (
 
 const JobCreatorForm = (props) => {
     const { handleSubmit, handleServiceEditModalOpen, handleRemoveService, pristine, reset, submitting, service } = props;
-    const inputStyle = {
-        // height: '20px',
+    const urlStyle = {
+        padding: '4px 2px',
+        fontSize: '14px',
+        lineHeight: '1.42857143',
+        color: '#555',
+        backgroundColor: '#fff',
+        backgroundImage: 'none',
+        border: '1px solid #ccc',
+        borderRadius: '4px',
+    }
+    const stringStyle = {
+        height: '70px',
         padding: '4px 2px',
         fontSize: '14px',
         lineHeight: '1.42857143',
@@ -44,7 +54,7 @@ const JobCreatorForm = (props) => {
     if (service.Input) {
         srcList = service.Input;
     }
-    let outCounter=-1;
+    let inputCounter=-1;
     return (
         <form onSubmit={handleSubmit}>
             <Row>
@@ -54,11 +64,24 @@ const JobCreatorForm = (props) => {
                 <Col xs={12} sm={9} md={9} >
                     <div className="input-group">
 
-                        {srcList.map((out) => {
-                            outCounter++;
-                            return (
-                            <Field name={`pid_${out.ID}`} component="input" placeholder={`Put your #${outCounter+1} PID or URL here`} style={inputStyle} className="form-control" key={`pid_${out.ID}`}/>
-                            )
+                        {srcList.map((inputSrc) => {
+                            inputCounter++;
+                            console.log("INPUT =");
+                            console.log(inputSrc);
+                            if (inputSrc.Type=="url") {
+                                return (
+                                    <Field name={`pid_${inputSrc.ID}`} component="input"
+                                           placeholder={`Input source #${inputCounter + 1}: insert PID or URL`}
+                                           style={urlStyle} className="form-control" key={`pid_${inputSrc.ID}`}/>
+                                )
+                            }
+                            if (inputSrc.Type=="string") {
+                                return (
+                                    <Field name={`pid_${inputSrc.ID}`} component="textarea"
+                                           placeholder={`Input source #${inputCounter + 1}: insert your content`}
+                                           style={stringStyle} className="form-control" key={`pid_${inputSrc.ID}`}/>
+                                )
+                            }
                         })}
 
                         <div className="text-center">

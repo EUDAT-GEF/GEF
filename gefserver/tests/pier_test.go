@@ -6,8 +6,6 @@ import (
 	"testing"
 	"time"
 
-	"strings"
-
 	"github.com/EUDAT-GEF/GEF/gefserver/db"
 	"github.com/EUDAT-GEF/GEF/gefserver/def"
 	"github.com/EUDAT-GEF/GEF/gefserver/pier"
@@ -76,7 +74,7 @@ func TestClient(t *testing.T) {
 		return
 	}
 
-	job, err := pier.RunService(user.ID, service.ID, testPIDbinary, config.Limits, config.Timeouts)
+	job, err := pier.RunService(user.ID, service.ID, []string{testPIDbinary}, config.Limits, config.Timeouts)
 	CheckErr(t, err)
 	for job.State.Code == -1 {
 		job, err = db.GetJob(job.ID)
@@ -125,7 +123,7 @@ func TestExecution(t *testing.T) {
 	CheckErr(t, err)
 	log.Print("test service built: ", service.ID, " ", service.ImageID)
 
-	job, err := p.RunService(user.ID, service.ID, testPIDbinary, config.Limits, config.Timeouts)
+	job, err := p.RunService(user.ID, service.ID, []string{testPIDbinary}, config.Limits, config.Timeouts)
 	CheckErr(t, err)
 
 	log.Print("test job: ", job.ID)
@@ -176,7 +174,7 @@ func TestJobTimeOut(t *testing.T) {
 	CheckErr(t, err)
 	log.Print("test service built: ", service.ID, " ", service.ImageID)
 
-	timedOutjob, err := p.RunService(user.ID, service.ID, testPIDbinary, config.Limits, config.Timeouts)
+	timedOutjob, err := p.RunService(user.ID, service.ID, []string{testPIDbinary}, config.Limits, config.Timeouts)
 	CheckErr(t, err)
 
 	log.Print("test timed out job: ", timedOutjob.ID)
@@ -213,9 +211,7 @@ func TestMultipleInputsAndOutputs(t *testing.T) {
 	CheckErr(t, err)
 	log.Print("test service built: ", service.ID, " ", service.ImageID)
 
-	input := strings.Join([]string{testPIDbinary, testPIDtext}, "\n")
-
-	multiIntputsjob, err := p.RunService(user.ID, service.ID, input, config.Limits, config.Timeouts)
+	multiIntputsjob, err := p.RunService(user.ID, service.ID, []string{testPIDbinary, testPIDtext}, config.Limits, config.Timeouts)
 	CheckErr(t, err)
 
 	for multiIntputsjob.State.Code == -1 {

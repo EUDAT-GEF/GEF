@@ -7,8 +7,10 @@ LABEL "eudat.gef.service.description"="Performs text segmentation (splits into s
 LABEL "eudat.gef.service.version"="1.0"
 LABEL "eudat.gef.service.input.1.name"="First Input Directory"
 LABEL "eudat.gef.service.input.1.path"="/root/input1"
+LABEL "eudat.gef.service.input.1.type"="url"
 LABEL "eudat.gef.service.input.2.name"="Second Input Directory"
 LABEL "eudat.gef.service.input.2.path"="/root/input2"
+LABEL "eudat.gef.service.input.2.type"="string"
 LABEL "eudat.gef.service.output.1.name"="Output Directory"
 LABEL "eudat.gef.service.output.1.path"="/root/output"
 

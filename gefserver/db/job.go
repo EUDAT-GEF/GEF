@@ -7,7 +7,6 @@ type Job struct {
 	ID           JobID
 	ConnectionID ConnectionID
 	ServiceID    ServiceID
-	Input        string
 	Created      time.Time
 	Duration     int64
 	State        *JobState

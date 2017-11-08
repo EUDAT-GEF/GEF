@@ -413,8 +413,8 @@ func (s *Server) executeServiceHandler(w http.ResponseWriter, r *http.Request, e
 	}
 
 	// getting multiple inputs
+	var allInputs []string
 	if input == "" {
-		var allInputs []string
 		for _, value := range service.Input {
 			inputName := "pid_" + value.ID
 			currentInput := r.FormValue(inputName)
@@ -424,7 +424,8 @@ func (s *Server) executeServiceHandler(w http.ResponseWriter, r *http.Request, e
 			}
 			allInputs = append(allInputs, currentInput)
 		}
-		input = strings.Join(allInputs, "\n")
+	} else {
+		allInputs = append(allInputs, input)
 	}
 
 	logParam("input", input)
@@ -434,7 +435,7 @@ func (s *Server) executeServiceHandler(w http.ResponseWriter, r *http.Request, e
 		return
 	}
 
-	job, err := s.pier.RunService(user.ID, service.ID, input, s.limits, s.timeouts)
+	job, err := s.pier.RunService(user.ID, service.ID, allInputs, s.limits, s.timeouts)
 	if err != nil {
 		Response{w}.ServerError("cannot read the reqested file from the archive", err)
 		return

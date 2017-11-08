@@ -255,7 +255,7 @@ func (p *Pier) startTimeOutTicker(jobId db.JobID, timeOut float64) {
 }
 
 // RunService exported
-func (p *Pier) RunService(userID int64, id db.ServiceID, inputSrc string, limits def.LimitConfig, timeouts def.TimeoutConfig) (db.Job, error) {
+func (p *Pier) RunService(userID int64, id db.ServiceID, inputSrc []string, limits def.LimitConfig, timeouts def.TimeoutConfig) (db.Job, error) {
 	service, err := p.db.GetService(id)
 	if err != nil {
 		return db.Job{}, err
@@ -267,7 +267,6 @@ func (p *Pier) RunService(userID int64, id db.ServiceID, inputSrc string, limits
 		ConnectionID: service.ConnectionID,
 		ServiceID:    service.ID,
 		Created:      time.Now(),
-		Input:        inputSrc,
 		State:        &jobState,
 	}
 
@@ -292,8 +291,8 @@ func (p *Pier) updateJobDurationTime(job db.Job) {
 	}
 }
 
-func (p *Pier) runJob(job *db.Job, service db.Service, inputSrc string, limits def.LimitConfig, timeouts def.TimeoutConfig) {
-	inputArray := strings.Split(inputSrc, "\n")
+func (p *Pier) runJob(job *db.Job, service db.Service, inputSrc []string, limits def.LimitConfig, timeouts def.TimeoutConfig) {
+	//inputArray := strings.Split(inputSrc, "\n")
 
 	err2str := func(err error) string {
 		if err == nil {
@@ -312,7 +311,7 @@ func (p *Pier) runJob(job *db.Job, service db.Service, inputSrc string, limits d
 	var err error
 	var inputVolumes []dckr.Volume
 	{
-		for i := range inputArray {
+		for i := range inputSrc {
 			err = p.db.SetJobState(job.ID, db.NewJobStateOk("Creating a new input volume #"+string(i+1), -1))
 			if err != nil {
 				log.Println(err)
@@ -328,7 +327,7 @@ func (p *Pier) runJob(job *db.Job, service db.Service, inputSrc string, limits d
 				p.updateJobDurationTime(*job)
 				return
 			}
-			err = p.db.AddJobVolume(job.ID, db.VolumeID(curInputVolume.ID), true)
+			err = p.db.AddJobVolume(job.ID, db.VolumeID(curInputVolume.ID), true, service.Input[i].Name, inputSrc[i])
 			if err != nil {
 				log.Println(err)
 			}
@@ -341,7 +340,7 @@ func (p *Pier) runJob(job *db.Job, service db.Service, inputSrc string, limits d
 			log.Println(err)
 		}
 
-		for i := range inputArray {
+		for i := range inputSrc {
 			binds := []dckr.VolBind{
 				dckr.NewVolBind(inputVolumes[i].ID, "/volume", false),
 			}
@@ -349,7 +348,7 @@ func (p *Pier) runJob(job *db.Job, service db.Service, inputSrc string, limits d
 			containerID, swarmServiceID, exitCode, output, err := docker.client.ExecuteImage(
 				string(docker.stageIn.id),
 				docker.stageIn.repoTag,
-				append(docker.stageIn.cmd, inputArray[i]),
+				append(docker.stageIn.cmd, inputSrc[i]),
 				binds,
 				limits,
 				timeouts,
@@ -400,7 +399,7 @@ func (p *Pier) runJob(job *db.Job, service db.Service, inputSrc string, limits d
 				p.updateJobDurationTime(*job)
 				return
 			}
-			err = p.db.AddJobVolume(job.ID, db.VolumeID(curOutputVolume.ID), false)
+			err = p.db.AddJobVolume(job.ID, db.VolumeID(curOutputVolume.ID), false, service.Output[i].Name, "")
 			if err != nil {
 				log.Println(err)
 			}
@@ -415,7 +414,7 @@ func (p *Pier) runJob(job *db.Job, service db.Service, inputSrc string, limits d
 		}
 
 		var binds []dckr.VolBind
-		for i := range inputArray {
+		for i := range inputSrc {
 			binds = append(binds, dckr.NewVolBind(inputVolumes[i].ID, service.Input[i].Path, true))
 		}
 		for i := range service.Output {
@@ -627,7 +626,13 @@ func addVecValue(vec *[]db.IOPort, ks []string, value string) {
 	switch ks[1] {
 	case "name":
 		(*vec)[id].Name = value
+		fmt.Println("NAME")
+		fmt.Println(value)
 	case "path":
 		(*vec)[id].Path = value
+	case "type":
+		(*vec)[id].Type = value
+		fmt.Println("TYPE")
+		fmt.Println(value)
 	}
 }
