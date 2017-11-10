@@ -644,8 +644,6 @@ func addVecValue(vec *[]db.IOPort, ks []string, value string) {
 	case "type":
 		(*vec)[id].Type = value
 	case "filename":
-		fmt.Println("SERVICE VAL")
-		fmt.Println(value)
 		(*vec)[id].FileName = value
 
 	}

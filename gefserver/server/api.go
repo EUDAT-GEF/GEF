@@ -16,7 +16,6 @@ import (
 	"github.com/EUDAT-GEF/GEF/gefserver/def"
 	"github.com/EUDAT-GEF/GEF/gefserver/pier"
 	"github.com/gorilla/mux"
-	"fmt"
 )
 
 const (
@@ -450,9 +449,6 @@ func (s *Server) executeServiceHandler(w http.ResponseWriter, r *http.Request, e
 	} else {
 		allInputs = append(allInputs, input)
 	}
-
-	fmt.Println(allInputs)
-	//logParam("input", input)
 
 	if len(allInputs) == 0 {
 		Response{w}.ServerNewError("execute docker image: some input is required")

@@ -15,7 +15,6 @@ import (
 	"github.com/EUDAT-GEF/GEF/gefserver/db"
 	"github.com/EUDAT-GEF/GEF/gefserver/def"
 	"github.com/EUDAT-GEF/GEF/gefserver/pier/internal/dckr"
-	"fmt"
 )
 
 // VolumeItem describes a folder content
@@ -92,9 +91,6 @@ func (p *Pier) DownStreamContainerFile(volumeID string, fileLocation string, lim
 
 // UploadFileIntoVolume exported
 func (p *Pier) UploadFileIntoVolume(volumeID string, srcFileLocation string, dstFileName string, limits def.LimitConfig, timeouts def.TimeoutConfig) error {
-	fmt.Println("FILE UPLOAD")
-	fmt.Println(srcFileLocation)
-
 	job, err := p.db.GetJobOwningVolume(string(volumeID))
 	if err != nil {
 		return err
@@ -113,8 +109,6 @@ func (p *Pier) UploadFileIntoVolume(volumeID string, srcFileLocation string, dst
 		docker.copyToAndFromVolume.repoTag,
 		[]string{
 			"ls",
-			//"echo",
-			//"'Uploading file into the volume'",
 		},
 		binds,
 		limits,
@@ -126,7 +120,6 @@ func (p *Pier) UploadFileIntoVolume(volumeID string, srcFileLocation string, dst
 
 	err = docker.client.UploadFile2Container(string(containerID), srcFileLocation, "/root/volume")
 	if err != nil {
-		fmt.Println(err)
 		return def.Err(err, "data uploading failed")
 	}
 

@@ -100,7 +100,7 @@ type IOPortTable struct {
 	IsInput   bool
 	ServiceID string
 	Type      string
-	FileName	string
+	FileName  string
 	Revision  int
 }
 
