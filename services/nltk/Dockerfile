@@ -11,6 +11,7 @@ LABEL "eudat.gef.service.input.1.type"="url"
 LABEL "eudat.gef.service.input.2.name"="Second Input Directory"
 LABEL "eudat.gef.service.input.2.path"="/root/input2"
 LABEL "eudat.gef.service.input.2.type"="string"
+LABEL "eudat.gef.service.input.2.filename"="input2.txt"
 LABEL "eudat.gef.service.output.1.name"="Output Directory"
 LABEL "eudat.gef.service.output.1.path"="/root/output"
 

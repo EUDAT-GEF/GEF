@@ -100,6 +100,7 @@ type IOPortTable struct {
 	IsInput   bool
 	ServiceID string
 	Type      string
+	FileName	string
 	Revision  int
 }
 
@@ -653,6 +654,7 @@ func (d *Db) serviceTable2Service(storedService ServiceTable) (Service, error) {
 		curInput.Name = i.Name
 		curInput.Path = i.Path
 		curInput.Type = i.Type
+		curInput.FileName = i.FileName
 
 		inputPorts = append(inputPorts, curInput)
 	}
@@ -669,6 +671,7 @@ func (d *Db) serviceTable2Service(storedService ServiceTable) (Service, error) {
 		curOutput.Name = o.Name
 		curOutput.Path = o.Path
 		curOutput.Type = o.Type
+		curOutput.FileName = o.FileName
 
 		outputPorts = append(outputPorts, curOutput)
 	}
@@ -728,6 +731,7 @@ func (d *Db) AddIOPort(service Service) error {
 	var err error
 	for _, p := range service.Input {
 		var curInputPort IOPortTable
+		curInputPort.FileName = p.FileName
 		curInputPort.Type = p.Type
 		curInputPort.Path = p.Path
 		curInputPort.Name = p.Name
@@ -742,6 +746,7 @@ func (d *Db) AddIOPort(service Service) error {
 
 	for _, p := range service.Output {
 		var curOutputPort IOPortTable
+		curOutputPort.FileName = p.FileName
 		curOutputPort.Type = p.Type
 		curOutputPort.Path = p.Path
 		curOutputPort.Name = p.Name

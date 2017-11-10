@@ -40,11 +40,11 @@ type Pier struct {
 }
 
 type dockerConnection struct {
-	client         dckr.Client
-	stageIn        internalImage
-	fileList       internalImage
-	copyFromVolume internalImage
-	mavenEGI       internalImage
+	client              dckr.Client
+	stageIn             internalImage
+	fileList            internalImage
+	copyToAndFromVolume internalImage
+	mavenEGI            internalImage
 }
 
 type internalImage struct {
@@ -134,7 +134,7 @@ func (p *Pier) AddDockerConnection(userID int64, config def.DockerConfig) (db.Co
 	if err != nil {
 		return connID, err
 	}
-	copyFromVolumeImage, err := buildInternalImage(client, "copy-from-volume")
+	copyToAndFromVolumeImage, err := buildInternalImage(client, "copy-to-and-from-volume")
 	if err != nil {
 		return connID, err
 	}
@@ -148,7 +148,7 @@ func (p *Pier) AddDockerConnection(userID int64, config def.DockerConfig) (db.Co
 		client,
 		stageInImage,
 		fileListImage,
-		copyFromVolumeImage,
+		copyToAndFromVolumeImage,
 		mavenEGIImage,
 	}
 	return connID, nil
@@ -343,37 +343,52 @@ func (p *Pier) runJob(job *db.Job, service db.Service, inputSrc []string, limits
 				dckr.NewVolBind(inputVolumes[i].ID, "/volume", false),
 			}
 
-			containerID, swarmServiceID, exitCode, output, err := docker.client.ExecuteImage(
-				string(docker.stageIn.id),
-				docker.stageIn.repoTag,
-				append(docker.stageIn.cmd, inputSrc[i]),
-				binds,
-				limits,
-				timeouts,
-				true)
+			if (strings.ToLower(service.Input[i].Type) == "string") && (service.Input[i].FileName != "") {
+				err = p.UploadFileIntoVolume(string(inputVolumes[i].ID), inputSrc[i], service.Input[i].FileName, limits, timeouts)
 
-			dbErr := p.db.AddJobTask(job.ID, "Data staging #"+string(i+1), string(containerID), swarmServiceID, err2str(err), exitCode, output)
-			if dbErr != nil {
-				log.Println(dbErr)
-			}
-
-			if err != nil {
-				err = p.db.SetJobState(job.ID, db.NewJobStateError("Data staging #"+string(i+1)+" failed", 1))
 				if err != nil {
-					log.Println(err)
-				}
-				p.updateJobDurationTime(*job)
-				return
-			}
+					err = p.db.SetJobState(job.ID, db.NewJobStateError("String Data staging #"+string(i+1)+" failed", 1))
+					if err != nil {
 
-			if exitCode != 0 {
-				msg := fmt.Sprintf("Data staging #"+string(i+1)+" failed (exitCode = %v)", exitCode)
-				err = p.db.SetJobState(job.ID, db.NewJobStateOk(msg, 1))
-				if err != nil {
-					log.Println(err)
+						log.Println(err)
+					}
+					p.updateJobDurationTime(*job)
+					return
 				}
-				p.updateJobDurationTime(*job)
-				return
+
+			} else {
+				containerID, swarmServiceID, exitCode, output, err := docker.client.ExecuteImage(
+					string(docker.stageIn.id),
+					docker.stageIn.repoTag,
+					append(docker.stageIn.cmd, inputSrc[i]),
+					binds,
+					limits,
+					timeouts,
+					true)
+
+				dbErr := p.db.AddJobTask(job.ID, "Data staging #"+string(i+1), string(containerID), swarmServiceID, err2str(err), exitCode, output)
+				if dbErr != nil {
+					log.Println(dbErr)
+				}
+
+				if err != nil {
+					err = p.db.SetJobState(job.ID, db.NewJobStateError("Data staging #"+string(i+1)+" failed", 1))
+					if err != nil {
+						log.Println(err)
+					}
+					p.updateJobDurationTime(*job)
+					return
+				}
+
+				if exitCode != 0 {
+					msg := fmt.Sprintf("Data staging #"+string(i+1)+" failed (exitCode = %v)", exitCode)
+					err = p.db.SetJobState(job.ID, db.NewJobStateOk(msg, 1))
+					if err != nil {
+						log.Println(err)
+					}
+					p.updateJobDurationTime(*job)
+					return
+				}
 			}
 		}
 	}
@@ -624,13 +639,14 @@ func addVecValue(vec *[]db.IOPort, ks []string, value string) {
 	switch ks[1] {
 	case "name":
 		(*vec)[id].Name = value
-		fmt.Println("NAME")
-		fmt.Println(value)
 	case "path":
 		(*vec)[id].Path = value
 	case "type":
 		(*vec)[id].Type = value
-		fmt.Println("TYPE")
+	case "filename":
+		fmt.Println("SERVICE VAL")
 		fmt.Println(value)
+		(*vec)[id].FileName = value
+
 	}
 }

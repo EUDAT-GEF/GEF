@@ -37,8 +37,9 @@ type ImageID string
 // The service can only read data from volumes and write to a single volume
 // Path specifies where the volumes are mounted
 type IOPort struct {
-	ID   string
-	Name string
-	Path string
-	Type string
+	ID       string
+	Name     string
+	Path     string
+	Type     string
+	FileName string
 }

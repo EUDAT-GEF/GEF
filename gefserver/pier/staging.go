@@ -15,6 +15,7 @@ import (
 	"github.com/EUDAT-GEF/GEF/gefserver/db"
 	"github.com/EUDAT-GEF/GEF/gefserver/def"
 	"github.com/EUDAT-GEF/GEF/gefserver/pier/internal/dckr"
+	"fmt"
 )
 
 // VolumeItem describes a folder content
@@ -43,10 +44,10 @@ func (p *Pier) DownStreamContainerFile(volumeID string, fileLocation string, lim
 		dckr.NewVolBind(dckr.VolumeID(volumeID), "/root/volume", false),
 	}
 	containerID, swarmServiceID, _, err := docker.client.StartImageOrSwarmService(
-		string(docker.copyFromVolume.id),
-		docker.copyFromVolume.repoTag,
+		string(docker.copyToAndFromVolume.id),
+		docker.copyToAndFromVolume.repoTag,
 		[]string{
-			docker.copyFromVolume.cmd[0],
+			docker.copyToAndFromVolume.cmd[0],
 			filepath.Join("/root/volume/", fileLocation),
 			"/root",
 		},
@@ -86,6 +87,56 @@ func (p *Pier) DownStreamContainerFile(volumeID string, fileLocation string, lim
 		http.Error(w, "Error", http.StatusInternalServerError)
 		return errors.New("internal error while reading tarball")
 	}
+	return nil
+}
+
+// UploadFileIntoVolume exported
+func (p *Pier) UploadFileIntoVolume(volumeID string, srcFileLocation string, dstFileName string, limits def.LimitConfig, timeouts def.TimeoutConfig) error {
+	fmt.Println("FILE UPLOAD")
+	fmt.Println(srcFileLocation)
+
+	job, err := p.db.GetJobOwningVolume(string(volumeID))
+	if err != nil {
+		return err
+	}
+	docker, found := p.docker[job.ConnectionID]
+	if !found {
+		return def.Err(nil, "Cannot find docker connection")
+	}
+
+	// Copy the file from the volume to a new container
+	binds := []dckr.VolBind{
+		dckr.NewVolBind(dckr.VolumeID(volumeID), "/root/volume", false),
+	}
+	containerID, swarmServiceID, _, err := docker.client.StartImageOrSwarmService(
+		string(docker.copyToAndFromVolume.id),
+		docker.copyToAndFromVolume.repoTag,
+		[]string{
+			"ls",
+			//"echo",
+			//"'Uploading file into the volume'",
+		},
+		binds,
+		limits,
+		timeouts)
+
+	if err != nil {
+		return def.Err(err, "data uploading container failed")
+	}
+
+	err = docker.client.UploadFile2Container(string(containerID), srcFileLocation, "/root/volume")
+	if err != nil {
+		fmt.Println(err)
+		return def.Err(err, "data uploading failed")
+	}
+
+	defer func() {
+		err := docker.client.TerminateContainerOrSwarmService(string(containerID), swarmServiceID)
+		if err != nil {
+			log.Println("error while forcefully removing container in UploadFileIntoVolume", err)
+		}
+	}()
+
 	return nil
 }
 

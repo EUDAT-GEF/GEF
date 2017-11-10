@@ -16,6 +16,7 @@ import (
 	"github.com/EUDAT-GEF/GEF/gefserver/def"
 	"github.com/EUDAT-GEF/GEF/gefserver/pier"
 	"github.com/gorilla/mux"
+	"fmt"
 )
 
 const (
@@ -30,6 +31,7 @@ const wuiRootPath = "/wui"
 
 const (
 	buildsTmpDir = "builds"
+	inputTmpDir  = "inputs"
 )
 
 // Server is a master struct for serving HTTP API requests
@@ -422,22 +424,44 @@ func (s *Server) executeServiceHandler(w http.ResponseWriter, r *http.Request, e
 				vars := mux.Vars(r)
 				currentInput = vars[inputName]
 			}
+
+			// creating a temporary input file
+			if (strings.ToLower(value.Type) == "string") && (value.FileName != "") {
+				path, _, err := def.NewRandomTmpDir(s.tmpDir, inputTmpDir)
+				if err != nil {
+					Response{w}.ServerError("cannot create a temporary folder for an input file", err)
+					return
+				}
+				tmpFile, err := os.Create(filepath.Join(path, value.FileName))
+				if err != nil {
+					Response{w}.ServerError("cannot create a temporary input file", err)
+					return
+				}
+				defer tmpFile.Close()
+				_, err = tmpFile.WriteString(currentInput)
+				if err != nil {
+					Response{w}.ServerError("cannot write string data into a file", err)
+					return
+				}
+				currentInput = filepath.Join(path, value.FileName)
+			}
 			allInputs = append(allInputs, currentInput)
 		}
 	} else {
 		allInputs = append(allInputs, input)
 	}
 
-	logParam("input", input)
+	fmt.Println(allInputs)
+	//logParam("input", input)
 
-	if input == "" {
-		Response{w}.ServerNewError("execute docker image: pid required")
+	if len(allInputs) == 0 {
+		Response{w}.ServerNewError("execute docker image: some input is required")
 		return
 	}
 
 	job, err := s.pier.RunService(user.ID, service.ID, allInputs, s.limits, s.timeouts)
 	if err != nil {
-		Response{w}.ServerError("cannot read the reqested file from the archive", err)
+		Response{w}.ServerError("cannot read the requested file from the archive", err)
 		return
 	}
 

@@ -211,7 +211,7 @@ func TestMultipleInputsAndOutputs(t *testing.T) {
 	CheckErr(t, err)
 	log.Print("test service built: ", service.ID, " ", service.ImageID)
 
-	multiIntputsjob, err := p.RunService(user.ID, service.ID, []string{testPIDbinary, testPIDtext}, config.Limits, config.Timeouts)
+	multiIntputsjob, err := p.RunService(user.ID, service.ID, []string{"./inputs_test/input1.txt", testPIDtext}, config.Limits, config.Timeouts)
 	CheckErr(t, err)
 
 	for multiIntputsjob.State.Code == -1 {
