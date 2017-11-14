@@ -123,12 +123,12 @@ func (p *Pier) UploadFileIntoVolume(volumeID string, srcFileLocation string, dst
 		return def.Err(err, "data uploading failed")
 	}
 
-	defer func() {
-		err := docker.client.TerminateContainerOrSwarmService(string(containerID), swarmServiceID)
-		if err != nil {
-			log.Println("error while forcefully removing container in UploadFileIntoVolume", err)
-		}
-	}()
+
+	err = docker.client.TerminateContainerOrSwarmService(string(containerID), swarmServiceID)
+	if err != nil {
+		log.Println("error while forcefully removing container in UploadFileIntoVolume", err)
+	}
+
 
 	return nil
 }

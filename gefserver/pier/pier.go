@@ -347,7 +347,7 @@ func (p *Pier) runJob(job *db.Job, service db.Service, inputSrc []string, limits
 				err = p.UploadFileIntoVolume(string(inputVolumes[i].ID), inputSrc[i], service.Input[i].FileName, limits, timeouts)
 
 				if err != nil {
-					err = p.db.SetJobState(job.ID, db.NewJobStateError("String Data staging #"+string(i+1)+" failed", 1))
+					err = p.db.SetJobState(job.ID, db.NewJobStateError("String data staging #"+string(i+1)+" failed", 1))
 					if err != nil {
 
 						log.Println(err)
@@ -355,9 +355,8 @@ func (p *Pier) runJob(job *db.Job, service db.Service, inputSrc []string, limits
 					p.updateJobDurationTime(*job)
 					return
 				}
-
-			} else {
-				containerID, swarmServiceID, exitCode, output, err := docker.client.ExecuteImage(
+			} else if strings.ToLower(service.Input[i].Type) == "url" {
+					containerID, swarmServiceID, exitCode, output, err := docker.client.ExecuteImage(
 					string(docker.stageIn.id),
 					docker.stageIn.repoTag,
 					append(docker.stageIn.cmd, inputSrc[i]),
@@ -372,7 +371,7 @@ func (p *Pier) runJob(job *db.Job, service db.Service, inputSrc []string, limits
 				}
 
 				if err != nil {
-					err = p.db.SetJobState(job.ID, db.NewJobStateError("Data staging #"+string(i+1)+" failed", 1))
+					err = p.db.SetJobState(job.ID, db.NewJobStateError("URL data staging #"+string(i+1)+" failed", 1))
 					if err != nil {
 						log.Println(err)
 					}
@@ -389,6 +388,20 @@ func (p *Pier) runJob(job *db.Job, service db.Service, inputSrc []string, limits
 					p.updateJobDurationTime(*job)
 					return
 				}
+			} else if service.Input[i].Type == "" {
+				err = p.db.SetJobState(job.ID, db.NewJobStateError("Data staging #"+string(i+1)+" failed: input type not specified", 1))
+				if err != nil {
+					log.Println(err)
+				}
+				p.updateJobDurationTime(*job)
+				return
+			} else {
+				err = p.db.SetJobState(job.ID, db.NewJobStateError("Data staging #"+string(i+1)+" failed: input file name not specified", 1))
+				if err != nil {
+				log.Println(err)
+				}
+				p.updateJobDurationTime(*job)
+				return
 			}
 		}
 	}
