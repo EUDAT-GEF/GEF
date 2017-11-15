@@ -3,7 +3,7 @@
  */
 import React from 'react';
 import PropTypes from 'prop-types';
-import { Row, Col, Grid, Table, Button, Modal, OverlayTrigger, FormGroup, ControlLabel, Glyphicon } from 'react-bootstrap';
+import { Row, Col, Table, Button, Modal, Panel, FormGroup, FormControl, ControlLabel, Glyphicon } from 'react-bootstrap';
 import {Field, FieldArray, reduxForm, initialize} from 'redux-form';
 // this is a detailed view of a service, user will be able to execute service in this view
 
@@ -116,6 +116,8 @@ const InputTable = ({service, handleRemoveIO}) => {
                 <td>{input.ID}</td>
                 <td>{input.Name}</td>
                 <td>{input.Path}</td>
+                <td>{input.Type}</td>
+                <td>{input.FileName}</td>
                 <td>
                     <Button type="submit" bsStyle="primary" bsSize="xsmall" onClick={(evt) => handleRemoveIO(true, index, evt)}>
                         <span className="glyphicon glyphicon-remove" aria-hidden="true"></span> Remove
@@ -132,6 +134,8 @@ const InputTable = ({service, handleRemoveIO}) => {
                 <th>ID</th>
                 <th>Name</th>
                 <th>Path</th>
+                <th>Type</th>
+                <th>File</th>
                 <th></th>
             </tr>
             </thead>
@@ -220,20 +224,41 @@ const ServiceEditForm = (props) => {
 
                     <FormGroup>
                         <ControlLabel>Inputs</ControlLabel>
-                        <div className="input-group">
-                            <span className="input-group-addon">Name</span>
-                            <Field name="inputSourceName" component="input" type="text" placeholder="Any name"
-                                   className="form-control"/>
-                            <span className="input-group-addon">Path</span>
-                            <Field name="inputSourcePath" component="input" type="text" placeholder="Path in the container"
-                                   className="form-control"/>
-                            <span className="input-group-btn">
+                        <Panel>
+                            <div className="form-group row">
+                                <div className="col-sm-6">
+                                    <ControlLabel>Name</ControlLabel>
+                                    <Field name="inputSourceName" component="input" type="text" placeholder="Input name"
+                                           className="form-control"/>
+                                </div>
+                                <div className="col-sm-6">
+                                    <ControlLabel>Path</ControlLabel>
+                                    <Field name="inputSourcePath" component="input" type="text" placeholder="Path in the container"
+                                           className="form-control"/>
+                                </div>
+                            </div>
+                            <div className="form-group row">
+                                <div className="col-sm-6">
+                                    <ControlLabel>Type</ControlLabel>
+                                    <Field name="inputSourceType" component="select" type="text" placeholder="select"
+                                           className="form-control">
+                                        <option value="url">URL/PID</option>
+                                        <option value="string">String data</option>
+                                    </Field>
+                                </div>
+                                <div className="col-sm-6">
+                                    <ControlLabel>File Name</ControlLabel>
+                                    <Field name="inputSourceFileName" component="input" type="text" placeholder="File name"
+                                           className="form-control"/>
+                                </div>
+                            </div>
+                            <div className="form-group row text-center">
                                 <Button type="submit" className="btn btn-default" onClick={(evt) => handleAddIO(true, evt)}>
-                                    <span className="glyphicon glyphicon-plus" aria-hidden="true"></span> Add
+                                    <span className="glyphicon glyphicon-plus" aria-hidden="true"></span> Add a new input
                                 </Button>
-                            </span>
-                        </div>
-                        <InputTable key={"in-"+service.ID} service={service} handleRemoveIO={handleRemoveIO}/>
+                            </div>
+                            <InputTable key={"in-"+service.ID} service={service} handleRemoveIO={handleRemoveIO}/>
+                        </Panel>
                     </FormGroup>
 
                     <FormGroup>
