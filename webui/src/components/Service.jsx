@@ -3,7 +3,7 @@
  */
 import React from 'react';
 import PropTypes from 'prop-types';
-import { Row, Col, Grid, Table, Button, Modal, OverlayTrigger, FormGroup, ControlLabel } from 'react-bootstrap';
+import { Row, Col, Table, Button, Modal, Panel, FormGroup, FormControl, ControlLabel, Glyphicon } from 'react-bootstrap';
 import {Field, FieldArray, reduxForm, initialize} from 'redux-form';
 // this is a detailed view of a service, user will be able to execute service in this view
 
@@ -24,10 +24,9 @@ const tagValueRow  = (tag, value) => (
 );
 
 const JobCreatorForm = (props) => {
-    const { handleSubmit, pristine, reset, submitting, service } = props;
-    const inputStyle = {
-        height: '34px',
-        padding: '6px 12px',
+    const { handleSubmit, handleServiceEditModalOpen, handleRemoveService, pristine, reset, submitting, service } = props;
+    const urlStyle = {
+        padding: '4px 2px',
         fontSize: '14px',
         lineHeight: '1.42857143',
         color: '#555',
@@ -36,6 +35,26 @@ const JobCreatorForm = (props) => {
         border: '1px solid #ccc',
         borderRadius: '4px',
     }
+    const stringStyle = {
+        height: '70px',
+        padding: '4px 2px',
+        fontSize: '14px',
+        lineHeight: '1.42857143',
+        color: '#555',
+        backgroundColor: '#fff',
+        backgroundImage: 'none',
+        border: '1px solid #ccc',
+        borderRadius: '4px',
+    }
+    const toolbarStyle = {
+        padding: '5px',
+    }
+
+    let srcList = [];
+    if (service.Input) {
+        srcList = service.Input;
+    }
+    let inputCounter=-1;
     return (
         <form onSubmit={handleSubmit}>
             <Row>
@@ -44,13 +63,32 @@ const JobCreatorForm = (props) => {
                 </Col>
                 <Col xs={12} sm={9} md={9} >
                     <div className="input-group">
-                        <Field name="pid" component="input" type="text" placeholder="Put your PID or URL"
-                               style={inputStyle} className="form-control"/>
-                        <span className="input-group-btn">
-                            <button type="submit" className="btn btn-default" onClick={handleSubmit} disabled={pristine || submitting}>
-                                <span className="glyphicon glyphicon-play" aria-hidden="true"></span> Submit
-                            </button>
-                        </span>
+
+                        {srcList.map((inputSrc) => {
+                            inputCounter++;
+                            if (inputSrc.Type.toLowerCase()=="url") {
+                                return (
+                                    <Field name={`pid_${inputSrc.ID}`} component="input"
+                                           placeholder={`Input source #${inputCounter + 1}: insert PID or URL`}
+                                           style={urlStyle} className="form-control" key={`pid_${inputSrc.ID}`}/>
+                                )
+                            }
+                            if (inputSrc.Type.toLowerCase()=="string") {
+                                return (
+                                    <Field name={`pid_${inputSrc.ID}`} component="textarea"
+                                           placeholder={`Input source #${inputCounter + 1}: insert your content`}
+                                           style={stringStyle} className="form-control" key={`pid_${inputSrc.ID}`}/>
+                                )
+                            }
+                        })}
+
+                        <div className="text-center">
+                            <div className="btn-group" role="group" aria-label="toolbar" style={toolbarStyle}>
+                                <Button onClick={handleSubmit} disabled={pristine || submitting}><Glyphicon glyph="play"/> Start a New Job</Button>
+                                <Button onClick={handleServiceEditModalOpen}><Glyphicon glyph="edit"/> Edit Metadata</Button>
+                                <Button onClick={handleRemoveService}><Glyphicon glyph="trash"/> Remove the Service</Button>
+                            </div>
+                        </div>
                     </div>
                 </Col>
             </Row>
@@ -76,6 +114,8 @@ const InputTable = ({service, handleRemoveIO}) => {
                 <td>{input.ID}</td>
                 <td>{input.Name}</td>
                 <td>{input.Path}</td>
+                <td>{input.Type}</td>
+                <td>{input.FileName}</td>
                 <td>
                     <Button type="submit" bsStyle="primary" bsSize="xsmall" onClick={(evt) => handleRemoveIO(true, index, evt)}>
                         <span className="glyphicon glyphicon-remove" aria-hidden="true"></span> Remove
@@ -92,6 +132,8 @@ const InputTable = ({service, handleRemoveIO}) => {
                 <th>ID</th>
                 <th>Name</th>
                 <th>Path</th>
+                <th>Type</th>
+                <th>File</th>
                 <th></th>
             </tr>
             </thead>
@@ -108,7 +150,6 @@ const InputTable = ({service, handleRemoveIO}) => {
 };
 
 const OutputTable = ({service, handleRemoveIO}) => {
-
     let outCounter = -1;
     let outputs = [];
     let srcList = [];
@@ -181,20 +222,41 @@ const ServiceEditForm = (props) => {
 
                     <FormGroup>
                         <ControlLabel>Inputs</ControlLabel>
-                        <div className="input-group">
-                            <span className="input-group-addon">Name</span>
-                            <Field name="inputSourceName" component="input" type="text" placeholder="Any name"
-                                   className="form-control"/>
-                            <span className="input-group-addon">Path</span>
-                            <Field name="inputSourcePath" component="input" type="text" placeholder="Path in the container"
-                                   className="form-control"/>
-                            <span className="input-group-btn">
+                        <Panel>
+                            <div className="form-group row">
+                                <div className="col-sm-6">
+                                    <ControlLabel>Name</ControlLabel>
+                                    <Field name="inputSourceName" component="input" type="text" placeholder="Input name"
+                                           className="form-control"/>
+                                </div>
+                                <div className="col-sm-6">
+                                    <ControlLabel>Path</ControlLabel>
+                                    <Field name="inputSourcePath" component="input" type="text" placeholder="Path in the container"
+                                           className="form-control"/>
+                                </div>
+                            </div>
+                            <div className="form-group row">
+                                <div className="col-sm-6">
+                                    <ControlLabel>Type</ControlLabel>
+                                    <Field name="inputSourceType" component="select" type="text" placeholder="select"
+                                           className="form-control">
+                                        <option value="url">URL/PID</option>
+                                        <option value="string">String data</option>
+                                    </Field>
+                                </div>
+                                <div className="col-sm-6">
+                                    <ControlLabel>File Name</ControlLabel>
+                                    <Field name="inputSourceFileName" component="input" type="text" placeholder="File name"
+                                           className="form-control"/>
+                                </div>
+                            </div>
+                            <div className="form-group row text-center">
                                 <Button type="submit" className="btn btn-default" onClick={(evt) => handleAddIO(true, evt)}>
-                                    <span className="glyphicon glyphicon-plus" aria-hidden="true"></span> Add
+                                    <span className="glyphicon glyphicon-plus" aria-hidden="true"></span> Add a new input
                                 </Button>
-                            </span>
-                        </div>
-                        <InputTable key={"in-"+service.ID} service={service} handleRemoveIO={handleRemoveIO}/>
+                            </div>
+                            <InputTable key={"in-"+service.ID} service={service} handleRemoveIO={handleRemoveIO}/>
+                        </Panel>
                     </FormGroup>
 
                     <FormGroup>
@@ -232,16 +294,16 @@ class Service extends React.Component {
         this.handleRemoveIO = this.props.handleRemoveIO.bind(this);
 
         this.state = {
-            showModal: false,
+            showServiceEditModal: false,
         };
     }
 
-    handleModalClose() {
-        this.setState({ showModal: false });
+    handleServiceEditModalClose() {
+        this.setState({ showServiceEditModal: false });
     }
 
-    handleModalOpen() {
-        this.setState({showModal: true});
+    handleServiceEditModalOpen() {
+        this.setState({showServiceEditModal: true});
     }
 
     handleRemoveService() {
@@ -273,20 +335,12 @@ class Service extends React.Component {
                             {tagValueRow("ID", ID)}
                             {tagValueRow("Description", Description)}
                             {tagValueRow("Version", Version)}
-                            <JobCreator handleSubmit={this.handleSubmit} service={this.props.selectedService.Service}/>
-                            <button type="submit" className="btn btn-default" onClick={this.handleModalOpen.bind(this)}>
-                                <span className="glyphicon glyphicon-edit" aria-hidden="true"></span> Edit Metadata
-                            </button>
-                            <button type="button" className="btn btn-default" onClick={this.handleRemoveService.bind(this)}>
-                                <span className="glyphicon glyphicon-trash" aria-hidden="true"></span> Remove
-                            </button>
-
-                            <div style={{height: "1em"}}></div>
+                            <JobCreator handleSubmit={this.handleSubmit} handleServiceEditModalOpen={this.handleServiceEditModalOpen.bind(this)} handleRemoveService={this.handleRemoveService.bind(this)} service={this.props.selectedService.Service}/>
                         </div>
                     </div>
 
                     <div>
-                        <Modal show={this.state.showModal} onHide={this.handleModalClose.bind(this)} className="metadata-modal">
+                        <Modal show={this.state.showServiceEditModal} onHide={this.handleServiceEditModalClose.bind(this)} className="metadata-modal">
                             <Modal.Header closeButton>
                                 <Modal.Title>{this.props.selectedService.Service.Name}</Modal.Title>
                             </Modal.Header>
@@ -295,7 +349,7 @@ class Service extends React.Component {
                             </Modal.Body>
                             <Modal.Footer>
                                 <Button className="btn btn-primary" onClick={this.handleUpdate}>Save</Button>
-                                <Button onClick={this.handleModalClose.bind(this)}>Close</Button>
+                                <Button onClick={this.handleServiceEditModalClose.bind(this)}>Close</Button>
                             </Modal.Footer>
                         </Modal>
                     </div>

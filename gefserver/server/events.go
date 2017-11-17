@@ -148,7 +148,6 @@ func signalEvent(action string, user *db.User, userEnv environment, sysStatistic
 	if resp != nil {
 		defer resp.Body.Close()
 
-
 		err := json.NewDecoder(resp.Body).Decode(&newEnv)
 		if err != nil {
 			log.Printf("event system response parsing error: %#v\n", err)

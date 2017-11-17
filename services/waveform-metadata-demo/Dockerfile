@@ -10,6 +10,7 @@ LABEL "eudat.gef.service.version"="1.0.0"
 # Add input/output labels
 LABEL "eudat.gef.service.input.1.name"="Input Directory"
 LABEL "eudat.gef.service.input.1.path"="/var/input"
+LABEL "eudat.gef.service.input.1.type"="url"
 LABEL "eudat.gef.service.output.1.name"="Output Directory"
 LABEL "eudat.gef.service.output.1.path"="/var/output"
 

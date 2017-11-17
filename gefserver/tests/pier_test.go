@@ -11,7 +11,8 @@ import (
 	"github.com/EUDAT-GEF/GEF/gefserver/pier"
 )
 
-const testPID = "11304/a3d012ca-4e23-425e-9e2a-1e6a195b966f"
+const testPIDbinary = "11304/a3d012ca-4e23-425e-9e2a-1e6a195b966f"
+const testPIDtext = "11304/0591b2ed-d5c6-4007-bb99-6b473f3f07fb"
 
 var configFilePath = "../config.json"
 var internalServicesFolder = "../../services/_internal"
@@ -73,7 +74,7 @@ func TestClient(t *testing.T) {
 		return
 	}
 
-	job, err := pier.RunService(user.ID, service.ID, testPID, config.Limits, config.Timeouts)
+	job, err := pier.RunService(user.ID, service.ID, []string{testPIDbinary}, config.Limits, config.Timeouts)
 	CheckErr(t, err)
 	for job.State.Code == -1 {
 		job, err = db.GetJob(job.ID)
@@ -121,13 +122,11 @@ func TestExecution(t *testing.T) {
 	service, err := p.BuildService(connID, user.ID, "./clone_test")
 	CheckErr(t, err)
 	log.Print("test service built: ", service.ID, " ", service.ImageID)
-	// log.Printf("test service built: %#v", service)
 
-	job, err := p.RunService(user.ID, service.ID, testPID, config.Limits, config.Timeouts)
+	job, err := p.RunService(user.ID, service.ID, []string{testPIDbinary}, config.Limits, config.Timeouts)
 	CheckErr(t, err)
 
 	log.Print("test job: ", job.ID)
-	// log.Printf("test job: %#v", job)
 	jobid := job.ID
 
 	for job.State.Code == -1 {
@@ -142,10 +141,10 @@ func TestExecution(t *testing.T) {
 	}
 	ExpectEquals(t, job.State.Error, "")
 
-	files, err := p.ListFiles(job.OutputVolume, "", config.Limits, config.Timeouts)
+	files, err := p.ListFiles(job.OutputVolume[0].VolumeID, "", config.Limits, config.Timeouts)
 	CheckErr(t, err)
-
 	ExpectEquals(t, len(files), 1)
+
 	_, err = p.RemoveJob(user.ID, jobid)
 	CheckErr(t, err)
 }
@@ -174,13 +173,11 @@ func TestJobTimeOut(t *testing.T) {
 	service, err := p.BuildService(connID, user.ID, "./timeout_test")
 	CheckErr(t, err)
 	log.Print("test service built: ", service.ID, " ", service.ImageID)
-	// log.Printf("test service built: %#v", service)
 
-	timedOutjob, err := p.RunService(user.ID, service.ID, testPID, config.Limits, config.Timeouts)
+	timedOutjob, err := p.RunService(user.ID, service.ID, []string{testPIDbinary}, config.Limits, config.Timeouts)
 	CheckErr(t, err)
 
 	log.Print("test timed out job: ", timedOutjob.ID)
-	// log.Printf("test timed out job: %#v", timedOutjob)
 	timedOutJobId := timedOutjob.ID
 
 	for timedOutjob.State.Code == -1 {
@@ -189,6 +186,57 @@ func TestJobTimeOut(t *testing.T) {
 	}
 
 	ExpectEquals(t, timedOutjob.State.Error, pier.JobTimeOutError)
+}
+
+func TestMultipleInputsAndOutputs(t *testing.T) {
+	config, err := def.ReadConfigFile(configFilePath)
+	CheckErr(t, err)
+
+	// overwrite this because when testing we're in a different working directory
+	config.Pier.InternalServicesFolder = internalServicesFolder
+
+	db, dbfile, err := db.InitDbForTesting()
+	CheckErr(t, err)
+	defer db.Close()
+	defer os.Remove(dbfile)
+	user, _ := AddUserWithToken(t, db, name1, email1)
+
+	p, err := pier.NewPier(&db, config.Pier, config.TmpDir, config.Timeouts)
+	CheckErr(t, err)
+
+	connID, err := p.AddDockerConnection(0, config.Docker)
+	CheckErr(t, err)
+
+	service, err := p.BuildService(connID, user.ID, "./inputs_test")
+	CheckErr(t, err)
+	log.Print("test service built: ", service.ID, " ", service.ImageID)
+
+	multiIntputsjob, err := p.RunService(user.ID, service.ID, []string{"./inputs_test/input1.txt", testPIDtext}, config.Limits, config.Timeouts)
+	CheckErr(t, err)
+
+	for multiIntputsjob.State.Code == -1 {
+		multiIntputsjob, err = db.GetJob(multiIntputsjob.ID)
+		CheckErr(t, err)
+	}
+
+	if multiIntputsjob.State.Error != "" {
+		for i, t := range multiIntputsjob.Tasks {
+			log.Println("task ", i, ":", t)
+		}
+	}
+	ExpectEquals(t, multiIntputsjob.State.Error, "")
+
+	ExpectEquals(t, len(multiIntputsjob.OutputVolume), 2)
+
+	for i, v := range multiIntputsjob.OutputVolume {
+		log.Println("volume #", i+1, ", id:", v.VolumeID, "name:", v.Name)
+		files, err := p.ListFiles(v.VolumeID, "", config.Limits, config.Timeouts)
+		CheckErr(t, err)
+		ExpectEquals(t, len(files), 1)
+	}
+
+	_, err = p.RemoveJob(user.ID, multiIntputsjob.ID)
+	CheckErr(t, err)
 }
 
 func AddUserWithToken(t *testing.T, d db.Db, name, email string) (db.User, db.Token) {

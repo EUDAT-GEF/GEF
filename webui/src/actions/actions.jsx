@@ -460,6 +460,7 @@ export function addIOPort(isInput) {
         let newOutput = {};
         let selectedInput = [];
         let selectedOutput = [];
+        let hasNoErrors = true;
         if (selectedService.Service.Input) {
             selectedInput = selectedService.Service.Input
         }
@@ -470,8 +471,17 @@ export function addIOPort(isInput) {
             newInput.ID = "input" + selectedInput.length;
             newInput.Name = serviceEdit.values.inputSourceName;
             newInput.Path = serviceEdit.values.inputSourcePath;
-            if ((!newInput.Name) && (!newInput.Path)){
+            newInput.Type = serviceEdit.values.inputSourceType ? serviceEdit.values.inputSourceType : "url";
+            newInput.FileName = serviceEdit.values.inputSourceFileName;
+            if ((!newInput.Name) || (!newInput.Path)){
+                hasNoErrors = false;
                 Alert.error("Input name and path cannot be empty");
+                dispatch(ioAddError());
+            }
+
+            if ((newInput.Type == "string") && (!newInput.FileName)) {
+                hasNoErrors = false;
+                Alert.error("File name cannot be empty");
                 dispatch(ioAddError());
             } else {
                 selectedInput.map((input) => {
@@ -485,7 +495,8 @@ export function addIOPort(isInput) {
             newOutput.ID = "output" + selectedOutput.length;
             newOutput.Name = serviceEdit.values.outputSourceName;
             newOutput.Path = serviceEdit.values.outputSourcePath;
-            if ((!newOutput.Name) && (!newOutput.Path)){
+            if ((!newOutput.Name) || (!newOutput.Path)){
+                hasNoErrors = false;
                 Alert.error("Output name and path cannot be empty");
                 dispatch(ioAddError());
             } else {
@@ -511,7 +522,7 @@ export function addIOPort(isInput) {
             'Version': selectedService.Service.Version
         };
 
-        if ((inputs.length>0) || (outputs.length>0)) {
+        if (hasNoErrors) {
             dispatch(ioAddSuccess(outputObject));
             dispatch(serviceUpdateStart());
             const resultPromise = axios.put(apiNames.services + '/' + selectedService.Service.ID, outputObject);

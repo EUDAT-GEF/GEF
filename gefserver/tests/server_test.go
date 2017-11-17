@@ -150,7 +150,7 @@ func TestServer(t *testing.T) {
 	// test create a job
 	jobParams := map[string]string{
 		"serviceID": serviceID,
-		"pid":       testPID,
+		"pid":       testPIDbinary,
 	}
 	jobLink, code := postRes(t, gefurl(baseURL+"jobs", ""), jobParams)
 	ExpectEquals(t, code, 401)
@@ -186,7 +186,8 @@ func TestServer(t *testing.T) {
 		ExpectNotNil(t, job)
 		exitCode = int(job["State"].(map[string]interface{})["Code"].(float64))
 	}
-	jobOutputVolume := job["OutputVolume"].(string)
+
+	firstOutputVolume := job["OutputVolume"].([]interface{})[0].(map[string]interface{})["VolumeID"].(string)
 
 	// test the job console output
 	var console interface{}
@@ -200,7 +201,8 @@ func TestServer(t *testing.T) {
 			"/logs is an experimental feature introduced in Docker 1.13. Unfortunately, it is not yet supported by the Docker client we use"))
 
 	// test get the job file system output
-	volURL := baseURL + "volumes/" + jobOutputVolume + "/"
+	volURL := baseURL + "volumes/" + firstOutputVolume + "/"
+
 	res, code = getRes(t, gefurl(volURL, userToken))
 	ExpectEquals(t, code, 403)
 	res, code = getRes(t, gefurl(volURL, memberToken))

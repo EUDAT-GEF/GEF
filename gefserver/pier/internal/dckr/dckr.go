@@ -792,8 +792,9 @@ func (c Client) UploadFile2Container(containerID, srcPath string, dstPath string
 	}
 
 	opts := docker.UploadToContainerOptions{
-		Path:        dstPath,
-		InputStream: &b,
+		Path:                 dstPath,
+		InputStream:          &b,
+		NoOverwriteDirNonDir: false,
 	}
 
 	err = c.c.UploadToContainer(containerID, opts)

@@ -5,8 +5,13 @@ MAINTAINER Alexandr Chernov <kstchernov@gmail.com>
 LABEL "eudat.gef.service.name"="NLTK POS-tagging"
 LABEL "eudat.gef.service.description"="Performs text segmentation (splits into sentences) and POS-tagging"
 LABEL "eudat.gef.service.version"="1.0"
-LABEL "eudat.gef.service.input.1.name"="Input Directory"
-LABEL "eudat.gef.service.input.1.path"="/root/input"
+LABEL "eudat.gef.service.input.1.name"="First Input Directory"
+LABEL "eudat.gef.service.input.1.path"="/root/input1"
+LABEL "eudat.gef.service.input.1.type"="url"
+LABEL "eudat.gef.service.input.2.name"="Second Input Directory"
+LABEL "eudat.gef.service.input.2.path"="/root/input2"
+LABEL "eudat.gef.service.input.2.type"="string"
+LABEL "eudat.gef.service.input.2.filename"="input2.txt"
 LABEL "eudat.gef.service.output.1.name"="Output Directory"
 LABEL "eudat.gef.service.output.1.path"="/root/output"
 
@@ -15,7 +20,8 @@ RUN apt-get install -y python-pip
 RUN pip install -U nltk
 RUN pip install -U numpy
 
-RUN mkdir /root/input
+RUN mkdir /root/input1
+RUN mkdir /root/input2
 RUN mkdir /root/output
 
 ADD posTagger.py /root

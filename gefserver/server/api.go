@@ -30,6 +30,7 @@ const wuiRootPath = "/wui"
 
 const (
 	buildsTmpDir = "builds"
+	inputTmpDir  = "inputs"
 )
 
 // Server is a master struct for serving HTTP API requests
@@ -383,6 +384,12 @@ func (s *Server) removeServiceHandler(w http.ResponseWriter, r *http.Request, e 
 }
 
 func (s *Server) executeServiceHandler(w http.ResponseWriter, r *http.Request, e environment) {
+	input := r.FormValue("pid")
+	if input == "" {
+		vars := mux.Vars(r)
+		input = vars["pid"]
+	}
+
 	serviceID := r.FormValue("serviceID")
 	if serviceID == "" {
 		vars := mux.Vars(r)
@@ -395,19 +402,8 @@ func (s *Server) executeServiceHandler(w http.ResponseWriter, r *http.Request, e
 		return
 	}
 
-	input := r.FormValue("pid")
-	if input == "" {
-		vars := mux.Vars(r)
-		input = vars["pid"]
-	}
-	logParam("pid", input)
-
 	if serviceID == "" {
 		Response{w}.ServerNewError("execute docker image: serviceID required")
-		return
-	}
-	if input == "" {
-		Response{w}.ServerNewError("execute docker image: pid required")
 		return
 	}
 
@@ -417,9 +413,51 @@ func (s *Server) executeServiceHandler(w http.ResponseWriter, r *http.Request, e
 		return
 	}
 
-	job, err := s.pier.RunService(user.ID, service.ID, input, s.limits, s.timeouts)
+	// getting multiple inputs
+	var allInputs []string
+	if input == "" {
+		for _, value := range service.Input {
+			inputName := "pid_" + value.ID
+			currentInput := r.FormValue(inputName)
+			if currentInput == "" {
+				vars := mux.Vars(r)
+				currentInput = vars[inputName]
+			}
+
+			// creating a temporary input file
+			if (strings.ToLower(value.Type) == "string") && (value.FileName != "") {
+				path, _, err := def.NewRandomTmpDir(s.tmpDir, inputTmpDir)
+				if err != nil {
+					Response{w}.ServerError("cannot create a temporary folder for an input file", err)
+					return
+				}
+				tmpFile, err := os.Create(filepath.Join(path, value.FileName))
+				if err != nil {
+					Response{w}.ServerError("cannot create a temporary input file", err)
+					return
+				}
+				defer tmpFile.Close()
+				_, err = tmpFile.WriteString(currentInput)
+				if err != nil {
+					Response{w}.ServerError("cannot write string data into a file", err)
+					return
+				}
+				currentInput = filepath.Join(path, value.FileName)
+			}
+			allInputs = append(allInputs, currentInput)
+		}
+	} else {
+		allInputs = append(allInputs, input)
+	}
+
+	if len(allInputs) == 0 {
+		Response{w}.ServerNewError("execute docker image: some input is required")
+		return
+	}
+
+	job, err := s.pier.RunService(user.ID, service.ID, allInputs, s.limits, s.timeouts)
 	if err != nil {
-		Response{w}.ServerError("cannot read the reqested file from the archive", err)
+		Response{w}.ServerError("cannot read the requested file from the archive", err)
 		return
 	}
 

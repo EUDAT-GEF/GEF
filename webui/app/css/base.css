@@ -127,6 +127,10 @@ input:focus, select:focus, textarea:focus, button:focus, a:focus {
   outline: none !important;
 }
 
+.input-group {
+    width: 100%;
+}
+
 .aligncenter {
 	text-align: center;
 }
@@ -204,7 +208,6 @@ input:focus, select:focus, textarea:focus, button:focus, a:focus {
 .jobs-table .row:hover {
     background-color: #ececec;
 }
-
 
 /*** error ***/
 .errorDiv {

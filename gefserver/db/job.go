@@ -7,12 +7,11 @@ type Job struct {
 	ID           JobID
 	ConnectionID ConnectionID
 	ServiceID    ServiceID
-	Input        string
 	Created      time.Time
 	Duration     int64
 	State        *JobState
-	InputVolume  VolumeID
-	OutputVolume VolumeID
+	InputVolume  []JobVolume
+	OutputVolume []JobVolume
 	Tasks        []Task
 }
 
@@ -21,6 +20,12 @@ type JobState struct {
 	Status string
 	Error  string
 	Code   int
+}
+
+// JobVolume points to volumes bound to a particular job
+type JobVolume struct {
+	VolumeID VolumeID
+	Name     string
 }
 
 // NewJobStateOk creates a new JobState with no error

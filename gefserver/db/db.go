@@ -46,15 +46,22 @@ type JobTable struct {
 	ID           string
 	ConnectionID int
 	ServiceID    string
-	Input        string
 	Created      time.Time
 	Duration     int64 // duration time in seconds
 	Error        string
 	Status       string
 	Code         int
-	InputVolume  string
-	OutputVolume string
 	Revision     int
+}
+
+// VolumeTable contains information about input and output volumes for jobs
+type VolumeTable struct {
+	ID         string
+	IsInput    bool
+	JobID      string
+	IOPortName string
+	Content    string
+	Revision   int
 }
 
 // TaskTable contains tasks related to a specific job (used to store data in a database)
@@ -92,6 +99,8 @@ type IOPortTable struct {
 	Path      string
 	IsInput   bool
 	ServiceID string
+	Type      string
+	FileName  string
 	Revision  int
 }
 
@@ -191,6 +200,8 @@ func setupDatabase(dataBase *sql.DB) (Db, error) {
 	}
 
 	dataBaseMap.AddTableWithName(JobTable{}, "Jobs").SetKeys(false, "ID").SetVersionCol(gorpVersionColumn)
+
+	dataBaseMap.AddTableWithName(VolumeTable{}, "Volumes").SetKeys(false, "ID").SetVersionCol(gorpVersionColumn)
 
 	dataBaseMap.AddTableWithName(TaskTable{}, "Tasks").SetKeys(false, "ID").SetVersionCol(gorpVersionColumn)
 
@@ -459,6 +470,12 @@ func (d *Db) jobTable2Job(storedJob JobTable) (Job, error) {
 		return job, err
 	}
 
+	var storedVolumes []VolumeTable
+	_, err = d.db.Select(&storedVolumes, "SELECT * FROM Volumes WHERE JobID=?", storedJob.ID)
+	if err != nil {
+		return job, err
+	}
+
 	for _, t := range storedTasks {
 		var curTask Task
 		curTask.Error = t.Error
@@ -472,6 +489,19 @@ func (d *Db) jobTable2Job(storedJob JobTable) (Job, error) {
 		linkedTasks = append(linkedTasks, curTask)
 	}
 
+	var inputVolumes []JobVolume
+	var outputVolumes []JobVolume
+	for s := range storedVolumes {
+		var curJobVolume JobVolume
+		curJobVolume.Name = storedVolumes[s].IOPortName
+		curJobVolume.VolumeID = VolumeID(storedVolumes[s].ID)
+		if storedVolumes[s].IsInput {
+			inputVolumes = append(inputVolumes, curJobVolume)
+		} else {
+			outputVolumes = append(outputVolumes, curJobVolume)
+		}
+	}
+
 	jobState.Error = storedJob.Error
 	jobState.Status = storedJob.Status
 	jobState.Code = storedJob.Code
@@ -479,7 +509,6 @@ func (d *Db) jobTable2Job(storedJob JobTable) (Job, error) {
 	job.ID = JobID(storedJob.ID)
 	job.ConnectionID = ConnectionID(storedJob.ConnectionID)
 	job.ServiceID = ServiceID(storedJob.ServiceID)
-	job.Input = storedJob.Input
 	job.Created = storedJob.Created
 
 	if jobState.Code < 0 {
@@ -489,8 +518,8 @@ func (d *Db) jobTable2Job(storedJob JobTable) (Job, error) {
 	}
 
 	job.State = &jobState
-	job.InputVolume = VolumeID(storedJob.InputVolume)
-	job.OutputVolume = VolumeID(storedJob.OutputVolume)
+	job.InputVolume = inputVolumes
+	job.OutputVolume = outputVolumes
 	job.Tasks = linkedTasks
 	return job, err
 }
@@ -501,14 +530,11 @@ func (d *Db) job2JobTable(job Job) JobTable {
 	storedJob.ID = string(job.ID)
 	storedJob.ConnectionID = int(job.ConnectionID)
 	storedJob.ServiceID = string(job.ServiceID)
-	storedJob.Input = job.Input
 	storedJob.Created = job.Created
 	storedJob.Duration = job.Duration
 	storedJob.Error = job.State.Error
 	storedJob.Status = job.State.Status
 	storedJob.Code = job.State.Code
-	storedJob.InputVolume = string(job.InputVolume)
-	storedJob.OutputVolume = string(job.OutputVolume)
 	return storedJob
 }
 
@@ -568,30 +594,15 @@ func (d *Db) SetJobState(id JobID, state JobState) error {
 	return err
 }
 
-// SetJobInputVolume sets a job input volume
-func (d *Db) SetJobInputVolume(id JobID, inputVolume VolumeID) error {
-	var storedJob JobTable
-	err := d.db.SelectOne(&storedJob, "SELECT * FROM jobs WHERE ID=?", string(id))
-	if err != nil {
-		return err
-	}
-
-	storedJob.InputVolume = string(inputVolume)
-	_, err = d.db.Update(&storedJob)
-	return err
-}
-
-// SetJobOutputVolume sets a job output volume
-func (d *Db) SetJobOutputVolume(id JobID, outputVolume VolumeID) error {
-	var storedJob JobTable
-	err := d.db.SelectOne(&storedJob, "SELECT * from jobs WHERE ID=?", string(id))
-	if err != nil {
-		return err
-	}
-
-	storedJob.OutputVolume = string(outputVolume)
-	_, err = d.db.Update(&storedJob)
-	return err
+// AddJobVolume sets a job input/output volume
+func (d *Db) AddJobVolume(id JobID, volume VolumeID, isInput bool, portName string, content string) error {
+	var storedVolumes VolumeTable
+	storedVolumes.ID = string(volume)
+	storedVolumes.JobID = string(id)
+	storedVolumes.IsInput = isInput
+	storedVolumes.IOPortName = portName
+	storedVolumes.Content = content
+	return d.db.Insert(&storedVolumes)
 }
 
 // SetJobDurationTime sets job finish time
@@ -642,6 +653,8 @@ func (d *Db) serviceTable2Service(storedService ServiceTable) (Service, error) {
 		curInput.ID = i.ID
 		curInput.Name = i.Name
 		curInput.Path = i.Path
+		curInput.Type = i.Type
+		curInput.FileName = i.FileName
 
 		inputPorts = append(inputPorts, curInput)
 	}
@@ -657,6 +670,8 @@ func (d *Db) serviceTable2Service(storedService ServiceTable) (Service, error) {
 		curOutput.ID = o.ID
 		curOutput.Name = o.Name
 		curOutput.Path = o.Path
+		curOutput.Type = o.Type
+		curOutput.FileName = o.FileName
 
 		outputPorts = append(outputPorts, curOutput)
 	}
@@ -716,6 +731,8 @@ func (d *Db) AddIOPort(service Service) error {
 	var err error
 	for _, p := range service.Input {
 		var curInputPort IOPortTable
+		curInputPort.FileName = p.FileName
+		curInputPort.Type = p.Type
 		curInputPort.Path = p.Path
 		curInputPort.Name = p.Name
 		curInputPort.ID = p.ID
@@ -729,6 +746,8 @@ func (d *Db) AddIOPort(service Service) error {
 
 	for _, p := range service.Output {
 		var curOutputPort IOPortTable
+		curOutputPort.FileName = p.FileName
+		curOutputPort.Type = p.Type
 		curOutputPort.Path = p.Path
 		curOutputPort.Name = p.Name
 		curOutputPort.ID = p.ID
@@ -866,8 +885,7 @@ func (d *Db) GetService(id ServiceID) (Service, error) {
 // GetJobOwningVolume returns a service ready to be converted into JSON
 func (d *Db) GetJobOwningVolume(volumeID string) (Job, error) {
 	var dbjob JobTable
-	err := d.db.SelectOne(&dbjob, "SELECT * FROM jobs WHERE InputVolume=? OR OutputVolume=?",
-		volumeID, volumeID)
+	err := d.db.SelectOne(&dbjob, "SELECT jobs.* FROM jobs INNER JOIN volumes ON jobs.ID = volumes.JobID WHERE volumes.ID=?", volumeID)
 	if err != nil {
 		return Job{}, err
 	}
