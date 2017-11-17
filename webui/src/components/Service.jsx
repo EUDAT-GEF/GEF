@@ -66,8 +66,6 @@ const JobCreatorForm = (props) => {
 
                         {srcList.map((inputSrc) => {
                             inputCounter++;
-                            console.log("INPUT =");
-                            console.log(inputSrc);
                             if (inputSrc.Type.toLowerCase()=="url") {
                                 return (
                                     <Field name={`pid_${inputSrc.ID}`} component="input"

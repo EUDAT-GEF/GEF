@@ -480,7 +480,6 @@ export function addIOPort(isInput) {
             }
 
             if ((newInput.Type == "string") && (!newInput.FileName)) {
-                console.log("EMPTY");
                 hasNoErrors = false;
                 Alert.error("File name cannot be empty");
                 dispatch(ioAddError());

@@ -292,6 +292,15 @@ func (p *Pier) updateJobDurationTime(job db.Job) {
 }
 
 func (p *Pier) runJob(job *db.Job, service db.Service, inputSrc []string, limits def.LimitConfig, timeouts def.TimeoutConfig) {
+	if len(inputSrc) != len(service.Input) {
+		err := p.db.SetJobState(job.ID, db.NewJobStateError("Input source number mismatch", 1))
+		if err != nil {
+			log.Println(err)
+		}
+		p.updateJobDurationTime(*job)
+		return
+	}
+
 	err2str := func(err error) string {
 		if err == nil {
 			return ""
