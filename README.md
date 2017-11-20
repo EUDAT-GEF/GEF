@@ -277,7 +277,7 @@ The GEF provides a browser-based GUI that individual researchers can use to exec
 
 ### GEF HTTP API<a name="http_api"></a>
 
-| URL | Method | Input | Output | Description |
+| URL | Method | Requested  | Output | Description |
 | ---: |:-------- | :------ | :------- | :------ |
 | /api/info | GET |  | API version information in JSON | Information about API (welcome page), can be used to check if backend is running |
 | /api/builds | POST |  | JSON object with information about the location and build ID | Creates a temporary folder when an image has to be created. It returns a buildID identifier and a folder location. This folder is used to store a Dockerfile and files needed for the image. BuildID is a string like a UID in Java (which is generated when required and it is unique) |
@@ -291,6 +291,45 @@ The GEF provides a browser-based GUI that individual researchers can use to exec
 | /api/jobs/{jobID} | GET | {jobID} id of a job | JSON with job information | Information about a specific job |
 | /api/jobs/{jobID} | DELETE | {jobID} id of a job | JSON with job information | Deletes a specific job |
 | /api/volumes/{volumeID}/{path:.*} | GET | {volumeID} is an id of a volume, {path} is a path inside this volume (root folder by default) | JSON object (nested) with the list of the files and folders in a given volume | Lists all files and folders (recursively) in a given volume |
+
+NOTE: `curl` command should be used with `--insecure` option, since the current version of the system has only self-signed certificates
+
+#### Get API version information
+
+- HTTP method: GET
+- URL path: /api/info
+- Requested parameters: none
+- Returns: API version information in JSON
+
+Example: `curl https://$HOSTNAME/api/ --insecure`
+
+<details><summary>Returns</summary>
+
+```
+{ "ContactLink":"https://www.eudat.eu/support-request?service=Other","ServiceName":"GEF","Version":"0.3.0" }
+```
+
+</details>
+
+
+
+
+#### Create a temporary folder for an image
+
+- HTTP method: POST
+- URL path: /api/builds
+- Requested parameters: none
+- Returns: JSON object with information about the location and build ID
+
+Example: `curl https://$HOSTNAME/api/ --insecure`
+
+<details><summary>Returns</summary>
+
+```
+{ "ContactLink":"https://www.eudat.eu/support-request?service=Other","ServiceName":"GEF","Version":"0.3.0" }
+```
+
+</details>
 
 ### User Management API<a name="user_management_api"></a>
 
