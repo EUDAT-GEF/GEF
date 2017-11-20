@@ -277,7 +277,7 @@ The GEF provides a browser-based GUI that individual researchers can use to exec
 
 ### GEF HTTP API<a name="http_api"></a>
 
-| URL | Method | Input | Output | Description |
+| URL | Method | Requested  | Output | Description |
 | ---: |:-------- | :------ | :------- | :------ |
 | /api/info | GET |  | API version information in JSON | Information about API (welcome page), can be used to check if backend is running |
 | /api/builds | POST |  | JSON object with information about the location and build ID | Creates a temporary folder when an image has to be created. It returns a buildID identifier and a folder location. This folder is used to store a Dockerfile and files needed for the image. BuildID is a string like a UID in Java (which is generated when required and it is unique) |
@@ -291,6 +291,196 @@ The GEF provides a browser-based GUI that individual researchers can use to exec
 | /api/jobs/{jobID} | GET | {jobID} id of a job | JSON with job information | Information about a specific job |
 | /api/jobs/{jobID} | DELETE | {jobID} id of a job | JSON with job information | Deletes a specific job |
 | /api/volumes/{volumeID}/{path:.*} | GET | {volumeID} is an id of a volume, {path} is a path inside this volume (root folder by default) | JSON object (nested) with the list of the files and folders in a given volume | Lists all files and folders (recursively) in a given volume |
+
+NOTE: `curl` command should be used with `--insecure` option, since the current version of the system has only self-signed certificates
+
+#### Get API version information
+
+- HTTP method: GET
+- URL path: /api/info
+- Requested parameters: none
+- Returns: API version information in JSON
+
+Example: `curl https://$HOSTNAME/api/info --insecure`
+
+<details><summary>Returns</summary>
+
+```
+{ "ContactLink":"https://www.eudat.eu/support-request?service=Other","ServiceName":"GEF","Version":"0.3.0" }
+```
+
+</details>
+
+#### Create a temporary folder for an image
+
+- HTTP method: POST
+- URL path: /api/builds
+- Requested parameters: none
+- Returns: JSON object with information about the location and build ID
+
+Example: `curl -X POST https://$HOSTNAME/api/builds?access_token=$ACCESS_TOKEN --insecure`
+
+<details><summary>Returns</summary>
+
+```
+{"Location":"/api/builds/936cbabd-e6d1-435d-af1c-ac0bcc10eb1a","buildID":"936cbabd-e6d1-435d-af1c-ac0bcc10eb1a"}
+```
+
+
+</details>
+
+#### Building a GEF service
+
+- HTTP method: POST
+- URL path: /api/builds/$BUILD_ID
+- Requested input data: files that should be inside the docker image
+- Returns: JSON object with information about the image and the corresponding service
+
+Example: `curl -X POST -F 'filename=@$FILE_PATH' https://$HOSTNAME/api/builds/$BUILD_ID?access_token=$ACCESS_TOKEN --insecure`
+
+<details><summary>Returns</summary>
+
+```
+{"Service":{"ID":"98f473a8-3177-47fc-9e47-5357fc46f88f","ConnectionID":1,"ImageID":"ac6301f4e618504f5ce2fe05e3b3dc8dfdc96049ba7abfe27bbe4ab016d5521c","Name":"Stanford Parser for English","RepoTag":"service_ac6301f4e618504f5ce2fe05e3b3dc8dfdc96049ba7abfe27bbe4ab016d5521c:gef","Description":"Parses a given text and produces constituency and dependency trees for each sentence","Version":"1.0","Cmd":["/root/stanford-parser-full-2016-10-31/lexparser.sh","/root/input/*.txt"],"Created":"2017-11-08T13:52:19.783627116Z","Deleted":false,"Size":1276590082,"Input":[{"ID":"input0","Name":"Input Directory","Path":"/root/input","Type":"url","FileName":""}],"Output":[{"ID":"output0","Name":"Output Directory","Path":"/root/output","Type":"","FileName":""}]}}
+```
+
+</details>
+
+#### Get a list of all services
+
+- HTTP method: GET
+- URL path: /api/services
+- Requested parameters: none
+- Returns: JSON with the list of all services
+
+Example: `curl https://$HOSTNAME/api/services --insecure`
+
+<details><summary>Returns</summary>
+
+```
+{"Services":[{"ID":"81b133c0-679c-4bb3-89fe-ab6630e7b78b","ConnectionID":1,"ImageID":"dc34bc1796e3ddb359223f80bb19a5b71f191f095b8b3aaf94c9fbc250b556bc","Name":"NLTK POS-tagging","RepoTag":"service_dc34bc1796e3ddb359223f80bb19a5b71f191f095b8b3aaf94c9fbc250b556bc:gef","Description":"Performs text segmentation (splits into sentences) and POS-tagging","Version":"1.0","Cmd":["python","/root/posTagger.py"],"Created":"2017-11-10T10:26:29.110312556Z","Deleted":false,"Size":591312160,"Input":[{"ID":"input0","Name":"First Input Directory","Path":"/root/input1","Type":"url","FileName":""},{"ID":"input1","Name":"Second Input Directory","Path":"/root/input2","Type":"string","FileName":"input2.txt"}],"Output":[{"ID":"output0","Name":"Output Directory","Path":"/root/output","Type":"","FileName":""}]},{"ID":"98f473a8-3177-47fc-9e47-5357fc46f88f","ConnectionID":1,"ImageID":"ac6301f4e618504f5ce2fe05e3b3dc8dfdc96049ba7abfe27bbe4ab016d5521c","Name":"Stanford Parser for English","RepoTag":"service_ac6301f4e618504f5ce2fe05e3b3dc8dfdc96049ba7abfe27bbe4ab016d5521c:gef","Description":"Parses a given text and produces constituency and dependency trees for each sentence","Version":"1.0","Cmd":["/root/stanford-parser-full-2016-10-31/lexparser.sh","/root/input/*.txt"],"Created":"2017-11-08T13:52:19.783627116Z","Deleted":false,"Size":1276590082,"Input":[{"ID":"input0","Name":"Input Directory","Path":"/root/input","Type":"url","FileName":""}],"Output":[{"ID":"output0","Name":"Output Directory","Path":"/root/output","Type":"","FileName":""}]}]}
+```
+
+</details>
+
+#### Get a specific service
+
+- HTTP method: GET
+- URL path: /api/services/$SERVICE_ID
+- Requested parameters: none
+- Returns: JSON with information about a service
+
+Example: `curl https://$HOSTNAME/api/services/$SERVICE_ID --insecure`
+
+<details><summary>Returns</summary>
+
+```
+{"Service":{"ID":"81b133c0-679c-4bb3-89fe-ab6630e7b78b","ConnectionID":1,"ImageID":"dc34bc1796e3ddb359223f80bb19a5b71f191f095b8b3aaf94c9fbc250b556bc","Name":"NLTK POS-tagging","RepoTag":"service_dc34bc1796e3ddb359223f80bb19a5b71f191f095b8b3aaf94c9fbc250b556bc:gef","Description":"Performs text segmentation (splits into sentences) and POS-tagging","Version":"1.0","Cmd":["python","/root/posTagger.py"],"Created":"2017-11-10T10:26:29.110312556Z","Deleted":false,"Size":591312160,"Input":[{"ID":"input0","Name":"First Input Directory","Path":"/root/input1","Type":"url","FileName":""},{"ID":"input1","Name":"Second Input Directory","Path":"/root/input2","Type":"string","FileName":"input2.txt"}],"Output":[{"ID":"output0","Name":"Output Directory","Path":"/root/output","Type":"","FileName":""}]}}
+```
+
+</details>
+
+#### Modify an existing service
+
+- HTTP method: PUT
+- URL path: /api/services/$SERVICE_ID
+- Requested parameters: none
+- Returns: JSON with information about a service (updated)
+
+Example: `curl -X PUT -d '{"Created":"2017-11-10T10:26:29.110312556Z","Description":"Performs text segmentation (splits into sentences) and POS-tagging","ID":"81b133c0-679c-4bb3-89fe-ab6630e7b78b","ImageID":"dc34bc1796e3ddb359223f80bb19a5b71f191f095b8b3aaf94c9fbc250b556bc","Input":[{"ID":"input0","Name":"First Input Directory","Path":"/root/input1","Type":"url","FileName":""},{"ID":"input1","Name":"Second Input Directory","Path":"/root/input2","Type":"string","FileName":"input2.txt"}],"Name":"NLTK POS-tagging updated","Output":[{"ID":"output0","Name":"Output Directory","Path":"/root/output","Type":"","FileName":""}],"RepoTag":"service_dc34bc1796e3ddb359223f80bb19a5b71f191f095b8b3aaf94c9fbc250b556bc:gef","Size":591312160,"Version":"1.0"}' 'https://$HOSTNAME/api/services/81b133c0-679c-4bb3-89fe-ab6630e7b78b?access_token=$ACCESS_TOKEN' --insecure`
+
+<details><summary>Returns</summary>
+
+```
+{"Service":{"ID":"81b133c0-679c-4bb3-89fe-ab6630e7b78b","ConnectionID":1,"ImageID":"dc34bc1796e3ddb359223f80bb19a5b71f191f095b8b3aaf94c9fbc250b556bc","Name":"NLTK POS-tagging updated","RepoTag":"service_dc34bc1796e3ddb359223f80bb19a5b71f191f095b8b3aaf94c9fbc250b556bc:gef","Description":"Performs text segmentation (splits into sentences) and POS-tagging","Version":"1.0","Cmd":["python","/root/posTagger.py"],"Created":"2017-11-10T10:26:29.110312556Z","Deleted":false,"Size":591312160,"Input":[{"ID":"input0","Name":"First Input Directory","Path":"/root/input1","Type":"url","FileName":""},{"ID":"input1","Name":"Second Input Directory","Path":"/root/input2","Type":"string","FileName":"input2.txt"}],"Output":[{"ID":"output0","Name":"Output Directory","Path":"/root/output","Type":"","FileName":""}]}}
+```
+
+</details>
+
+#### Remove a service
+
+- HTTP method: DELETE
+- URL path: /api/services/$SERVICE_ID
+- Requested parameters: none
+- Returns: JSON with information about a service (removed)
+
+Example: `curl -X DELETE 'https://$HOSTNAME/api/services/$SERVICE_ID?access_token=$ACCESS_TOKEN' --insecure`
+
+<details><summary>Returns</summary>
+
+```
+{"Service":{"ID":"81b133c0-679c-4bb3-89fe-ab6630e7b78b","ConnectionID":1,"ImageID":"dc34bc1796e3ddb359223f80bb19a5b71f191f095b8b3aaf94c9fbc250b556bc","Name":"NLTK POS-tagging updated","RepoTag":"service_dc34bc1796e3ddb359223f80bb19a5b71f191f095b8b3aaf94c9fbc250b556bc:gef","Description":"Performs text segmentation (splits into sentences) and POS-tagging","Version":"1.0","Cmd":["python","/root/posTagger.py"],"Created":"2017-11-10T10:26:29.110312556Z","Deleted":false,"Size":591312160,"Input":[{"ID":"input0","Name":"First Input Directory","Path":"/root/input1","Type":"url","FileName":""},{"ID":"input1","Name":"Second Input Directory","Path":"/root/input2","Type":"string","FileName":"input2.txt"}],"Output":[{"ID":"output0","Name":"Output Directory","Path":"/root/output","Type":"","FileName":""}]}}
+```
+
+</details>
+
+#### Start a job
+
+- HTTP method: POST
+- URL path: /api/jobs
+- Requested form data: serviceID and pid
+- Returns: JSON object with information about job ID
+
+Example: `curl -X POST -F 'serviceID=$SERVICE_ID' -F 'pid=$PID' 'https://localhost:8443/api/jobs?access_token=$ACCESS_TOKEN' --insecure`
+
+<details><summary>Returns</summary>
+
+```
+{"Location":"/api/jobs/7f600e7f-8dc6-4c8f-8c70-7206e9f207b6","jobID":"7f600e7f-8dc6-4c8f-8c70-7206e9f207b6"}
+```
+
+</details>
+
+#### Get information  about a specific job
+
+- HTTP method: GET
+- URL path: /api/jobs/$JOB_ID
+- Requested parameters: none
+- Returns: JSON with information about a job
+
+Example: `curl https://$HOSTNAME/api/jobs/$JOB_ID --insecure`
+
+<details><summary>Returns</summary>
+
+```
+{"Job":{"ID":"d1fb3522-97a5-4c95-9352-b27e0e74a90f","ConnectionID":1,"ServiceID":"11edd34a-1096-4759-a08a-f76a3d3ab751","Created":"2017-11-20T16:10:08.911285+01:00","Duration":9,"State":{"Status":"Ended successfully","Error":"","Code":0},"InputVolume":[{"VolumeID":"436def021fd6ec34f5357438a5ce6d0f9db241b7c75aa7fe231651a12bf36c3a","Name":"First Input Directory"},{"VolumeID":"76799b335378d9499ea19972b81ef568913665234d5d23bdd8fcefe85166e25a","Name":"Second Input Directory"}],"OutputVolume":[{"VolumeID":"939d6d35b59fafaaa01c01345244b65b7650013261335b20afd856e9353a0a72","Name":"Output Directory"}],"Tasks":[{"ID":"de540120-62b0-4dfe-b13a-f8c5bc2b32d6","Name":"Data staging #\u0001","ContainerID":"3e9c266b9cc3333a81c0b15a55ed094c56b9064c03bc4013bbd5a7e2f76e7ce7","SwarmServiceID":"","Error":"","ExitCode":0,"ConsoleOutput":"downloading text.txt\n"},{"ID":"dcd1a97d-13b6-4a82-b89c-32eeac012a8b","Name":"Service execution","ContainerID":"afbffd7ea5a7998f669ab2d4d0610a614351eb2c401ceec65963a81405038fd8","SwarmServiceID":"","Error":"","ExitCode":0,"ConsoleOutput":"Starting to read files\n/root/input2/input2.txt\nSentence #0: text\n/root/input1/text.txt\nSentence #0: What has happened in recent years has brought to our attention the tremendous problems facing not only to the producers of food but also the consumers.\nSentence #1: We must strike a balance between them.\nSentence #2: We must resolve this issue, because it is important that consumers should regain confidence in the food they eat.\nSentence #3: One way to achieve this is to have total transparency as far as food labelling is concerned.\nSentence #4: GMOs are the new challenge facing us.\nSentence #5: This is something that people are very worried about and quite rightly so: I myself share these concerns.\nSentence #6: But I think we should not allow our concerns about GMOs to overshadow our concerns about growth promoters used in animal feed or antibiotics used in compound feed.\nSentence #7: Indeed, we should not allow GMOs to obscure the fact that meat and bonemeal are still included in animal feeds in many countries in Europe.\nSentence #8: One factor behind these developments that has been referred to in this debate is competition - competition between Member States on the cost of the production of food.\nSentence #9: These are all areas in which we have to ensure a level playing field: food must be of the same standard in all Member States.\nSentence #10: We have had the dioxin scare, BSE and many other problems.\nSentence #11: The main problem is a financial one, namely who bears the cost?\nSentence #12: The problem is that the cost is not shared equally between the consumer and the producer: the producer has been forced to bear all the cost.\nSentence #13: We need an equitable distribution of the extra cost that has been incurred.\nSentence #14: We must also ensure that the food that is imported into the European Union meets the standards within the European Union.\nSentence #15: If we do not maintain those standards for imported food then we are going to encounter greater difficulties in the future.\nWriting parsing results into a file\nDone\n"}]}}
+```
+
+</details>
+
+#### Remove a job
+
+- HTTP method: DELETE
+- URL path: /api/jobs/$JOB_ID
+- Requested parameters: none
+- Returns: JSON with information about a job (removed)
+
+Example: `curl -X DELETE 'https://$HOSTNAME/api/jobs/$JOB_ID?access_token=$ACCESS_TOKEN' --insecure`
+
+<details><summary>Returns</summary>
+
+```
+"Job":{"ID":"d1fb3522-97a5-4c95-9352-b27e0e74a90f","ConnectionID":1,"ServiceID":"11edd34a-1096-4759-a08a-f76a3d3ab751","Created":"2017-11-20T16:10:08.911285+01:00","Duration":9,"State":{"Status":"Ended successfully","Error":"","Code":0},"InputVolume":[{"VolumeID":"436def021fd6ec34f5357438a5ce6d0f9db241b7c75aa7fe231651a12bf36c3a","Name":"First Input Directory"},{"VolumeID":"76799b335378d9499ea19972b81ef568913665234d5d23bdd8fcefe85166e25a","Name":"Second Input Directory"}],"OutputVolume":[{"VolumeID":"939d6d35b59fafaaa01c01345244b65b7650013261335b20afd856e9353a0a72","Name":"Output Directory"}],"Tasks":[{"ID":"de540120-62b0-4dfe-b13a-f8c5bc2b32d6","Name":"Data staging #\u0001","ContainerID":"3e9c266b9cc3333a81c0b15a55ed094c56b9064c03bc4013bbd5a7e2f76e7ce7","SwarmServiceID":"","Error":"","ExitCode":0,"ConsoleOutput":"downloading text.txt\n"},{"ID":"dcd1a97d-13b6-4a82-b89c-32eeac012a8b","Name":"Service execution","ContainerID":"afbffd7ea5a7998f669ab2d4d0610a614351eb2c401ceec65963a81405038fd8","SwarmServiceID":"","Error":"","ExitCode":0,"ConsoleOutput":"Starting to read files\n/root/input2/input2.txt\nSentence #0: text\n/root/input1/text.txt\nSentence #0: What has happened in recent years has brought to our attention the tremendous problems facing not only to the producers of food but also the consumers.\nSentence #1: We must strike a balance between them.\nSentence #2: We must resolve this issue, because it is important that consumers should regain confidence in the food they eat.\nSentence #3: One way to achieve this is to have total transparency as far as food labelling is concerned.\nSentence #4: GMOs are the new challenge facing us.\nSentence #5: This is something that people are very worried about and quite rightly so: I myself share these concerns.\nSentence #6: But I think we should not allow our concerns about GMOs to overshadow our concerns about growth promoters used in animal feed or antibiotics used in compound feed.\nSentence #7: Indeed, we should not allow GMOs to obscure the fact that meat and bonemeal are still included in animal feeds in many countries in Europe.\nSentence #8: One factor behind these developments that has been referred to in this debate is competition - competition between Member States on the cost of the production of food.\nSentence #9: These are all areas in which we have to ensure a level playing field: food must be of the same standard in all Member States.\nSentence #10: We have had the dioxin scare, BSE and many other problems.\nSentence #11: The main problem is a financial one, namely who bears the cost?\nSentence #12: The problem is that the cost is not shared equally between the consumer and the producer: the producer has been forced to bear all the cost.\nSentence #13: We need an equitable distribution of the extra cost that has been incurred.\nSentence #14: We must also ensure that the food that is imported into the European Union meets the standards within the European Union.\nSentence #15: If we do not maintain those standards for imported food then we are going to encounter greater difficulties in the future.\nWriting parsing results into a file\nDone\n"}]}}
+```
+
+</details>
+
+#### Inspect a volume
+
+- HTTP method: GET
+- URL path: /api/volumes/$VOLUME_ID/$PATH
+- Requested parameters: none
+- Returns: list of files and folders in JSON
+
+Example: `curl 'https://$HOSTNAME/api/volumes/$VOLUME_ID/$PATH?access_token=$ACCESS_TOKEN' --insecure`
+
+<details><summary>Returns</summary>
+
+```
+{"volumeContent":[{"name":"results.csv","size":5424,"modified":"2017-11-10T10:28:18.37186562Z","isFolder":false,"path":"","folderTree":[]}],"volumeID":"09c31ae40ba0bb04e4d7786311b7373775a9b565e8e416cc5d38b267e49ef3c0"}
+```
+
+</details>
 
 ### User Management API<a name="user_management_api"></a>
 
