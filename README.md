@@ -477,7 +477,8 @@ Example: `curl 'https://$HOSTNAME/api/volumes/$VOLUME_ID/$PATH?access_token=$ACC
 <details><summary>Returns</summary>
 
 ```
-{"volumeContent":[{"name":"results.csv","size":5424,"modified":"2017-11-10T10:28:18.37186562Z","isFolder":false,"path":"","folderTree":[]}],"volumeID":"09c31ae40ba0bb04e4d7786311b7373775a9b565e8e416cc5d38b267e49ef3c0"}```
+{"volumeContent":[{"name":"results.csv","size":5424,"modified":"2017-11-10T10:28:18.37186562Z","isFolder":false,"path":"","folderTree":[]}],"volumeID":"09c31ae40ba0bb04e4d7786311b7373775a9b565e8e416cc5d38b267e49ef3c0"}
+```
 
 </details>
 
