@@ -294,6 +294,8 @@ The GEF provides a browser-based GUI that individual researchers can use to exec
 
 NOTE: `curl` command should be used with `--insecure` option, since the current version of the system has only self-signed certificates
 
+`examples` folder contains a Python script that demonstrates how to start a job and download its output by means of the GEF API
+
 #### Get API version information
 
 - HTTP method: GET
