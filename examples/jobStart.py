@@ -29,7 +29,6 @@ while jobStatusCode==-1:
     jsonResponse = json.loads(response.text)
     jobStatusCode = jsonResponse["Job"]["State"]["Code"]
 
-    print("Job is running...")
     if jsonResponse["Job"]["OutputVolume"]:
         if len(jsonResponse["Job"]["OutputVolume"])>0:
             jobOutputVolumeID = jsonResponse["Job"]["OutputVolume"][0]["VolumeID"]
