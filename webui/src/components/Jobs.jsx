@@ -3,10 +3,11 @@ import PropTypes from 'prop-types';
 import { Row, Col, Grid, Panel, Table, Button, Glyphicon, Modal, OverlayTrigger } from 'react-bootstrap';
 import {BootstrapTable, TableHeaderColumn} from 'react-bootstrap-table';
 import { toPairs } from '../utils/utils';
-import { connect } from 'react-redux'
+import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux'
 import * as actions from '../actions/actions';
-import FileTree from './FileTree'
+import FileTree from './FileTree';
+import moment from 'moment';
 
 const inProgressColor = {
     color: '#f45d00'
@@ -93,34 +94,26 @@ class Jobs extends React.Component {
             messageColor = errorColor;
         }
         return (
-            <div style={messageColor}>{currentProgress} {cell}</div>
+            <span style={messageColor}>{currentProgress} {cell}</span>
         );
     }
 
     createdFormatter(cell, row) {
-        let createdDate = new Date(row.created);
-        let fmtCreatedDate = createdDate.toLocaleDateString('en-GB');
-        let fmtCreatedTime = createdDate.toLocaleTimeString('en-GB');
         return (
-            <div>{fmtCreatedDate + " " + fmtCreatedTime}</div>
+            <span>{moment(row.created).format('L') + " " + moment(row.created).format('LTS')}</span>
         );
     }
 
     finishedFormatter(cell, row) {
-        let finishedDate = new Date(row.finished);
-        let finishedDateString = "";
-
-        let fmtFinishedDate = finishedDate.toLocaleDateString('en-GB');
-        let fmtFinishedTime = finishedDate.toLocaleTimeString('en-GB');
-
         if (row.code < 0) {
-            finishedDateString = "running";
-        } else {
-            finishedDateString = fmtFinishedDate + " " + fmtFinishedTime;
+            return (
+                <span>running</span>
+            );
+        }  else {
+            return (
+                <span>{moment(row.finished).format('L') + " " + moment(row.finished).format('LTS')}</span>
+            );
         }
-        return (
-            <div>{finishedDateString}</div>
-        );
     }
 
     removeSelectedJobs() {
