@@ -30,7 +30,7 @@
     "prop-types": "^15.5.10",
     "react": "^15.6.1",
     "react-bootstrap": "^0.31.2",
-    "react-bootstrap-table": "^4.0.0",
+    "react-bootstrap-table": "^4.2.0",
     "react-dom": "^15.6.1",
     "react-dropzone-component": "^2.0.0",
     "react-redux": "^5.0.6",

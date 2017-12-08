@@ -163,7 +163,7 @@ class Jobs extends React.Component {
                         { row.input.map((input) => {
                             inCounter++;
                             return (
-                                <Button onClick={() => this.handleInspectVolume(input["VolumeID"])}><Glyphicon
+                                <Button onClick={() => this.handleInspectVolume(input["VolumeID"])} key={'inspect_'+input["VolumeID"]}><Glyphicon
                                     glyph="arrow-down"/> Input #{inCounter+1}</Button>
                             )})
                         }
@@ -171,12 +171,12 @@ class Jobs extends React.Component {
                         { row.output.map((output) => {
                             outCounter++;
                             return (
-                                <Button onClick={() => this.handleInspectVolume(output["VolumeID"])}><Glyphicon
+                                <Button onClick={() => this.handleInspectVolume(output["VolumeID"])} key={'inspect_'+output["VolumeID"]}><Glyphicon
                                     glyph="arrow-up"/> Output #{outCounter+1}</Button>
                             )})
                         }
 
-                        <Button onClick={ () => this.props.actions.removeJobs([row.id])}><Glyphicon glyph="trash"/> Remove job</Button>
+                        <Button onClick={ () => this.props.actions.removeJobs([row.id])} key={'remove_'+row.id}><Glyphicon glyph="trash"/> Remove job</Button>
 
                     </div>
                 </div>
@@ -190,6 +190,7 @@ class Jobs extends React.Component {
         var activeJobs = 0;
         var inactiveJobs = 0;
         var failedJobs = 0;
+        var jobCounter = 0;
         this.props.jobs.map((job) => {
             let service = null;
             for (var i = 0; i < this.props.services.length; ++i) {
@@ -227,7 +228,7 @@ class Jobs extends React.Component {
 
             let inputVolumes = job.InputVolume ? job.InputVolume : [];
             let outputVolumes = job.OutputVolume ? job.OutputVolume : [];
-
+            jobCounter = jobCounter + 1;
             if (jobIdList.indexOf(job.ID)==-1) {
                 jobIdList.push(job.ID);
                 allJobs.push(
@@ -282,8 +283,8 @@ class Jobs extends React.Component {
                         </Col>
                     </Panel>
                     <div>
-                        <BootstrapTable data={allJobs} selectRow={selectRow}  expandComponent={this.expandComponent.bind(this)} expandableRow={() => {return true}} options={options} expandColumnOptions={{ expandColumnVisible: true }} ref="table" keyField='id'>
-                            <TableHeaderColumn dataField='id' dataSort expandable={ true }>ID</TableHeaderColumn>
+                        <BootstrapTable data={allJobs} selectRow={selectRow}  expandComponent={this.expandComponent.bind(this)} expandableRow={() => {return true}} options={options} expandColumnOptions={{ expandColumnVisible: true }} ref="table">
+                            <TableHeaderColumn dataField='id' isKey dataSort>ID</TableHeaderColumn>
                             <TableHeaderColumn dataField='title' dataSort>Title</TableHeaderColumn>
                             <TableHeaderColumn dataField='created' dataSort dataFormat={this.createdFormatter}>Created</TableHeaderColumn>
                             <TableHeaderColumn dataField='finished' dataSort dataFormat={this.finishedFormatter}>Finished</TableHeaderColumn>
