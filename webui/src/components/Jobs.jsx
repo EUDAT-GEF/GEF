@@ -3,10 +3,11 @@ import PropTypes from 'prop-types';
 import { Row, Col, Grid, Panel, Table, Button, Glyphicon, Modal, OverlayTrigger } from 'react-bootstrap';
 import {BootstrapTable, TableHeaderColumn} from 'react-bootstrap-table';
 import { toPairs } from '../utils/utils';
-import { connect } from 'react-redux'
+import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux'
 import * as actions from '../actions/actions';
-import FileTree from './FileTree'
+import FileTree from './FileTree';
+import moment from 'moment';
 
 const inProgressColor = {
     color: '#f45d00'
@@ -28,12 +29,12 @@ class Jobs extends React.Component {
             timerOn: true,
             showModal: false,
         };
-        jobStatusUpdateTimer = setInterval(this.tick.bind(this), 1000);
     }
 
     componentDidMount() {
         this.props.fetchJobs();
         this.props.fetchServices();
+        this.jobStatusUpdateTimer = setInterval(() => this.tick(), 1000);
     }
 
     componentWillUnmount() {
@@ -41,32 +42,23 @@ class Jobs extends React.Component {
     }
 
     tick() {
-        this.props.fetchJobs();
+        if (this.state.timerOn) {
+            this.props.fetchJobs();
+        }
+
         if ((this.state.timerOn) && (!this.hasJobsRunning())) {
-            clearInterval(jobStatusUpdateTimer);
+            clearInterval(this.jobStatusUpdateTimer);
             this.setState({timerOn: false});
         }
 
         if ((!this.state.timerOn) && (this.hasJobsRunning())) {
-            jobStatusUpdateTimer = setInterval(this.tick.bind(this), 1000);
+            this.jobStatusUpdateTimer = setInterval(() => this.tick(), 1000);
             this.setState({timerOn: true});
         }
     }
 
-    formatJobDuration(durationTime) {
-        var sec_num = parseInt(durationTime, 10);
-        var hours   = Math.floor(sec_num / 3600);
-        var minutes = Math.floor((sec_num - (hours * 3600)) / 60);
-        var seconds = sec_num - (hours * 3600) - (minutes * 60);
-
-        if (hours   < 10) {hours   = "0"+hours;}
-        if (minutes < 10) {minutes = "0"+minutes;}
-        if (seconds < 10) {seconds = "0"+seconds;}
-        return hours+':'+minutes+':'+seconds;
-    }
-
     hasJobsRunning() {
-        var runningJobfound = false;
+        let runningJobfound = false;
         if (this.props.jobs) {
             this.props.jobs.map((job) => {
                 if (job.State.Code < 0) {
@@ -77,9 +69,21 @@ class Jobs extends React.Component {
         return runningJobfound;
     }
 
+    jobDurationFormatter(durationTime) {
+        let secNum = parseInt(durationTime, 10);
+        let hours   = Math.floor(secNum / 3600);
+        let minutes = Math.floor((secNum - (hours * 3600)) / 60);
+        let seconds = secNum - (hours * 3600) - (minutes * 60);
+
+        if (hours   < 10) {hours   = "0"+hours;}
+        if (minutes < 10) {minutes = "0"+minutes;}
+        if (seconds < 10) {seconds = "0"+seconds;}
+        return hours+':'+minutes+':'+seconds;
+    }
+
     statusFormatter(cell, row) {
-        var currentProgress;
-        var messageColor;
+        let currentProgress;
+        let messageColor;
 
         if (row.code < 0) {
             currentProgress = progressAnimation;
@@ -90,22 +94,26 @@ class Jobs extends React.Component {
             messageColor = errorColor;
         }
         return (
-            <div style={messageColor}>{currentProgress} {cell}</div>
+            <span style={messageColor}>{currentProgress} {cell}</span>
+        );
+    }
+
+    createdFormatter(cell, row) {
+        return (
+            <span>{moment(row.created).format('L') + " " + moment(row.created).format('LTS')}</span>
         );
     }
 
     finishedFormatter(cell, row) {
-        var finishedTime;
-
-
         if (row.code < 0) {
-            finishedTime = "running";
-        } else {
-            finishedTime = row.finished;
+            return (
+                <span>running</span>
+            );
+        }  else {
+            return (
+                <span>{moment(row.finished).format('L') + " " + moment(row.finished).format('LTS')}</span>
+            );
         }
-        return (
-            <div>{finishedTime}</div>
-        );
     }
 
     removeSelectedJobs() {
@@ -139,7 +147,7 @@ class Jobs extends React.Component {
                         { row.input.map((input) => {
                             inCounter++;
                             return (
-                                <Button onClick={() => this.handleInspectVolume(input["VolumeID"])}><Glyphicon
+                                <Button onClick={() => this.handleInspectVolume(input["VolumeID"])} key={'inspect_'+input["VolumeID"]}><Glyphicon
                                     glyph="arrow-down"/> Input #{inCounter+1}</Button>
                             )})
                         }
@@ -147,12 +155,12 @@ class Jobs extends React.Component {
                         { row.output.map((output) => {
                             outCounter++;
                             return (
-                                <Button onClick={() => this.handleInspectVolume(output["VolumeID"])}><Glyphicon
+                                <Button onClick={() => this.handleInspectVolume(output["VolumeID"])} key={'inspect_'+output["VolumeID"]}><Glyphicon
                                     glyph="arrow-up"/> Output #{outCounter+1}</Button>
                             )})
                         }
 
-                        <Button onClick={ () => this.props.actions.removeJobs([row.id])}><Glyphicon glyph="trash"/> Remove job</Button>
+                        <Button onClick={ () => this.props.actions.removeJobs([row.id])} key={'remove_'+row.id}><Glyphicon glyph="trash"/> Remove job</Button>
 
                     </div>
                 </div>
@@ -160,12 +168,11 @@ class Jobs extends React.Component {
         );
     }
 
-
     populateTable() {
-        var allJobs = [];
-        var activeJobs = 0;
-        var inactiveJobs = 0;
-        var failedJobs = 0;
+        let allJobs = [];
+        let activeJobs = 0;
+        let inactiveJobs = 0;
+        let failedJobs = 0;
         this.props.jobs.map((job) => {
             let service = null;
             for (var i = 0; i < this.props.services.length; ++i) {
@@ -179,7 +186,8 @@ class Jobs extends React.Component {
             let title = "Job from " + serviceName;
 
             let jobStartTime = new Date(job.Created);
-            let jobFinishTime = new Date(jobStartTime.getTime() + 1000 * job.Duration);
+            let jobFinishTime = new Date(jobStartTime.getTime() + (1000 * job.Duration));
+
             if (job.State.Code < 0) {
                 activeJobs += 1;
             } else {
@@ -200,22 +208,16 @@ class Jobs extends React.Component {
                 }
             }
 
-            let createdDate = new Date(job.Created);
-            let fmtCreatedDate = createdDate.toLocaleDateString('en-GB');
-            let fmtCreatedTime = createdDate.toLocaleTimeString('en-GB');
-
-            let fmtFinishedDate = jobFinishTime.toLocaleDateString('en-GB');
-            let fmtFinishedTime = jobFinishTime.toLocaleTimeString('en-GB');
-
             let inputVolumes = job.InputVolume ? job.InputVolume : [];
             let outputVolumes = job.OutputVolume ? job.OutputVolume : [];
 
             allJobs.push(
                 {
-                    "title": title, "id": job.ID,
-                    "created": fmtCreatedDate + " " + fmtCreatedTime,
-                    "duration": this.formatJobDuration(job.Duration),
-                    "finished": fmtFinishedDate + " " + fmtFinishedTime,
+                    "id": job.ID,
+                    "title": title,
+                    "created": job.Created,
+                    "duration": job.Duration,
+                    "finished": jobFinishTime,
                     "status": job.State.Status,
                     "code": job.State.Code,
                     "console": ConsoleOutput,
@@ -227,6 +229,7 @@ class Jobs extends React.Component {
 
         return [allJobs, activeJobs, inactiveJobs, failedJobs];
     }
+
 
     render() {
         const options = {
@@ -260,11 +263,11 @@ class Jobs extends React.Component {
                     </Panel>
                     <div>
                         <BootstrapTable data={allJobs} selectRow={selectRow}  expandComponent={this.expandComponent.bind(this)} expandableRow={() => {return true}} options={options} expandColumnOptions={{ expandColumnVisible: true }} ref="table">
-                            <TableHeaderColumn dataField='id' isKey dataSort expandable={ true }>ID</TableHeaderColumn>
+                            <TableHeaderColumn dataField='id' isKey dataSort>ID</TableHeaderColumn>
                             <TableHeaderColumn dataField='title' dataSort>Title</TableHeaderColumn>
-                            <TableHeaderColumn dataField='created' dataSort>Created</TableHeaderColumn>
+                            <TableHeaderColumn dataField='created' dataSort dataFormat={this.createdFormatter}>Created</TableHeaderColumn>
                             <TableHeaderColumn dataField='finished' dataSort dataFormat={this.finishedFormatter}>Finished</TableHeaderColumn>
-                            <TableHeaderColumn dataField='duration' dataSort>Duration</TableHeaderColumn>
+                            <TableHeaderColumn dataField='duration' dataSort dataFormat={this.jobDurationFormatter}>Duration</TableHeaderColumn>
                             <TableHeaderColumn dataField='status' dataSort dataFormat={this.statusFormatter}>Status</TableHeaderColumn>
                         </BootstrapTable>
                     </div>
