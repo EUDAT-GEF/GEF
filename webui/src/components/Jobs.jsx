@@ -20,11 +20,6 @@ const successColor = {
 const progressAnimation = <img src="/images/progress-animation.gif" />;
 let jobStatusUpdateTimer;
 
-function sortByDate(a, b) {
-     var dateA = new Date(a), dateB = new Date(b);
-     return dateA - dateB;
- }
-
 class Jobs extends React.Component {
     constructor(props) {
         super(props);
@@ -33,7 +28,6 @@ class Jobs extends React.Component {
             timerOn: true,
             showModal: false,
         };
-        //jobStatusUpdateTimer = setInterval(this.tick.bind(this), 1000);
     }
 
     componentDidMount() {
@@ -57,16 +51,13 @@ class Jobs extends React.Component {
         }
 
         if ((!this.state.timerOn) && (this.hasJobsRunning())) {
-            //jobStatusUpdateTimer = setInterval(this.tick.bind(this), 1000);
             this.jobStatusUpdateTimer = setInterval(() => this.tick(), 1000);
             this.setState({timerOn: true});
         }
     }
 
-
-
     hasJobsRunning() {
-        var runningJobfound = false;
+        let runningJobfound = false;
         if (this.props.jobs) {
             this.props.jobs.map((job) => {
                 if (job.State.Code < 0) {
@@ -78,10 +69,10 @@ class Jobs extends React.Component {
     }
 
     jobDurationFormatter(durationTime) {
-        var sec_num = parseInt(durationTime, 10);
-        var hours   = Math.floor(sec_num / 3600);
-        var minutes = Math.floor((sec_num - (hours * 3600)) / 60);
-        var seconds = sec_num - (hours * 3600) - (minutes * 60);
+        let secNum = parseInt(durationTime, 10);
+        let hours   = Math.floor(secNum / 3600);
+        let minutes = Math.floor((secNum - (hours * 3600)) / 60);
+        let seconds = secNum - (hours * 3600) - (minutes * 60);
 
         if (hours   < 10) {hours   = "0"+hours;}
         if (minutes < 10) {minutes = "0"+minutes;}
@@ -90,8 +81,8 @@ class Jobs extends React.Component {
     }
 
     statusFormatter(cell, row) {
-        var currentProgress;
-        var messageColor;
+        let currentProgress;
+        let messageColor;
 
         if (row.code < 0) {
             currentProgress = progressAnimation;
@@ -185,12 +176,10 @@ class Jobs extends React.Component {
     }
 
     populateTable() {
-        var allJobs = [];
-        var jobIdList = [];
-        var activeJobs = 0;
-        var inactiveJobs = 0;
-        var failedJobs = 0;
-        var jobCounter = 0;
+        let allJobs = [];
+        let activeJobs = 0;
+        let inactiveJobs = 0;
+        let failedJobs = 0;
         this.props.jobs.map((job) => {
             let service = null;
             for (var i = 0; i < this.props.services.length; ++i) {
@@ -228,24 +217,21 @@ class Jobs extends React.Component {
 
             let inputVolumes = job.InputVolume ? job.InputVolume : [];
             let outputVolumes = job.OutputVolume ? job.OutputVolume : [];
-            jobCounter = jobCounter + 1;
-            if (jobIdList.indexOf(job.ID)==-1) {
-                jobIdList.push(job.ID);
-                allJobs.push(
-                    {
-                        "id": job.ID,
-                        "title": title,
-                        "created": job.Created,
-                        "duration": job.Duration,
-                        "finished": jobFinishTime,
-                        "status": job.State.Status,
-                        "code": job.State.Code,
-                        "console": ConsoleOutput,
-                        "input": inputVolumes,
-                        "output": outputVolumes
-                    }
-                );
-            }
+
+            allJobs.push(
+                {
+                    "id": job.ID,
+                    "title": title,
+                    "created": job.Created,
+                    "duration": job.Duration,
+                    "finished": jobFinishTime,
+                    "status": job.State.Status,
+                    "code": job.State.Code,
+                    "console": ConsoleOutput,
+                    "input": inputVolumes,
+                    "output": outputVolumes
+                }
+            );
         });
 
         return [allJobs, activeJobs, inactiveJobs, failedJobs];
