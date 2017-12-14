@@ -165,6 +165,18 @@ type OwnerTable struct {
 	Revision   int
 }
 
+// BuildTable stores the information about an image build process
+type BuildTable struct {
+	ID           string
+	ConnectionID int
+	Started      time.Time
+	Duration     int64 // duration time in seconds
+	Error        string
+	Status       string
+	Code         int
+	Revision     int
+}
+
 // InitDb initializes the database engine
 func InitDb() (Db, error) {
 	dataBase, err := sql.Open("sqlite3", sqliteDataBasePath)
@@ -210,6 +222,8 @@ func setupDatabase(dataBase *sql.DB) (Db, error) {
 	dataBaseMap.AddTableWithName(IOPortTable{}, "IOPorts").SetVersionCol(gorpVersionColumn)
 
 	dataBaseMap.AddTableWithName(ServiceCmdTable{}, "ServiceCmd").SetKeys(true, "ID").SetVersionCol(gorpVersionColumn)
+
+	dataBaseMap.AddTableWithName(Build{}, "Builds").SetKeys(true, "ID").SetVersionCol(gorpVersionColumn)
 
 	userTable := dataBaseMap.AddTableWithName(UserTable{}, "Users").SetKeys(true, "ID")
 	{
@@ -890,4 +904,56 @@ func (d *Db) GetJobOwningVolume(volumeID string) (Job, error) {
 		return Job{}, err
 	}
 	return d.jobTable2Job(dbjob)
+}
+
+// buildTable2Build performs mapping of the database builds table to its JSON representation
+func (d *Db) buildTable2Build(storedBuild BuildTable) Build {
+	var build = Build{
+		ID:           storedBuild.ID,
+		ConnectionID: ConnectionID(storedBuild.ConnectionID),
+		Started:      storedBuild.Started,
+		Duration:     storedBuild.Duration,
+		State: &BuildState{
+			Status: storedBuild.Status,
+			Error:  storedBuild.Error,
+			Code:   storedBuild.Code,
+		},
+	}
+
+	if build.State.Code < 0 {
+		build.Duration = time.Now().Unix() - build.Started.Unix()
+	} else {
+		build.Duration = storedBuild.Duration
+	}
+
+	return build
+}
+
+// build2BuildTable performs mapping of the build JSON representation to its database representation
+func (d *Db) build2BuildTable(build Build) BuildTable {
+	var storedBuild = BuildTable{
+		ID:           build.ID,
+		ConnectionID: int(build.ConnectionID),
+		Started:      build.Started,
+		Duration:     build.Duration,
+		Status:       build.State.Status,
+		Error:        build.State.Error,
+		Code:         build.State.Code,
+	}
+	return storedBuild
+}
+
+// SetBuildState sets a build state
+func (d *Db) SetBuildState(id string, state BuildState) error {
+	var storedBuild BuildTable
+	err := d.db.SelectOne(&storedBuild, "SELECT * FROM builds WHERE ID=?", string(id))
+	if err != nil {
+		return err
+	}
+
+	storedBuild.Error = state.Error
+	storedBuild.Status = state.Status
+	storedBuild.Code = state.Code
+	_, err = d.db.Update(&storedBuild)
+	return err
 }

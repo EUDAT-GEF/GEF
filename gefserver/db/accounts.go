@@ -28,6 +28,7 @@ type Token struct {
 	Expire time.Time
 }
 
+// Community information
 type Community struct {
 	ID          int64
 	Name        string

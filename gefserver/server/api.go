@@ -88,8 +88,9 @@ func NewServer(cfg def.Configuration, pier *pier.Pier, database *db.Db) (*Server
 		{"POST /roles/{roleID}", server.newRoleUserHandler, "access management"},
 		{"DELETE /roles/{roleID}/{userID}", server.removeRoleUserHandler, "access management"},
 
-		{"POST /builds", server.newBuildImageHandler, "service deployment"},
-		{"POST /builds/{buildID}", server.buildImageHandler, "service deployment"},
+		{"POST /builds", server.newBuildImageHandler, "build initialization"},
+		{"POST /builds/{buildID}", server.startBuildImageHandler, "build start"},
+		{"GET /builds/{buildID}", server.inspectBuildImageHandler, "build discovery"},
 
 		{"GET /services", server.listServicesHandler, "service discovery"},
 		{"GET /services/{serviceID}", server.inspectServiceHandler, "service discovery"},
