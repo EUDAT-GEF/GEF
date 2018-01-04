@@ -44,7 +44,7 @@ type dockerConnection struct {
 	stageIn             internalImage
 	fileList            internalImage
 	copyToAndFromVolume internalImage
-	mavenEGI            internalImage
+	// mavenEGI            internalImage
 }
 
 type internalImage struct {
@@ -139,17 +139,17 @@ func (p *Pier) AddDockerConnection(userID int64, config def.DockerConfig) (db.Co
 		return connID, err
 	}
 
-	mavenEGIImage, err := buildInternalImage(client, "maven-EGI")
-	if err != nil {
-		return connID, err
-	}
+	// mavenEGIImage, err := buildInternalImage(client, "maven-EGI")
+	// if err != nil {
+	// 	return connID, err
+	// }
 
 	p.docker[connID] = dockerConnection{
 		client,
 		stageInImage,
 		fileListImage,
 		copyToAndFromVolumeImage,
-		mavenEGIImage,
+		// mavenEGIImage,
 	}
 	return connID, nil
 }
@@ -365,7 +365,7 @@ func (p *Pier) runJob(job *db.Job, service db.Service, inputSrc []string, limits
 					return
 				}
 			} else if strings.ToLower(service.Input[i].Type) == "url" {
-					containerID, swarmServiceID, exitCode, output, err := docker.client.ExecuteImage(
+				containerID, swarmServiceID, exitCode, output, err := docker.client.ExecuteImage(
 					string(docker.stageIn.id),
 					docker.stageIn.repoTag,
 					append(docker.stageIn.cmd, inputSrc[i]),
@@ -407,7 +407,7 @@ func (p *Pier) runJob(job *db.Job, service db.Service, inputSrc []string, limits
 			} else {
 				err = p.db.SetJobState(job.ID, db.NewJobStateError("Data staging #"+string(i+1)+" failed: input file name not specified", 1))
 				if err != nil {
-				log.Println(err)
+					log.Println(err)
 				}
 				p.updateJobDurationTime(*job)
 				return

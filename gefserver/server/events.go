@@ -3,6 +3,7 @@ package server
 import (
 	"bytes"
 	"encoding/json"
+	"io/ioutil"
 	"log"
 	"net"
 	"net/http"
@@ -15,16 +16,50 @@ import (
 	"github.com/EUDAT-GEF/GEF/gefserver/def"
 )
 
-func (s *Server) decorate(fn func(http.ResponseWriter, *http.Request, environment), actionType string) func(http.ResponseWriter, *http.Request) {
+func (s *Server) decorate(apifn func(http.ResponseWriter, *http.Request, environment), actionType string) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		logRequest(r)
-		user, err := s.getCurrentUser(r)
-		if err != nil {
-			log.Println("User error: ", err)
-		}
+
 		var userEnv environment
 		userEnv.Timeouts = s.timeouts
 		userEnv.Limits = s.limits
+
+		if eventSys.address == "" {
+			apifn(w, r, userEnv)
+			return
+		}
+
+		dbuser, err := s.getCurrentUser(r)
+		if err != nil {
+			log.Println("User error: ", err)
+		}
+
+		var user *userdat
+		if dbuser != nil {
+			user = &userdat{
+				ID:      dbuser.ID,
+				Name:    dbuser.Name,
+				Email:   dbuser.Email,
+				Created: dbuser.Created,
+				Updated: dbuser.Updated,
+			}
+
+			var dbroles []db.Role
+			dbroles, err = s.db.GetUserRoles(dbuser.ID)
+			if err != nil {
+				log.Printf("event system: ERROR retrieving user roles: %#v\n", err)
+			} else {
+				for _, r := range dbroles {
+					user.Roles = append(user.Roles, roledat{
+						ID:            r.ID,
+						Name:          r.Name,
+						Description:   r.Description,
+						CommunityID:   r.CommunityID,
+						CommunityName: r.CommunityName,
+					})
+				}
+			}
+		}
 
 		var sysStatistics statistics
 
@@ -34,14 +69,21 @@ func (s *Server) decorate(fn func(http.ResponseWriter, *http.Request, environmen
 		}
 		sysStatistics.TotalRunningJobs = s.db.CountRunningJobs()
 
-		allow, closefn, env := signalEvent(actionType, user, userEnv, sysStatistics, r)
+		allow, closefn, retEnv := sendEvent(actionType, user, userEnv, sysStatistics, r)
 		if !allow {
 			Response{w}.DirectiveError()
 		} else {
 			defer closefn()
-			fn(w, r, env)
+			update(userEnv, retEnv)
+			apifn(w, r, userEnv)
 		}
 	}
+}
+
+func update(userEnv environment, newEnv map[string]interface{}) {
+	// TODO: !!!
+	// TODO: update userEnv based on the newEnv values
+	// TODO: !!!
 }
 
 type eventSystem struct {
@@ -53,10 +95,27 @@ var eventSys eventSystem
 
 type eventPayload struct {
 	Event       event       `json:"event"`
-	User        *db.User    `json:"user"`
+	User        *userdat    `json:"user"`
 	Resource    resource    `json:"resource"`
 	Environment environment `json:"environment"`
 	Statistics  statistics  `json:"statistics"`
+}
+
+type userdat struct {
+	ID      int64     `json:"id"`
+	Name    string    `json:"name"`
+	Email   string    `json:"email"`
+	Created time.Time `json:"created"`
+	Updated time.Time `json:"updated"`
+	Roles   []roledat `json:"role"`
+}
+
+type roledat struct {
+	ID            int64  `json:"id"`
+	Name          string `json:"name"`
+	Description   string `json:"description"`
+	CommunityID   int64  `json:"communityid"`
+	CommunityName string `json:"communityname"`
 }
 
 type event struct {
@@ -91,16 +150,50 @@ func InitEventSystem(address string) {
 	if !strings.HasSuffix(address, "/") {
 		address += "/"
 	}
+	log.Println("Event System enabled: %v", address)
 	eventSys = eventSystem{
 		address: address + "api/events",
 	}
 }
 
-func (es eventSystem) dispatch(action string, user *db.User, userEnv environment, sysStatistics statistics, r *http.Request, preceding bool) (bool, *http.Response) {
-	if es.address == "" {
-		return true, nil
-	}
+func sendEvent(action string, user *userdat, userEnv environment, sysStatistics statistics, r *http.Request) (allow bool, closefn func(), newEnv map[string]interface{}) {
+	closefn = func() {}
+	jsonBody := eventSys.callDirectiveEngine(action, user, userEnv, sysStatistics, r, true)
+	if jsonBody != nil && len(jsonBody) > 0 {
+		err := json.NewDecoder(bytes.NewReader(jsonBody)).Decode(&newEnv)
+		if err != nil {
+			log.Printf("event system response parsing error: %#v\n", err)
+		}
+		log.Printf("    event system: directive response: %v\n", newEnv)
 
+		allow = true
+		if jsonAllow, exists := newEnv["allow"]; exists {
+			if allowPrimitive, ok := jsonAllow.(bool); ok {
+				allow = allowPrimitive
+			} else if allowArray, ok := jsonAllow.([]interface{}); ok {
+				for _, allowValue := range allowArray {
+					a, ok := allowValue.(bool)
+					if ok {
+						allow = allow && a
+					} else {
+						log.Printf("event system: response parsing error: allow array containing non-boolean: %#v\n", allowArray)
+					}
+				}
+			} else {
+				log.Printf("event system: response parsing error: unknown allow type: %#v\n", jsonAllow)
+			}
+		}
+
+		if allow {
+			closefn = func() {
+				eventSys.callDirectiveEngine(action, user, userEnv, sysStatistics, r, false)
+			}
+		}
+	}
+	return allow, closefn, newEnv
+}
+
+func (es eventSystem) callDirectiveEngine(action string, user *userdat, userEnv environment, sysStatistics statistics, r *http.Request, preceding bool) []byte {
 	payload := eventPayload{
 		Event: event{
 			ID:        atomic.AddUint64(&es.ID, 1),
@@ -130,33 +223,18 @@ func (es eventSystem) dispatch(action string, user *db.User, userEnv environment
 				log.Printf("event system: post url ERROR: %#v\n", e)
 			}
 			log.Printf("event system: post ERROR: %#v\n", err)
-			return true, resp
+			return nil
+		}
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			log.Printf("event system: body read ERROR: %#v\n", err)
+			return nil
 		}
 		if 400 <= resp.StatusCode && resp.StatusCode < 500 {
 			log.Printf("event system: post client ERROR: %#v\n", resp)
-			return false, resp
+			return nil
 		}
-		return true, resp
+		return body
 	}
-	return true, nil
-}
-
-func signalEvent(action string, user *db.User, userEnv environment, sysStatistics statistics, r *http.Request) (allow bool, closefn func(), env environment) {
-	fn := func() {}
-	newEnv := environment{}
-	ret, resp := eventSys.dispatch(action, user, userEnv, sysStatistics, r, true)
-	if resp != nil {
-		defer resp.Body.Close()
-
-		err := json.NewDecoder(resp.Body).Decode(&newEnv)
-		if err != nil {
-			log.Printf("event system response parsing error: %#v\n", err)
-		}
-		if ret {
-			fn = func() {
-				eventSys.dispatch(action, user, userEnv, sysStatistics, r, false)
-			}
-		}
-	}
-	return ret, fn, newEnv
+	return nil
 }
