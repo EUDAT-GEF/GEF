@@ -1,6 +1,7 @@
 package server
 
 import (
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -184,7 +185,7 @@ func (s *Server) getConnectionIDParam(r *http.Request) (db.ConnectionID, error) 
 	return db.ConnectionID(connectionID), nil
 }
 
-func (s *Server) buildImageHandler(w http.ResponseWriter, r *http.Request, e environment) {
+func (s *Server) startBuildImageHandler(w http.ResponseWriter, r *http.Request, e environment) {
 	allow, user := Authorization{s, w, r}.allowUploadIntoBuild()
 	if user == nil || !allow {
 		return
@@ -199,17 +200,106 @@ func (s *Server) buildImageHandler(w http.ResponseWriter, r *http.Request, e env
 		Response{w}.ClientError("bad connectionID", err)
 	}
 
+	var newBuild = db.Build{
+		ID:           buildID,
+		ConnectionID: connectionID,
+		Started:      time.Now(),
+		Duration:     0,
+		State: &db.BuildState{
+			Status: "Image build has been initiated",
+			Error:  "",
+			Code:   -1,
+		},
+	}
+
+	err = s.db.AddBuild(newBuild)
+	if err != nil {
+		err = s.db.SetBuildState(buildID, db.NewBuildStateError("Failed to add the new build to the database", 1))
+		if err != nil {
+			log.Println(err)
+		}
+		Response{w}.ServerError("while adding a new build ", err)
+		return
+	}
+
 	mr, err := r.MultipartReader()
 	if err != nil {
 		Response{w}.ServerError("while getting multipart reader ", err)
 		return
 	}
 
-	var service db.Service
+	for {
+		part, err := mr.NextPart()
+		if err == io.EOF {
+			break
+		}
+		if part.FileName() == "" {
+			continue
+		}
+		err = s.db.SetBuildState(buildID, db.NewBuildStateOk("Uploading file "+part.FileName(), -1))
+		if err != nil {
+			log.Println(err)
+		}
 
-	go pier.StartImageBuild(buildID, buildDir, connectionID, user, mr)
+		log.Println("\tupload file " + part.FileName())
+		dst, err := os.Create(filepath.Join(buildDir, part.FileName()))
+		if err != nil {
+			log.Print("while creating file to save file part ", err)
+			err = s.db.SetBuildState(buildID, db.NewBuildStateError("Failed while creating file to save file part "+part.FileName(), 1))
+			if err != nil {
+				log.Println(err)
+			}
+			return
+		}
+		defer dst.Close()
 
-	Response{w}.Ok(jmap("Service", service))
+		if _, err = io.Copy(dst, part); err != nil {
+			log.Print("while dumping file part ", err)
+			err = s.db.SetBuildState(buildID, db.NewBuildStateError("Failed while dumping file part "+part.FileName(), 1))
+			if err != nil {
+				log.Println(err)
+			}
+			return
+		}
+
+		// Building from tar
+		if strings.HasSuffix(strings.ToLower(part.FileName()), ".tar") || strings.HasSuffix(strings.ToLower(part.FileName()), ".tar.gz") {
+			err = s.db.SetBuildState(buildID, db.NewBuildStateOk("Importing an image from a tar archive", -1))
+			if err != nil {
+				log.Println(err)
+			}
+			go s.pier.StartServiceBuildFromTar(buildID, buildDir, connectionID, user.ID, part.FileName())
+		}
+
+		// Building from a Dockerfile
+		if strings.ToLower(part.FileName()) == "dockerfile" {
+			err := s.db.SetBuildState(buildID, db.NewBuildStateOk("Building an image from a Dockerfile", -1))
+			if err != nil {
+				log.Println(err)
+			}
+			go s.pier.StartServiceBuildFromFile(buildID, buildDir, connectionID, user.ID)
+		}
+
+	}
+
+	Response{w}.Ok(jmap("buildID", buildID))
+}
+
+func (s *Server) inspectBuildImageHandler(w http.ResponseWriter, r *http.Request, e environment) {
+	allow, user := Authorization{s, w, r}.allowInspectBuild()
+	if user == nil || !allow {
+		return
+	}
+
+	vars := mux.Vars(r)
+	buildID := vars["buildID"]
+
+	build, err := s.db.GetBuild(buildID)
+	if err != nil {
+		Response{w}.ClientError("cannot get a build", err)
+		return
+	}
+	Response{w}.Ok(jmap("Build", build))
 }
 
 func (s *Server) listServicesHandler(w http.ResponseWriter, r *http.Request, e environment) {

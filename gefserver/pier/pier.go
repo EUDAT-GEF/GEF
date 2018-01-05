@@ -2,9 +2,7 @@ package pier
 
 import (
 	"fmt"
-	"io"
 	"log"
-	"mime/multipart"
 	"os"
 	"path/filepath"
 	"time"
@@ -587,80 +585,49 @@ func (p *Pier) ImportImage(connectionID db.ConnectionID, userID int64, imageFile
 	return service, nil
 }
 
-func (p *Pier) StartImageBuild(buildID string, buildDir string, connectionID db.ConnectionID, user db.User, mr *multipart.Reader) {
-
-	foundImageFileName := ""
-	tarFileFound := false
-	dockerFileFound := false
-	for {
-		part, err := mr.NextPart()
-		if err == io.EOF {
-			break
-		}
-		if part.FileName() == "" {
-			continue
-		}
-
-		log.Println("\tupload file " + part.FileName())
-		dst, err := os.Create(filepath.Join(buildDir, part.FileName()))
-		if err != nil {
-			log.Print("while creating file to save file part ", err)
-			return
-		}
-		defer dst.Close()
-
-		if _, err := io.Copy(dst, part); err != nil {
-			log.Print("while dumping file part ", err)
-			return
-		}
-
-		if strings.HasSuffix(strings.ToLower(part.FileName()), ".tar") || strings.HasSuffix(strings.ToLower(part.FileName()), ".tar.gz") {
-			tarFileFound = true
-			foundImageFileName = part.FileName()
-		}
-
-		if strings.ToLower(part.FileName()) == "dockerfile" {
-			dockerFileFound = true
-		}
-
+// StartServiceBuildFromFile builds an image from a Dockerfile
+func (p *Pier) StartServiceBuildFromFile(buildID string, buildDir string, connectionID db.ConnectionID, userID int64) {
+	if _, err := os.Stat(filepath.Join(buildDir, "Dockerfile")); os.IsNotExist(err) {
+		log.Print("no Dockerfile to build new image ", err)
+		return
 	}
 
-	// Building an image from a Dockerfile
-	if dockerFileFound {
-		if _, err := os.Stat(filepath.Join(buildDir, "Dockerfile")); os.IsNotExist(err) {
-			//Response{w}.ServerError("no Dockerfile to build new image ", err)
-			log.Print("no Dockerfile to build new image ", err)
-			return
-		}
-
-		//service, err := p.BuildService(connectionID, user.ID, buildDir)
-		_, err := p.BuildService(connectionID, user.ID, buildDir)
+	_, err := p.BuildService(connectionID, userID, buildDir)
+	if err != nil {
+		log.Print("build service failed: ", err)
+		err = p.db.SetBuildState(buildID, db.NewBuildStateError("Failed to build a service", 1))
 		if err != nil {
-			//Response{w}.ServerError("build service failed: ", err)
-			log.Print("build service failed: ", err)
-			return
+			log.Println(err)
 		}
-	} else {
-		// Importing an existing image from a tar archive
-		if tarFileFound {
-			log.Println("Docker image file has been detected, trying to import")
-			log.Println(filepath.Join(buildDir, foundImageFileName))
-			// service, err := p.ImportImage(connectionID, user.ID, filepath.Join(buildDir, foundImageFileName))
-			_, err := p.ImportImage(connectionID, user.ID, filepath.Join(buildDir, foundImageFileName))
-			if err != nil {
-				//Response{w}.ServerError("while importing a Docker image file ", err)
-				log.Println("while importing a Docker image file ", err)
-				return
-			}
-
-			log.Println("Docker image has been imported")
-		} else {
-			// Response{w}.ServerNewError("there is neither Dockerfile nor Tar archive")
-			log.Println("there is neither Dockerfile nor Tar archive")
-			return
-		}
+		return
 	}
 
+	err = p.db.SetBuildState(buildID, db.NewBuildStateOk("The service has been built successfully", 0))
+	if err != nil {
+		log.Println(err)
+	}
+}
+
+// StartServiceBuildFromTar imports an existing image from a tar archive
+func (p *Pier) StartServiceBuildFromTar(buildID string, buildDir string, connectionID db.ConnectionID, userID int64, imageFileName string) {
+	log.Println("Docker image file has been detected, trying to import")
+	log.Println(filepath.Join(buildDir, imageFileName))
+
+	_, err := p.ImportImage(connectionID, userID, filepath.Join(buildDir, imageFileName))
+	if err != nil {
+		log.Println("while importing a Docker image file ", err)
+		err = p.db.SetBuildState(buildID, db.NewBuildStateError("Failed to build a service from an imported image", 1))
+		if err != nil {
+			log.Println(err)
+		}
+		return
+	}
+
+	log.Println("Docker image has been imported")
+	err = p.db.SetBuildState(buildID, db.NewBuildStateOk("The service has been built successfully from an imported image", 0))
+	if err != nil {
+		log.Println(err)
+	}
 }
 
 // NewServiceFromImage extracts metadata and creates a valid GEF service

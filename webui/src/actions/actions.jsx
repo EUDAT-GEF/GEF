@@ -212,6 +212,26 @@ export function fileUploadError(errorMessage) {
     }
 }
 
+export function buildFetchStart() {
+    return {
+        type: actionTypes.BUILD_FETCH_START
+    }
+}
+
+export function buildFetchSuccess(build) {
+    return {
+        type: actionTypes.BUILD_FETCH_SUCCESS,
+        build: build
+    }
+}
+
+export function buildFetchError(errorMessage) {
+    return {
+        type: actionTypes.BUILD_FETCH_ERROR,
+        errorMessage: errorMessage
+    }
+}
+
 export function inspectVolumeStart() {
     return {
         type: actionTypes.INSPECT_VOLUME_START
@@ -381,6 +401,20 @@ export function inspectVolume(volumeId) {
                 dispatch(inspectVolumeError(err));
             })
         }
+    }
+}
+
+export function fetchBuild(buildID) {
+    return function (dispatch, getState) {
+        dispatch(buildFetchStart());
+        const resultPromise = axios.get( apiNames.builds + '/' + buildID);
+        resultPromise.then(response => {
+            log('fetched build:', response.data);
+            dispatch(buildFetchSuccess(response.data));
+        }).catch(err => {
+            errHandler()(err);
+            dispatch(buildFetchError(err));
+        })
     }
 }
 

@@ -223,7 +223,7 @@ func setupDatabase(dataBase *sql.DB) (Db, error) {
 
 	dataBaseMap.AddTableWithName(ServiceCmdTable{}, "ServiceCmd").SetKeys(true, "ID").SetVersionCol(gorpVersionColumn)
 
-	dataBaseMap.AddTableWithName(Build{}, "Builds").SetKeys(true, "ID").SetVersionCol(gorpVersionColumn)
+	dataBaseMap.AddTableWithName(BuildTable{}, "Builds").SetKeys(false, "ID").SetVersionCol(gorpVersionColumn)
 
 	userTable := dataBaseMap.AddTableWithName(UserTable{}, "Users").SetKeys(true, "ID")
 	{
@@ -946,7 +946,7 @@ func (d *Db) build2BuildTable(build Build) BuildTable {
 // SetBuildState sets a build state
 func (d *Db) SetBuildState(id string, state BuildState) error {
 	var storedBuild BuildTable
-	err := d.db.SelectOne(&storedBuild, "SELECT * FROM builds WHERE ID=?", string(id))
+	err := d.db.SelectOne(&storedBuild, "SELECT * FROM Builds WHERE ID=?", string(id))
 	if err != nil {
 		return err
 	}
@@ -956,4 +956,50 @@ func (d *Db) SetBuildState(id string, state BuildState) error {
 	storedBuild.Code = state.Code
 	_, err = d.db.Update(&storedBuild)
 	return err
+}
+
+// GetBuild returns a build ready to be converted into JSON
+func (d *Db) GetBuild(id string) (Build, error) {
+	var buildFromTable BuildTable
+	err := d.db.SelectOne(&buildFromTable, "SELECT * FROM Builds WHERE ID=?", string(id))
+	if err != nil {
+		return Build{}, err
+	}
+
+	return d.buildTable2Build(buildFromTable), nil
+}
+
+// RemoveBuild removes a build from the database
+func (d *Db) RemoveBuild(id string) error {
+	_, err := d.db.Exec("DELETE FROM Builds WHERE ID=?", string(id))
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// AddBuild adds a new build
+func (d *Db) AddBuild(newBuild Build) error {
+	var buildsFromTable []BuildTable
+	_, err := d.db.Select(&buildsFromTable,
+		"SELECT * FROM Builds WHERE ID=?",
+		newBuild.ID)
+	if err != nil {
+		return err
+	}
+
+	if len(buildsFromTable) > 0 {
+		err = d.RemoveBuild(newBuild.ID)
+		if err != nil {
+			return err
+		}
+	}
+
+	storedBuild := d.build2BuildTable(newBuild)
+	err = d.db.Insert(&storedBuild)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

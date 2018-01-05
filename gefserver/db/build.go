@@ -19,3 +19,21 @@ type BuildState struct {
 	Error  string
 	Code   int
 }
+
+// NewBuildStateOk creates a new BuildState with no error
+func NewBuildStateOk(status string, code int) BuildState {
+	return BuildState{
+		Status: status,
+		Error:  "",
+		Code:   code,
+	}
+}
+
+// NewBuildStateError creates a new BuildState with specified error
+func NewBuildStateError(err string, code int) BuildState {
+	return BuildState{
+		Error:  err,
+		Status: "Error",
+		Code:   code,
+	}
+}
