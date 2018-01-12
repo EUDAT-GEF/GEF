@@ -404,20 +404,6 @@ export function inspectVolume(volumeId) {
     }
 }
 
-export function fetchBuild(buildID) {
-    return function (dispatch, getState) {
-        dispatch(buildFetchStart());
-        const resultPromise = axios.get( apiNames.builds + '/' + buildID);
-        resultPromise.then(response => {
-            log('fetched build:', response.data);
-            dispatch(buildFetchSuccess(response.data));
-        }).catch(err => {
-            errHandler()(err);
-            dispatch(buildFetchError(err));
-        })
-    }
-}
-
 export function handleUpdateService() {
     return function (dispatch, getState) {
         const selectedService = getState().selectedService;

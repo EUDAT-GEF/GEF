@@ -1,6 +1,7 @@
 package server
 
 import (
+	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -191,6 +192,8 @@ func (s *Server) startBuildImageHandler(w http.ResponseWriter, r *http.Request, 
 		return
 	}
 
+	hasDockerfile := false
+	tarArchiveName := ""
 	vars := mux.Vars(r)
 	buildID := vars["buildID"]
 	buildDir := filepath.Join(s.tmpDir, buildsTmpDir, buildID)
@@ -241,6 +244,8 @@ func (s *Server) startBuildImageHandler(w http.ResponseWriter, r *http.Request, 
 			log.Println(err)
 		}
 
+		fmt.Println("BUILD ID = " + buildID)
+
 		log.Println("\tupload file " + part.FileName())
 		dst, err := os.Create(filepath.Join(buildDir, part.FileName()))
 		if err != nil {
@@ -262,24 +267,32 @@ func (s *Server) startBuildImageHandler(w http.ResponseWriter, r *http.Request, 
 			return
 		}
 
-		// Building from tar
 		if strings.HasSuffix(strings.ToLower(part.FileName()), ".tar") || strings.HasSuffix(strings.ToLower(part.FileName()), ".tar.gz") {
-			err = s.db.SetBuildState(buildID, db.NewBuildStateOk("Importing an image from a tar archive", -1))
-			if err != nil {
-				log.Println(err)
-			}
-			go s.pier.StartServiceBuildFromTar(buildID, buildDir, connectionID, user.ID, part.FileName())
+			tarArchiveName = part.FileName()
 		}
 
-		// Building from a Dockerfile
 		if strings.ToLower(part.FileName()) == "dockerfile" {
-			err := s.db.SetBuildState(buildID, db.NewBuildStateOk("Building an image from a Dockerfile", -1))
-			if err != nil {
-				log.Println(err)
-			}
-			go s.pier.StartServiceBuildFromFile(buildID, buildDir, connectionID, user.ID)
+			hasDockerfile = true
 		}
 
+	}
+
+	// Building from tar
+	if tarArchiveName != "" && !hasDockerfile {
+		err = s.db.SetBuildState(buildID, db.NewBuildStateOk("Importing an image from a tar archive", -1))
+		if err != nil {
+			log.Println(err)
+		}
+		go s.pier.StartServiceBuildFromTar(buildID, buildDir, connectionID, user.ID, tarArchiveName)
+	}
+
+	// Building from a Dockerfile
+	if hasDockerfile {
+		err := s.db.SetBuildState(buildID, db.NewBuildStateOk("Building an image from a Dockerfile", -1))
+		if err != nil {
+			log.Println(err)
+		}
+		go s.pier.StartServiceBuildFromFile(buildID, buildDir, connectionID, user.ID)
 	}
 
 	Response{w}.Ok(jmap("buildID", buildID))

@@ -28,7 +28,7 @@ const mapDispatchToProps = (dispatch) => {
         fileUploadError: (files, errorMessage) => {
             const action = actions.fileUploadError(errorMessage);
             dispatch(action);
-        }
+        },
     }
 };
 

@@ -19,14 +19,12 @@ const successColor = {
     color: '#337ab7'
 };
 const progressAnimation = <img src="/images/progress-animation.gif" />;
-let jobStatusUpdateTimer;
 
 class Jobs extends React.Component {
     constructor(props) {
         super(props);
 
         this.state = {
-            timerOn: true,
             showModal: false,
         };
     }
@@ -34,26 +32,19 @@ class Jobs extends React.Component {
     componentDidMount() {
         this.props.fetchJobs();
         this.props.fetchServices();
-        this.jobStatusUpdateTimer = setInterval(() => this.tick(), 1000);
+        let jobStatusUpdateTimer = setInterval(() => this.tick(), 1000);
+        this.setState({jobStatusUpdateTimer: jobStatusUpdateTimer});
     }
 
     componentWillUnmount() {
-        clearInterval(jobStatusUpdateTimer);
+        clearInterval(this.state.jobStatusUpdateTimer);
     }
 
     tick() {
-        if (this.state.timerOn) {
-            this.props.fetchJobs();
-        }
+        this.props.fetchJobs();
 
-        if ((this.state.timerOn) && (!this.hasJobsRunning())) {
-            clearInterval(this.jobStatusUpdateTimer);
-            this.setState({timerOn: false});
-        }
-
-        if ((!this.state.timerOn) && (this.hasJobsRunning())) {
-            this.jobStatusUpdateTimer = setInterval(() => this.tick(), 1000);
-            this.setState({timerOn: true});
+        if (!this.hasJobsRunning()) {
+            clearInterval(this.state.jobStatusUpdateTimer);
         }
     }
 
@@ -117,7 +108,16 @@ class Jobs extends React.Component {
     }
 
     removeSelectedJobs() {
-        this.props.actions.removeJobs(this.refs.table.state.selectedRowKeys);
+        let selectedJobs = this.refs.table.state.selectedRowKeys;
+        let jobsToBeRemoved = [];
+        if (this.props.jobs) {
+            this.props.jobs.map((job) => {
+                if (selectedJobs.indexOf(job.ID)>-1) {
+                    jobsToBeRemoved.push(job.ID);
+                }
+            });
+        }
+        this.props.actions.removeJobs(jobsToBeRemoved);
     }
 
     handleInspectVolume(volumeID) {
@@ -229,7 +229,6 @@ class Jobs extends React.Component {
 
         return [allJobs, activeJobs, inactiveJobs, failedJobs];
     }
-
 
     render() {
         const options = {

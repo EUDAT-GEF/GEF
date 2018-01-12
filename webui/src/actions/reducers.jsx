@@ -16,6 +16,16 @@ function apiinfo(state = SI({}), action) {
     }
 }
 
+
+function buildID(state = SI({}), action) {
+    switch (action.type) {
+        case actionTypes.BUILD_ID_FETCH_SUCCESS:
+            return SI(action.buildID);
+        default:
+            return state;
+    }
+}
+
 function jobs(state = SI([]), action) {
     switch (action.type) {
         case actionTypes.JOB_LIST_FETCH_SUCCESS:
@@ -131,6 +141,7 @@ function roles(state = SI({}), action) {
 
 const rootReducer = combineReducers({
     apiinfo,
+    buildID,
     jobs,
     services,
     volumes,
