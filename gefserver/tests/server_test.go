@@ -136,20 +136,26 @@ func TestServer(t *testing.T) {
 	ExpectEquals(t, code, 403)
 	res, code = uploadDir(t, gefurl(buildURL, adminToken), "./clone_test")
 	ExpectEquals(t, code, 200)
-	service := res["Service"].(map[string]interface{})
+	buildID := res["buildID"].(string)
 
-	ExpectEquals(t, service["Name"], "Test Clone")
-	serviceID := service["ID"].(string)
+	// loop until the build ends
+	buildServiceID := ""
+	buildExitCode := -1
+	for buildExitCode < 0 {
+		time.Sleep(1 * time.Second)
+		res, code = getRes(t, gefurl(baseURL+"builds/"+buildID, adminToken))
+		ExpectEquals(t, code, 200)
+		asyncBuild := res["Build"].(map[string]interface{})
+		ExpectNotNil(t, asyncBuild)
+		buildExitCode = int(asyncBuild["State"].(map[string]interface{})["Code"].(float64))
+		buildServiceID = asyncBuild["ServiceID"].(string)
+	}
 
-	res, code = getRes(t, gefurl(baseURL+"services", ""))
-	ExpectEquals(t, code, 200)
-	services := res["Services"].([]interface{})
-	ExpectNotNil(t, services)
-	Expect(t, len(services) > 0)
+	Expect(t, len(buildServiceID) > 0)
 
 	// test create a job
 	jobParams := map[string]string{
-		"serviceID": serviceID,
+		"serviceID": buildServiceID,
 		"pid":       testPIDbinary,
 	}
 	jobLink, code := postRes(t, gefurl(baseURL+"jobs", ""), jobParams)
@@ -166,7 +172,7 @@ func TestServer(t *testing.T) {
 	ExpectEquals(t, code, 200)
 	job := res["Job"].(map[string]interface{})
 
-	ExpectEquals(t, job["ServiceID"], serviceID)
+	ExpectEquals(t, job["ServiceID"], buildServiceID)
 	jobID := job["ID"].(string)
 
 	// test get the list of all jobs
@@ -227,10 +233,10 @@ func TestServer(t *testing.T) {
 	// test service removal
 	servicesURL := baseURL + "services/"
 
-	res, code = deleteRes(t, gefurl(servicesURL+serviceID, userToken))
+	res, code = deleteRes(t, gefurl(servicesURL+buildServiceID, userToken))
 	ExpectEquals(t, code, 403)
 
-	res, code = deleteRes(t, gefurl(servicesURL+serviceID, superToken))
+	res, code = deleteRes(t, gefurl(servicesURL+buildServiceID, superToken))
 	ExpectEquals(t, code, 200)
 }
 

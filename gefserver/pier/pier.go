@@ -592,7 +592,7 @@ func (p *Pier) StartServiceBuildFromFile(buildID string, buildDir string, connec
 		return
 	}
 
-	_, err := p.BuildService(connectionID, userID, buildDir)
+	service, err := p.BuildService(connectionID, userID, buildDir)
 	if err != nil {
 		log.Print("build service failed: ", err)
 		err = p.db.SetBuildState(buildID, db.NewBuildStateError("Failed to build a service", 1))
@@ -600,6 +600,11 @@ func (p *Pier) StartServiceBuildFromFile(buildID string, buildDir string, connec
 			log.Println(err)
 		}
 		return
+	}
+
+	err = p.db.SetBuildServiceID(buildID, string(service.ID))
+	if err != nil {
+		log.Println(err)
 	}
 
 	err = p.db.SetBuildState(buildID, db.NewBuildStateOk("The service has been built successfully", 0))
@@ -613,7 +618,7 @@ func (p *Pier) StartServiceBuildFromTar(buildID string, buildDir string, connect
 	log.Println("Docker image file has been detected, trying to import")
 	log.Println(filepath.Join(buildDir, imageFileName))
 
-	_, err := p.ImportImage(connectionID, userID, filepath.Join(buildDir, imageFileName))
+	service, err := p.ImportImage(connectionID, userID, filepath.Join(buildDir, imageFileName))
 	if err != nil {
 		log.Println("while importing a Docker image file ", err)
 		err = p.db.SetBuildState(buildID, db.NewBuildStateError("Failed to build a service from an imported image", 1))
@@ -621,6 +626,11 @@ func (p *Pier) StartServiceBuildFromTar(buildID string, buildDir string, connect
 			log.Println(err)
 		}
 		return
+	}
+
+	err = p.db.SetBuildServiceID(buildID, string(service.ID))
+	if err != nil {
+		log.Println(err)
 	}
 
 	log.Println("Docker image has been imported")

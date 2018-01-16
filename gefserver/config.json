@@ -21,7 +21,7 @@
 			"BaseURL": "https://b2drop.eudat.eu/"
 		},
 		"Administration": {
-			"SuperAdminEmail": "email@example.com",
+			"SuperAdminEmail": "alexandr.chernov@uni-tuebingen.de",
 			"ContactLink": "https://www.eudat.eu/support-request?service=Other"
 		}
 	},

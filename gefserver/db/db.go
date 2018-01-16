@@ -168,6 +168,7 @@ type OwnerTable struct {
 // BuildTable stores the information about an image build process
 type BuildTable struct {
 	ID           string
+	ServiceID    string
 	ConnectionID int
 	Started      time.Time
 	Duration     int64 // duration time in seconds
@@ -910,6 +911,7 @@ func (d *Db) GetJobOwningVolume(volumeID string) (Job, error) {
 func (d *Db) buildTable2Build(storedBuild BuildTable) Build {
 	var build = Build{
 		ID:           storedBuild.ID,
+		ServiceID:    ServiceID(storedBuild.ServiceID),
 		ConnectionID: ConnectionID(storedBuild.ConnectionID),
 		Started:      storedBuild.Started,
 		Duration:     storedBuild.Duration,
@@ -933,6 +935,7 @@ func (d *Db) buildTable2Build(storedBuild BuildTable) Build {
 func (d *Db) build2BuildTable(build Build) BuildTable {
 	var storedBuild = BuildTable{
 		ID:           build.ID,
+		ServiceID:    string(build.ServiceID),
 		ConnectionID: int(build.ConnectionID),
 		Started:      build.Started,
 		Duration:     build.Duration,
@@ -954,6 +957,19 @@ func (d *Db) SetBuildState(id string, state BuildState) error {
 	storedBuild.Error = state.Error
 	storedBuild.Status = state.Status
 	storedBuild.Code = state.Code
+	_, err = d.db.Update(&storedBuild)
+	return err
+}
+
+// SetBuildServiceID sets a service ID for a given build
+func (d *Db) SetBuildServiceID(id string, serviceID string) error {
+	var storedBuild BuildTable
+	err := d.db.SelectOne(&storedBuild, "SELECT * FROM Builds WHERE ID=?", string(id))
+	if err != nil {
+		return err
+	}
+
+	storedBuild.ServiceID = serviceID
 	_, err = d.db.Update(&storedBuild)
 	return err
 }

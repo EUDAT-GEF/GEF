@@ -7,6 +7,7 @@ import (
 // Build describes status information about an image being built for a GEF service
 type Build struct {
 	ID           string
+	ServiceID    ServiceID
 	ConnectionID ConnectionID
 	Started      time.Time
 	Duration     int64
