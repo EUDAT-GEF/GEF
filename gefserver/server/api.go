@@ -1,7 +1,6 @@
 package server
 
 import (
-	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -243,8 +242,6 @@ func (s *Server) startBuildImageHandler(w http.ResponseWriter, r *http.Request, 
 		if err != nil {
 			log.Println(err)
 		}
-
-		fmt.Println("BUILD ID = " + buildID)
 
 		log.Println("\tupload file " + part.FileName())
 		dst, err := os.Create(filepath.Join(buildDir, part.FileName()))

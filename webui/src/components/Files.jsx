@@ -17,7 +17,15 @@ const BuildProgress = ({isInProgress, statusMessage}) => {
     if (!isInProgress) {
         return <div className="text-center">{statusMessage}</div>
     } else {
-        return <div className="text-center"><img src="/images/progress-animation.gif" /> {statusMessage}</div>;
+        return <div className="text-center"><img src="/images/progress-animation.gif" /> {statusMessage}</div>
+    }
+};
+
+const GoBackLink = ({id, buildFinished}) => {
+    if ((id) && (buildFinished)) {
+        return <div className="text-center"><a href="/builds">Build another service</a></div>
+    } else {
+      return <div></div>
     }
 };
 
@@ -49,6 +57,7 @@ class Files extends React.Component {
             statusMessage: "Ready to build a service",
             build : null,
             buildID: null,
+            buildFinished: false,
         };
         this.fileUploadSuccess = this.props.fileUploadSuccess.bind(this);
         this.fileUploadError = this.props.fileUploadError.bind(this);
@@ -59,13 +68,12 @@ class Files extends React.Component {
           this.setState({serviceBuildInProgress: true})
       }
       let buildStatusUpdateTimer = setInterval(() => this.tick(), 1000);
-      this.setState({buildStatusUpdateTimer: buildStatusUpdateTimer});
+      this.setState({buildStatusUpdateTimer: buildStatusUpdateTimer, buildFinished: false});
     }
 
     componentWillUnmount() {
         clearInterval(this.state.buildStatusUpdateTimer);
     }
-
 
     tick() {
         if (sessionStorage.getItem("buildID")) {
@@ -77,15 +85,9 @@ class Files extends React.Component {
                 this.setState({statusMessage: build.State.Status});
                 if (build.State.Code>-1) {
                     clearInterval(this.state.buildStatusUpdateTimer);
-                    this.setState({serviceBuildInProgress: false});
+                    this.setState({serviceBuildInProgress: false, buildFinished: true});
                     sessionStorage.removeItem("buildID");
-                }// } else {
-                //     this.setState({serviceBuildInProgress: true});
-                // }
-
-                console.log("Code = " + build.State.Code);
-                console.log("serviceBuildInProgress = " + this.state.serviceBuildInProgress);
-                console.log("buildID = " + sessionStorage.getItem("buildID"));
+                }
             }).catch(errHandler());
         }
     }
@@ -104,12 +106,10 @@ class Files extends React.Component {
                 log('successmultiple, response is: ', response);
                 this.fileUploadSuccess(response);
                 sessionStorage.setItem('buildID', response.buildID);
-                // let buildStatusUpdateTimer = setInterval(() => this.tick(), 1000);
                 this.setState({
                     serviceBuildInProgress: true,
                     statusMessage: "Files have been successfully uploaded. Starting to build a service...",
                     buildID: response.buildID,
-                    // buildStatusUpdateTimer: buildStatusUpdateTimer
                 });
                 this.tick();
             },
@@ -121,40 +121,9 @@ class Files extends React.Component {
         };
 
         const fileUploadStart = this.props.fileUploadStart.bind(this);
-
         const submitHandler = ()  => {
-            console.log("Build button pressed");
-
-
-
-
-            //
-            // if (!sessionStorage.getItem("buildID")) {
-            //     const resultPromise = axios.post(apiNames.builds);
-            //     resultPromise.then(response => {
-            //         sessionStorage.setItem("buildID", response.data.buildID);
-            //         fileUploadStart();
-            //           this.state.myDropzone.processQueue();
-            //     }).catch(errHandler());
-            //
-            //
-            // }
-
-
             fileUploadStart();
             this.state.myDropzone.processQueue();
-
-
-            //     sessionStorage.removeItem("buildID");
-            //     serviceBuildInProgress: false;
-            // }
-
-            // if ((this.state.myDropzone.files.length>0) && (sessionStorage.getItem("buildID"))) {
-            //     this.setState({serviceBuildInProgress: true, statusMessage: "Service is being built"});
-            // }
-
-
-            // this.tick();
         };
 
         if(getApiURL() != null) {
@@ -162,17 +131,16 @@ class Files extends React.Component {
                 postUrl: getApiURL()
             };
             return <div>
-                <span className={(this.state.serviceBuildInProgress) ? "dz-hidden" : "dz-visible"}>
+                <span className={(sessionStorage.getItem("buildID")) ? "dz-hidden" : "dz-visible"}>
                 <h4>Please select and upload the Dockerfile, together with other files which are part of the container</h4>
                 <DropzoneComponent className="dz-hidden1"config={config} eventHandlers={eventHandlers} djsConfig={djsConfig} />
                 <Row>
                     <Col md={4} mdOffset={4}> <Button type='submit' bsStyle='primary' style={{width: '100%'} } onClick={submitHandler}> <Glyphicon glyph='upload'/> {buttonText} </Button> </Col>
                 </Row>
                 </span>
-
-
             <span>
               <BuildProgress isInProgress={this.state.serviceBuildInProgress} statusMessage={this.state.statusMessage}/>
+              <GoBackLink id={sessionStorage.getItem("buildID")} buildFinished={this.state.buildFinished}/>
             </span>
             </div>
         } else {

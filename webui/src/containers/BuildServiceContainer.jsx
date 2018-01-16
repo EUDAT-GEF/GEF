@@ -19,8 +19,6 @@ const mapDispatchToProps = (dispatch) => {
 
         fileUploadSuccess: (response) => {
             const action = actions.fileUploadSuccess(response);
-            console.log("Response from the GEF");
-            console.log(response);
             //dispatch(push('/services/' + response.Service.ID));
             dispatch(action);
         },

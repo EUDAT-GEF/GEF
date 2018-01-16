@@ -17,20 +17,13 @@ class BuildService extends React.Component {
         this.fileUploadError = this.props.fileUploadError.bind(this);
         this.state = {buildID : null};
         this.getApiURL = this.getApiURL.bind(this);
-
-        // this.buildFetchStart = this.props.buildFetchStart.bind(this);
-        // this.buildFetchSuccess = this.props.buildFetchSuccess.bind(this);
-        // this.buildFetchError = this.props.buildFetchError.bind(this);
     }
 
     getApiURL(){
         return apiNames.builds + '/' + this.state.buildID;
     }
 
-
     componentWillMount() {
-        console.log("BUILD----");
-        console.log(sessionStorage.getItem('buildID'));
         const resultPromise = axios.post(apiNames.builds);
         resultPromise.then(response => {
             this.setState({buildID : response.data.buildID});
@@ -54,9 +47,6 @@ BuildService.propTypes = {
     fileUploadStart: PropTypes.func.isRequired,
     fileUploadSuccess: PropTypes.func.isRequired,
     fileUploadError: PropTypes.func.isRequired,
-    // buildFetchStart: PropTypes.func.isRequired,
-    // buildFetchSuccess: PropTypes.func.isRequired,
-    // buildFetchError: PropTypes.func.isRequired,
 };
 
 export default BuildService;
