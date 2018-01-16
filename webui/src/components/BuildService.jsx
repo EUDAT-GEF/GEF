@@ -40,7 +40,6 @@ class BuildService extends React.Component {
     render () {
         return <div>
             <h3>Build a Service</h3>
-            <h4>Please select and upload the Dockerfile, together with other files which are part of the container</h4>
             <Files getApiURL={this.getApiURL}
               fileUploadStart={this.fileUploadStart}
               fileUploadSuccess={this.fileUploadSuccess}

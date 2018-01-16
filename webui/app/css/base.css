@@ -373,3 +373,11 @@ pre {
     height: 600px;
     overflow-y: auto;
 }
+
+/*** Classes to hide/show the dropzone component ***/
+.dz-hidden {
+  display: none;
+}
+.dz-visible {
+  display: block;
+}
