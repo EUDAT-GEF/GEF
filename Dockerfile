@@ -1,4 +1,4 @@
-FROM ubuntu:17.04
+FROM ubuntu:17.10
 
 RUN apt-get update && apt-get install -y \
     ca-certificates \
@@ -12,7 +12,7 @@ RUN apt-get update && apt-get install -y \
 
 RUN curl -s https://storage.googleapis.com/golang/go1.8.3.linux-amd64.tar.gz | tar -v -C /usr/local -xz
 RUN mkdir -p /go
-RUN ln -s /usr/bin/nodejs /usr/bin/node
+#RUN ln -s /usr/bin/nodejs /usr/bin/node
 
 ENV GOPATH /go
 ENV GOROOT /usr/local/go
@@ -34,4 +34,3 @@ RUN cp -r webui/app tmp/webui/
 RUN cp -r gef_linux tmp/
 
 CMD ["cp", "-r", "tmp/.", "build"]
-
