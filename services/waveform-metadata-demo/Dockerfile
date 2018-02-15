@@ -1,4 +1,4 @@
-FROM ubuntu:17.04
+FROM ubuntu:16.04
 
 MAINTAINER Mathijs Koymans
 
@@ -25,8 +25,8 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get install -y git python-dev python-pycu
     python-numpy python-scipy python-matplotlib
 
 # Create IO directories
-RUN mkdir -p /var/input 
-RUN mkdir -p /var/output 
+RUN mkdir -p /var/input
+RUN mkdir -p /var/output
 
 # Make application directory
 RUN mkdir -p /opt/collector
