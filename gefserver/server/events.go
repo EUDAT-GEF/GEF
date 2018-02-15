@@ -14,6 +14,7 @@ import (
 
 	"github.com/EUDAT-GEF/GEF/gefserver/db"
 	"github.com/EUDAT-GEF/GEF/gefserver/def"
+	"github.com/gorilla/mux"
 )
 
 func (s *Server) decorate(apifn func(http.ResponseWriter, *http.Request, environment), actionType string) func(http.ResponseWriter, *http.Request) {
@@ -81,9 +82,27 @@ func (s *Server) decorate(apifn func(http.ResponseWriter, *http.Request, environ
 }
 
 func update(userEnv environment, newEnv map[string]interface{}) {
-	// TODO: !!!
-	// TODO: update userEnv based on the newEnv values
-	// TODO: !!!
+	if env_ifc, ok := newEnv["environment"]; ok {
+		if env, ok := env_ifc.(map[string]interface{}); !ok {
+			log.Printf("error in event system/update: environment is not a map")
+		} else {
+			if limits_ifc, ok := env["limits"]; ok {
+				if limits, ok := limits_ifc.(map[string]interface{}); !ok {
+					log.Printf("error in event system/update: limits is not a map")
+				} else {
+					if memory_ifc, ok := limits["memory"]; ok {
+						if memory, ok := memory_ifc.(float64); !ok {
+							log.Printf("error in event system/update: memory is not float64")
+						} else {
+							userEnv.Limits.Memory = int64(memory)
+							log.Printf("    event system update: environment.limits.memory=%#v", int64(memory))
+						}
+					}
+				}
+			}
+		}
+	}
+	// TODO: update other userEnv values, based on the newEnv values
 }
 
 type eventSystem struct {
@@ -126,8 +145,9 @@ type event struct {
 }
 
 type resource struct {
-	URL    string `json:"uri"`    // "/api/jobs",
-	Method string `json:"method"` // "POST",
+	URL       string `json:"uri"`       // "/api/jobs",
+	Method    string `json:"method"`    // "POST",
+	Parameter string `json:"parameter"` // serviceID=b4b668ae-48fc-4e52-8ecd-2d7370b61eb1
 }
 
 type environment struct {
@@ -150,7 +170,7 @@ func InitEventSystem(address string) {
 	if !strings.HasSuffix(address, "/") {
 		address += "/"
 	}
-	log.Println("Event System enabled: %v", address)
+	log.Println("Event System enabled:", address)
 	eventSys = eventSystem{
 		address: address + "api/events",
 	}
@@ -164,7 +184,7 @@ func sendEvent(action string, user *userdat, userEnv environment, sysStatistics 
 		if err != nil {
 			log.Printf("event system response parsing error: %#v\n", err)
 		}
-		log.Printf("    event system: directive response: %v\n", newEnv)
+		// log.Printf("    event system: directive response: %v\n", newEnv)
 
 		allow = true
 		if jsonAllow, exists := newEnv["allow"]; exists {
@@ -194,6 +214,18 @@ func sendEvent(action string, user *userdat, userEnv environment, sysStatistics 
 }
 
 func (es eventSystem) callDirectiveEngine(action string, user *userdat, userEnv environment, sysStatistics statistics, r *http.Request, preceding bool) []byte {
+	resource := resource{
+		URL:    r.RequestURI,
+		Method: r.Method,
+	}
+	if r.Method == "POST" && strings.HasSuffix(r.RequestURI, "/api/jobs") {
+		serviceID := r.FormValue("serviceID")
+		if serviceID == "" {
+			vars := mux.Vars(r)
+			serviceID = vars["serviceID"]
+		}
+		resource.Parameter = "serviceID=" + serviceID
+	}
 	payload := eventPayload{
 		Event: event{
 			ID:        atomic.AddUint64(&es.ID, 1),
@@ -201,11 +233,8 @@ func (es eventSystem) callDirectiveEngine(action string, user *userdat, userEnv 
 			Action:    action,
 			Preceding: preceding,
 		},
-		User: user,
-		Resource: resource{
-			URL:    r.RequestURI,
-			Method: r.Method,
-		},
+		User:        user,
+		Resource:    resource,
 		Environment: userEnv,
 		Statistics:  sysStatistics,
 	}
