@@ -13,9 +13,9 @@ require('dropzone/dist/min/dropzone.min.css');
 
 
 const log = bows('Files');
-const BuildProgress = ({isInProgress, statusMessage}) => {
+const BuildProgress = ({isInProgress, statusMessage, errorMessage}) => {
     if (!isInProgress) {
-        return <div className="text-center">{statusMessage}</div>
+        return <div className="text-center">{statusMessage} {(errorMessage ? errorMessage : "")}</div>
     } else {
         return <div className="text-center"><img src="/images/progress-animation.gif" /> {statusMessage}</div>
     }
@@ -55,6 +55,7 @@ class Files extends React.Component {
             myDropzone: undefined,
             serviceBuildInProgress: false,
             statusMessage: "Ready to build a service",
+            errorMessage: "",
             build : null,
             buildID: null,
             buildFinished: false,
@@ -83,6 +84,7 @@ class Files extends React.Component {
                 let build = response.data.Build;
 
                 this.setState({statusMessage: build.State.Status});
+                this.setState({errorMessage: build.State.Error});
                 if (build.State.Code>-1) {
                     clearInterval(this.state.buildStatusUpdateTimer);
                     this.setState({serviceBuildInProgress: false, buildFinished: true});
@@ -142,7 +144,7 @@ class Files extends React.Component {
                     </span>
                 }
                 <span>
-                    <BuildProgress isInProgress={this.state.serviceBuildInProgress} statusMessage={this.state.statusMessage}/>
+                    <BuildProgress isInProgress={this.state.serviceBuildInProgress} statusMessage={this.state.statusMessage} errorMessage={this.state.errorMessage}/>
                     <GoBackLink id={sessionStorage.getItem("buildID")} buildFinished={this.state.buildFinished}/>
                 </span>
             </div>
