@@ -22,7 +22,7 @@ const (
 	// ServiceName is used for HTTP API
 	ServiceName = "GEF"
 	// Version defines the api version
-	Version = "0.3.0"
+	Version = "1.0.0-beta.2"
 )
 
 const apiRootPath = "/api"
