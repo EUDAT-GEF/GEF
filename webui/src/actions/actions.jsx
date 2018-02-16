@@ -212,6 +212,26 @@ export function fileUploadError(errorMessage) {
     }
 }
 
+export function buildFetchStart() {
+    return {
+        type: actionTypes.BUILD_FETCH_START
+    }
+}
+
+export function buildFetchSuccess(build) {
+    return {
+        type: actionTypes.BUILD_FETCH_SUCCESS,
+        build: build
+    }
+}
+
+export function buildFetchError(errorMessage) {
+    return {
+        type: actionTypes.BUILD_FETCH_ERROR,
+        errorMessage: errorMessage
+    }
+}
+
 export function inspectVolumeStart() {
     return {
         type: actionTypes.INSPECT_VOLUME_START

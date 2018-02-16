@@ -165,6 +165,19 @@ type OwnerTable struct {
 	Revision   int
 }
 
+// BuildTable stores the information about an image build process
+type BuildTable struct {
+	ID           string
+	ServiceID    string
+	ConnectionID int
+	Started      time.Time
+	Duration     int64 // duration time in seconds
+	Error        string
+	Status       string
+	Code         int
+	Revision     int
+}
+
 // InitDb initializes the database engine
 func InitDb() (Db, error) {
 	dataBase, err := sql.Open("sqlite3", sqliteDataBasePath)
@@ -210,6 +223,8 @@ func setupDatabase(dataBase *sql.DB) (Db, error) {
 	dataBaseMap.AddTableWithName(IOPortTable{}, "IOPorts").SetVersionCol(gorpVersionColumn)
 
 	dataBaseMap.AddTableWithName(ServiceCmdTable{}, "ServiceCmd").SetKeys(true, "ID").SetVersionCol(gorpVersionColumn)
+
+	dataBaseMap.AddTableWithName(BuildTable{}, "Builds").SetKeys(false, "ID").SetVersionCol(gorpVersionColumn)
 
 	userTable := dataBaseMap.AddTableWithName(UserTable{}, "Users").SetKeys(true, "ID")
 	{
@@ -264,7 +279,8 @@ func initializeDatabaseValues(d Db) error {
 	return nil
 }
 
-func isNoResultsError(e error) bool {
+// IsNoResultsError means no rows found
+func IsNoResultsError(e error) bool {
 	if e == nil {
 		return false
 	}
@@ -283,7 +299,7 @@ func (d *Db) AddConnection(userID int64, connection def.DockerConfig) (Connectio
 		"SELECT * FROM connections WHERE Endpoint=?",
 		connection.Endpoint)
 
-	if err != nil && !isNoResultsError(err) {
+	if err != nil && !IsNoResultsError(err) {
 		return 0, def.Err(err, "db inquiry about docker connections failed: %v", err)
 	}
 
@@ -294,7 +310,7 @@ func (d *Db) AddConnection(userID int64, connection def.DockerConfig) (Connectio
 	ct.KeyPath = connection.KeyPath
 	ct.CAPath = connection.CAPath
 
-	if isNoResultsError(err) {
+	if IsNoResultsError(err) {
 		err = d.db.Insert(&ct)
 		if err != nil {
 			return 0, def.Err(err, "db inserting docker connection failed: %v", err)
@@ -374,7 +390,7 @@ func (d *Db) GetConnectionOwners(connectionID ConnectionID) ([]int64, error) {
 	_, err := d.db.Select(&ownersTable,
 		"SELECT * FROM owners WHERE ObjectType=? AND ObjectID=?",
 		"Connection", string(connectionID))
-	if err != nil && !isNoResultsError(err) {
+	if err != nil && !IsNoResultsError(err) {
 		log.Printf("ERROR in GetConnectionOwners: %#v", err)
 	}
 	owners := make([]int64, 0, len(ownersTable))
@@ -390,7 +406,7 @@ func (d *Db) IsConnectionOwner(userID int64, connectionID ConnectionID) bool {
 	err := d.db.SelectOne(&x,
 		"SELECT * FROM owners WHERE UserID=? AND ObjectType=? AND ObjectID=?",
 		userID, "Connection", string(connectionID))
-	if err != nil && !isNoResultsError(err) {
+	if err != nil && !IsNoResultsError(err) {
 		log.Printf("ERROR in IsConnectionOwner: %#v", err)
 	}
 	return err == nil
@@ -442,7 +458,7 @@ func (d *Db) CountRunningJobs() int64 {
 	count, err := d.db.SelectInt(
 		"SELECT count(*) FROM jobs WHERE jobs.Code<0")
 
-	if err != nil && !isNoResultsError(err) {
+	if err != nil && !IsNoResultsError(err) {
 		log.Printf("ERROR in CountRunningJobs: %#v", err)
 	}
 	return count
@@ -453,7 +469,7 @@ func (d *Db) CountUserRunningJobs(userID int64) int64 {
 	count, err := d.db.SelectInt(
 		"SELECT count(*) FROM owners INNER JOIN jobs on owners.ObjectID = jobs.ID WHERE owners.UserID=? AND jobs.Code<0", userID)
 
-	if err != nil { //&& !isNoResultsError(err) {
+	if err != nil { //&& !IsNoResultsError(err) {
 		log.Printf("ERROR in CountUserRunningJobs: %#v", err)
 	}
 	return count
@@ -890,4 +906,117 @@ func (d *Db) GetJobOwningVolume(volumeID string) (Job, error) {
 		return Job{}, err
 	}
 	return d.jobTable2Job(dbjob)
+}
+
+// buildTable2Build performs mapping of the database builds table to its JSON representation
+func (d *Db) buildTable2Build(storedBuild BuildTable) Build {
+	var build = Build{
+		ID:           storedBuild.ID,
+		ServiceID:    ServiceID(storedBuild.ServiceID),
+		ConnectionID: ConnectionID(storedBuild.ConnectionID),
+		Started:      storedBuild.Started,
+		Duration:     storedBuild.Duration,
+		State: &BuildState{
+			Status: storedBuild.Status,
+			Error:  storedBuild.Error,
+			Code:   storedBuild.Code,
+		},
+	}
+
+	if build.State.Code < 0 {
+		build.Duration = time.Now().Unix() - build.Started.Unix()
+	} else {
+		build.Duration = storedBuild.Duration
+	}
+
+	return build
+}
+
+// build2BuildTable performs mapping of the build JSON representation to its database representation
+func (d *Db) build2BuildTable(build Build) BuildTable {
+	var storedBuild = BuildTable{
+		ID:           build.ID,
+		ServiceID:    string(build.ServiceID),
+		ConnectionID: int(build.ConnectionID),
+		Started:      build.Started,
+		Duration:     build.Duration,
+		Status:       build.State.Status,
+		Error:        build.State.Error,
+		Code:         build.State.Code,
+	}
+	return storedBuild
+}
+
+// SetBuildState sets a build state
+func (d *Db) SetBuildState(id string, state BuildState) error {
+	var storedBuild BuildTable
+	err := d.db.SelectOne(&storedBuild, "SELECT * FROM Builds WHERE ID=?", string(id))
+	if err != nil {
+		return err
+	}
+
+	storedBuild.Error = state.Error
+	storedBuild.Status = state.Status
+	storedBuild.Code = state.Code
+	_, err = d.db.Update(&storedBuild)
+	return err
+}
+
+// SetBuildServiceID sets a service ID for a given build
+func (d *Db) SetBuildServiceID(id string, serviceID ServiceID) error {
+	var storedBuild BuildTable
+	err := d.db.SelectOne(&storedBuild, "SELECT * FROM Builds WHERE ID=?", id)
+	if err != nil {
+		return err
+	}
+
+	storedBuild.ServiceID = string(serviceID)
+	_, err = d.db.Update(&storedBuild)
+	return err
+}
+
+// GetBuild returns a build ready to be converted into JSON
+func (d *Db) GetBuild(id string) (Build, error) {
+	var buildFromTable BuildTable
+	err := d.db.SelectOne(&buildFromTable, "SELECT * FROM Builds WHERE ID=?", id)
+	if err != nil {
+		return Build{}, err
+	}
+
+	return d.buildTable2Build(buildFromTable), nil
+}
+
+// RemoveBuild removes a build from the database
+func (d *Db) RemoveBuild(id string) error {
+	_, err := d.db.Exec("DELETE FROM Builds WHERE ID=?", id)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// AddBuild adds a new build
+func (d *Db) AddBuild(newBuild Build) error {
+	var buildsFromTable []BuildTable
+	_, err := d.db.Select(&buildsFromTable,
+		"SELECT * FROM Builds WHERE ID=?",
+		newBuild.ID)
+	if err != nil {
+		return err
+	}
+
+	if len(buildsFromTable) > 0 {
+		err = d.RemoveBuild(newBuild.ID)
+		if err != nil {
+			return err
+		}
+	}
+
+	storedBuild := d.build2BuildTable(newBuild)
+	err = d.db.Insert(&storedBuild)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

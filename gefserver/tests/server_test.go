@@ -136,16 +136,23 @@ func TestServer(t *testing.T) {
 	ExpectEquals(t, code, 403)
 	res, code = uploadDir(t, gefurl(buildURL, adminToken), "./clone_test")
 	ExpectEquals(t, code, 200)
-	service := res["Service"].(map[string]interface{})
+	buildID := res["buildID"].(string)
 
-	ExpectEquals(t, service["Name"], "Test Clone")
-	serviceID := service["ID"].(string)
+	// loop until the build ends
+	serviceID := ""
+	buildExitCode := -1
+	for buildExitCode < 0 {
+		time.Sleep(1 * time.Second)
+		res, code = getRes(t, gefurl(baseURL+"builds/"+buildID, adminToken))
+		ExpectEquals(t, code, 200)
+		asyncBuild := res["Build"].(map[string]interface{})
+		ExpectNotNil(t, asyncBuild)
+		buildExitCode = int(asyncBuild["State"].(map[string]interface{})["Code"].(float64))
+		serviceID = asyncBuild["ServiceID"].(string)
+	}
 
-	res, code = getRes(t, gefurl(baseURL+"services", ""))
-	ExpectEquals(t, code, 200)
-	services := res["Services"].([]interface{})
-	ExpectNotNil(t, services)
-	Expect(t, len(services) > 0)
+	Expect(t, len(serviceID) > 0)
+	Expect(t, buildExitCode == 0)
 
 	// test create a job
 	jobParams := map[string]string{

@@ -88,8 +88,9 @@ func NewServer(cfg def.Configuration, pier *pier.Pier, database *db.Db) (*Server
 		{"POST /roles/{roleID}", server.newRoleUserHandler, "access management"},
 		{"DELETE /roles/{roleID}/{userID}", server.removeRoleUserHandler, "access management"},
 
-		{"POST /builds", server.newBuildImageHandler, "service deployment"},
-		{"POST /builds/{buildID}", server.buildImageHandler, "service deployment"},
+		{"POST /builds", server.newBuildImageHandler, "build initialization"},
+		{"POST /builds/{buildID}", server.startBuildImageHandler, "build start"},
+		{"GET /builds/{buildID}", server.inspectBuildImageHandler, "build discovery"},
 
 		{"GET /services", server.listServicesHandler, "service discovery"},
 		{"GET /services/{serviceID}", server.inspectServiceHandler, "service discovery"},
@@ -184,12 +185,14 @@ func (s *Server) getConnectionIDParam(r *http.Request) (db.ConnectionID, error) 
 	return db.ConnectionID(connectionID), nil
 }
 
-func (s *Server) buildImageHandler(w http.ResponseWriter, r *http.Request, e environment) {
+func (s *Server) startBuildImageHandler(w http.ResponseWriter, r *http.Request, e environment) {
 	allow, user := Authorization{s, w, r}.allowUploadIntoBuild()
 	if user == nil || !allow {
 		return
 	}
 
+	hasDockerfile := false
+	tarArchiveName := ""
 	vars := mux.Vars(r)
 	buildID := vars["buildID"]
 	buildDir := filepath.Join(s.tmpDir, buildsTmpDir, buildID)
@@ -199,17 +202,34 @@ func (s *Server) buildImageHandler(w http.ResponseWriter, r *http.Request, e env
 		Response{w}.ClientError("bad connectionID", err)
 	}
 
+	var newBuild = db.Build{
+		ID:           buildID,
+		ConnectionID: connectionID,
+		Started:      time.Now(),
+		Duration:     0,
+		State: &db.BuildState{
+			Status: "Image build has been initiated",
+			Error:  "",
+			Code:   -1,
+		},
+	}
+
+	err = s.db.AddBuild(newBuild)
+	if err != nil {
+		err = s.db.SetBuildState(buildID, db.NewBuildStateError("Failed to add the new build to the database: "+err.Error(), 1))
+		if err != nil {
+			log.Println(err)
+		}
+		Response{w}.ServerError("while adding a new build ", err)
+		return
+	}
+
 	mr, err := r.MultipartReader()
 	if err != nil {
 		Response{w}.ServerError("while getting multipart reader ", err)
 		return
 	}
 
-	var service db.Service
-
-	foundImageFileName := ""
-	tarFileFound := false
-	dockerFileFound := false
 	for {
 		part, err := mr.NextPart()
 		if err == io.EOF {
@@ -218,62 +238,82 @@ func (s *Server) buildImageHandler(w http.ResponseWriter, r *http.Request, e env
 		if part.FileName() == "" {
 			continue
 		}
+		err = s.db.SetBuildState(buildID, db.NewBuildStateOk("Uploading file "+part.FileName(), -1))
+		if err != nil {
+			log.Println(err)
+		}
 
 		log.Println("\tupload file " + part.FileName())
 		dst, err := os.Create(filepath.Join(buildDir, part.FileName()))
 		if err != nil {
-			Response{w}.ServerError("while creating file to save file part ", err)
+			log.Print("while creating file to save file part ", err)
+			err = s.db.SetBuildState(buildID, db.NewBuildStateError("Failed while creating file to save file part "+part.FileName()+": "+err.Error(), 1))
+			if err != nil {
+				log.Println(err)
+			}
 			return
 		}
 		defer dst.Close()
 
-		if _, err := io.Copy(dst, part); err != nil {
-			Response{w}.ServerError("while dumping file part ", err)
+		if _, err = io.Copy(dst, part); err != nil {
+			log.Print("while dumping file part ", err)
+			err = s.db.SetBuildState(buildID, db.NewBuildStateError("Failed while dumping file part "+part.FileName()+": "+err.Error(), 1))
+			if err != nil {
+				log.Println(err)
+			}
 			return
 		}
 
 		if strings.HasSuffix(strings.ToLower(part.FileName()), ".tar") || strings.HasSuffix(strings.ToLower(part.FileName()), ".tar.gz") {
-			tarFileFound = true
-			foundImageFileName = part.FileName()
+			tarArchiveName = part.FileName()
 		}
 
 		if strings.ToLower(part.FileName()) == "dockerfile" {
-			dockerFileFound = true
+			hasDockerfile = true
 		}
 
 	}
 
-	// Building an image from a Dockerfile
-	if dockerFileFound {
-		if _, err := os.Stat(filepath.Join(buildDir, "Dockerfile")); os.IsNotExist(err) {
-			Response{w}.ServerError("no Dockerfile to build new image ", err)
-			return
-		}
-
-		service, err = s.pier.BuildService(connectionID, user.ID, buildDir)
+	// Building from tar
+	if tarArchiveName != "" && !hasDockerfile {
+		err = s.db.SetBuildState(buildID, db.NewBuildStateOk("Importing an image from a tar archive", -1))
 		if err != nil {
-			Response{w}.ServerError("build service failed: ", err)
-			return
+			log.Println(err)
 		}
-	} else {
-		// Importing an existing image from a tar archive
-		if tarFileFound {
-			log.Println("Docker image file has been detected, trying to import")
-			log.Println(filepath.Join(buildDir, foundImageFileName))
-			service, err = s.pier.ImportImage(connectionID, user.ID, filepath.Join(buildDir, foundImageFileName))
-			if err != nil {
-				Response{w}.ServerError("while importing a Docker image file ", err)
-				return
-			}
-
-			log.Println("Docker image has been imported")
-		} else {
-			Response{w}.ServerNewError("there is neither Dockerfile nor Tar archive")
-			return
-		}
+		go s.pier.StartServiceBuildFromTar(buildID, buildDir, connectionID, user.ID, tarArchiveName)
 	}
 
-	Response{w}.Ok(jmap("Service", service))
+	// Building from a Dockerfile
+	if hasDockerfile {
+		err := s.db.SetBuildState(buildID, db.NewBuildStateOk("Building an image from a Dockerfile", -1))
+		if err != nil {
+			log.Println(err)
+		}
+		go s.pier.StartServiceBuildFromFile(buildID, buildDir, connectionID, user.ID)
+	}
+
+	Response{w}.Ok(jmap("buildID", buildID))
+}
+
+func (s *Server) inspectBuildImageHandler(w http.ResponseWriter, r *http.Request, e environment) {
+	allow, user := Authorization{s, w, r}.allowInspectBuild()
+	if user == nil || !allow {
+		return
+	}
+
+	vars := mux.Vars(r)
+	buildID := vars["buildID"]
+
+	build, err := s.db.GetBuild(buildID)
+	if err != nil {
+		if db.IsNoResultsError(err) {
+			Response{w}.ClientError("cannot find this buildID in the database", err)
+		} else {
+			Response{w}.ServerError("db error", err)
+		}
+		return
+	}
+	Response{w}.Ok(jmap("Build", build))
 }
 
 func (s *Server) listServicesHandler(w http.ResponseWriter, r *http.Request, e environment) {

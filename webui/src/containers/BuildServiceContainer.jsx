@@ -19,14 +19,13 @@ const mapDispatchToProps = (dispatch) => {
 
         fileUploadSuccess: (response) => {
             const action = actions.fileUploadSuccess(response);
-            dispatch(push('/services/' + response.Service.ID));
             dispatch(action);
         },
 
         fileUploadError: (files, errorMessage) => {
             const action = actions.fileUploadError(errorMessage);
             dispatch(action);
-        }
+        },
     }
 };
 

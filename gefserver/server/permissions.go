@@ -134,6 +134,25 @@ func (a Authorization) allowUploadIntoBuild() (allow bool, user *db.User) {
 	return
 }
 
+func (a Authorization) allowInspectBuild() (allow bool, user *db.User) {
+	allow, user = a.getUserInfo()
+	if user == nil || allow {
+		return
+	}
+	roles, err := a.s.db.GetUserRoles(user.ID)
+	if err == nil {
+		for _, r := range roles {
+			if r.Name == db.CommunityAdminRoleName {
+				allow = true // community admins can inspect builds
+				return
+			}
+		}
+	}
+	// only community admins can inspect builds
+	Response{a.w}.Forbidden("Only community administrators can inspect builds")
+	return
+}
+
 func (a Authorization) allowListServices() (allow bool, user *db.User) {
 	allow = true // anybody can see the list of services
 	return

@@ -3,6 +3,7 @@ package pier
 import (
 	"fmt"
 	"log"
+	"os"
 	"path/filepath"
 	"time"
 
@@ -582,6 +583,65 @@ func (p *Pier) ImportImage(connectionID db.ConnectionID, userID int64, imageFile
 	}
 
 	return service, nil
+}
+
+// StartServiceBuildFromFile builds an image from a Dockerfile
+func (p *Pier) StartServiceBuildFromFile(buildID string, buildDir string, connectionID db.ConnectionID, userID int64) {
+	if _, err := os.Stat(filepath.Join(buildDir, "Dockerfile")); os.IsNotExist(err) {
+		log.Print("no Dockerfile to build a new image ", err)
+		err = p.db.SetBuildState(buildID, db.NewBuildStateError("No Dockerfile to build a new image", 1))
+		if err != nil {
+			log.Println(err)
+		}
+		return
+	}
+
+	service, err := p.BuildService(connectionID, userID, buildDir)
+	if err != nil {
+		log.Print("build service failed: ", err)
+		err = p.db.SetBuildState(buildID, db.NewBuildStateError("Failed to build a service: "+err.Error(), 1))
+		if err != nil {
+			log.Println(err)
+		}
+		return
+	}
+
+	err = p.db.SetBuildServiceID(buildID, service.ID)
+	if err != nil {
+		log.Println(err)
+	}
+
+	err = p.db.SetBuildState(buildID, db.NewBuildStateOk("The service has been built successfully", 0))
+	if err != nil {
+		log.Println(err)
+	}
+}
+
+// StartServiceBuildFromTar imports an existing image from a tar archive
+func (p *Pier) StartServiceBuildFromTar(buildID string, buildDir string, connectionID db.ConnectionID, userID int64, imageFileName string) {
+	log.Println("Docker image file has been detected, trying to import")
+	log.Println(filepath.Join(buildDir, imageFileName))
+
+	service, err := p.ImportImage(connectionID, userID, filepath.Join(buildDir, imageFileName))
+	if err != nil {
+		log.Println("while importing a Docker image file ", err)
+		err = p.db.SetBuildState(buildID, db.NewBuildStateError("Failed to build a service from an imported image", 1))
+		if err != nil {
+			log.Println(err)
+		}
+		return
+	}
+
+	err = p.db.SetBuildServiceID(buildID, service.ID)
+	if err != nil {
+		log.Println(err)
+	}
+
+	log.Println("Docker image has been imported")
+	err = p.db.SetBuildState(buildID, db.NewBuildStateOk("The service has been built successfully from an imported image", 0))
+	if err != nil {
+		log.Println(err)
+	}
 }
 
 // NewServiceFromImage extracts metadata and creates a valid GEF service
