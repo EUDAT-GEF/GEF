@@ -306,14 +306,11 @@ func (s *Server) inspectBuildImageHandler(w http.ResponseWriter, r *http.Request
 
 	build, err := s.db.GetBuild(buildID)
 	if err != nil {
-		if !db.IsNoResultsError(err) {
-			err = s.db.SetBuildState(buildID, db.NewBuildStateOk("Error in GetBuild:"+buildID, 1))
-			if err != nil {
-				log.Println(err)
-			}
+		if db.IsNoResultsError(err) {
+			Response{w}.ClientError("cannot find this buildID in the database", err)
+		} else {
+			Response{w}.ServerError("db error", err)
 		}
-
-		Response{w}.ClientError("cannot get a build", err)
 		return
 	}
 	Response{w}.Ok(jmap("Build", build))
