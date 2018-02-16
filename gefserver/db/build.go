@@ -34,7 +34,7 @@ func NewBuildStateOk(status string, code int) BuildState {
 func NewBuildStateError(err string, code int) BuildState {
 	return BuildState{
 		Error:  err,
-		Status: "Error",
+		Status: "An error has occurred while building an image: ",
 		Code:   code,
 	}
 }

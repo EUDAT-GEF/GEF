@@ -281,15 +281,18 @@ func (s *Server) startBuildImageHandler(w http.ResponseWriter, r *http.Request, 
 			log.Println(err)
 		}
 		go s.pier.StartServiceBuildFromTar(buildID, buildDir, connectionID, user.ID, tarArchiveName)
-	}
-
-	// Building from a Dockerfile
-	if hasDockerfile {
-		err := s.db.SetBuildState(buildID, db.NewBuildStateOk("Building an image from a Dockerfile", -1))
+	} else if hasDockerfile { // Building from a Dockerfile
+		err = s.db.SetBuildState(buildID, db.NewBuildStateOk("Building an image from a Dockerfile", -1))
 		if err != nil {
 			log.Println(err)
 		}
 		go s.pier.StartServiceBuildFromFile(buildID, buildDir, connectionID, user.ID)
+	} else {
+		log.Println("Could not find any Dockerfile nor tar archive with the input image")
+		err = s.db.SetBuildState(buildID, db.NewBuildStateError("Could not find any Dockerfile nor tar archive with the input image", 1))
+		if err != nil {
+			log.Println(err)
+		}
 	}
 
 	Response{w}.Ok(jmap("buildID", buildID))
