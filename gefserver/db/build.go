@@ -18,7 +18,7 @@ type Build struct {
 type BuildState struct {
 	Status string
 	Error  string
-	Code   int
+	Code   int // 0 - finished successfully, -1 - build in progress, 1 - there is an error
 }
 
 // NewBuildStateOk creates a new BuildState with no error

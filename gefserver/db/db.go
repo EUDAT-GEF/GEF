@@ -279,7 +279,8 @@ func initializeDatabaseValues(d Db) error {
 	return nil
 }
 
-func isNoResultsError(e error) bool {
+// IsNoResultsError means no rows found
+func IsNoResultsError(e error) bool {
 	if e == nil {
 		return false
 	}
@@ -298,7 +299,7 @@ func (d *Db) AddConnection(userID int64, connection def.DockerConfig) (Connectio
 		"SELECT * FROM connections WHERE Endpoint=?",
 		connection.Endpoint)
 
-	if err != nil && !isNoResultsError(err) {
+	if err != nil && !IsNoResultsError(err) {
 		return 0, def.Err(err, "db inquiry about docker connections failed: %v", err)
 	}
 
@@ -309,7 +310,7 @@ func (d *Db) AddConnection(userID int64, connection def.DockerConfig) (Connectio
 	ct.KeyPath = connection.KeyPath
 	ct.CAPath = connection.CAPath
 
-	if isNoResultsError(err) {
+	if IsNoResultsError(err) {
 		err = d.db.Insert(&ct)
 		if err != nil {
 			return 0, def.Err(err, "db inserting docker connection failed: %v", err)
@@ -389,7 +390,7 @@ func (d *Db) GetConnectionOwners(connectionID ConnectionID) ([]int64, error) {
 	_, err := d.db.Select(&ownersTable,
 		"SELECT * FROM owners WHERE ObjectType=? AND ObjectID=?",
 		"Connection", string(connectionID))
-	if err != nil && !isNoResultsError(err) {
+	if err != nil && !IsNoResultsError(err) {
 		log.Printf("ERROR in GetConnectionOwners: %#v", err)
 	}
 	owners := make([]int64, 0, len(ownersTable))
@@ -405,7 +406,7 @@ func (d *Db) IsConnectionOwner(userID int64, connectionID ConnectionID) bool {
 	err := d.db.SelectOne(&x,
 		"SELECT * FROM owners WHERE UserID=? AND ObjectType=? AND ObjectID=?",
 		userID, "Connection", string(connectionID))
-	if err != nil && !isNoResultsError(err) {
+	if err != nil && !IsNoResultsError(err) {
 		log.Printf("ERROR in IsConnectionOwner: %#v", err)
 	}
 	return err == nil
@@ -457,7 +458,7 @@ func (d *Db) CountRunningJobs() int64 {
 	count, err := d.db.SelectInt(
 		"SELECT count(*) FROM jobs WHERE jobs.Code<0")
 
-	if err != nil && !isNoResultsError(err) {
+	if err != nil && !IsNoResultsError(err) {
 		log.Printf("ERROR in CountRunningJobs: %#v", err)
 	}
 	return count
@@ -468,7 +469,7 @@ func (d *Db) CountUserRunningJobs(userID int64) int64 {
 	count, err := d.db.SelectInt(
 		"SELECT count(*) FROM owners INNER JOIN jobs on owners.ObjectID = jobs.ID WHERE owners.UserID=? AND jobs.Code<0", userID)
 
-	if err != nil { //&& !isNoResultsError(err) {
+	if err != nil { //&& !IsNoResultsError(err) {
 		log.Printf("ERROR in CountUserRunningJobs: %#v", err)
 	}
 	return count
@@ -962,14 +963,14 @@ func (d *Db) SetBuildState(id string, state BuildState) error {
 }
 
 // SetBuildServiceID sets a service ID for a given build
-func (d *Db) SetBuildServiceID(id string, serviceID string) error {
+func (d *Db) SetBuildServiceID(id string, serviceID ServiceID) error {
 	var storedBuild BuildTable
-	err := d.db.SelectOne(&storedBuild, "SELECT * FROM Builds WHERE ID=?", string(id))
+	err := d.db.SelectOne(&storedBuild, "SELECT * FROM Builds WHERE ID=?", id)
 	if err != nil {
 		return err
 	}
 
-	storedBuild.ServiceID = serviceID
+	storedBuild.ServiceID = string(serviceID)
 	_, err = d.db.Update(&storedBuild)
 	return err
 }
@@ -977,7 +978,7 @@ func (d *Db) SetBuildServiceID(id string, serviceID string) error {
 // GetBuild returns a build ready to be converted into JSON
 func (d *Db) GetBuild(id string) (Build, error) {
 	var buildFromTable BuildTable
-	err := d.db.SelectOne(&buildFromTable, "SELECT * FROM Builds WHERE ID=?", string(id))
+	err := d.db.SelectOne(&buildFromTable, "SELECT * FROM Builds WHERE ID=?", id)
 	if err != nil {
 		return Build{}, err
 	}
@@ -987,7 +988,7 @@ func (d *Db) GetBuild(id string) (Build, error) {
 
 // RemoveBuild removes a build from the database
 func (d *Db) RemoveBuild(id string) error {
-	_, err := d.db.Exec("DELETE FROM Builds WHERE ID=?", string(id))
+	_, err := d.db.Exec("DELETE FROM Builds WHERE ID=?", id)
 	if err != nil {
 		return err
 	}

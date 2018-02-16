@@ -4,7 +4,7 @@ import Files from './Files';
 import axios from 'axios';
 import {apiNames} from '../GefAPI';
 import Alert from 'react-s-alert';
-import {errHandler, fetchBuildID, fetchApiInfo} from '../actions/actions';
+import {errHandler} from '../actions/actions';
 
 const log = console.log;
 

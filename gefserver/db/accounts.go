@@ -98,7 +98,7 @@ func (d *Db) AddCommunity(name, description string, addDefaultRoles bool) (Commu
 	if err == nil {
 		return comm, nil
 	}
-	if !isNoResultsError(err) {
+	if !IsNoResultsError(err) {
 		return comm, def.Err(err, "error in GetCommunityByName:"+name)
 	}
 
@@ -198,7 +198,7 @@ func (d *Db) AddRole(name string, communityID int64, description string) (Role, 
 	if err == nil {
 		return role, nil
 	}
-	if !isNoResultsError(err) {
+	if !IsNoResultsError(err) {
 		return role, def.Err(err, "error in GetRoleByName:"+name)
 	}
 
@@ -288,7 +288,7 @@ func (d *Db) IsServiceOwner(userID int64, serviceID ServiceID) bool {
 	err := d.db.SelectOne(&x,
 		"SELECT * FROM owners WHERE UserID=? AND ObjectType=? AND ObjectID=?",
 		userID, "Service", string(serviceID))
-	if err != nil && !isNoResultsError(err) {
+	if err != nil && !IsNoResultsError(err) {
 		log.Printf("ERROR in IsServiceOwner: %#v", err)
 	}
 	return err == nil
@@ -300,7 +300,7 @@ func (d *Db) IsJobOwner(userID int64, jobID JobID) bool {
 	err := d.db.SelectOne(&x,
 		"SELECT * FROM owners WHERE UserID=? AND ObjectType=? AND ObjectID=?",
 		userID, "Job", string(jobID))
-	if err != nil && !isNoResultsError(err) {
+	if err != nil && !IsNoResultsError(err) {
 		log.Printf("ERROR in IsJobOwner: %#v", err)
 	}
 	return err == nil

@@ -588,21 +588,25 @@ func (p *Pier) ImportImage(connectionID db.ConnectionID, userID int64, imageFile
 // StartServiceBuildFromFile builds an image from a Dockerfile
 func (p *Pier) StartServiceBuildFromFile(buildID string, buildDir string, connectionID db.ConnectionID, userID int64) {
 	if _, err := os.Stat(filepath.Join(buildDir, "Dockerfile")); os.IsNotExist(err) {
-		log.Print("no Dockerfile to build new image ", err)
-		return
-	}
-
-	service, err := p.BuildService(connectionID, userID, buildDir)
-	if err != nil {
-		log.Print("build service failed: ", err)
-		err = p.db.SetBuildState(buildID, db.NewBuildStateError("Failed to build a service", 1))
+		log.Print("no Dockerfile to build a new image ", err)
+		err = p.db.SetBuildState(buildID, db.NewBuildStateError("No Dockerfile to build a new image", 1))
 		if err != nil {
 			log.Println(err)
 		}
 		return
 	}
 
-	err = p.db.SetBuildServiceID(buildID, string(service.ID))
+	service, err := p.BuildService(connectionID, userID, buildDir)
+	if err != nil {
+		log.Print("build service failed: ", err)
+		err = p.db.SetBuildState(buildID, db.NewBuildStateError("Failed to build a service: "+err.Error(), 1))
+		if err != nil {
+			log.Println(err)
+		}
+		return
+	}
+
+	err = p.db.SetBuildServiceID(buildID, service.ID)
 	if err != nil {
 		log.Println(err)
 	}
@@ -628,7 +632,7 @@ func (p *Pier) StartServiceBuildFromTar(buildID string, buildDir string, connect
 		return
 	}
 
-	err = p.db.SetBuildServiceID(buildID, string(service.ID))
+	err = p.db.SetBuildServiceID(buildID, service.ID)
 	if err != nil {
 		log.Println(err)
 	}

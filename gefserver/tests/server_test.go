@@ -139,7 +139,7 @@ func TestServer(t *testing.T) {
 	buildID := res["buildID"].(string)
 
 	// loop until the build ends
-	buildServiceID := ""
+	serviceID := ""
 	buildExitCode := -1
 	for buildExitCode < 0 {
 		time.Sleep(1 * time.Second)
@@ -148,14 +148,15 @@ func TestServer(t *testing.T) {
 		asyncBuild := res["Build"].(map[string]interface{})
 		ExpectNotNil(t, asyncBuild)
 		buildExitCode = int(asyncBuild["State"].(map[string]interface{})["Code"].(float64))
-		buildServiceID = asyncBuild["ServiceID"].(string)
+		serviceID = asyncBuild["ServiceID"].(string)
 	}
 
-	Expect(t, len(buildServiceID) > 0)
+	Expect(t, len(serviceID) > 0)
+	Expect(t, buildExitCode == 0)
 
 	// test create a job
 	jobParams := map[string]string{
-		"serviceID": buildServiceID,
+		"serviceID": serviceID,
 		"pid":       testPIDbinary,
 	}
 	jobLink, code := postRes(t, gefurl(baseURL+"jobs", ""), jobParams)
@@ -172,7 +173,7 @@ func TestServer(t *testing.T) {
 	ExpectEquals(t, code, 200)
 	job := res["Job"].(map[string]interface{})
 
-	ExpectEquals(t, job["ServiceID"], buildServiceID)
+	ExpectEquals(t, job["ServiceID"], serviceID)
 	jobID := job["ID"].(string)
 
 	// test get the list of all jobs
@@ -233,10 +234,10 @@ func TestServer(t *testing.T) {
 	// test service removal
 	servicesURL := baseURL + "services/"
 
-	res, code = deleteRes(t, gefurl(servicesURL+buildServiceID, userToken))
+	res, code = deleteRes(t, gefurl(servicesURL+serviceID, userToken))
 	ExpectEquals(t, code, 403)
 
-	res, code = deleteRes(t, gefurl(servicesURL+buildServiceID, superToken))
+	res, code = deleteRes(t, gefurl(servicesURL+serviceID, superToken))
 	ExpectEquals(t, code, 200)
 }
 

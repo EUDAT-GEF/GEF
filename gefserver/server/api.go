@@ -216,7 +216,7 @@ func (s *Server) startBuildImageHandler(w http.ResponseWriter, r *http.Request, 
 
 	err = s.db.AddBuild(newBuild)
 	if err != nil {
-		err = s.db.SetBuildState(buildID, db.NewBuildStateError("Failed to add the new build to the database", 1))
+		err = s.db.SetBuildState(buildID, db.NewBuildStateError("Failed to add the new build to the database: "+err.Error(), 1))
 		if err != nil {
 			log.Println(err)
 		}
@@ -247,7 +247,7 @@ func (s *Server) startBuildImageHandler(w http.ResponseWriter, r *http.Request, 
 		dst, err := os.Create(filepath.Join(buildDir, part.FileName()))
 		if err != nil {
 			log.Print("while creating file to save file part ", err)
-			err = s.db.SetBuildState(buildID, db.NewBuildStateError("Failed while creating file to save file part "+part.FileName(), 1))
+			err = s.db.SetBuildState(buildID, db.NewBuildStateError("Failed while creating file to save file part "+part.FileName()+": "+err.Error(), 1))
 			if err != nil {
 				log.Println(err)
 			}
@@ -257,7 +257,7 @@ func (s *Server) startBuildImageHandler(w http.ResponseWriter, r *http.Request, 
 
 		if _, err = io.Copy(dst, part); err != nil {
 			log.Print("while dumping file part ", err)
-			err = s.db.SetBuildState(buildID, db.NewBuildStateError("Failed while dumping file part "+part.FileName(), 1))
+			err = s.db.SetBuildState(buildID, db.NewBuildStateError("Failed while dumping file part "+part.FileName()+": "+err.Error(), 1))
 			if err != nil {
 				log.Println(err)
 			}
@@ -306,6 +306,13 @@ func (s *Server) inspectBuildImageHandler(w http.ResponseWriter, r *http.Request
 
 	build, err := s.db.GetBuild(buildID)
 	if err != nil {
+		if !db.IsNoResultsError(err) {
+			err = s.db.SetBuildState(buildID, db.NewBuildStateOk("Error in GetBuild:"+buildID, 1))
+			if err != nil {
+				log.Println(err)
+			}
+		}
+
 		Response{w}.ClientError("cannot get a build", err)
 		return
 	}

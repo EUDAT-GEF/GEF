@@ -66,7 +66,7 @@ func TestServiceAndOwnership(t *testing.T) {
 	Expect(t, !db.IsServiceOwner(user1.ID, service.ID))
 
 	_, err = db.GetService(service.ID)
-	Expect(t, isNoResultsError(err))
+	Expect(t, IsNoResultsError(err))
 }
 
 func TestUsersAndTokens(t *testing.T) {

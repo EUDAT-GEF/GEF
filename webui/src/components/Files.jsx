@@ -130,14 +130,17 @@ class Files extends React.Component {
             const config = {
                 postUrl: getApiURL()
             };
+            let isDropZoneVisible = (sessionStorage.getItem("buildID")) ? false : true;
             return <div>
-                <span className={(sessionStorage.getItem("buildID")) ? "dz-hidden" : "dz-visible"}>
+            {isDropZoneVisible == true &&
+                <span>
                 <h4>Please select and upload the Dockerfile, together with other files which are part of the container</h4>
-                <DropzoneComponent className="dz-hidden1"config={config} eventHandlers={eventHandlers} djsConfig={djsConfig} />
+                <DropzoneComponent config={config} eventHandlers={eventHandlers} djsConfig={djsConfig} />
                 <Row>
                     <Col md={4} mdOffset={4}> <Button type='submit' bsStyle='primary' style={{width: '100%'} } onClick={submitHandler}> <Glyphicon glyph='upload'/> {buttonText} </Button> </Col>
                 </Row>
                 </span>
+            }
             <span>
               <BuildProgress isInProgress={this.state.serviceBuildInProgress} statusMessage={this.state.statusMessage}/>
               <GoBackLink id={sessionStorage.getItem("buildID")} buildFinished={this.state.buildFinished}/>
