@@ -64,7 +64,7 @@ In the root of the repository there is a folder called `GEF/services` which cont
 ### GEF Service Metadata<a name="service_metadata"></a>
 
 Every Docker image needs to be labeled in a specific way to function as a GEF service. Labelling images fills certain metadata fields attached to a Docker image and is currently done by the GEF development team as the number of GEF services is still manageable, but will also become a responsibility of our scientific communities in the future as the number of GEF services grows. For the upcoming beta release of the GEF, so far we have opted for a collection of labels that we will illustrate with the Stanford Parser example service found on the testing instance. We aim for a standardisation of metadata fields until the end of the project. These are the label instructions that annotate the Stanford Parser GEF service taken from the corresponding Dockerfile in `GEF/services/stanford-parser`:
-
+ 
 ~~~~
 LABEL "eudat.gef.service.name"="Stanford Parser for English"
 LABEL "eudat.gef.service.description"="Parses a given text and produces constituency and dependency trees for each sentence"
