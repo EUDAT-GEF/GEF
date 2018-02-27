@@ -12,14 +12,6 @@ The GEF software was developed in the frame of [EUDAT 2020](https://eudat.eu) as
 
 The software has grown to a beta release version that is capable of processing data stored in [B2SHARE](https://b2share.eudat.eu) and [B2DROP](https://www.eudat.eu/services/b2drop). The GEF is still in development and the second beta release constitutes the end of development in the scope of the EUDAT 2020 project.
 
-Release notes for the second beta release (February 2018):
-
-- Multiple inputs and outputs for the GEF jobs (service metadata format has been changed, now inputs have types: string or URL)
-- ReadMe was extended: API calls examples with curl command. Descriptions for the new endpoints were added
-- The second directive engine support
-- Async service building. Now the system does not time out if the image building process takes too much time
-- UI improvements: jobs table sorting bug fix, fewer warnings in the debugging console, minor bug fixes
-
 Please be aware that while this repository is licensed under the GNU General Public License v2.0, usage of operational EUDAT services like the ones mentioned above (B2SHARE, B2SAFE, ...) is bound to the [EUDAT Services Terms of Use](http://hdl.handle.net/11304/e43b2e3f-83c5-4e3f-b8b7-18d38d37a6cd).
 
 ---
@@ -52,7 +44,7 @@ This documentation includes:
 8. [GEF User Workflows](#user_workflows)
    1. [GEF Service Building Workflow](#service_building_workflow)
    2. [GEF Service Enactment Workflow](#service_enactment_workflow)
-
+9. [Release Notes](#release_notes)
 
 
 ## The Core Idea: GEF Services<a name="services"></a>
@@ -536,3 +528,13 @@ In order to enact a GEF service on a given data set, a Community Administrator o
 3. Inspect the console or the output volume and download the results if the job completed the computation successfully.
 
 The GEF does not yet allow chaining of individual jobs. Later GEF versions aim to support mounting an output volume of one job to be the input volume of another to orchestrate a sequence of computation jobs.
+
+## Release Notes<a name="release_notes"></a>
+
+### Release Notes for the Second Beta Version (February 2018):
+
+- Multiple inputs and outputs for the GEF jobs (service metadata format has been changed, now inputs have types: string or URL)
+- ReadMe was extended: API calls examples with curl command. Descriptions for the new endpoints were added
+- The second directive engine support
+- Async service building. Now the system does not time out if the image building process takes too much time
+- UI improvements: jobs table sorting bug fix, fewer warnings in the debugging console, minor bug fixes
