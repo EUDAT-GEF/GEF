@@ -12,6 +12,14 @@ The GEF software was developed in the frame of [EUDAT 2020](https://eudat.eu) as
 
 The software has grown to a beta release version that is capable of processing data stored in [B2SHARE](https://b2share.eudat.eu) and [B2DROP](https://www.eudat.eu/services/b2drop). The GEF is still in development and the second beta release constitutes the end of development in the scope of the EUDAT 2020 project.
 
+Release notes for the second beta release (February 2018):
+
+- Multiple inputs and outputs for the GEF jobs (service metadata format has been changed, now inputs have types: string or URL)
+- ReadMe was extended: API calls examples with curl command. Descriptions for the new endpoints were added
+- The second directive engine support
+- Async service building. Now the system does not time out if the image building process takes too much time
+- UI improvements: jobs table sorting bug fix, fewer warnings in the debugging console, minor bug fixes
+
 Please be aware that while this repository is licensed under the GNU General Public License v2.0, usage of operational EUDAT services like the ones mentioned above (B2SHARE, B2SAFE, ...) is bound to the [EUDAT Services Terms of Use](http://hdl.handle.net/11304/e43b2e3f-83c5-4e3f-b8b7-18d38d37a6cd).
 
 ---
@@ -100,7 +108,7 @@ Since the GEF is still in development, it is expected that it will still undergo
 
 ## Installing the GEF<a name="installing"></a>
 
-If you want to install the GEF yourself and build your own services, either use the 64-bit Linux binary you can build (see [Packaging GEF Source Code for Deployment](#packaging_code) section) or follow the installation instructions below. This will allow you to build your own GEF service with a Dockerfile and execute it. Please refer to the original Docker [documentation](https://docs.docker.com/engine/reference/builder/) for more information on Dockerfiles. Also be aware of the best practices published [here](https://docs.docker.com/engine/userguide/eng-image/dockerfile_best-practices/). Building GEF services from Dockerfiles is explained below.
+If you want to install the GEF yourself and build your own GEF services, either use the 64-bit Linux binary you can build (see [Packaging GEF Source Code for Deployment](#packaging_code) section) or follow the installation instructions below. This will allow you to build your own GEF service with a Dockerfile and execute it. Please refer to the original Docker [documentation](https://docs.docker.com/engine/reference/builder/) for more information on Dockerfiles. Also be aware of the best practices published [here](https://docs.docker.com/engine/userguide/eng-image/dockerfile_best-practices/). Building GEF services from Dockerfiles is explained below.
 
 
 ### GEF Server Installation and Deployment<a name="server_installation"></a>
@@ -266,7 +274,7 @@ GEF Superadministrators are designated by setting the B2ACCESS email address in 
 
 ### Community Administrators<a name="community_admins"></a>
 
-GEF Community Administrators are meant to be designated by a scientific community to be the owners of its GEF services. Community Admins therefore can create new GEF services, run jobs and view the job history. Users who are to become Community Admins need to be assigned this role by a GEF Superadmin.
+GEF Community Administrators are meant to be designated by a scientific community to be the owners of its GEF services. Community Admins therefore can create new GEF services, run jobs and view the job history. Users who are to become Community Admins need to be assigned this role by a GEF Superadmin and require a B2ACCESS account.
 
 ### Community Members<a name="community_members"></a>
 
